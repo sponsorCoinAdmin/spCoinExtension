@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "spCoin Merit Wallet",
+  "version": "0.0.1",
+  "description": "Merit Wallet browser extension for the spCoin app. Phase 1: opens the spCoin web app's wallet UI in a tab — no signing, no injection yet.",
+  "action": {},
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "permissions": ["tabs"]
+}

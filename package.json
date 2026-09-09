@@ -1,0 +1,11 @@
+{
+  "name": "spcoin-extension",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Merit Wallet browser extension for the spCoin app.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  }
+}

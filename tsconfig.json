@@ -10,5 +10,5 @@
     "esModuleInterop": true,
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "popup.ts", "vite.config.ts"]
 }

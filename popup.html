@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Merit Wallet</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        width: 300px;
+        padding: 20px 22px 22px;
+        background: #11162a;
+        color: #cbd5e1;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        text-align: center;
+      }
+      .icon {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 12px;
+        display: block;
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #ffffff;
+      }
+      p.subtitle {
+        margin: 4px 0 18px;
+        font-size: 13px;
+        color: #94a3b8;
+      }
+      button {
+        width: 100%;
+        padding: 9px 0;
+        border: none;
+        border-radius: 6px;
+        background: #5981f3;
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #4a6fe0;
+      }
+    </style>
+  </head>
+  <body>
+    <img class="icon" src="icons/icon128.png" alt="" />
+    <h1>Merit Wallet</h1>
+    <p class="subtitle">Sponsor Coin</p>
+    <button id="open-app" type="button">Open</button>
+    <script type="module" src="popup.ts"></script>
+  </body>
+</html>

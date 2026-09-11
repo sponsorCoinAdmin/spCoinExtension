@@ -1,5 +1,11 @@
 node_modules
-dist
+# Anchored to repo root only (2026-09-11 fix) — a bare "dist" here was
+# blanket-excluding node_source/spCoinPanels/.../spcoin-panels/dist/ too,
+# the actual compiled JS the local `file:` dependency needs. That package
+# is committed WITH its dist/ (matching spcoin-common's own precedent in
+# the front-end repo — no .gitignore for it there either), so only this
+# repo's own build output should be ignored.
+/dist
 .env
 .env.local
 .DS_Store

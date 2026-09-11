@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "spCoin Merit Wallet",
   "version": "0.0.1",
-  "description": "Merit Wallet browser extension for the spCoin app. Phase 1: opens a persistent window (real Merit Wallet UI coming later) — no signing, no injection yet.",
+  "description": "Merit Wallet browser extension for the spCoin app. Phase 1: opens as a docked side panel (real Merit Wallet UI coming later) — no signing, no injection yet.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -17,9 +17,12 @@
       "128": "icons/icon128.png"
     }
   },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
   },
-  "permissions": ["tabs"]
+  "permissions": ["tabs", "sidePanel"]
 }

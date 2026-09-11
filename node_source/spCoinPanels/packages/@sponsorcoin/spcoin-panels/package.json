@@ -1,0 +1,46 @@
+{
+  "name": "@sponsorcoin/spcoin-panels",
+  "version": "0.0.3",
+  "description": "Merit Wallet's independent panel-visibility engine (single write chokepoint, no ExchangeContext dependency) — shared between spcoin-nextjs-front-end and the Merit Wallet browser extension (spCoinExtension).",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sponsorcoin/spcoin-common": "^0.0.1",
+    "lucide-react": "^0.487.0"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "typescript": "5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sponsorCoinAdmin/spcoin-panels.git"
+  },
+  "author": "Robert Lanson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sponsorCoinAdmin/spcoin-panels/issues"
+  },
+  "homepage": "https://github.com/sponsorCoinAdmin/spcoin-panels#readme"
+}

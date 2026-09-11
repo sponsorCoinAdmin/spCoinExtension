@@ -1,7 +1,9 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { WalletHeader } from '@sponsorcoin/spcoin-panels';
 import { openOrFocusApp } from './src/openApp';
 
 const openButton = document.getElementById('open-app');
-const closeButton = document.getElementById('close-sidepanel');
 
 // 2026-09-10, on request (switch from a persistent window to a real
 // Chrome side panel — see background.ts's own comment for the full
@@ -21,6 +23,21 @@ openButton?.addEventListener('click', () => {
   void openOrFocusApp().then(() => closeSidePanel());
 });
 
-closeButton?.addEventListener('click', () => {
-  closeSidePanel();
-});
+// 2026-09-11 — the real, portable WalletHeader (see docs/design/
+// extensionPlan.md's "Pages Grey header bar" section), replacing the
+// hand-written <header> this file used to mount by hand. No JSX here
+// deliberately — React.createElement keeps this a plain .ts file, so
+// nothing in tsconfig.json/vite.config.ts needs a JSX transform just for
+// this one mount point. onRefresh/onTitleClick intentionally omitted for
+// now (on request — "we do not have to think of sync at this state"):
+// this is a visual/structural slice only, not wired to any real wallet
+// state yet.
+const headerRoot = document.getElementById('header-root');
+if (headerRoot) {
+  createRoot(headerRoot).render(
+    React.createElement(WalletHeader, {
+      mode: 'normal',
+      onClose: closeSidePanel,
+    }),
+  );
+}

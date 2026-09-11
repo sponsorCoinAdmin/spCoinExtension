@@ -1,0 +1,72 @@
+name: Testing Release
+
+# Builds the extension on every push to main and republishes it as the
+# "latest" GitHub Release's zip asset — the auto-updating TESTING channel.
+# Closes the gap documented in spcoin-nextjs-front-end's
+# docs/design/extensionPlan.md (the web app's download flow used to serve
+# a hand-zipped, manually-copied file that silently went stale whenever
+# this repo changed).
+#
+# Deliberately separate from production-release.yml (2026-09-11 decision:
+# two channels — testing auto-updates on every push, production only
+# moves when a version tag is deliberately pushed). The public-facing "Add
+# Extension" button never serves this build; only a separate, less-
+# prominent testing link does. See production-release.yml's own header
+# comment for the full two-channel reasoning.
+#
+# 2026-09-11: this repo was made public specifically so
+# spcoin-nextjs-front-end's own CI can fetch this release's asset with
+# nothing more than its default GITHUB_TOKEN — no cross-repo PAT to manage
+# or rotate. See that repo's ci.yml for the fetch side.
+#
+# "latest" is a rolling release, not a version — re-published (asset
+# overwritten via --clobber) on every push rather than accumulating a new
+# tagged release per commit. That matches what the testing link actually
+# wants: whatever main currently builds, not a specific version history.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Build
+        run: npm run build
+
+      - name: Zip dist/
+        run: |
+          set -euo pipefail
+          cd dist
+          zip -r ../spCoinExtension.zip .
+          cd ..
+
+      - name: Publish/update the "latest" release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! gh release view latest >/dev/null 2>&1; then
+            gh release create latest \
+              --title "Latest build" \
+              --notes "Rolling build of main — republished automatically on every push. Not a versioned release; see individual commits for history."
+          fi
+          gh release upload latest spCoinExtension.zip --clobber

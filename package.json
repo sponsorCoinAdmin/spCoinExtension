@@ -8,9 +8,16 @@
     "dev": "vite",
     "build": "vite build"
   },
+  "dependencies": {
+    "@sponsorcoin/spcoin-panels": "file:./node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels",
+    "react": "^18",
+    "react-dom": "^18"
+  },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.7.1",
     "@types/chrome": "^0.2.9",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"
   }

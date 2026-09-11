@@ -1,0 +1,76 @@
+name: Production Release
+
+# Triggered by pushing a version tag (e.g. `v0.0.2`) — a deliberate,
+# explicit action, per the 2026-09-11 decision that production must never
+# move except on request (unlike release.yml's "latest" testing build,
+# which republishes on every push to main). See spcoin-nextjs-front-end's
+# docs/design/extensionPlan.md for the full reasoning.
+#
+# Publishes TWO things from the same build:
+#   1. A real, versioned release (the pushed tag itself) — gives
+#      production an actual rollback-able history.
+#   2. An update to a separate, stably-named "production" release, whose
+#      single asset is overwritten to match whatever was just promoted.
+#      That fixed name is what spcoin-nextjs-front-end's CI fetches, so it
+#      never needs to know which version number is currently live — it
+#      only changes when this workflow runs, i.e. when a tag is pushed.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Build
+        run: npm run build
+
+      - name: Zip dist/
+        run: |
+          set -euo pipefail
+          cd dist
+          zip -r ../spCoinExtension.zip .
+          cd ..
+
+      - name: Publish the versioned release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release create "${{ github.ref_name }}" spCoinExtension.zip \
+            --title "${{ github.ref_name }}" \
+            --notes "Production release, built from ${{ github.ref_name }}."
+
+      - name: Update the stable "production" pointer release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          NOTES="Always points at the most recently promoted version — currently ${{ github.ref_name }}. Does not update automatically; only moves when a new version tag is pushed (see .github/workflows/production-release.yml)."
+          if ! gh release view production >/dev/null 2>&1; then
+            gh release create production \
+              --title "Production (currently ${{ github.ref_name }})" \
+              --notes "$NOTES"
+          else
+            gh release edit production \
+              --title "Production (currently ${{ github.ref_name }})" \
+              --notes "$NOTES"
+          fi
+          gh release upload production spCoinExtension.zip --clobber

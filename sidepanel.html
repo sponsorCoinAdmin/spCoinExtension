@@ -23,52 +23,6 @@
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
         text-align: center;
       }
-      /* Header row (2026-09-10, on direct request — matches the real web
-         app's Merit Wallet popup header convention: icon + title on the
-         left, a close X on the right). Not yet the actual portable
-         WalletHeader.tsx component from @sponsorcoin/spcoin-panels — that
-         component depends on next/image and usePanelTree, neither
-         available/appropriate in this Vite-built extension yet. See
-         extensionPlan.md for the deferred full port. */
-      header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 12px;
-        border-bottom: 1px solid #1f2942;
-        background: #161d38;
-        text-align: left;
-      }
-      header img {
-        width: 22px;
-        height: 22px;
-        display: block;
-        flex-shrink: 0;
-      }
-      header h1 {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: #ffffff;
-        flex: 1;
-        min-width: 0;
-      }
-      #close-sidepanel {
-        appearance: none;
-        border: none;
-        background: transparent;
-        color: #94a3b8;
-        font-size: 16px;
-        line-height: 1;
-        padding: 4px 6px;
-        cursor: pointer;
-        border-radius: 4px;
-        flex-shrink: 0;
-      }
-      #close-sidepanel:hover {
-        background: #232c4d;
-        color: #ffffff;
-      }
       main {
         padding: 20px 22px 0;
       }
@@ -77,12 +31,6 @@
         height: 48px;
         margin: 0 auto 12px;
         display: block;
-      }
-      h2 {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
-        color: #ffffff;
       }
       p.subtitle {
         margin: 4px 0 18px;
@@ -106,14 +54,16 @@
     </style>
   </head>
   <body>
-    <header>
-      <img src="icons/icon16.png" alt="" />
-      <h1>Merit Wallet</h1>
-      <button id="close-sidepanel" type="button" aria-label="Close" title="Close">✕</button>
-    </header>
+    <!-- Real, portable WalletHeader (2026-09-11, "Pages Grey header bar"
+         slice — see docs/design/extensionPlan.md) mounted here by
+         sidepanel.ts, replacing the hand-written <header> this file used
+         to have. Not yet published to npm — consumed from a local
+         node_source/spCoinPanels copy (file: dependency, same pattern the
+         web app itself uses) specifically so this can be visually compared
+         against the real embedded wallet before anything is republished. -->
+    <div id="header-root"></div>
     <main>
       <img class="icon" src="icons/icon128.png" alt="" />
-      <h2>Merit Wallet</h2>
       <p class="subtitle">Sponsor Coin</p>
       <button id="open-app" type="button">Open</button>
     </main>

@@ -32,11 +32,22 @@ openButton?.addEventListener('click', () => {
 // now (on request — "we do not have to think of sync at this state"):
 // this is a visual/structural slice only, not wired to any real wallet
 // state yet.
+//
+// iconSrc/titleBadgeSrc: WalletHeader's own defaults point at the web
+// app's `/assets/miscellaneous/...` — an absolute, page-relative path
+// that only resolves against sponsorcoin.org's own origin. Inside the
+// extension (chrome-extension://<id>/...) that 404s silently, showing as
+// two broken/blank squares in the grey bar — exactly why those props
+// exist (see WalletHeader.tsx's own doc comment). chrome.runtime.getURL
+// turns the bundled icon into a real, resolvable extension URL.
+const iconUrl = chrome.runtime.getURL('icons/icon48.png');
 const headerRoot = document.getElementById('header-root');
 if (headerRoot) {
   createRoot(headerRoot).render(
     React.createElement(WalletHeader, {
       mode: 'normal',
+      iconSrc: iconUrl,
+      titleBadgeSrc: iconUrl,
       onClose: closeSidePanel,
     }),
   );

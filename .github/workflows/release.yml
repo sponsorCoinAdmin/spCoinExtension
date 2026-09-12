@@ -52,10 +52,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Zip dist/
+      - name: Zip deploy/
         run: |
           set -euo pipefail
-          cd dist
+          cd deploy
           zip -r ../spCoinExtension.zip .
           cd ..
 

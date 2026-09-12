@@ -32,11 +32,14 @@ This repo is meant to depend on published packages, not on
 
 ```
 npm install -D vite @crxjs/vite-plugin typescript @types/chrome
-npm run dev     # or: npm run build, then load dist/ unpacked in Chrome
+npm run dev     # or: npm run build, then load deploy/ unpacked in Chrome
 ```
 
 Load unpacked: `chrome://extensions` → Developer mode → "Load unpacked" →
-select `dist/`.
+select `deploy/`, once. Every subsequent `npm run build` fully refreshes it
+in place (Vite's own emptyOutDir clears it first) — just click the reload
+icon on the extension card, no re-selecting the folder or re-downloading
+anything needed.
 
 ## Known gaps / TODO
 

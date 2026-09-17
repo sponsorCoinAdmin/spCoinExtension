@@ -25,6 +25,71 @@ function truncateMiddle(addr: string, start = 10, end = 8): string {
     : addr;
 }
 
+// 2026-09-16 — real bug found live in spCoinExtension, bigger than first
+// thought: this whole component's actual LAYOUT (flex/gap/alignItems on
+// every row, text truncation, pill backgrounds, font sizing) is driven
+// entirely by Tailwind classes, with zero inline-style fallback except the
+// icon width/height fixed earlier the same session. This package has no
+// Tailwind dependency of its own (deliberately — see WalletHeader.tsx's own
+// "a component library shouldn't require every consumer to run a Tailwind
+// pipeline" doc comment) — confirmed spCoinExtension has no
+// tailwind.config/postcss.config/CSS import anywhere, so every one of these
+// classes has always been inert there, not just the icon size. Every
+// caller-customizable className prop (iconSizeClassName/pillHeightClassName/
+// pillFontClassName/nameLineClassName/addressSizeClassName) keeps its
+// Tailwind-class-string shape (every real app call site already passes one
+// of a small, known vocabulary — bracket arbitrary values, font-weight/
+// leading/color utility names) rather than changing the prop type and
+// forcing every real caller to update — these small parsers below extract
+// the same real values back out for a genuine inline-style fallback,
+// falling back to this component's own current default's real equivalent
+// when a class string doesn't match the known vocabulary (never silently
+// undefined).
+function parsePxFromSizeClassName(className: string): { width?: number; height?: number } {
+  const widthMatch = className.match(/w-\[(\d+(?:\.\d+)?)px\]/);
+  const heightMatch = className.match(/h-\[(\d+(?:\.\d+)?)px\]/);
+  return {
+    width: widthMatch ? Number(widthMatch[1]) : undefined,
+    height: heightMatch ? Number(heightMatch[1]) : undefined,
+  };
+}
+
+function parseHeightPx(className: string, fallback: number): number {
+  const match = className.match(/h-\[(\d+)px\]/);
+  return match ? Number(match[1]) : fallback;
+}
+
+const TEXT_SIZE_PX: Record<string, number> = { 'text-xs': 12, 'text-sm': 14, 'text-base': 16, 'text-lg': 18, 'text-xl': 20 };
+function parseFontSizePx(className: string, fallback: number): number {
+  const bracketMatch = className.match(/text-\[(\d+)px\]/);
+  if (bracketMatch) return Number(bracketMatch[1]);
+  for (const [cls, px] of Object.entries(TEXT_SIZE_PX)) {
+    if (className.includes(cls)) return px;
+  }
+  return fallback;
+}
+
+const FONT_WEIGHT: Record<string, number> = { 'font-normal': 400, 'font-medium': 500, 'font-semibold': 600, 'font-bold': 700 };
+function parseFontWeight(className: string, fallback: number): number {
+  for (const [cls, weight] of Object.entries(FONT_WEIGHT)) {
+    if (className.includes(cls)) return weight;
+  }
+  return fallback;
+}
+
+function parseLineHeight(className: string, fallback: number): number {
+  if (className.includes('leading-tight')) return 1.25;
+  if (className.includes('leading-normal')) return 1.5;
+  if (className.includes('leading-none')) return 1;
+  return fallback;
+}
+
+function parseTextColor(className: string, fallback: string): string {
+  if (className.includes('text-white')) return '#ffffff';
+  if (className.includes('text-slate-400')) return '#94a3b8';
+  return fallback;
+}
+
 /**
  * Bitwise flags controlling which sub-elements AssetSelectDropDown renders.
  * Shared by AccountSelectDropDown and TokenSelectDropDown.
@@ -176,14 +241,38 @@ export interface AssetSelectDropDownProps {
    */
   onExpandedChange?: (expanded: boolean) => void;
   /**
-   * Overrides the icon slot's default `h-10 w-10` sizing (the rest of that
-   * box's classes — shrink-0/overflow-hidden/rounded-lg/etc. — are
-   * unaffected, only the size). Omit to keep every existing consumer's
-   * look unchanged; a caller wanting a bigger/smaller icon than the shared
-   * 40px default passes its own size classes here instead of this
-   * component growing a special case per caller.
+   * Overrides the icon slot's default `h-[22px] w-[22px]` sizing (the rest
+   * of that box's classes — shrink-0/overflow-hidden/rounded-lg/etc. — are
+   * unaffected, only the size). Omit to keep the shared default; a caller
+   * wanting a different icon size passes its own size classes here instead
+   * of this component growing a special case per caller.
+   *
+   * 2026-09-13, on request — this default was `h-10 w-10` (40px) until
+   * every caller of this shared component was measured against TradeAmountRow.tsx's
+   * own real token pill (the Swap tab's TokenSelectDropDown — 22px icon,
+   * 16px pill, 11px font, 12px chevron/copy, see that file's token-pill
+   * block) and found oversized relative to it (first noticed on Merit
+   * Wallet's WALLET_NETWORK_HEADER/WALLET_ACCOUNT_HEADER dropdowns, which
+   * read oversized next to the Swap tab's own pills despite supposedly
+   * using "the same components"). Rather than keep patching per-caller
+   * overrides, the shared default itself was corrected here so every
+   * caller of AssetSelectDropDown is consistent by default without needing
+   * to opt in — this is a real, deliberate app-wide sizing change, not a
+   * scoped one.
    */
   iconSizeClassName?: string;
+  /**
+   * Overrides the ADDR_COMP pill's height (default `h-[16px]`, see
+   * iconSizeClassName's own 2026-09-13 doc comment for why). No effect
+   * when ADDR_COMP isn't set.
+   */
+  pillHeightClassName?: string;
+  /** Overrides the ADDR_COMP pill's font-size class (default `text-[11px]`, see iconSizeClassName's own 2026-09-13 doc comment). No effect when ADDR_COMP isn't set. */
+  pillFontClassName?: string;
+  /** Overrides the chevron icon's pixel size (default 12, see iconSizeClassName's own 2026-09-13 doc comment). */
+  chevronSize?: number;
+  /** Overrides the copy/check icon's pixel size (default 12, see iconSizeClassName's own 2026-09-13 doc comment). */
+  copyIconSize?: number;
 }
 
 export default function AssetSelectDropDown({
@@ -199,7 +288,21 @@ export default function AssetSelectDropDown({
   showSymbol: showSymbolProp = false,
   showName: showNameProp = false,
   nameLineSuffix,
-  nameLineClassName = 'text-sm font-semibold leading-tight text-white',
+  // 2026-09-15, on request ("Symbol | Name scaling should be the exact same
+  // size for all other DropDowns and throughout the program") — was
+  // text-sm (14px), a leftover default nobody had actually reasoned about;
+  // every caller that explicitly sizes this (AccountRow.tsx/
+  // AccountListItem.tsx/TokenListItem.tsx/NetworkSelectDropDown.tsx) had
+  // already independently converged on text-[11px] to match this same
+  // pill's own ADDR_COMP address line (pillFontClassName), so a caller that
+  // omitted nameLineClassName silently got Symbol|Name text ~27% larger
+  // than its own address line right below it — most visible on
+  // PanelSubTitle.tsx's header chip, which explicitly matches every OTHER
+  // sizing prop here (icon/pill/chevron) to this same 11px scale but had
+  // simply never been given this one. Changed the default itself, not just
+  // PanelSubTitle's call site, so every caller that relies on the default
+  // (rather than setting its own) gets this one consistent size too.
+  nameLineClassName = 'text-[11px] font-semibold leading-tight text-white',
   onRowClick,
   onAddressClick,
   onIconClick,
@@ -213,7 +316,11 @@ export default function AssetSelectDropDown({
   restrictRowClickToChevron = false,
   collapseKey,
   onExpandedChange,
-  iconSizeClassName = 'h-10 w-10',
+  iconSizeClassName = 'h-[22px] w-[22px]',
+  pillHeightClassName = 'h-[16px]',
+  pillFontClassName = 'text-[11px]',
+  chevronSize = 12,
+  copyIconSize = 12,
 }: AssetSelectDropDownProps) {
   const [copied, setCopied] = useState(false);
   // Clicking the address toggles between compact and full display — separate
@@ -230,6 +337,16 @@ export default function AssetSelectDropDown({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressExpanded]);
 
+  const iconPxSize = parsePxFromSizeClassName(iconSizeClassName);
+  const pillHeightPx = parseHeightPx(pillHeightClassName, 16);
+  const pillFontPx = parseFontSizePx(pillFontClassName, 11);
+  const addressFontPx = parseFontSizePx(addressSizeClassName, 14);
+  const nameLineStyle: React.CSSProperties = {
+    fontSize: parseFontSizePx(nameLineClassName, 11),
+    fontWeight: parseFontWeight(nameLineClassName, 600),
+    lineHeight: parseLineHeight(nameLineClassName, 1.25),
+    color: parseTextColor(nameLineClassName, '#ffffff'),
+  };
   const showIcon = !!(showDisplay & ASSET_SELECT_DISPLAY.ICON);
   const showAddress = !!(showDisplay & ASSET_SELECT_DISPLAY.ADDRESS);
   const showSymbol = !!(showDisplay & ASSET_SELECT_DISPLAY.SYMBOL) || showSymbolProp;
@@ -240,6 +357,36 @@ export default function AssetSelectDropDown({
   const showAddrComp = !!(showDisplay & ASSET_SELECT_DISPLAY.ADDR_COMP);
   const showAddrCompBlur = !!(showDisplay & ASSET_SELECT_DISPLAY.ADDR_COMP_BLUR);
   const showDivider = showSymbol && showName;
+
+  // Real inline-style equivalent of addrRowClassName below — same three
+  // variants (ADDR_COMP+blur / ADDR_COMP solid / bare), computed as real
+  // values instead of Tailwind arbitrary/utility classes.
+  const addrRowStyle: React.CSSProperties = showAddrComp
+    ? {
+        display: 'flex',
+        alignSelf: 'flex-start',
+        height: pillHeightPx,
+        alignItems: 'center',
+        gap: 4,
+        borderRadius: 9999,
+        paddingLeft: 8,
+        paddingRight: 8,
+        fontWeight: 700,
+        fontSize: pillFontPx,
+        color: '#ffffff',
+        minWidth: 0,
+        ...(showAddrCompBlur
+          ? { backdropFilter: 'blur(12px)', background: 'rgba(37,99,235,0.3)', boxShadow: 'inset 0 0 0 1px rgba(147,197,253,0.3)' }
+          : { background: '#243056' }),
+      }
+    : {
+        display: 'flex',
+        alignSelf: 'flex-start',
+        alignItems: 'center',
+        gap: 4,
+        fontSize: addressFontPx,
+        minWidth: 0,
+      };
 
   const renderAddress = showAddress && addrPrePostSize !== 0;
   // Toggling only makes sense when there's actually a compact form to expand
@@ -271,18 +418,34 @@ export default function AssetSelectDropDown({
     [onAddressClick, canToggleAddress],
   );
 
+  // min-w-0 on every variant: the font-size step-down noted below helped but
+  // didn't actually fix the overflow — a flex row's default min-width:auto
+  // still refuses to shrink narrower than its un-truncated text content
+  // regardless of font size. This is the other end of the min-w-0 chain
+  // started on the outer row divs above; the address span itself (below)
+  // is what actually clips with an ellipsis once this chain lets it shrink.
+  // self-start on every variant: this div sits inside a `flex flex-col`
+  // parent (with the symbol/name line as its sibling above), and a flex
+  // column's children default to align-items:stretch — cross-axis
+  // (horizontal) stretch, not content-hugging. That was pulling the pill's
+  // own rounded/colored background out to the full width of the symbol/
+  // name line above it (2026-09-15, reported live: the address pill read
+  // as wide as "ETH | Base" instead of just wrapping "0xee...eeee" + the
+  // copy icon). self-start opts this one row out of that stretch so its
+  // background genuinely hugs only its own content, matching what a pill
+  // badge is supposed to look like.
   const addrRowClassName = showAddrComp
     ? showAddrCompBlur
       // text-[14px], not the original text-[17px] — the expanded (untruncated,
       // addrPrePostSize undefined) 42-char address form was overflowing this
       // pill's container off the edge of the panel; a modest size step down
       // is enough to fit it without needing a different truncation strategy.
-      ? 'flex h-[25px] items-center gap-1 rounded-full backdrop-blur-md bg-blue-600/30 ring-1 ring-inset ring-blue-300/30 px-2 font-bold text-[14px] text-white'
-      : 'flex h-[25px] items-center gap-1 rounded-full bg-[#243056] px-2 font-bold text-[14px] text-white'
+      ? `flex self-start ${pillHeightClassName} items-center gap-1 rounded-full backdrop-blur-md bg-blue-600/30 ring-1 ring-inset ring-blue-300/30 px-2 font-bold ${pillFontClassName} text-white min-w-0`
+      : `flex self-start ${pillHeightClassName} items-center gap-1 rounded-full bg-[#243056] px-2 font-bold ${pillFontClassName} text-white min-w-0`
     // Sized explicitly (default text-sm, matching the symbol/name line above
     // it) so it reads at a consistent scale regardless of whatever ambient
     // font-size the caller's own container happens to set.
-    : `flex items-center gap-1 ${addressSizeClassName}`;
+    : `flex self-start items-center gap-1 ${addressSizeClassName} min-w-0`;
 
   const handleCopy = useCallback(
     (e: React.MouseEvent) => {
@@ -298,15 +461,39 @@ export default function AssetSelectDropDown({
   );
 
   const content = (
+    // min-w-0: required for the truncation chain below to actually work —
+    // a flex item's default min-width:auto refuses to shrink narrower than
+    // its content, which is exactly how an expanded (untruncated) address
+    // was spilling past the container edge instead of being clipped (2026-
+    // 09-15, reported live: ETH's expanded address overflowed the "Select a
+    // Token" panel while the still-compact SPCOIN_V99/V0 rows next to it
+    // didn't). Every ancestor down to the address span itself needs this —
+    // see that span's own comment below for the other end of the chain.
     <div
       id={rootId}
-      className={`flex items-center gap-1 ${restrictRowClickToChevron ? '' : 'cursor-pointer'}`}
+      className={`flex items-center gap-1 min-w-0 ${restrictRowClickToChevron ? '' : 'cursor-pointer'}`}
+      style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, cursor: restrictRowClickToChevron ? 'default' : 'pointer' }}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={restrictRowClickToChevron ? undefined : onRowClick}
     >
       {hasEntity && showIcon && icon && (
         <div
           className={`flex ${iconSizeClassName} shrink-0 items-center justify-center overflow-hidden rounded-lg relative -top-[2px] ${onIconClick ? 'cursor-pointer' : ''}`}
+          style={{
+            display: 'flex',
+            flexShrink: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            borderRadius: 8,
+            position: 'relative',
+            top: -2,
+            cursor: onIconClick ? 'pointer' : undefined,
+            width: iconPxSize.width,
+            height: iconPxSize.height,
+            minWidth: iconPxSize.width,
+            minHeight: iconPxSize.height,
+          }}
           onClickCapture={
             onIconClick
               ? (e) => {
@@ -332,21 +519,70 @@ export default function AssetSelectDropDown({
         </div>
       )}
 
-      <div className="flex flex-col justify-center">
+      {/* items-start (align-items, not the child-side self-start alone) +
+          an explicit fit-content width: this column's own width was
+          defaulting to its widest child's content width (the name line, for
+          a long name) with every child then stretching to match it via the
+          default align-items:stretch — self-start on the address row alone
+          was meant to opt just that one row out, verified correct in
+          isolation, but still reported live as not enough. Setting the
+          parent's own align-items explicitly (not relying on each child
+          opting out one at a time) plus width:fit-content here removes any
+          ambiguity about which element is actually responsible for sizing,
+          on top of (not instead of) the self-start/width:fit-content
+          already on the address row itself below. */}
+      <div
+        className="flex flex-col justify-center items-start min-w-0"
+        style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', minWidth: 0, width: 'fit-content', maxWidth: '100%' }}
+      >
         {/* (symbol || name): hasEntity alone isn't enough to justify this row
             — AccountSelectDropDown's "unselected placeholder" entity (blank
             address, see its isUnselected) intentionally passes neither, so
-            there's nothing to show here and no empty "|" divider line. */}
+            there's nothing to show here and no empty "|" divider line.
+            onClick/onMouseDown here match the address span below exactly
+            (2026-09-15, on report: "TokenSelectDropDown used to work —
+            clicking it toggled the address like AccountSelectDropDown
+            still does — now it opens the token list instead"). Root cause:
+            TokenSelectDropDown's default showDisplay added SYMBOL on top
+            of ADDRESS (see that file's own doc comment — "Was ICON |
+            ADDRESS only... before"), so its pill grew this symbol/name
+            line that AccountSelectDropDown (ADDRESS only, no SYMBOL/NAME
+            by default) never rendered. That line had no click handler of
+            its own, so it fell through to the row's onRowClick (opens the
+            list) — a real behavioral split between two rows a caller
+            reasonably expects to act the same, not a deliberate design
+            choice. Wiring it to the same toggle keeps the whole
+            symbol+address identity area consistent; only the icon
+            (separately handled above) and the explicit chevron still open
+            the list. */}
         {hasEntity && (showSymbol || showName) && (symbol || name) && (
-          <div className={`flex items-center gap-1 ${nameLineClassName}`}>
+          <div
+            className={`flex items-center gap-1 ${nameLineClassName} ${onAddressClick || canToggleAddress ? 'cursor-pointer' : ''}`}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: onAddressClick || canToggleAddress ? 'pointer' : undefined, ...nameLineStyle }}
+            onClick={handleAddressClick}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {showSymbol && <span>{symbol}</span>}
-            {showDivider && <span className="text-slate-400">|</span>}
+            {showDivider && <span className="text-slate-400" style={{ color: '#94a3b8' }}>|</span>}
             {showName && <span>{name}</span>}
             {nameLineSuffix}
           </div>
         )}
 
-        <div className={addrRowClassName}>
+        {/* 2026-09-15, on repeated live report ("still not fixed") — the
+            `self-start` class fix above is correct in every isolated test
+            run against it (measured: near-identical pill width regardless
+            of a much longer sibling name line) and confirmed genuinely
+            compiled (`.self-start{align-self:flex-start}` present in the
+            real built CSS, not JIT-dropped). Whatever the real remaining
+            cause is in the live app for specific rows (not reproduced
+            in isolation, not resolved from a screenshot alone), this is a
+            direct, maximally forceful backstop rather than more guessing:
+            an inline `width: fit-content` wins over any class-based sizing
+            on this specific property regardless of mechanism — flex
+            stretch, an unrelated ancestor rule, anything. maxWidth: 100%
+            keeps it from ever overflowing a genuinely narrow container. */}
+        <div className={addrRowClassName} style={{ ...addrRowStyle, width: 'fit-content', maxWidth: '100%' }}>
           {hasEntity ? (
             renderAddress &&
             (address ? (
@@ -354,7 +590,23 @@ export default function AssetSelectDropDown({
                 title={addressTitle ?? address}
                 onClick={handleAddressClick}
                 onMouseDown={(e) => e.stopPropagation()}
-                className={onAddressClick || canToggleAddress ? 'cursor-pointer' : undefined}
+                // truncate = overflow-hidden + text-ellipsis + whitespace-nowrap
+                // — the actual clip point of the min-w-0 chain started on the
+                // ancestor divs above. Only bites once the row genuinely has
+                // no more room to give (e.g. a narrow list row with an
+                // expanded 42-char address) — a caller with space to spare
+                // still shows the full text, nothing changes for it. Hover
+                // still reveals the untruncated address either way (title
+                // above).
+                className={`block truncate min-w-0 ${onAddressClick || canToggleAddress ? 'cursor-pointer' : ''}`}
+                style={{
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  minWidth: 0,
+                  cursor: onAddressClick || canToggleAddress ? 'pointer' : undefined,
+                }}
               >
                 {displayedAddress}
               </span>
@@ -365,7 +617,7 @@ export default function AssetSelectDropDown({
               // path also suppresses the icon and symbol/name row, which a
               // caller deliberately showing placeholder icon/N/A content
               // doesn't want.
-              <span className="text-slate-400">{placeholderLabel}</span>
+              <span className="text-slate-400" style={{ color: '#94a3b8' }}>{placeholderLabel}</span>
             ))
           ) : (
             <>&nbsp;{placeholderLabel}: </>
@@ -376,18 +628,31 @@ export default function AssetSelectDropDown({
               onClick={handleCopy}
               onMouseDown={(e) => e.stopPropagation()}
               className="shrink-0 flex items-center justify-center rounded hover:bg-white/10 p-0.5"
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 4,
+                padding: 2,
+                border: 'none',
+                background: 'transparent',
+                cursor: 'pointer',
+                color: 'inherit',
+              }}
               aria-label={copyLabel}
               title={copyLabel}
             >
               {copied
-                ? <Check size={14} className="text-green-400" />
-                : <Copy size={14} />
+                ? <Check size={copyIconSize} className="text-green-400" style={{ color: '#4ade80' }} />
+                : <Copy size={copyIconSize} />
               }
             </button>
           )}
           {(showChevronUp || showChevronDn) && (
             <span
               className={`inline-flex ${restrictRowClickToChevron ? 'cursor-pointer' : ''}`}
+              style={{ display: 'inline-flex', cursor: restrictRowClickToChevron ? 'pointer' : undefined }}
               title={placeholderLabel}
               onClick={
                 restrictRowClickToChevron
@@ -399,8 +664,8 @@ export default function AssetSelectDropDown({
               }
               onMouseDown={restrictRowClickToChevron ? (e) => e.stopPropagation() : undefined}
             >
-              {showChevronUp && <ChevronUp size={16} aria-label={placeholderLabel} />}
-              {showChevronDn && <ChevronDown size={16} aria-label={placeholderLabel} />}
+              {showChevronUp && <ChevronUp size={chevronSize} aria-label={placeholderLabel} />}
+              {showChevronDn && <ChevronDown size={chevronSize} aria-label={placeholderLabel} />}
             </span>
           )}
         </div>

@@ -1,6 +1,6 @@
 {
   "name": "@sponsorcoin/spcoin-panels",
-  "version": "0.0.3",
+  "version": "0.0.8",
   "description": "Merit Wallet's independent panel-visibility engine (single write chokepoint, no ExchangeContext dependency) — shared between spcoin-nextjs-front-end and the Merit Wallet browser extension (spCoinExtension).",
   "type": "commonjs",
   "main": "./dist/index.js",

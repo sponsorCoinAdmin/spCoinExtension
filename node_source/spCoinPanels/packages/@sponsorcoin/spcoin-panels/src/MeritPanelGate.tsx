@@ -20,9 +20,14 @@
 import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from './usePanelVisible';
+import type { PanelId } from './panelState';
 
 interface Props {
-  panel: SP_COIN_DISPLAY;
+  // 2026-09-14 — widened from SP_COIN_DISPLAY to PanelId (see
+  // panelState.ts's own doc comment) so this gate also accepts the new
+  // Merit-only string-literal panel ids (MERIT_REWARDS_SUMMARY/
+  // MERIT_REWARDS_PENDING), not just real SP_COIN_DISPLAY members.
+  panel: PanelId;
   children: React.ReactNode;
   /** if true (default), children are only mounted when the panel is visible. */
   lazyLoad?: boolean;
@@ -56,9 +61,15 @@ export default function MeritPanelGate({
       ? ['hidden', className].filter(Boolean).join(' ')
       : className ?? '';
 
+  // A real SP_COIN_DISPLAY member (number) reverse-looks-up its name via
+  // the enum object; a Merit-only id is already its own plain string
+  // label, no lookup needed or possible (SP_COIN_DISPLAY has no entry for
+  // it).
+  const panelLabel = typeof panel === 'number' ? SP_COIN_DISPLAY[panel] : panel;
+
   return (
     <div
-      data-panel={SP_COIN_DISPLAY[panel]}
+      data-panel={panelLabel}
       data-visible={visible ? 'true' : 'false'}
       className={wrapperClass}
     >

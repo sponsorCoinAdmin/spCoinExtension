@@ -1,7 +1,7 @@
 import React from 'react';
-import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
+import type { PanelId } from './panelState';
 interface Props {
-    panel: SP_COIN_DISPLAY;
+    panel: PanelId;
     children: React.ReactNode;
     /** if true (default), children are only mounted when the panel is visible. */
     lazyLoad?: boolean;

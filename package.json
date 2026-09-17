@@ -9,6 +9,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@sponsorcoin/spcoin-feeds": "file:./node_source/spCoinFeeds/packages/@sponsorcoin/spcoin-feeds",
     "@sponsorcoin/spcoin-panels": "file:./node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels",
     "react": "^18",
     "react-dom": "^18"

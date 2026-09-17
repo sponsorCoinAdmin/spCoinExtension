@@ -24,8 +24,8 @@ const MeritTitleComponent_1 = __importDefault(require("./MeritTitleComponent"));
 const DEFAULT_ICON_SRC = '/assets/miscellaneous/spCoin.png';
 const iconButtonBaseStyle = {
     display: 'flex',
-    height: 44,
-    width: 44,
+    height: 30,
+    width: 30,
     alignItems: 'center',
     justifyContent: 'center',
     appearance: 'none',
@@ -42,27 +42,27 @@ function IconButton({ onClick, disabled, ariaLabel, children, }) {
             opacity: disabled ? 0.5 : hovered ? 0.7 : 1,
         }, children: children }));
 }
-function WalletHeader({ mode, title, leftSlot, iconSrc = DEFAULT_ICON_SRC, titleBadgeSrc, onTitleClick, onRefresh, refreshing, refreshAriaLabel, closeAriaLabel, onClose, }) {
+function WalletHeader({ mode, title, leftSlot, iconSrc = DEFAULT_ICON_SRC, titleBadgeSrc, onTitleClick, onRefresh, refreshing, refreshAriaLabel, closeAriaLabel, onClose, closeIconSrc, }) {
     const isSelection = mode === 'selection';
     return ((0, jsx_runtime_1.jsxs)("div", { style: {
             position: 'relative',
             background: '#77808e',
-            paddingLeft: 16,
-            paddingRight: 10,
-            paddingTop: 6,
+            paddingLeft: 10,
+            paddingRight: 7,
+            paddingTop: 4,
             paddingBottom: 1,
         }, children: [(0, jsx_runtime_1.jsx)("style", { children: '@keyframes spcoinWalletHeaderSpin { to { transform: rotate(360deg); } }' }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: leftSlot !== null && leftSlot !== void 0 ? leftSlot : ((0, jsx_runtime_1.jsx)("span", { style: {
                                 display: 'flex',
-                                height: 44,
-                                width: 44,
+                                height: 30,
+                                width: 30,
                                 flexShrink: 0,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 overflow: 'hidden',
                                 background: 'transparent',
-                            }, children: (0, jsx_runtime_1.jsx)("img", { src: iconSrc, alt: "SponsorCoin", width: 44, height: 44, style: { height: '100%', width: '100%', objectFit: 'contain' } }) })) }), (0, jsx_runtime_1.jsx)("h2", { style: {
+                            }, children: (0, jsx_runtime_1.jsx)("img", { src: iconSrc, alt: "SponsorCoin", width: 30, height: 30, style: { height: '100%', width: '100%', objectFit: 'contain' } }) })) }), (0, jsx_runtime_1.jsx)("h2", { style: {
                             pointerEvents: 'none',
-                            marginTop: -10,
+                            marginTop: 0,
                             marginBottom: 0,
                             minWidth: 0,
                             flex: 1,
@@ -70,14 +70,14 @@ function WalletHeader({ mode, title, leftSlot, iconSrc = DEFAULT_ICON_SRC, title
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
                             textAlign: 'center',
-                            fontSize: 24,
+                            fontSize: 15,
                             fontWeight: 700,
                             lineHeight: 1.25,
                             color: '#e2e8f0',
                         }, children: title !== null && title !== void 0 ? title : (isSelection ? ('Select Active Account') : ((0, jsx_runtime_1.jsx)(MeritTitleComponent_1.default, { badgeSrc: titleBadgeSrc, onTitleClick: onTitleClick }))) }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)(IconButton, { onClick: onRefresh, disabled: refreshing, ariaLabel: refreshAriaLabel !== null && refreshAriaLabel !== void 0 ? refreshAriaLabel : (isSelection ? 'Refresh accounts' : 'Refresh wallet'), children: (0, jsx_runtime_1.jsx)(lucide_react_1.RefreshCw, { style: {
-                                        height: 28,
-                                        width: 28,
+                                        height: 18,
+                                        width: 18,
                                         color: '#1f2937',
                                         animation: refreshing ? 'spcoinWalletHeaderSpin 1s linear infinite' : undefined,
-                                    }, strokeWidth: 1.5 }) }), (0, jsx_runtime_1.jsx)(IconButton, { onClick: onClose, ariaLabel: closeAriaLabel !== null && closeAriaLabel !== void 0 ? closeAriaLabel : (isSelection ? 'Close account selection' : 'Close Merit Wallet'), children: (0, jsx_runtime_1.jsx)(lucide_react_1.X, { style: { height: 38, width: 38, color: '#1f2937' }, strokeWidth: 1.5 }) })] })] })] }));
+                                    }, strokeWidth: 1.5 }) }), (0, jsx_runtime_1.jsx)(IconButton, { onClick: onClose, ariaLabel: closeAriaLabel !== null && closeAriaLabel !== void 0 ? closeAriaLabel : (isSelection ? 'Close account selection' : 'Close Merit Wallet'), children: closeIconSrc ? ((0, jsx_runtime_1.jsx)("img", { src: closeIconSrc, alt: "", style: { height: 22, width: 22, objectFit: 'contain' } })) : ((0, jsx_runtime_1.jsx)(lucide_react_1.X, { style: { height: 24, width: 24, color: '#1f2937' }, strokeWidth: 1.5 })) })] })] })] }));
 }

@@ -1,5 +1,6 @@
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-export type PanelId = SP_COIN_DISPLAY;
+export type MeritOnlyPanelId = 'MERIT_REWARDS_SUMMARY' | 'MERIT_REWARDS_PENDING';
+export type PanelId = SP_COIN_DISPLAY | MeritOnlyPanelId;
 export type Listener = () => void;
 declare class MeritPanelState {
     private state;

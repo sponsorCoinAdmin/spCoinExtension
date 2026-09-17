@@ -150,13 +150,37 @@ export interface AssetSelectDropDownProps {
      */
     onExpandedChange?: (expanded: boolean) => void;
     /**
-     * Overrides the icon slot's default `h-10 w-10` sizing (the rest of that
-     * box's classes — shrink-0/overflow-hidden/rounded-lg/etc. — are
-     * unaffected, only the size). Omit to keep every existing consumer's
-     * look unchanged; a caller wanting a bigger/smaller icon than the shared
-     * 40px default passes its own size classes here instead of this
-     * component growing a special case per caller.
+     * Overrides the icon slot's default `h-[22px] w-[22px]` sizing (the rest
+     * of that box's classes — shrink-0/overflow-hidden/rounded-lg/etc. — are
+     * unaffected, only the size). Omit to keep the shared default; a caller
+     * wanting a different icon size passes its own size classes here instead
+     * of this component growing a special case per caller.
+     *
+     * 2026-09-13, on request — this default was `h-10 w-10` (40px) until
+     * every caller of this shared component was measured against TradeAmountRow.tsx's
+     * own real token pill (the Swap tab's TokenSelectDropDown — 22px icon,
+     * 16px pill, 11px font, 12px chevron/copy, see that file's token-pill
+     * block) and found oversized relative to it (first noticed on Merit
+     * Wallet's WALLET_NETWORK_HEADER/WALLET_ACCOUNT_HEADER dropdowns, which
+     * read oversized next to the Swap tab's own pills despite supposedly
+     * using "the same components"). Rather than keep patching per-caller
+     * overrides, the shared default itself was corrected here so every
+     * caller of AssetSelectDropDown is consistent by default without needing
+     * to opt in — this is a real, deliberate app-wide sizing change, not a
+     * scoped one.
      */
     iconSizeClassName?: string;
+    /**
+     * Overrides the ADDR_COMP pill's height (default `h-[16px]`, see
+     * iconSizeClassName's own 2026-09-13 doc comment for why). No effect
+     * when ADDR_COMP isn't set.
+     */
+    pillHeightClassName?: string;
+    /** Overrides the ADDR_COMP pill's font-size class (default `text-[11px]`, see iconSizeClassName's own 2026-09-13 doc comment). No effect when ADDR_COMP isn't set. */
+    pillFontClassName?: string;
+    /** Overrides the chevron icon's pixel size (default 12, see iconSizeClassName's own 2026-09-13 doc comment). */
+    chevronSize?: number;
+    /** Overrides the copy/check icon's pixel size (default 12, see iconSizeClassName's own 2026-09-13 doc comment). */
+    copyIconSize?: number;
 }
-export default function AssetSelectDropDown({ icon, symbol, name, address, addressTitle, hasEntity, placeholderLabel, copyLabel, showDisplay, showSymbol: showSymbolProp, showName: showNameProp, nameLineSuffix, nameLineClassName, onRowClick, onAddressClick, onIconClick, onIconContextMenu, addrPrePostSize, addressSizeClassName, panelGateId, panelGate: PanelGate, rootId, defaultExpanded, restrictRowClickToChevron, collapseKey, onExpandedChange, iconSizeClassName, }: AssetSelectDropDownProps): import("react/jsx-runtime").JSX.Element;
+export default function AssetSelectDropDown({ icon, symbol, name, address, addressTitle, hasEntity, placeholderLabel, copyLabel, showDisplay, showSymbol: showSymbolProp, showName: showNameProp, nameLineSuffix, nameLineClassName, onRowClick, onAddressClick, onIconClick, onIconContextMenu, addrPrePostSize, addressSizeClassName, panelGateId, panelGate: PanelGate, rootId, defaultExpanded, restrictRowClickToChevron, collapseKey, onExpandedChange, iconSizeClassName, pillHeightClassName, pillFontClassName, chevronSize, copyIconSize, }: AssetSelectDropDownProps): import("react/jsx-runtime").JSX.Element;

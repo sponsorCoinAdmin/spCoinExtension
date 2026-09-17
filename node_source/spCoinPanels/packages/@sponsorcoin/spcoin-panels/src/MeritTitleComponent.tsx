@@ -44,7 +44,7 @@ const wrapperStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: 8,
+  gap: 5,
 };
 
 const buttonStyle: React.CSSProperties = {
@@ -65,12 +65,17 @@ export default function MeritTitleComponent({
 }: MeritTitleComponentProps) {
   const content = (
     <>
+      {/* 2026-09-15, on request ("in WALLET_NETWORK_HEADER, make the Merit
+          png icon 75% LARGER") — 20px -> 35px (20 * 1.75), matching the
+          app's own components/views/Headers/MeritTitleComponent.tsx (this
+          file's own header comment: "a deliberate visual match, not a
+          shared source file"). */}
       <img
         src={badgeSrc}
         alt=""
-        width={50}
-        height={50}
-        style={{ height: 50, width: 50, flexShrink: 0, objectFit: 'contain' }}
+        width={35}
+        height={35}
+        style={{ height: 35, width: 35, flexShrink: 0, objectFit: 'contain' }}
       />
       Merit Wallet
     </>

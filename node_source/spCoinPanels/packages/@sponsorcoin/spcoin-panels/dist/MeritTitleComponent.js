@@ -31,7 +31,7 @@ const wrapperStyle = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 5,
 };
 const buttonStyle = {
     ...wrapperStyle,
@@ -45,7 +45,7 @@ const buttonStyle = {
     font: 'inherit',
 };
 function MeritTitleComponent({ badgeSrc = DEFAULT_BADGE_SRC, onTitleClick, }) {
-    const content = ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("img", { src: badgeSrc, alt: "", width: 50, height: 50, style: { height: 50, width: 50, flexShrink: 0, objectFit: 'contain' } }), "Merit Wallet"] }));
+    const content = ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("img", { src: badgeSrc, alt: "", width: 35, height: 35, style: { height: 35, width: 35, flexShrink: 0, objectFit: 'contain' } }), "Merit Wallet"] }));
     if (!onTitleClick) {
         // Inert path: matches WalletHeader's own pointer-events-none title
         // slot by default — no dead click affordance shown.

@@ -35,5 +35,10 @@ function MeritPanelGate({ panel, children, lazyLoad, mountAlways, className, }) 
     const wrapperClass = !resolvedLazy && !visible
         ? ['hidden', className].filter(Boolean).join(' ')
         : className !== null && className !== void 0 ? className : '';
-    return ((0, jsx_runtime_1.jsx)("div", { "data-panel": panels_1.SP_COIN_DISPLAY[panel], "data-visible": visible ? 'true' : 'false', className: wrapperClass, children: children }));
+    // A real SP_COIN_DISPLAY member (number) reverse-looks-up its name via
+    // the enum object; a Merit-only id is already its own plain string
+    // label, no lookup needed or possible (SP_COIN_DISPLAY has no entry for
+    // it).
+    const panelLabel = typeof panel === 'number' ? panels_1.SP_COIN_DISPLAY[panel] : panel;
+    return ((0, jsx_runtime_1.jsx)("div", { "data-panel": panelLabel, "data-visible": visible ? 'true' : 'false', className: wrapperClass, children: children }));
 }

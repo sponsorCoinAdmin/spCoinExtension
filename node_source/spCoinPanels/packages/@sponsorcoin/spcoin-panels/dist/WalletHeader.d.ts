@@ -22,6 +22,16 @@ export interface WalletHeaderProps {
     refreshAriaLabel?: string;
     closeAriaLabel?: string;
     onClose: () => void;
+    /** 2026-09-14, on request ("the close X is fine in the web, but it has
+     *  no purpose in the extension") — a standalone dismiss has nothing to
+     *  reveal underneath in a Chrome side panel (unlike the web app's own
+     *  floating overlay, where closing uncovers the page behind it), so a
+     *  consumer whose "close" really means "open the real web app instead"
+     *  passes an image here to swap for the default X icon. `onClose` still
+     *  fires either way — only the icon changes; what "close" actually does
+     *  is entirely the caller's own choice (see sidepanel.ts's own use,
+     *  where it's rewired to the exact same handler as the Open button). */
+    closeIconSrc?: string;
 }
-export default function WalletHeader({ mode, title, leftSlot, iconSrc, titleBadgeSrc, onTitleClick, onRefresh, refreshing, refreshAriaLabel, closeAriaLabel, onClose, }: WalletHeaderProps): import("react/jsx-runtime").JSX.Element;
+export default function WalletHeader({ mode, title, leftSlot, iconSrc, titleBadgeSrc, onTitleClick, onRefresh, refreshing, refreshAriaLabel, closeAriaLabel, onClose, closeIconSrc, }: WalletHeaderProps): import("react/jsx-runtime").JSX.Element;
 export {};

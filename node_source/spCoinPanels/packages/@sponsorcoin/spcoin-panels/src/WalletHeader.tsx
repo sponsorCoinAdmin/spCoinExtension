@@ -41,14 +41,24 @@ export interface WalletHeaderProps {
   refreshAriaLabel?: string;
   closeAriaLabel?: string;
   onClose: () => void;
+  /** 2026-09-14, on request ("the close X is fine in the web, but it has
+   *  no purpose in the extension") — a standalone dismiss has nothing to
+   *  reveal underneath in a Chrome side panel (unlike the web app's own
+   *  floating overlay, where closing uncovers the page behind it), so a
+   *  consumer whose "close" really means "open the real web app instead"
+   *  passes an image here to swap for the default X icon. `onClose` still
+   *  fires either way — only the icon changes; what "close" actually does
+   *  is entirely the caller's own choice (see sidepanel.ts's own use,
+   *  where it's rewired to the exact same handler as the Open button). */
+  closeIconSrc?: string;
 }
 
 const DEFAULT_ICON_SRC = '/assets/miscellaneous/spCoin.png';
 
 const iconButtonBaseStyle: React.CSSProperties = {
   display: 'flex',
-  height: 44,
-  width: 44,
+  height: 30,
+  width: 30,
   alignItems: 'center',
   justifyContent: 'center',
   appearance: 'none',
@@ -102,6 +112,7 @@ export default function WalletHeader({
   refreshAriaLabel,
   closeAriaLabel,
   onClose,
+  closeIconSrc,
 }: WalletHeaderProps) {
   const isSelection = mode === 'selection';
 
@@ -110,9 +121,9 @@ export default function WalletHeader({
       style={{
         position: 'relative',
         background: '#77808e',
-        paddingLeft: 16,
-        paddingRight: 10,
-        paddingTop: 6,
+        paddingLeft: 10,
+        paddingRight: 7,
+        paddingTop: 4,
         paddingBottom: 1,
       }}
     >
@@ -126,8 +137,8 @@ export default function WalletHeader({
             <span
               style={{
                 display: 'flex',
-                height: 44,
-                width: 44,
+                height: 30,
+                width: 30,
                 flexShrink: 0,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -138,8 +149,8 @@ export default function WalletHeader({
               <img
                 src={iconSrc}
                 alt="SponsorCoin"
-                width={44}
-                height={44}
+                width={30}
+                height={30}
                 style={{ height: '100%', width: '100%', objectFit: 'contain' }}
               />
             </span>
@@ -148,7 +159,7 @@ export default function WalletHeader({
         <h2
           style={{
             pointerEvents: 'none',
-            marginTop: -10,
+            marginTop: 0,
             marginBottom: 0,
             minWidth: 0,
             flex: 1,
@@ -156,7 +167,7 @@ export default function WalletHeader({
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             textAlign: 'center',
-            fontSize: 24,
+            fontSize: 15,
             fontWeight: 700,
             lineHeight: 1.25,
             color: '#e2e8f0',
@@ -177,8 +188,8 @@ export default function WalletHeader({
           >
             <RefreshCw
               style={{
-                height: 28,
-                width: 28,
+                height: 18,
+                width: 18,
                 color: '#1f2937',
                 animation: refreshing ? 'spcoinWalletHeaderSpin 1s linear infinite' : undefined,
               }}
@@ -189,7 +200,15 @@ export default function WalletHeader({
             onClick={onClose}
             ariaLabel={closeAriaLabel ?? (isSelection ? 'Close account selection' : 'Close Merit Wallet')}
           >
-            <X style={{ height: 38, width: 38, color: '#1f2937' }} strokeWidth={1.5} />
+            {closeIconSrc ? (
+              <img
+                src={closeIconSrc}
+                alt=""
+                style={{ height: 22, width: 22, objectFit: 'contain' }}
+              />
+            ) : (
+              <X style={{ height: 24, width: 24, color: '#1f2937' }} strokeWidth={1.5} />
+            )}
           </IconButton>
         </div>
       </div>

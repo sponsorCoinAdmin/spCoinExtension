@@ -24,7 +24,21 @@
 
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 
-export type PanelId = SP_COIN_DISPLAY;
+// 2026-09-14, on request (Rewards tab's real table — see
+// docs/design/extensionPlan.md's "Fourth slice" entry for the full
+// reasoning) — two new, genuinely Merit-only panel ids for
+// ManageSponsorshipsPanel.tsx/RewardsPendingByAccountTypePanel.tsx.
+// Deliberately plain string literals, NOT new SP_COIN_DISPLAY members:
+// unlike this package, `@sponsorcoin/spcoin-common` (where that enum
+// lives) isn't dual-vendored into spCoinExtension's own node_source — the
+// extension installs it as a real npm package (dist-only, no local src),
+// so adding members there would mean an actual publish + dependency bump
+// for something with zero reason to ever be visible to the real app. This
+// widens PanelId to accept either kind of id in the exact same Map,
+// without touching what SP_COIN_DISPLAY itself means anywhere.
+export type MeritOnlyPanelId = 'MERIT_REWARDS_SUMMARY' | 'MERIT_REWARDS_PENDING';
+
+export type PanelId = SP_COIN_DISPLAY | MeritOnlyPanelId;
 export type Listener = () => void;
 
 class MeritPanelState {

@@ -1,19 +1,16 @@
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/PasswordPanel.tsx
-// Portable placeholder for PASSWORD_PANEL (2026-09-12) — the real app
-// version (components/views/RadioOverlayPanels/PasswordPanel.tsx) reads a
-// live `useSpCoinWallet()` (real setWalletPassword/unlockWallet calls
-// against the actual Merit keystore) — none of which exists in a
-// standalone consumer (the extension, today). Same shape (logo, title,
-// password field(s), submit button), entirely inert unless the caller
-// wires `onSubmit` — same "presentation only, no sync yet" scope every
-// other extension-bound component here follows. Inline styles (no
-// Tailwind), same reasoning as every sibling component.
+// 2026-09-23 — real migration (parity pass). The portable presentation
+// (logo, title, password field(s), submit button, checking/setup/unlock modes)
+// moved here from the real app's version
+// (components/views/RadioOverlayPanels/PasswordPanel.tsx), which is now a thin
+// wrapper resolving useSpCoinWallet (setWalletPassword/unlockWallet/
+// walletPasswordCheckError) and passing them as props. A new `clearOnSubmit`
+// opt-in prop was added so the web app's "clear typed password on submit"
+// behavior survives the split. Inline styles (no Tailwind), same reasoning
+// as every sibling component.
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = PasswordPanel;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = require("react");
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
 const inputStyle = {
     width: '100%',
     boxSizing: 'border-box',
@@ -25,9 +22,9 @@ const inputStyle = {
     color: '#ffffff',
     outline: 'none',
 };
-function PasswordPanel({ mode = 'unlock', icon, errorText, onSubmit, submitting = false, }) {
-    const [password, setPassword] = (0, react_1.useState)('');
-    const [confirmPassword, setConfirmPassword] = (0, react_1.useState)('');
+export default function PasswordPanel({ mode = 'unlock', icon, errorText, onSubmit, submitting = false, clearOnSubmit = false, }) {
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const isSetupMode = mode === 'setup';
     const isCheckingStatus = mode === 'checking';
     const title = isCheckingStatus
@@ -35,10 +32,14 @@ function PasswordPanel({ mode = 'unlock', icon, errorText, onSubmit, submitting 
         : isSetupMode
             ? 'Create Your Merit Wallet Password'
             : 'Unlock Merit Wallet';
-    return ((0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', gap: 12, padding: 12 }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, textAlign: 'center' }, children: [icon && (0, jsx_runtime_1.jsx)("div", { style: { width: '100%', maxWidth: 160 }, children: icon }), (0, jsx_runtime_1.jsx)("h2", { style: { margin: 0, fontSize: 15, fontWeight: 600, color: '#ffffff' }, children: title }), isSetupMode && ((0, jsx_runtime_1.jsx)("p", { style: { margin: 0, fontSize: 11, color: '#94a3b8' }, children: "This one password protects every account you Import or Create in Merit Wallet." }))] }), errorText && ((0, jsx_runtime_1.jsx)("div", { style: { borderRadius: 8, background: 'rgba(127,29,29,0.6)', padding: '6px 10px', fontSize: 10, color: '#fca5a5' }, children: errorText })), !isCheckingStatus && ((0, jsx_runtime_1.jsxs)("form", { onSubmit: (e) => {
+    return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 12, padding: 12 }, children: [_jsxs("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, textAlign: 'center' }, children: [icon && _jsx("div", { style: { width: '100%', maxWidth: 160 }, children: icon }), _jsx("h2", { style: { margin: 0, fontSize: 15, fontWeight: 600, color: '#ffffff' }, children: title }), isSetupMode && (_jsx("p", { style: { margin: 0, fontSize: 11, color: '#94a3b8' }, children: "This one password protects every account you Import or Create in Merit Wallet." }))] }), errorText && (_jsx("div", { style: { borderRadius: 8, background: 'rgba(127,29,29,0.6)', padding: '6px 10px', fontSize: 10, color: '#fca5a5' }, children: errorText })), !isCheckingStatus && (_jsxs("form", { onSubmit: (e) => {
                     e.preventDefault();
-                    onSubmit === null || onSubmit === void 0 ? void 0 : onSubmit(password);
-                }, style: { display: 'flex', flexDirection: 'column', gap: 8 }, children: [(0, jsx_runtime_1.jsx)("input", { type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: "Password", autoComplete: isSetupMode ? 'new-password' : 'current-password', style: inputStyle }), isSetupMode && ((0, jsx_runtime_1.jsx)("input", { type: "password", value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "Confirm password", autoComplete: "new-password", style: inputStyle })), (0, jsx_runtime_1.jsx)("button", { type: "submit", disabled: submitting || !password || (isSetupMode && !confirmPassword), style: {
+                    onSubmit?.(password);
+                    if (clearOnSubmit) {
+                        setPassword('');
+                        setConfirmPassword('');
+                    }
+                }, style: { display: 'flex', flexDirection: 'column', gap: 8 }, children: [_jsx("input", { type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: "Password", autoComplete: isSetupMode ? 'new-password' : 'current-password', style: inputStyle }), isSetupMode && (_jsx("input", { type: "password", value: confirmPassword, onChange: (e) => setConfirmPassword(e.target.value), placeholder: "Confirm password", autoComplete: "new-password", style: inputStyle })), _jsx("button", { type: "submit", disabled: submitting || !password || (isSetupMode && !confirmPassword), style: {
                             width: '100%',
                             borderRadius: 8,
                             border: 'none',

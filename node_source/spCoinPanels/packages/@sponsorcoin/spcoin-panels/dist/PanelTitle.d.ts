@@ -13,4 +13,4 @@ export interface PanelTitleProps {
      *  (e.g. MenuTabHeaderBar) is open. No effect on behavior. */
     menuOpen?: boolean;
 }
-export default function PanelTitle({ title, onBackClick, onMenuClick, menuOpen, }: PanelTitleProps): import("react/jsx-runtime").JSX.Element;
+export default function PanelTitle({ title, onBackClick, onMenuClick, menuOpen, }: PanelTitleProps): React.JSX.Element;

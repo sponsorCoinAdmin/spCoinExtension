@@ -79,12 +79,9 @@
 //      ~0.66) so nothing drifts out of alignment relative to the input box
 //      around it.
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = TradeAmountRow;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = require("react");
-const lucide_react_1 = require("lucide-react");
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
+import { CheckCheck, ChevronDown, Copy, Settings } from 'lucide-react';
 // 2026-09-13, on request — matches AssetSelectDropDown.tsx's own
 // `truncateMiddle` exactly (byte-identical logic, same default sizing:
 // TokenSelectDropDown.tsx's own `addrPrePostSize = 4` default —
@@ -107,9 +104,9 @@ function truncateMiddle(addr, size = 4) {
 // p-0.5`): `rounded` (4px) + a `hover:bg-white/10` highlight, needing local
 // hover state since inline styles can't express `:hover`.
 function CopyAddressButton({ address }) {
-    const [copied, setCopied] = (0, react_1.useState)(false);
-    const [hovered, setHovered] = (0, react_1.useState)(false);
-    return ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: (e) => {
+    const [copied, setCopied] = useState(false);
+    const [hovered, setHovered] = useState(false);
+    return (_jsx("button", { type: "button", onClick: (e) => {
             e.preventDefault();
             e.stopPropagation();
             navigator.clipboard.writeText(address).then(() => {
@@ -128,7 +125,7 @@ function CopyAddressButton({ address }) {
             background: hovered ? 'rgba(255,255,255,0.1)' : 'transparent',
             color: copied ? '#4ade80' : 'inherit',
             cursor: 'pointer',
-        }, children: copied ? (0, jsx_runtime_1.jsx)(lucide_react_1.CheckCheck, { size: 12 }) : (0, jsx_runtime_1.jsx)(lucide_react_1.Copy, { size: 12 }) }));
+        }, children: copied ? _jsx(CheckCheck, { size: 12 }) : _jsx(Copy, { size: 12 }) }));
 }
 // Small local hover-state wrapper — same pattern already used by this
 // file's own SwapArrowButton and by PanelTitle.tsx's IconButton. Needed
@@ -136,20 +133,20 @@ function CopyAddressButton({ address }) {
 // `hover:underline hover:text-slate-300`, which an inline `style` object
 // can't express (no `:hover` pseudo-class).
 function ClickableBalance({ text, onClick }) {
-    const [hovered, setHovered] = (0, react_1.useState)(false);
-    return ((0, jsx_runtime_1.jsx)("span", { onClick: onClick, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), title: "Click to sell your full balance", style: {
+    const [hovered, setHovered] = useState(false);
+    return (_jsx("span", { onClick: onClick, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), title: "Click to sell your full balance", style: {
             cursor: 'pointer',
             textDecoration: hovered ? 'underline' : 'none',
             color: hovered ? '#cbd5e1' : undefined,
         }, children: text }));
 }
-function TradeAmountRow({ label, labelColor = '#94a3b8', onCogClick, tokenIcon, tokenSymbol, tokenAddress, onTokenPillClick, onIconClick, amount = '0', onAmountChange, amountDisabled, amountNote, balanceText, balanceClickable, onBalanceClick, }) {
+export default function TradeAmountRow({ label, labelColor = '#94a3b8', onCogClick, tokenIcon, tokenSymbol, tokenAddress, showTokenIdentity = true, onTokenPillClick, onIconClick, amount = '0', onAmountChange, amountDisabled, amountNote, balanceText, balanceClickable, onBalanceClick, }) {
     return (
     // Container: matches BaseSelectPanelInner exactly (`relative
     // rounded-[12px] overflow-hidden`) — no background/padding of its own;
     // the input below IS the visible card, everything else overlays it
     // absolutely, same as the real component.
-    (0, jsx_runtime_1.jsxs)("div", { style: { boxSizing: 'border-box', position: 'relative', borderRadius: 8, overflow: 'hidden' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { boxSizing: 'border-box', position: 'absolute', top: 10, left: 6, minWidth: 32, color: labelColor, fontSize: 11, paddingRight: 5, display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }, children: [(0, jsx_runtime_1.jsx)("span", { style: { whiteSpace: 'nowrap' }, children: label }), onCogClick && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: onCogClick, "aria-label": "Open slippage settings", title: "Open slippage settings", style: {
+    _jsxs("div", { style: { boxSizing: 'border-box', position: 'relative', borderRadius: 8, overflow: 'hidden' }, children: [_jsxs("div", { style: { boxSizing: 'border-box', position: 'absolute', top: 10, left: 6, minWidth: 32, color: labelColor, fontSize: 11, paddingRight: 5, display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }, children: [_jsx("span", { style: { whiteSpace: 'nowrap' }, children: label }), onCogClick && (_jsx("button", { type: "button", onClick: onCogClick, "aria-label": "Open slippage settings", title: "Open slippage settings", style: {
                             boxSizing: 'border-box',
                             position: 'relative',
                             top: -6,
@@ -165,7 +162,7 @@ function TradeAmountRow({ label, labelColor = '#94a3b8', onCogClick, tokenIcon, 
                             background: 'transparent',
                             color: 'inherit',
                             cursor: 'pointer',
-                        }, children: (0, jsx_runtime_1.jsx)(lucide_react_1.Settings, { size: 10 }) }))] }), (0, jsx_runtime_1.jsxs)("div", { style: { boxSizing: 'border-box', position: 'absolute', top: 6, right: 10, minWidth: 32, display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }, children: [(0, jsx_runtime_1.jsx)("span", { onClick: onIconClick, style: {
+                        }, children: _jsx(Settings, { size: 10 }) }))] }), showTokenIdentity && (_jsxs("div", { style: { boxSizing: 'border-box', position: 'absolute', top: 6, right: 10, minWidth: 32, display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }, children: [_jsx("span", { onClick: onIconClick, style: {
                             boxSizing: 'border-box',
                             position: 'relative',
                             top: -1,
@@ -179,7 +176,7 @@ function TradeAmountRow({ label, labelColor = '#94a3b8', onCogClick, tokenIcon, 
                             overflow: 'hidden',
                             background: tokenIcon ? 'transparent' : 'rgba(0,0,0,0.2)',
                             cursor: onIconClick ? 'pointer' : 'default',
-                        }, children: tokenIcon }), (0, jsx_runtime_1.jsxs)("div", { style: { boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }, children: [tokenSymbol && ((0, jsx_runtime_1.jsx)("span", { style: { fontSize: 11, fontWeight: 600, color: '#ffffff', lineHeight: 1.2, whiteSpace: 'nowrap' }, children: tokenSymbol })), (0, jsx_runtime_1.jsxs)("div", { onClick: onTokenPillClick, style: {
+                        }, children: tokenIcon }), _jsxs("div", { style: { boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }, children: [tokenSymbol && (_jsx("span", { style: { fontSize: 11, fontWeight: 600, color: '#ffffff', lineHeight: 1.2, whiteSpace: 'nowrap' }, children: tokenSymbol })), _jsxs("div", { onClick: onTokenPillClick, style: {
                                     boxSizing: 'border-box',
                                     display: 'flex',
                                     height: 16,
@@ -192,7 +189,7 @@ function TradeAmountRow({ label, labelColor = '#94a3b8', onCogClick, tokenIcon, 
                                     fontWeight: 700,
                                     color: '#ffffff',
                                     cursor: onTokenPillClick ? 'pointer' : 'default',
-                                }, children: [(0, jsx_runtime_1.jsx)("span", { style: { whiteSpace: 'nowrap' }, children: tokenAddress ? truncateMiddle(tokenAddress) : 'Select' }), tokenAddress && (0, jsx_runtime_1.jsx)(CopyAddressButton, { address: tokenAddress }), (0, jsx_runtime_1.jsx)(lucide_react_1.ChevronDown, { size: 12, style: { flexShrink: 0 } })] })] })] }), (0, jsx_runtime_1.jsx)("input", { value: amount, onChange: (e) => onAmountChange === null || onAmountChange === void 0 ? void 0 : onAmountChange(e.target.value), disabled: !onAmountChange || amountDisabled, inputMode: "decimal", placeholder: "0", style: {
+                                }, children: [_jsx("span", { style: { whiteSpace: 'nowrap' }, children: tokenAddress ? truncateMiddle(tokenAddress) : 'Select' }), tokenAddress && _jsx(CopyAddressButton, { address: tokenAddress }), onTokenPillClick && _jsx(ChevronDown, { size: 12, style: { flexShrink: 0 } })] })] })] })), _jsx("input", { value: amount, onChange: (e) => onAmountChange?.(e.target.value), disabled: !onAmountChange || amountDisabled, inputMode: "decimal", placeholder: "0", style: {
                     boxSizing: 'border-box',
                     display: 'block',
                     width: '100%',
@@ -206,5 +203,5 @@ function TradeAmountRow({ label, labelColor = '#94a3b8', onCogClick, tokenIcon, 
                     border: 'none',
                     outline: 'none',
                     borderRadius: '0 0 8px 8px',
-                } }), amountNote && ((0, jsx_runtime_1.jsx)("div", { style: { boxSizing: 'border-box', position: 'absolute', top: 27, left: 6, fontSize: 9, color: '#64748b', pointerEvents: 'none' }, children: amountNote })), balanceText && ((0, jsx_runtime_1.jsx)("div", { style: { boxSizing: 'border-box', position: 'absolute', top: 37, right: 10, minWidth: 32, color: '#94a3b8', fontSize: 11, paddingRight: 5, display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }, children: balanceClickable && onBalanceClick ? ((0, jsx_runtime_1.jsx)(ClickableBalance, { text: balanceText, onClick: onBalanceClick })) : ((0, jsx_runtime_1.jsx)("span", { children: balanceText })) }))] }));
+                } }), amountNote && (_jsx("div", { style: { boxSizing: 'border-box', position: 'absolute', top: 27, left: 6, fontSize: 9, color: '#64748b', pointerEvents: 'none' }, children: amountNote })), balanceText && (_jsx("div", { style: { boxSizing: 'border-box', position: 'absolute', top: 37, right: 10, minWidth: 32, color: '#94a3b8', fontSize: 11, paddingRight: 5, display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }, children: balanceClickable && onBalanceClick ? (_jsx(ClickableBalance, { text: balanceText, onClick: onBalanceClick })) : (_jsx("span", { children: balanceText })) }))] }));
 }

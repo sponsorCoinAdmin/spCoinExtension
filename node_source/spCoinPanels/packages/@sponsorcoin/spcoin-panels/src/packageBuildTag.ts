@@ -11,7 +11,7 @@
 // "manually bumped, one reliable freshness signal" convention already
 // established for spCoinExtension/sidepanel.html's own #build-tag, just
 // scoped to the package's own components instead of the whole page.
-export const PACKAGE_BUILD = 44;
+export const PACKAGE_BUILD = 126;
 
 // 2026-09-15, on request ("set an internal flag to remove the build text
 // in the file") — a single switch for whether TabBodyMarker.tsx's own

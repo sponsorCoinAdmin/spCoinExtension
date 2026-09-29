@@ -12,51 +12,15 @@
 // `onIconContextMenu`/`onAuthSourceChange` are plain optional callbacks,
 // no real network-switch/RPC logic behind any of it.
 'use client';
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = NetworkListRow;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const AssetSelectDropDown_1 = __importStar(require("./AssetSelectDropDown"));
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import AssetSelectDropDown, { ASSET_SELECT_DISPLAY } from './AssetSelectDropDown';
 function AuthToggle({ chainKey, groupId, authSource, onAuthSourceChange, }) {
     return (
     // 2026-09-16 — scaled down to match the row's own new ~22.5px height
     // (was 14px radios / 10px text, sized for the old 36px row).
-    (0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 8, fontWeight: 600, flexShrink: 0 }, children: ['merit', 'metamask'].map((source) => {
+    _jsx("div", { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 8, fontWeight: 600, flexShrink: 0 }, children: ['merit', 'metamask'].map((source) => {
             const active = authSource === source;
-            return ((0, jsx_runtime_1.jsxs)("label", { style: { display: 'inline-flex', alignItems: 'center', gap: 3, cursor: onAuthSourceChange ? 'pointer' : 'default', userSelect: 'none' }, title: `Authorize writes on this network with ${source === 'merit' ? 'Merit' : 'Metamask'}`, children: [(0, jsx_runtime_1.jsx)("input", { type: "radio", name: `network-auth-source-${groupId}-${chainKey}`, checked: active, onChange: () => onAuthSourceChange === null || onAuthSourceChange === void 0 ? void 0 : onAuthSourceChange(source), style: {
+            return (_jsxs("label", { style: { display: 'inline-flex', alignItems: 'center', gap: 3, cursor: onAuthSourceChange ? 'pointer' : 'default', userSelect: 'none' }, title: `Authorize writes on this network with ${source === 'merit' ? 'Merit' : 'Metamask'}`, children: [_jsx("input", { type: "radio", name: `network-auth-source-${groupId}-${chainKey}`, checked: active, onChange: () => onAuthSourceChange?.(source), style: {
                             height: 10,
                             width: 10,
                             flexShrink: 0,
@@ -68,11 +32,11 @@ function AuthToggle({ chainKey, groupId, authSource, onAuthSourceChange, }) {
                             border: `1px solid ${active ? '#22c55e' : '#dc2626'}`,
                             background: active ? '#22c55e' : '#dc2626',
                             cursor: onAuthSourceChange ? 'pointer' : 'default',
-                        } }), (0, jsx_runtime_1.jsx)("span", { style: { color: active ? '#4ade80' : '#8FA8FF' }, children: source === 'merit' ? 'Merit' : 'MM' })] }, source));
+                        } }), _jsx("span", { style: { color: active ? '#4ade80' : '#8FA8FF' }, children: source === 'merit' ? 'Merit' : 'MM' })] }, source));
         }) }));
 }
-function NetworkListRow({ icon, symbol, name, address, isActive, onSelect, onIconClick, onIconContextMenu, authSource, onAuthSourceChange, groupId = 'default', }) {
-    const activeBadge = isActive ? ((0, jsx_runtime_1.jsx)("span", { style: {
+export default function NetworkListRow({ icon, symbol, name, address, isActive, onSelect, onIconClick, onIconContextMenu, authSource, onAuthSourceChange, groupId = 'default', }) {
+    const activeBadge = isActive ? (_jsx("span", { style: {
             display: 'inline-flex',
             flexShrink: 0,
             alignItems: 'center',
@@ -99,7 +63,7 @@ function NetworkListRow({ icon, symbol, name, address, isActive, onSelect, onIco
     // hand-measured real value. active rows get the same bg-green-600/20
     // tint as the real app instead of the plain zebra background (caller
     // decides zebra index; this component only knows isActive).
-    (0, jsx_runtime_1.jsxs)("div", { style: {
+    _jsxs("div", { style: {
             width: '100%',
             // 2026-09-16, corrected — the row genuinely needs to be 4px taller
             // (2px top + 2px bottom), not just gain inner padding: a fixed
@@ -117,17 +81,17 @@ function NetworkListRow({ icon, symbol, name, address, isActive, onSelect, onIco
             paddingRight: 10,
             boxSizing: 'border-box',
             background: isActive ? 'rgba(22,163,74,0.2)' : undefined,
-        }, children: [(0, jsx_runtime_1.jsx)(AssetSelectDropDown_1.default, { icon: icon, symbol: symbol, name: name, address: address !== null && address !== void 0 ? address : '', hasEntity: !!address, showDisplay: AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.ICON |
-                    AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.ADDRESS |
-                    AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.SYMBOL |
-                    AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.NAME |
-                    AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.COPY |
-                    AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.ADDR_COMP, 
+        }, children: [_jsx(AssetSelectDropDown, { icon: icon, symbol: symbol, name: name, address: address ?? '', hasEntity: !!address, showDisplay: ASSET_SELECT_DISPLAY.ICON |
+                    ASSET_SELECT_DISPLAY.ADDRESS |
+                    ASSET_SELECT_DISPLAY.SYMBOL |
+                    ASSET_SELECT_DISPLAY.NAME |
+                    ASSET_SELECT_DISPLAY.COPY |
+                    ASSET_SELECT_DISPLAY.ADDR_COMP, 
                 // Omitted (was 4) — 2026-09-16: this address slot carries a literal
                 // "NetworkId : $id" label (see MeritWallet.tsx's own networkRows
                 // mapping), not a real hex address to truncate. Matches the real
                 // app's own row-mode NetworkSelectDropDown.tsx, which leaves this
                 // unset for the exact same reason (undefined shows the full
                 // string, per AssetSelectDropDown's own displayedAddress logic).
-                onRowClick: onSelect, onIconClick: onIconClick ? () => onIconClick() : undefined, onIconContextMenu: onIconContextMenu, iconSizeClassName: "h-[17.5px] w-[17.5px]", pillHeightClassName: "h-[10px]", pillFontClassName: "text-[9px]", chevronSize: 9, copyIconSize: 9, nameLineClassName: "text-[10px] font-semibold leading-tight text-white", nameLineSuffix: activeBadge }), authSource && ((0, jsx_runtime_1.jsx)(AuthToggle, { chainKey: address || symbol || name || 'row', groupId: groupId, authSource: authSource, onAuthSourceChange: onAuthSourceChange }))] }));
+                onRowClick: onSelect, onIconClick: onIconClick ? () => onIconClick() : undefined, onIconContextMenu: onIconContextMenu, iconSizeClassName: "h-[17.5px] w-[17.5px]", pillHeightClassName: "h-[10px]", pillFontClassName: "text-[9px]", chevronSize: 9, copyIconSize: 9, nameLineClassName: "text-[10px] font-semibold leading-tight text-white", nameLineSuffix: activeBadge }), authSource && (_jsx(AuthToggle, { chainKey: address || symbol || name || 'row', groupId: groupId, authSource: authSource, onAuthSourceChange: onAuthSourceChange }))] }));
 }

@@ -8,17 +8,13 @@
 // "Fourth slice" entry for why this stays shape-only rather than
 // replicating the real component's much richer per-row state machine.
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.REWARD_ROW_LABEL_WIDTH = exports.REWARD_ROW_BG_B = exports.REWARD_ROW_BG_A = void 0;
-exports.default = RewardRow;
-const jsx_runtime_1 = require("react/jsx-runtime");
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 // 2026-09-15, on request ("alternating row bg colors ... green buttons") —
 // matches the real app's own msTableTw.ts rowA/rowB exactly (components/
 // views/RadioOverlayPanels/msTableTw.ts), so the extension's zebra striping
 // is genuinely the same colors as the web app's, not a close guess.
-exports.REWARD_ROW_BG_A = 'rgba(56,78,126,0.35)';
-exports.REWARD_ROW_BG_B = 'rgba(156,163,175,0.25)';
+export const REWARD_ROW_BG_A = 'rgba(56,78,126,0.35)';
+export const REWARD_ROW_BG_B = 'rgba(156,163,175,0.25)';
 // 2026-09-15, on request ("moved further to the left, maybe 30px from the
 // longest text which is Recipient") — the label column was `flex: '0 0
 // 42%'`, a percentage far wider than any actual label ever needs, leaving
@@ -29,8 +25,8 @@ exports.REWARD_ROW_BG_B = 'rgba(156,163,175,0.25)';
 // proves comfortably fits its own longest indented label ("   •   Recipient")
 // at the same 10px font this table now also uses (see the 2026-09-15 font
 // parity pass) with room to spare.
-exports.REWARD_ROW_LABEL_WIDTH = 105;
-function RewardRow({ label, amountText, buttonLabel, onClick, indent, unavailable, rowBg }) {
+export const REWARD_ROW_LABEL_WIDTH = 105;
+export default function RewardRow({ label, amountText, buttonLabel, onClick, indent, unavailable, rowBg }) {
     return (
     // 2026-09-14, on request ("the text is too large in the rewards
     // panel and should be scaled like we did in the Sponsor panel") —
@@ -46,8 +42,8 @@ function RewardRow({ label, amountText, buttonLabel, onClick, indent, unavailabl
     // actually produces that, not 5px. Horizontal 5px matches msTableTw's
     // own td5 (px-[5px]), the column class this row's real counterpart
     // (Trading/Staked/Pending's label cell) actually uses.
-    (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center', padding: '1.5px 5px', borderTop: '1px solid #1e293b', gap: 6, background: rowBg }, children: [(0, jsx_runtime_1.jsxs)("div", { style: {
-                    flex: `0 0 ${exports.REWARD_ROW_LABEL_WIDTH}px`,
+    _jsxs("div", { style: { display: 'flex', alignItems: 'center', padding: '1.5px 5px', borderTop: '1px solid #1e293b', gap: 6, background: rowBg }, children: [_jsxs("div", { style: {
+                    flex: `0 0 ${REWARD_ROW_LABEL_WIDTH}px`,
                     // boxSizing: 'border-box' is required here — without it, an
                     // indented row's paddingLeft ADDS to this box's content width on
                     // top of the 42% flex-basis (default content-box sizing), making
@@ -69,7 +65,7 @@ function RewardRow({ label, amountText, buttonLabel, onClick, indent, unavailabl
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                }, children: [indent && (0, jsx_runtime_1.jsx)("span", { style: { fontSize: 8 }, children: "\u2022" }), label] }), (0, jsx_runtime_1.jsx)("div", { style: {
+                }, children: [indent && _jsx("span", { style: { fontSize: 8 }, children: "\u2022" }), label] }), _jsx("div", { style: {
                     flex: 1,
                     textAlign: 'left',
                     fontSize: 10,
@@ -77,7 +73,7 @@ function RewardRow({ label, amountText, buttonLabel, onClick, indent, unavailabl
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                }, children: amountText }), (0, jsx_runtime_1.jsx)("button", { type: "button", onClick: onClick, style: {
+                }, children: amountText }), _jsx("button", { type: "button", onClick: onClick, style: {
                     flexShrink: 0,
                     // 2026-09-15, on request ("should be the same width and size as
                     // the web wallet") — no minWidth here before meant "Stake"/

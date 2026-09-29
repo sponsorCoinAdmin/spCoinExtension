@@ -1,7 +1,7 @@
 {
   "name": "@sponsorcoin/spcoin-feeds",
   "version": "0.0.1",
-  "description": "Real accounts/tokens/networks data feeds (fetchers, in-memory caching, mappers to spcoin-panels' UI shapes) for MeritWallet — shared between spcoin-nextjs-front-end and the Merit Wallet browser extension (spCoinExtension). Deliberately has zero dependency on @sponsorcoin/spcoin-common (and therefore zero wagmi/viem transitive weight) — none of these three domains need its canonical types.",
+  "description": "Real accounts/tokens/networks/exchangeContext data feeds (fetchers, in-memory caching, mappers to spcoin-panels' UI shapes) for MeritWallet — shared between spcoin-nextjs-front-end and the Merit Wallet browser extension (spCoinExtension). Deliberately has zero dependency on @sponsorcoin/spcoin-common (and therefore zero wagmi/viem transitive weight) — none of these domains need its canonical types; exchangeContext's own fetch is typed loosely (apiCoreSyncedMembers: unknown) for this same reason.",
   "type": "commonjs",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -26,6 +26,11 @@
       "import": "./dist/networks/index.js",
       "require": "./dist/networks/index.js"
     },
+    "./exchangeContext": {
+      "types": "./dist/exchangeContext/index.d.ts",
+      "import": "./dist/exchangeContext/index.js",
+      "require": "./dist/exchangeContext/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -34,7 +39,7 @@
     "package.json"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {

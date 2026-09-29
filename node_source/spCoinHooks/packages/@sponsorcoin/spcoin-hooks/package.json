@@ -1,0 +1,45 @@
+{
+  "name": "@sponsorcoin/spcoin-hooks",
+  "version": "0.0.1",
+  "description": "Portable React hooks shared between spcoin-nextjs-front-end and the Merit Wallet browser extension (spCoinExtension) — kept separate from @sponsorcoin/spcoin-lib deliberately: these declare react as a peer dependency, spcoin-lib stays framework-agnostic.",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sponsorcoin/spcoin-common": "^0.0.2"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "typescript": "5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sponsorCoinAdmin/spcoin-hooks.git"
+  },
+  "author": "Robert Lanson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sponsorCoinAdmin/spcoin-hooks/issues"
+  },
+  "homepage": "https://github.com/sponsorCoinAdmin/spcoin-hooks#readme"
+}

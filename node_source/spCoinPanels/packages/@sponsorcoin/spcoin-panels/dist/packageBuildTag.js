@@ -1,6 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.SHOW_BUILD_MARKERS = exports.PACKAGE_BUILD = void 0;
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/packageBuildTag.ts
 // 2026-09-14, on request ("the marker is to be updated for every deploy in
 // the extension package") — single source for the small on-screen build
@@ -14,7 +11,7 @@ exports.SHOW_BUILD_MARKERS = exports.PACKAGE_BUILD = void 0;
 // "manually bumped, one reliable freshness signal" convention already
 // established for spCoinExtension/sidepanel.html's own #build-tag, just
 // scoped to the package's own components instead of the whole page.
-exports.PACKAGE_BUILD = 44;
+export const PACKAGE_BUILD = 126;
 // 2026-09-15, on request ("set an internal flag to remove the build text
 // in the file") — a single switch for whether TabBodyMarker.tsx's own
 // "⟨path · build N⟩" corner annotation, and MeritWallet.tsx's own matching
@@ -28,4 +25,4 @@ exports.PACKAGE_BUILD = 44;
 // loaded after a reload (its own doc comment: check it before evaluating
 // anything else), a different purpose from "is this genuinely the same
 // component as the web app's."
-exports.SHOW_BUILD_MARKERS = true;
+export const SHOW_BUILD_MARKERS = true;

@@ -1,6 +1,18 @@
 import React from 'react';
 export interface SponsorshipPanelProps {
-    recipientName?: string;
+    /** Opaque slot: the recipient picker (web app: RecipientSelectPanel). */
+    recipientSelectPanel?: React.ReactNode;
+    /** Opaque slot: the cog-gated sponsorship rate config (web app: ConfigSponsorshipPanel). Omitted in REVOKE mode. */
+    configSponsorshipPanel?: React.ReactNode;
+    /** Opaque slot: the SPONSOR_EXCHANGE_TRADING_PAIR gate + its inner swap layout (the two mode-swapped tokenBlock/recipientBlock rows are already composed here). */
+    exchangeTradingPair?: React.ReactNode;
+    /** Opaque slot: the submit row (web app: ConnectTradeButton / ExchangeButton). */
+    connectTradeButton?: React.ReactNode;
+    /** Opaque slot: the affiliate fee line (web app: AffiliateFee wrapper). */
+    affiliateFee?: React.ReactNode;
+    /** Opaque slot: the fee disclosures line (web app: FeeDisclosure). */
+    feeDisclosure?: React.ReactNode;
+    recipientName?: React.ReactNode;
     payTokenSymbol?: string;
     payTokenAddress?: string;
     payTokenIcon?: React.ReactNode;
@@ -9,28 +21,20 @@ export interface SponsorshipPanelProps {
     stakedTokenIcon?: React.ReactNode;
     onSubmit?: () => void;
     submitLabel?: string;
-    /** 2026-09-15, on request ("you did not do the sponsor tab") — this
-     *  panel has the same two pickable targets Swap/Send already got wired:
-     *  the real app's `RecipientSelectPanel` (picking WHO you're
-     *  sponsoring — "You are Sponsoring <name>" here) and `SellSelectPanel`'s
-     *  own `TOKEN_SELECT_DROP_DOWN` chevron (the pay-token pill below it).
-     *  Omit either for an inert target, same "no picker yet" default as
-     *  every other optional click prop in this package.
-     *
-     *  2026-09-16, corrected on live report ("web page works, extension does
-     *  not... on selecting the down chevron on 'New Recipient Staked
-     *  spCoins' we get nothing") — the doc comment here used to claim that
-     *  row's own pill was deliberately inert (StakingStatusPanel "always
-     *  shows the recipient's already-fixed spCoin stake, not a free token
-     *  choice"). That was wrong: the real SponsorPanel.tsx passes
-     *  `StakingStatusPanel` the SAME `panelId={SP.RECIPIENT_SELECT_PANEL}`
-     *  as `RecipientSelectPanel` gets — both rows open the identical
-     *  recipient picker, confirmed live in the web app's own debug harness
-     *  (screenshot showed "Select Recipient" opening from THIS row's
-     *  chevron). This prop now drives both rows' click instead of just the
-     *  header's. */
     onRecipientClick?: () => void;
     onPayTokenClick?: (e: React.SyntheticEvent) => void;
     onStakedRecipientIconClick?: () => void;
+    /** 2026-09-26, Phase 4 finish — real stake amount input on the "New Recipient
+     *  Staked spCoins" row. Mirror of SendTabPanel's sendAmount/onSendAmountChange.
+     *  Omitted = inert (static, no input). */
+    sponsorAmount?: string;
+    onSponsorAmountChange?: (value: string) => void;
+    sponsorAmountBusy?: boolean;
+    /** 2026-09-27, Phase 4 — swap execution callback. Called with no args;
+     *  the caller (MeritWallet) resolves all token/amount params from its own
+     *  selections state before invoking. If omitted, no swap button is shown
+     *  (existing inert-only behavior). */
+    onSponsorSwapSubmit?: () => void;
+    sponsorSwapBusy?: boolean;
 }
-export default function SponsorshipPanel({ recipientName, payTokenSymbol, payTokenAddress, payTokenIcon, stakedTokenSymbol, stakedTokenAddress, stakedTokenIcon, onSubmit, submitLabel, onRecipientClick, onPayTokenClick, onStakedRecipientIconClick, }: SponsorshipPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function SponsorshipPanel({ recipientSelectPanel, configSponsorshipPanel, exchangeTradingPair, connectTradeButton, affiliateFee, feeDisclosure, recipientName, payTokenSymbol, payTokenAddress, payTokenIcon, stakedTokenSymbol, stakedTokenAddress, stakedTokenIcon, onSubmit, submitLabel, onRecipientClick, onPayTokenClick, onStakedRecipientIconClick, sponsorAmount, onSponsorAmountChange, sponsorAmountBusy, onSponsorSwapSubmit, sponsorSwapBusy, }: SponsorshipPanelProps): React.JSX.Element;

@@ -11,16 +11,11 @@
 // local component state + a tiny inline <style> for the keyframes, rather
 // than an external stylesheet a CJS package build can't easily ship.
 'use client';
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = WalletHeader;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = require("react");
-const lucide_react_1 = require("lucide-react");
-const MeritTitleComponent_1 = __importDefault(require("./MeritTitleComponent"));
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
+import { RefreshCw, X } from 'lucide-react';
+import { APP_TYPE } from '@sponsorcoin/spcoin-common';
+import MeritTitleComponent from './MeritTitleComponent';
 const DEFAULT_ICON_SRC = '/assets/miscellaneous/spCoin.png';
 const iconButtonBaseStyle = {
     display: 'flex',
@@ -36,22 +31,35 @@ const iconButtonBaseStyle = {
     transition: 'opacity 120ms ease',
 };
 function IconButton({ onClick, disabled, ariaLabel, children, }) {
-    const [hovered, setHovered] = (0, react_1.useState)(false);
-    return ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: onClick, disabled: disabled, "aria-label": ariaLabel, title: ariaLabel, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), style: {
+    const [hovered, setHovered] = useState(false);
+    return (_jsx("button", { type: "button", onClick: onClick, disabled: disabled, "aria-label": ariaLabel, title: ariaLabel, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), style: {
             ...iconButtonBaseStyle,
             opacity: disabled ? 0.5 : hovered ? 0.7 : 1,
         }, children: children }));
 }
-function WalletHeader({ mode, title, leftSlot, iconSrc = DEFAULT_ICON_SRC, titleBadgeSrc, onTitleClick, onRefresh, refreshing, refreshAriaLabel, closeAriaLabel, onClose, closeIconSrc, }) {
+export default function WalletNetworkHeader({ mode, title, leftSlot, iconSrc = DEFAULT_ICON_SRC, titleBadgeSrc, showTitleBadge = true, onTitleClick, onRefresh, refreshing, refreshAriaLabel, closeAriaLabel, onClose, appType, wwwIconSrc, closeIconSrc, }) {
     const isSelection = mode === 'selection';
-    return ((0, jsx_runtime_1.jsxs)("div", { style: {
+    // 2026-09-21 — explicit override wins; otherwise appType decides
+    // (EXTENSION -> wwwIconSrc, everything else -> the default X below).
+    const resolvedCloseIconSrc = closeIconSrc ?? (appType === APP_TYPE.EXTENSION ? wwwIconSrc : undefined);
+    return (_jsxs("div", { style: {
             position: 'relative',
+            // 2026-09-21, on direct request — was 'transparent', silently
+            // inheriting whatever sat behind it (the extension's dark navy
+            // wallet background, since this component has no PARENT
+            // background of its own to fall back to the way the web app's
+            // own SEPARATE `components/views/Headers/WalletNetworkPanel.tsx`
+            // does with its own hardcoded `bg-[#77808e]`). This is the one,
+            // real header color both apps should show — not two
+            // implementations quietly drifting apart. See that file's own
+            // outer container for the source of this exact value.
             background: '#77808e',
-            paddingLeft: 10,
-            paddingRight: 7,
-            paddingTop: 4,
-            paddingBottom: 1,
-        }, children: [(0, jsx_runtime_1.jsx)("style", { children: '@keyframes spcoinWalletHeaderSpin { to { transform: rotate(360deg); } }' }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: leftSlot !== null && leftSlot !== void 0 ? leftSlot : ((0, jsx_runtime_1.jsx)("span", { style: {
+            // 2026-09-22, on direct request — 6px (was 16px). Both apps now
+            // read this one file (see WalletAccountHeader.tsx's own matching
+            // value below it — that one's real content padding, not a
+            // separate component this needs to stay in sync with anymore).
+            padding: '0 6px 2px 6px',
+        }, children: [_jsx("style", { children: '@keyframes spcoinWalletHeaderSpin { to { transform: rotate(360deg); } }' }), _jsxs("div", { style: { display: 'flex', alignItems: 'flex-end' }, children: [_jsx("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: leftSlot ?? (_jsx("span", { style: {
                                 display: 'flex',
                                 height: 30,
                                 width: 30,
@@ -60,7 +68,7 @@ function WalletHeader({ mode, title, leftSlot, iconSrc = DEFAULT_ICON_SRC, title
                                 justifyContent: 'center',
                                 overflow: 'hidden',
                                 background: 'transparent',
-                            }, children: (0, jsx_runtime_1.jsx)("img", { src: iconSrc, alt: "SponsorCoin", width: 30, height: 30, style: { height: '100%', width: '100%', objectFit: 'contain' } }) })) }), (0, jsx_runtime_1.jsx)("h2", { style: {
+                            }, children: _jsx("img", { src: iconSrc, alt: "SponsorCoin", width: 30, height: 30, style: { height: '100%', width: '100%', objectFit: 'contain' } }) })) }), _jsx("h2", { style: {
                             pointerEvents: 'none',
                             marginTop: 0,
                             marginBottom: 0,
@@ -74,10 +82,11 @@ function WalletHeader({ mode, title, leftSlot, iconSrc = DEFAULT_ICON_SRC, title
                             fontWeight: 700,
                             lineHeight: 1.25,
                             color: '#e2e8f0',
-                        }, children: title !== null && title !== void 0 ? title : (isSelection ? ('Select Active Account') : ((0, jsx_runtime_1.jsx)(MeritTitleComponent_1.default, { badgeSrc: titleBadgeSrc, onTitleClick: onTitleClick }))) }), (0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: [(0, jsx_runtime_1.jsx)(IconButton, { onClick: onRefresh, disabled: refreshing, ariaLabel: refreshAriaLabel !== null && refreshAriaLabel !== void 0 ? refreshAriaLabel : (isSelection ? 'Refresh accounts' : 'Refresh wallet'), children: (0, jsx_runtime_1.jsx)(lucide_react_1.RefreshCw, { style: {
+                        }, children: title ??
+                            (isSelection ? ('Select Active Account') : (_jsx(MeritTitleComponent, { badgeSrc: titleBadgeSrc, showBadge: showTitleBadge, onTitleClick: onTitleClick }))) }), _jsxs("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: [_jsx(IconButton, { onClick: onRefresh, disabled: refreshing, ariaLabel: refreshAriaLabel ?? (isSelection ? 'Refresh accounts' : 'Refresh wallet'), children: _jsx(RefreshCw, { style: {
                                         height: 18,
                                         width: 18,
                                         color: '#1f2937',
                                         animation: refreshing ? 'spcoinWalletHeaderSpin 1s linear infinite' : undefined,
-                                    }, strokeWidth: 1.5 }) }), (0, jsx_runtime_1.jsx)(IconButton, { onClick: onClose, ariaLabel: closeAriaLabel !== null && closeAriaLabel !== void 0 ? closeAriaLabel : (isSelection ? 'Close account selection' : 'Close Merit Wallet'), children: closeIconSrc ? ((0, jsx_runtime_1.jsx)("img", { src: closeIconSrc, alt: "", style: { height: 22, width: 22, objectFit: 'contain' } })) : ((0, jsx_runtime_1.jsx)(lucide_react_1.X, { style: { height: 24, width: 24, color: '#1f2937' }, strokeWidth: 1.5 })) })] })] })] }));
+                                    }, strokeWidth: 1.5 }) }), _jsx(IconButton, { onClick: onClose, ariaLabel: closeAriaLabel ?? (isSelection ? 'Close account selection' : 'Close Merit Wallet'), children: resolvedCloseIconSrc ? (_jsx("img", { src: resolvedCloseIconSrc, alt: "", style: { height: 22, width: 22, objectFit: 'contain' } })) : (_jsx(X, { style: { height: 24, width: 24, color: '#1f2937' }, strokeWidth: 1.5 })) })] })] })] }));
 }

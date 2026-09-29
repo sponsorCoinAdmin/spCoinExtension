@@ -14,4 +14,4 @@ export interface NetworkSelectDropDownProps {
      *  Defaults false (closed). */
     chevronUp?: boolean;
 }
-export default function NetworkSelectDropDown({ icon, label, onSelectClick, onIconClick, chevronUp, }: NetworkSelectDropDownProps): import("react/jsx-runtime").JSX.Element;
+export default function NetworkSelectDropDown({ icon, label, onSelectClick, onIconClick, chevronUp, }: NetworkSelectDropDownProps): React.JSX.Element;

@@ -1,50 +1,74 @@
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/AgentSelectDropDown.tsx
-// Portable placeholder for AGENT_SELECT_DROP_DOWN (2026-09-12) — the real
-// app version (node_source/spCoinPanels/AssetSelectDropDowns/
-// AgentSelectDropDown.tsx) wraps AccountSelectDropDown/AssetSelectDropDown
-// with useAgentAccount, useOpenActiveListPanel, and the Sponsor/Recipient/
-// Agent mutual-exclusion rule (validateAccount) — all of which need a real
-// ExchangeContext/panel-tree that doesn't exist in a standalone consumer
-// (the extension, today). This is the same shape (icon + symbol/address
-// pill + chevron), entirely inert, same "presentation only, no sync yet"
-// scope every other extension-bound component in this package has
-// followed so far.
 //
-// Not `AssetSelectDropDown` reused directly: that component is real and
-// already portable, but it's styled with Tailwind classes — fine for the
-// web app, which runs Tailwind, but the extension has no Tailwind
-// pipeline (confirmed: no tailwind.config/postcss.config in
-// spCoinExtension), so those classes would render unstyled there. Inline
-// styles instead, same reasoning as every other component here.
+// 2026-09-12 — portable placeholder for AGENT_SELECT_DROP_DOWN. Promoted
+// 2026-09-18, on request (the "make npm the single source of truth"
+// migration) — first of the five real dropdown wrapper components
+// (Token/Account/Agent/Recipient/Pool SelectDropDown) to go real, since it
+// already had a dead, unused npm-side placeholder (a literal two-copies
+// case) and the web app's real implementation
+// (node_source/spCoinPanels/AssetSelectDropDowns/AgentSelectDropDown.tsx)
+// is a comparatively thin wrapper: useAgentAccount + useOpenActiveListPanel
+// + usePanelVisible + validateAccount, all ExchangeContext-runtime hooks
+// that don't exist in a portable package yet. Same treatment TradeAmountRow
+// got: every hook-derived value becomes an optional prop, the component
+// itself stays entirely hook-free — a real caller (the web app's own
+// AgentSelectDropDown, now a thin hook-wiring wrapper around this one)
+// resolves the real values and feeds them in; an extension caller with no
+// ExchangeContext yet can render this exact same component inert, same
+// look as before this promotion, by simply omitting the optional props.
 //
-// Deliberately its own small pill, not a clone of WalletAccountHeader's
-// row — the real AGENT_SELECT_DROP_DOWN is a compact, centered trigger
-// pill (icon + symbol + address + chevron), not a full-width header row.
-//
-// 2026-09-13 fix, on request, reversing the icon handling described
-// above (kept literally so the history is legible, not because it's
-// still current): the icon was inside a single rounded capsule together
-// with the symbol/address/chevron, at a flat 18x18 "consistent across
-// every dropdown" size. Neither matches the real component — AgentSelect
-// DropDown -> AccountSelectDropDown -> AssetSelectDropDown.tsx (node_
-// source/spCoinPanels/AssetSelectDropDowns/), whose `content` JSX has the
-// icon as a SIBLING of (outside) the pill that wraps only the address/
-// copy/chevron, sized via `iconSizeClassName`'s default `h-10 w-10` (40px
-// — neither AccountSelectDropDown nor AgentSelectDropDown overrides it
-// for this call site). Restructured to match both: icon slot moved
-// outside the pill, resized 18->40 to reflect that actual real-app size
-// rather than an invented compact placeholder value.
+// Deliberately NOT built on AssetSelectDropDown (the package's other real,
+// portable dropdown) despite the obvious shape overlap — AssetSelectDropDown
+// is styled with real Tailwind utility classes (`flex`, `gap-1`,
+// `rounded-lg`, etc.), and spCoinExtension still has no Tailwind pipeline
+// (confirmed 2026-09-18: no tailwind.config/postcss.config there either),
+// so those classes render unstyled in the one environment this package
+// exists to serve. Kept this file's own original inline-style approach
+// instead, same reasoning every other extension-bound component in this
+// package already follows — this is a real, currently-latent gap in
+// AssetSelectDropDown itself (fine today only because nothing in the
+// extension's live UI renders it yet), flagged here rather than silently
+// worked around by inheriting it into a second component.
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = AgentSelectDropDown;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = require("react");
-const lucide_react_1 = require("lucide-react");
-function AgentSelectDropDown({ icon, address, symbol, placeholderLabel = 'Select Agent', onSelectClick, }) {
-    const [hovered, setHovered] = (0, react_1.useState)(false);
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, Copy, CheckCheck } from 'lucide-react';
+// Same component/reasoning as TradeAmountRow.tsx's own CopyAddressButton —
+// duplicated rather than shared across files on purpose (this package has
+// no internal-only shared-utility convention yet; see that file's own
+// header comment history for why extracting one wasn't done speculatively).
+function CopyAddressButton({ address }) {
+    const [copied, setCopied] = useState(false);
+    const [hovered, setHovered] = useState(false);
+    return (_jsx("button", { type: "button", onClick: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigator.clipboard.writeText(address).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+            });
+        }, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), "aria-label": "Copy address", title: "Copy address", style: {
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexShrink: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 2,
+            borderRadius: 3,
+            border: 'none',
+            background: hovered ? 'rgba(255,255,255,0.1)' : 'transparent',
+            color: copied ? '#4ade80' : 'inherit',
+            cursor: 'pointer',
+        }, children: copied ? _jsx(CheckCheck, { size: 11 }) : _jsx(Copy, { size: 11 }) }));
+}
+function truncateMiddle(addr, size) {
+    return addr.length > size * 2 + 3 ? `${addr.slice(0, size)}...${addr.slice(-size)}` : addr;
+}
+export default function AgentSelectDropDown({ icon, address, symbol, placeholderLabel = 'Select Agent', onSelectClick, listOpen, addrPrePostSize, panelGateId, panelGate: PanelGate, }) {
+    const [hovered, setHovered] = useState(false);
     const hasEntity = Boolean(address);
-    return ((0, jsx_runtime_1.jsxs)("div", { onClick: onSelectClick, onMouseEnter: () => onSelectClick && setHovered(true), onMouseLeave: () => setHovered(false), style: { display: 'inline-flex', alignItems: 'center', gap: 6, cursor: onSelectClick ? 'pointer' : 'default' }, children: [(0, jsx_runtime_1.jsx)("span", { style: {
+    const displayAddress = address && addrPrePostSize != null ? truncateMiddle(address, addrPrePostSize) : address;
+    const content = (_jsxs("div", { onClick: onSelectClick, onMouseEnter: () => onSelectClick && setHovered(true), onMouseLeave: () => setHovered(false), style: { display: 'inline-flex', alignItems: 'center', gap: 6, cursor: onSelectClick ? 'pointer' : 'default' }, children: [_jsx("span", { style: {
                     display: 'flex',
                     height: 40,
                     width: 40,
@@ -54,7 +78,7 @@ function AgentSelectDropDown({ icon, address, symbol, placeholderLabel = 'Select
                     borderRadius: '9999px',
                     overflow: 'hidden',
                     background: icon ? 'transparent' : 'rgba(0,0,0,0.2)',
-                }, children: icon }), (0, jsx_runtime_1.jsxs)("div", { style: {
+                }, children: icon }), _jsxs("div", { style: {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 4,
@@ -65,5 +89,8 @@ function AgentSelectDropDown({ icon, address, symbol, placeholderLabel = 'Select
                     // ADDR_COMP, non-blur variant — the one AGENT_SELECT_DROP_DOWN
                     // actually uses, not WalletHeader's frosted-glass one).
                     background: hovered ? '#2c3a68' : '#243056',
-                }, children: [(0, jsx_runtime_1.jsx)("span", { style: { fontSize: 10, fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap' }, children: hasEntity ? [symbol, address].filter(Boolean).join(' ') : placeholderLabel }), (0, jsx_runtime_1.jsx)(lucide_react_1.ChevronDown, { size: 11, style: { flexShrink: 0, color: '#f8fafc' } })] })] }));
+                }, children: [_jsx("span", { style: { fontSize: 10, fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap' }, children: hasEntity ? [symbol, displayAddress].filter(Boolean).join(' ') : placeholderLabel }), hasEntity && address && _jsx(CopyAddressButton, { address: address }), listOpen ? (_jsx(ChevronUp, { size: 11, style: { flexShrink: 0, color: '#f8fafc' } })) : (_jsx(ChevronDown, { size: 11, style: { flexShrink: 0, color: '#f8fafc' } }))] })] }));
+    if (panelGateId === undefined || !PanelGate)
+        return content;
+    return (_jsx(PanelGate, { panel: panelGateId, lazyLoad: false, children: content }));
 }

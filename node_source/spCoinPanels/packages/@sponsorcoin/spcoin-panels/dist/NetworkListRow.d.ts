@@ -23,4 +23,4 @@ export interface NetworkListRowProps {
      *  globally by name, not scoped to a React instance). */
     groupId?: string;
 }
-export default function NetworkListRow({ icon, symbol, name, address, isActive, onSelect, onIconClick, onIconContextMenu, authSource, onAuthSourceChange, groupId, }: NetworkListRowProps): import("react/jsx-runtime").JSX.Element;
+export default function NetworkListRow({ icon, symbol, name, address, isActive, onSelect, onIconClick, onIconContextMenu, authSource, onAuthSourceChange, groupId, }: NetworkListRowProps): React.JSX.Element;

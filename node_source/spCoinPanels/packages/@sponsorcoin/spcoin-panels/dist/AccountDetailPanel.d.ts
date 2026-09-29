@@ -1,3 +1,4 @@
+import React from 'react';
 export interface AccountDetailPanelProps {
     address: string;
     avatarSrc?: string;
@@ -11,4 +12,4 @@ export interface AccountDetailPanelProps {
      *  same as AssetListTable's own loading convention. */
     loading?: boolean;
 }
-export default function AccountDetailPanel({ address, avatarSrc, name, symbol, email, website, description, loading, }: AccountDetailPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function AccountDetailPanel({ address, avatarSrc, name, symbol, email, website, description, loading, }: AccountDetailPanelProps): React.JSX.Element;

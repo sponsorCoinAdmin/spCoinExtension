@@ -24,5 +24,13 @@ export interface AssetListRowProps {
      *  other caller of this row (Token/Agent/Recipient/Account-list), which
      *  have no such badge. */
     badge?: React.ReactNode;
+    /** 2026-09-22, Phase B.2 Stage 4 follow-up (ERC20 send) — pure passthrough
+     *  data, not rendered by this row at all. `fetchTokenList`'s own items
+     *  already carry this (allData=true), just not previously threaded
+     *  through row-building into MeritWallet.tsx's onSelect commit — see
+     *  that file's own PickedEntry.decimals doc comment for the real
+     *  consumer. Optional and ignored by every non-token row (accounts have
+     *  no decimals concept). */
+    decimals?: number;
 }
-export default function AssetListRow({ icon, iconSrc, symbol, name, address, onSelect, onInfoClick, infoIconSrc, badge, }: AssetListRowProps): import("react/jsx-runtime").JSX.Element;
+export default function AssetListRow({ icon, iconSrc, symbol, name, address, onSelect, onInfoClick, infoIconSrc, badge, }: AssetListRowProps): React.JSX.Element;

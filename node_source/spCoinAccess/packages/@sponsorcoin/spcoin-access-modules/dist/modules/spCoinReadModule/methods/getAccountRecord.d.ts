@@ -1,0 +1,11 @@
+export declare function getRelationshipReadCache(runtime: any): any;
+export declare function normalizeAccountRecordCacheKey(accountKey: any): string;
+export declare function getInflationRateCached(runtime: any, readOptions?: any): Promise<any>;
+export declare function getAccountRecordObjectCached(runtime: any, accountKey: any, readOptions?: any): Promise<any>;
+export declare function getRecipientRateListCached(runtime: any, sponsorAccountKey: any, recipientAccountKey: any, readOptions?: any): Promise<any>;
+export declare function getRecipientRateAgentListCached(runtime: any, sponsorAccountKey: any, recipientAccountKey: any, recipientRateKey: any, readOptions?: any): Promise<any>;
+export declare function getAgentRateListCached(runtime: any, sponsorAccountKey: any, recipientAccountKey: any, recipientRateKey: any, agentAccountKey: any, readOptions?: any): Promise<any>;
+export declare function getRecipientRateTransactionSetCached(runtime: any, sponsorAccountKey: any, recipientAccountKey: any, recipientRateKey: any, readOptions?: any): Promise<any>;
+export declare function getAgentRateTransactionSetCached(runtime: any, sponsorAccountKey: any, recipientAccountKey: any, recipientRateKey: any, agentAccountKey: any, agentRateKey: any, readOptions?: any): Promise<any>;
+export declare function getAccountRecord(context: any, _accountKey: any): Promise<any>;
+export declare function getAccountRecordShallow(context: any, _accountKey: any): Promise<any>;

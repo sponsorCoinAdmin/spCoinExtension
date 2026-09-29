@@ -1,3 +1,4 @@
+import React from 'react';
 export interface DetailPanelEmptyStateProps {
     /** e.g. "No active account connected." / "No token contract selected." */
     title: string;
@@ -7,4 +8,4 @@ export interface DetailPanelEmptyStateProps {
      *  connected, not something chosen here). */
     roles?: string[];
 }
-export default function DetailPanelEmptyState({ title, roles }: DetailPanelEmptyStateProps): import("react/jsx-runtime").JSX.Element;
+export default function DetailPanelEmptyState({ title, roles }: DetailPanelEmptyStateProps): React.JSX.Element;

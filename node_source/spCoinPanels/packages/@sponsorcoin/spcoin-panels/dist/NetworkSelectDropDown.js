@@ -25,54 +25,18 @@
 // behavior for free, and can't drift out of sync with it again the same
 // way.
 'use client';
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = NetworkSelectDropDown;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const AssetSelectDropDown_1 = __importStar(require("./AssetSelectDropDown"));
-function NetworkSelectDropDown({ icon, label = 'Not Connected', onSelectClick, onIconClick, chevronUp = false, }) {
-    return ((0, jsx_runtime_1.jsx)(AssetSelectDropDown_1.default, { rootId: "WALLET_NETWORK_HEADER", hasEntity: true, icon: icon, 
+import { jsx as _jsx } from "react/jsx-runtime";
+import AssetSelectDropDown, { ASSET_SELECT_DISPLAY } from './AssetSelectDropDown';
+export default function NetworkSelectDropDown({ icon, label = 'Not Connected', onSelectClick, onIconClick, chevronUp = false, }) {
+    return (_jsx(AssetSelectDropDown, { rootId: "WALLET_NETWORK_HEADER", hasEntity: true, icon: icon, 
         // Fed into the address slot (not symbol/name), same as the real
         // trigger-mode file — renders inside the solid pill together with
         // the icon, copy button, and chevron.
-        address: label, copyLabel: "Copy network", showDisplay: AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.ICON |
-            AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.ADDRESS |
-            AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.COPY |
-            (chevronUp ? AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.CHEVRON_UP : AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.CHEVRON_DN) |
-            AssetSelectDropDown_1.ASSET_SELECT_DISPLAY.ADDR_COMP, onRowClick: onSelectClick, 
+        address: label, copyLabel: "Copy network", showDisplay: ASSET_SELECT_DISPLAY.ICON |
+            ASSET_SELECT_DISPLAY.ADDRESS |
+            ASSET_SELECT_DISPLAY.COPY |
+            (chevronUp ? ASSET_SELECT_DISPLAY.CHEVRON_UP : ASSET_SELECT_DISPLAY.CHEVRON_DN) |
+            ASSET_SELECT_DISPLAY.ADDR_COMP, onRowClick: onSelectClick, 
         // 2026-09-16, on live report ("the select dropdown ... is so
         // different, why?") — root cause: the "address" slot here holds the
         // trigger LABEL (e.g. "HardHat"), not a real address to truncate.

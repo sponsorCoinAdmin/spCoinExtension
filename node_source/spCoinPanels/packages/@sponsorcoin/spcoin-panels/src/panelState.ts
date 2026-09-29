@@ -10,6 +10,19 @@
 // see docs/design/extensionPlan.md §7 ("Panel-write architecture
 // redesign") for the full reasoning.
 //
+// 2026-09-21, Path A — RESTORED after being briefly deleted the same day.
+// Not dead: `WALLET_NETWORK_HEADER`/`MENU_TAB_HEADER_BAR` were migrated
+// onto this engine in the WEB APP itself back on 2026-09-14 (see
+// components/views/MeritWallet.tsx's/Headers/WalletNetworkPanel.tsx's own
+// import comments, and Branch.tsx's/AgentHeaderContainer.tsx's own
+// MERIT_ENGINE_PANEL_IDS patches) — a real, deliberate, pre-Path-A design
+// decision this session didn't touch and isn't in scope to unwind. The
+// extension's own MeritWallet.tsx (@sponsorcoin/spcoin-panels) no longer
+// imports from here (moved onto the real engine, Path A) — the web app's
+// own, separate consumers still do, confirmed by direct grep of the whole
+// web app repo (not just this package's own folder — the gap that caused
+// the brief deletion) before restoring this file.
+//
 // Single source of truth, single write chokepoint (2026-09-10, on
 // request): `setVisible` is the ONLY way this state ever changes — no
 // second path exists, by construction, so the "two writers racing"
@@ -36,6 +49,14 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 // for something with zero reason to ever be visible to the real app. This
 // widens PanelId to accept either kind of id in the exact same Map,
 // without touching what SP_COIN_DISPLAY itself means anywhere.
+//
+// 2026-09-21, Path A — MERIT_REWARDS_SUMMARY/MERIT_REWARDS_PENDING
+// themselves are RETIRED (see ManageSponsorshipsPanel.tsx/
+// RewardsPendingByAccountTypePanel.tsx's own header comments — SUMMARY
+// removed outright as redundant, PENDING remapped onto the real
+// MANAGE_PENDING_REWARDS id). The `MeritOnlyPanelId` type stays, in case
+// a future genuinely-Merit-only concept needs it again, but nothing in
+// this package currently uses it.
 export type MeritOnlyPanelId = 'MERIT_REWARDS_SUMMARY' | 'MERIT_REWARDS_PENDING';
 
 export type PanelId = SP_COIN_DISPLAY | MeritOnlyPanelId;

@@ -1,13 +1,13 @@
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/PasswordPanel.tsx
-// Portable placeholder for PASSWORD_PANEL (2026-09-12) — the real app
-// version (components/views/RadioOverlayPanels/PasswordPanel.tsx) reads a
-// live `useSpCoinWallet()` (real setWalletPassword/unlockWallet calls
-// against the actual Merit keystore) — none of which exists in a
-// standalone consumer (the extension, today). Same shape (logo, title,
-// password field(s), submit button), entirely inert unless the caller
-// wires `onSubmit` — same "presentation only, no sync yet" scope every
-// other extension-bound component here follows. Inline styles (no
-// Tailwind), same reasoning as every sibling component.
+// 2026-09-23 — real migration (parity pass). The portable presentation
+// (logo, title, password field(s), submit button, checking/setup/unlock modes)
+// moved here from the real app's version
+// (components/views/RadioOverlayPanels/PasswordPanel.tsx), which is now a thin
+// wrapper resolving useSpCoinWallet (setWalletPassword/unlockWallet/
+// walletPasswordCheckError) and passing them as props. A new `clearOnSubmit`
+// opt-in prop was added so the web app's "clear typed password on submit"
+// behavior survives the split. Inline styles (no Tailwind), same reasoning
+// as every sibling component.
 
 'use client';
 
@@ -25,6 +25,21 @@ export interface PasswordPanelProps {
   /** Omit for an inert form that does nothing on submit. */
   onSubmit?: (password: string) => void;
   submitting?: boolean;
+  /**
+   * 2026-09-23, parity pass — the real app's PasswordPanel.tsx clears its
+   *  own typed password/confirmPassword state on a SUCCESSFUL submit
+   * (see its own handleSetupSubmit/handleUnlockSubmit comments) so a later
+   * Logoff (walletState.tsx's lockWallet()) force-reopening the same
+   * always-mounted panel can't silently re-unlock without re-typing it.
+   * The package's PasswordPanel is presentation-only and can't know
+   * success/failure, so this opt-in clears the internal state right after
+   * calling onSubmit regardless of outcome — close enough (a failed submit
+   * just means the user re-types, which is fine), and strictly safer than
+   * leaving the field pre-filled. Defaults false: the extension's own
+   * usage (real unlock POST, real capability tokens) has no equivalent
+   * concern, so it stays inert there.
+   */
+  clearOnSubmit?: boolean;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -45,6 +60,7 @@ export default function PasswordPanel({
   errorText,
   onSubmit,
   submitting = false,
+  clearOnSubmit = false,
 }: PasswordPanelProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -80,6 +96,10 @@ export default function PasswordPanel({
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit?.(password);
+            if (clearOnSubmit) {
+              setPassword('');
+              setConfirmPassword('');
+            }
           }}
           style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
         >

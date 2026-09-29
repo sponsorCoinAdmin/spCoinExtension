@@ -113,6 +113,7 @@ export interface TradeAmountRowProps {
   tokenIcon?: React.ReactNode;
   tokenSymbol?: string;
   tokenAddress?: string;
+  showTokenIdentity?: boolean;
   /** Omit for an inert pill (today's default) — provide to open a token
    *  picker, matching TokenSelectDropDown.tsx's real row-click behavior. */
   onTokenPillClick?: (e: React.SyntheticEvent) => void;
@@ -224,6 +225,7 @@ export default function TradeAmountRow({
   tokenIcon,
   tokenSymbol,
   tokenAddress,
+  showTokenIdentity = true,
   onTokenPillClick,
   onIconClick,
   amount = '0',
@@ -278,6 +280,7 @@ export default function TradeAmountRow({
           header, point 7). Icon stays `rounded-lg` (a square, not a
           circle) — that shape match is unrelated to the sizing pass and
           stays as-is. */}
+      {showTokenIdentity && (
       <div style={{ boxSizing: 'border-box', position: 'absolute', top: 6, right: 10, minWidth: 32, display: 'flex', alignItems: 'center', gap: 2, zIndex: 1 }}>
         <span
           onClick={onIconClick}
@@ -324,10 +327,17 @@ export default function TradeAmountRow({
           >
             <span style={{ whiteSpace: 'nowrap' }}>{tokenAddress ? truncateMiddle(tokenAddress) : 'Select'}</span>
             {tokenAddress && <CopyAddressButton address={tokenAddress} />}
-            <ChevronDown size={12} style={{ flexShrink: 0 }} />
+            {/* 2026-09-17, on report ("chevron should not be visable" on a
+                fixed, non-selectable pill, e.g. StakingStatusPanel's
+                always-activeSpCoinAddress row) — gated on the same signal
+                the pill's own `cursor`/`onClick` already use: no
+                `onTokenPillClick` means nothing to open, so no chevron
+                implying otherwise. */}
+            {onTokenPillClick && <ChevronDown size={12} style={{ flexShrink: 0 }} />}
           </div>
         </div>
       </div>
+      )}
 
       {/* Amount — scaled down another 20% from step 6 (see file header,
           point 7). Still always an `<input>` (disabled when no handler)

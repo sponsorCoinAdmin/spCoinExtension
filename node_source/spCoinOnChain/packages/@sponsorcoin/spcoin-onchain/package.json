@@ -1,0 +1,46 @@
+{
+  "name": "@sponsorcoin/spcoin-onchain",
+  "version": "0.0.1",
+  "description": "Portable on-chain transaction execution primitives (swap, stake, approve) using a signer-agnostic TradeExecutor interface — shared swap/staking/ERC20 logic across the web app, browser extension, and mobile clients.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sponsorcoin/spcoin-common": "^0.0.2"
+  },
+  "peerDependencies": {
+    "viem": "^2.9.25"
+  },
+  "peerDependenciesMeta": {
+    "viem": { "optional": true }
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sponsorCoinAdmin/spcoin-onchain.git"
+  },
+  "author": "Robert Lanson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sponsorCoinAdmin/spcoin-onchain/issues"
+  },
+  "homepage": "https://github.com/sponsorCoinAdmin/spcoin-onchain#readme"
+}

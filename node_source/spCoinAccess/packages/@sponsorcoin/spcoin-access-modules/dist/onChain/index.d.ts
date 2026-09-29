@@ -1,0 +1,1 @@
+export { SpCoinOnChainProcessor } from "./spCoinOnChainProcessor";

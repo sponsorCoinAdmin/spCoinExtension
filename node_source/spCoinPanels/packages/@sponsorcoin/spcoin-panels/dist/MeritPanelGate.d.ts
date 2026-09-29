@@ -9,5 +9,5 @@ interface Props {
     mountAlways?: boolean;
     className?: string;
 }
-export default function MeritPanelGate({ panel, children, lazyLoad, mountAlways, className, }: Props): import("react/jsx-runtime").JSX.Element | null;
+export default function MeritPanelGate({ panel, children, lazyLoad, mountAlways, className, }: Props): React.JSX.Element | null;
 export {};

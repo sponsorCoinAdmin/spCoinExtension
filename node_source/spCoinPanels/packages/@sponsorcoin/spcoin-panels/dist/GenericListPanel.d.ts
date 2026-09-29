@@ -12,4 +12,4 @@ export interface GenericListPanelProps {
     rows?: GenericListRow[];
     emptyText?: string;
 }
-export default function GenericListPanel({ searchPlaceholder, showSearch, rows, emptyText, }: GenericListPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function GenericListPanel({ searchPlaceholder, showSearch, rows, emptyText, }: GenericListPanelProps): React.JSX.Element;

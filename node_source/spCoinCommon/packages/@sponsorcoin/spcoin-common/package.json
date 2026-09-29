@@ -1,0 +1,52 @@
+{
+  "name": "@sponsorcoin/spcoin-common",
+  "version": "0.0.2",
+  "description": "Shared ExchangeContext types and panel-visibility enums/registry for SponsorCoin's web app and future Merit Wallet extraction.",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./context": {
+      "types": "./dist/context/index.d.ts",
+      "import": "./dist/context/index.js",
+      "require": "./dist/context/index.js"
+    },
+    "./panels": {
+      "types": "./dist/panels/index.d.ts",
+      "import": "./dist/panels/index.js",
+      "require": "./dist/panels/index.js"
+    },
+    "./styles": {
+      "types": "./dist/styles/index.d.ts",
+      "import": "./dist/styles/index.js",
+      "require": "./dist/styles/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "viem": "^2",
+    "wagmi": "^2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "typescript": "^5.8.3",
+    "viem": "^2.9.25",
+    "wagmi": "^2.12.4"
+  },
+  "license": "ISC"
+}

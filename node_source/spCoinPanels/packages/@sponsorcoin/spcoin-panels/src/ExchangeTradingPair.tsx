@@ -17,6 +17,12 @@
 
 import React, { useState } from 'react';
 import { ArrowDown } from 'lucide-react';
+import {
+  SWAP_ARROW_BG,
+  SWAP_ARROW_BORDER,
+  SWAP_ARROW_IDLE_COLOR,
+  SWAP_ARROW_HOVER_COLOR,
+} from '@sponsorcoin/spcoin-common/styles';
 import TradeAmountRow from './TradeAmountRow';
 
 export interface ExchangeTradingPairProps {
@@ -46,6 +52,38 @@ export interface ExchangeTradingPairProps {
   onCogClick?: () => void;
 
   onSwapDirection?: () => void;
+
+  /** 2026-09-24, on request — the real app's buy slot also stacks
+   *  ConfigSlippagePanel (above the buy row) and UniSelectPanel (below
+   *  it) in the same wrapper the buy TradeAmountRow lives in. Neither
+   *  belongs to this package (ExchangeContext-bound, not portable), so
+   *  these are opaque slots, not new owned content — a caller supplies
+   *  its own gap/visibility wrapping (see the real app's
+   *  ExchangeTradingPair.tsx), this component just places them in the
+   *  right position relative to the buy row. Both optional — a caller
+   *  with nothing extra (e.g. the extension's own inert MeritWallet.tsx
+   *  usage) renders identically to before these props existed. */
+  buyPrefixContent?: React.ReactNode;
+  buySuffixContent?: React.ReactNode;
+
+  /** 2026-09-25, on request (real regression report) — SELL_SELECT_PANEL
+   *  and ZERO_X_SELECT_PANEL are independently-visible panel-tree nodes in
+   *  the real app (e.g. the 0x quote engine's own checkbox hides the buy
+   *  row, sell stays up) — this component previously had no way to
+   *  express "hide this row," always rendering both. Default true
+   *  (backward compatible — the extension's own inert MeritWallet.tsx
+   *  usage never passes these). false hides only the TradeAmountRow
+   *  itself; the wrapper div (and, for sell, the swap arrow, which is
+   *  gated on this component's own visibility, not either row's) stays,
+   *  matching the real app's own per-row `if (!visible) return null`. */
+  sellVisible?: boolean;
+  buyVisible?: boolean;
+
+  /** 2026-09-25, on request — SWAP_ARROW_BUTTON (26) is a real, distinct
+   *  panel-tree node, never wired to any visibility check here (it always
+   *  rendered unconditionally, in both this component's pre-consolidation
+   *  self-composed form and this one). Default true, backward compatible. */
+  arrowVisible?: boolean;
 }
 
 // 2026-09-12 fix, on request — this used to diverge from the real app's
@@ -110,9 +148,9 @@ function SwapArrowButton({ onClick }: { onClick?: () => void }) {
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 5,
-        border: '2px solid #0E111B',
-        background: '#3a4157',
-        color: hovered ? '#ffffff' : '#5F6783',
+        border: `2px solid ${SWAP_ARROW_BORDER}`,
+        background: SWAP_ARROW_BG,
+        color: hovered ? SWAP_ARROW_HOVER_COLOR : SWAP_ARROW_IDLE_COLOR,
         transition: 'color 300ms',
         cursor: onClick ? 'pointer' : 'default',
       }}
@@ -147,6 +185,11 @@ export default function ExchangeTradingPair({
   onCogClick,
 
   onSwapDirection,
+  buyPrefixContent,
+  buySuffixContent,
+  sellVisible = true,
+  buyVisible = true,
+  arrowVisible = true,
 }: ExchangeTradingPairProps) {
   return (
     // 2026-09-12 fix, on request — "You Pay"/"You Receive" were this
@@ -167,20 +210,22 @@ export default function ExchangeTradingPair({
     // cut off by the sell row's own rounded corners.
     <div id="EXCHANGE_TRADING_PAIR" style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 0 }}>
       <div style={{ boxSizing: 'border-box', position: 'relative' }}>
-        <TradeAmountRow
-          label={sellLabel}
-          tokenIcon={sellIcon}
-          tokenSymbol={sellSymbol}
-          tokenAddress={sellAddress}
-          onTokenPillClick={onSellTokenClick}
-          amount={sellAmount}
-          onAmountChange={onSellAmountChange}
-          amountDisabled={sellAmountDisabled}
-          balanceText={sellBalanceText}
-          balanceClickable={sellBalanceClickable}
-          onBalanceClick={onSellBalanceClick}
-        />
-        <SwapArrowButton onClick={onSwapDirection} />
+        {sellVisible && (
+          <TradeAmountRow
+            label={sellLabel}
+            tokenIcon={sellIcon}
+            tokenSymbol={sellSymbol}
+            tokenAddress={sellAddress}
+            onTokenPillClick={onSellTokenClick}
+            amount={sellAmount}
+            onAmountChange={onSellAmountChange}
+            amountDisabled={sellAmountDisabled}
+            balanceText={sellBalanceText}
+            balanceClickable={sellBalanceClickable}
+            onBalanceClick={onSellBalanceClick}
+          />
+        )}
+        {arrowVisible && <SwapArrowButton onClick={onSwapDirection} />}
       </div>
       {/* 2026-09-13 fix — re-verified directly against the real
           TradingStationPanel/index.tsx: the buy slot wrapper there is
@@ -190,18 +235,22 @@ export default function ExchangeTradingPair({
           the sell and buy rows were rendering fully flush with zero space,
           not matching the real, slightly-separated look. */}
       <div style={{ boxSizing: 'border-box', paddingTop: 2 }}>
-        <TradeAmountRow
-          label={buyLabel}
-          onCogClick={onCogClick}
-          tokenIcon={buyIcon}
-          tokenSymbol={buySymbol}
-          tokenAddress={buyAddress}
-          onTokenPillClick={onBuyTokenClick}
-          amount={buyAmount}
-          onAmountChange={onBuyAmountChange}
-          amountDisabled={buyAmountDisabled}
-          balanceText={buyBalanceText}
-        />
+        {buyPrefixContent}
+        {buyVisible && (
+          <TradeAmountRow
+            label={buyLabel}
+            onCogClick={onCogClick}
+            tokenIcon={buyIcon}
+            tokenSymbol={buySymbol}
+            tokenAddress={buyAddress}
+            onTokenPillClick={onBuyTokenClick}
+            amount={buyAmount}
+            onAmountChange={onBuyAmountChange}
+            amountDisabled={buyAmountDisabled}
+            balanceText={buyBalanceText}
+          />
+        )}
+        {buySuffixContent}
       </div>
     </div>
   );

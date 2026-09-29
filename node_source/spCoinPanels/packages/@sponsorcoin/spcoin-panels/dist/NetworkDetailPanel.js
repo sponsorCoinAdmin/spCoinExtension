@@ -11,10 +11,7 @@
 // or caller round-trip at all; the data is already there the moment the
 // icon is clicked.
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = NetworkDetailPanel;
-const jsx_runtime_1 = require("react/jsx-runtime");
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 const ROW_LABEL_STYLE = {
     color: '#94a3b8',
     fontSize: 10,
@@ -29,7 +26,7 @@ const ROW_VALUE_STYLE = {
     wordBreak: 'break-word',
 };
 function DetailRow({ label, value, zebra }) {
-    return ((0, jsx_runtime_1.jsxs)("div", { style: {
+    return (_jsxs("div", { style: {
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
@@ -38,16 +35,16 @@ function DetailRow({ label, value, zebra }) {
             // ASSET_LIST_ROW_BG_A/B use — same duplicated-literal reasoning as
             // AccountDetailPanel.tsx/TokenDetailPanel.tsx's own identical row.
             background: zebra ? 'rgba(56,78,126,0.35)' : 'rgba(156,163,175,0.25)',
-        }, children: [(0, jsx_runtime_1.jsx)("span", { style: ROW_LABEL_STYLE, children: label }), (0, jsx_runtime_1.jsx)("span", { style: ROW_VALUE_STYLE, children: value })] }));
+        }, children: [_jsx("span", { style: ROW_LABEL_STYLE, children: label }), _jsx("span", { style: ROW_VALUE_STYLE, children: value })] }));
 }
-function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }) {
+export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }) {
     const rows = [
         { label: 'Network Id', value: id },
         { label: 'Name', value: name || '—' },
         { label: 'Symbol', value: symbol || '—' },
         { label: 'Network Type', value: isTestnet ? 'Testnet' : 'Mainnet' },
     ];
-    return ((0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden', padding: '3px 12px' }, children: (0, jsx_runtime_1.jsxs)("div", { style: {
+    return (_jsx("div", { style: { display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden', padding: '3px 12px' }, children: _jsxs("div", { style: {
                 display: 'flex',
                 minHeight: 0,
                 flex: 1,
@@ -56,7 +53,7 @@ function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }) {
                 borderRadius: 20,
                 border: '1px solid #334155',
                 background: '#0b0e19',
-            }, children: [(0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '20px 14px 14px' }, children: (0, jsx_runtime_1.jsx)("div", { style: {
+            }, children: [_jsx("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '20px 14px 14px' }, children: _jsx("div", { style: {
                             width: 96,
                             height: 96,
                             borderRadius: 16,
@@ -66,5 +63,5 @@ function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }) {
                             alignItems: 'center',
                             justifyContent: 'center',
                             flexShrink: 0,
-                        }, children: logoSrc ? ((0, jsx_runtime_1.jsx)("img", { src: logoSrc, alt: "", style: { width: '100%', height: '100%', objectFit: 'contain' } })) : null }) }), (0, jsx_runtime_1.jsx)("div", { style: { minHeight: 0, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }, children: rows.map((row, i) => ((0, jsx_runtime_1.jsx)(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
+                        }, children: logoSrc ? (_jsx("img", { src: logoSrc, alt: "", style: { width: '100%', height: '100%', objectFit: 'contain' } })) : null }) }), _jsx("div", { style: { minHeight: 0, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
 }

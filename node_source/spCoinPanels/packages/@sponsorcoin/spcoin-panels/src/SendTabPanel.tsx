@@ -1,16 +1,23 @@
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/SendTabPanel.tsx
-// Portable placeholder for SEND_PANEL (2026-09-12) — the real app version
+// SEND_PANEL (2026-09-12) — real, portable shell. The real app's own version
 // (components/views/RadioOverlayPanels/SendPanel.tsx -> SendComponent.tsx)
-// reads a live sell-token contract/balance and a real recipient account,
-// and posts a real ERC20 transfer — none of which exists in a standalone
-// consumer (the extension, today). Same shape (send-amount row, recipient
-// pill, submit button), entirely inert. Named SendTabPanel, not SendPanel,
-// to avoid a same-named-different-shape export clash with a future real
-// port. Placeholder, not logic, per explicit instruction.
+// reads a live sell-token contract/balance, a real recipient account, and posts
+// a real ERC20 transfer; that ExchangeContext-bound logic stays in the caller.
+// The extension IS a standalone consumer and now drives this shell for real:
+// its MeritWallet.tsx renders this SendTabPanel with a live onSubmit wired to
+// sendNativeMerit (native + ERC20, with `decimals` threaded from the token-list
+// row through onSendSubmit per 2026-09-23 Stage 39) behind the always-explicit
+// signAndSendMeritTransaction confirmation screen. So the shell is no longer
+// inert — its submit path performs real, signed sends.
+// Named SendTabPanel, not SendPanel, to avoid a same-named-different-shape
+// export clash with the web app's own full SendPanel wrapper. Shell, not
+// logic, per the original split decision — behavior is supplied by the caller
+// via onSubmit/onRecipientClick/onSendTokenClick/onSendAmountChange.
 
 'use client';
 
 import React from 'react';
+import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
 import { PACKAGE_BUILD } from './packageBuildTag';
 import TabBodyMarker from './TabBodyMarker';
 import TradeAmountRow from './TradeAmountRow';
@@ -22,8 +29,13 @@ export interface SendTabPanelProps {
   recipientSymbol?: string;
   recipientAddress?: string;
   recipientIcon?: React.ReactNode;
+  /** 2026-09-22 — the "You Send" row's real, editable amount. Omit onAmountChange to leave it inert (today's original look). */
+  sendAmount?: string;
+  onSendAmountChange?: (value: string) => void;
   onSubmit?: () => void;
   submitLabel?: string;
+  /** True while a real send is in flight — disables the submit button (distinct from `onSubmit` being omitted, which also disables it via the cursor/click-handler check below). */
+  submitBusy?: boolean;
   /** 2026-09-15, on request ("the Token/Account/NetworkSelectListDropdown
    *  chevrons [need] to be linked to the required panels") — same shape as
    *  ExchangeTradingPair.tsx's own onSellTokenClick/onBuyTokenClick, just
@@ -43,8 +55,11 @@ export default function SendTabPanel({
   recipientSymbol,
   recipientAddress,
   recipientIcon,
+  sendAmount,
+  onSendAmountChange,
   onSubmit,
   submitLabel = 'Enter an Amount',
+  submitBusy = false,
   onSendTokenClick,
   onRecipientClick,
 }: SendTabPanelProps) {
@@ -56,15 +71,38 @@ export default function SendTabPanel({
     // header comment already called out and fixed for that file. The real
     // app's SendComponent.tsx container is `gap-1` (4px, no explicit
     // padding of its own) — same TSP_TW.gap constant TradingStationPanel.tsx
-    // matches — so this now uses that file's own gap:4/padding:8 instead of
-    // a second, larger, made-up value.
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 4, padding: 8 }}>
+    // matches.
+    //
+    // 2026-09-22 — `padding: 8` removed entirely (was itself still an
+    // invented value, just matched to TradingStationPanel.tsx's OLD number
+    // instead of a real one — this file's own comment above already says
+    // the real SendComponent.tsx container has "no explicit padding of its
+    // own"). No extension-only styling rule — see
+    // docs/npmPanelDisplayIssue.md and docs/design/spcoinPackagesDesign.md.
+    //
+    // 2026-09-22 — `gap` now reads PANEL_GAP from
+    // @sponsorcoin/spcoin-common/styles instead of a hardcoded `4` — see
+    // that file's own header comment; one shared source instead of a
+    // separately hardcoded `4` in this file/TradingStationPanel.tsx/
+    // SponsorshipPanel.tsx.
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: PANEL_GAP }}>
       <TabBodyMarker path="SendTabPanel.tsx" build={PACKAGE_BUILD} />
-      <TradeAmountRow label="You Send" tokenIcon={sendTokenIcon} tokenSymbol={sendTokenSymbol} tokenAddress={sendTokenAddress} balanceText="Balance: 0" onTokenPillClick={onSendTokenClick} />
+      <TradeAmountRow
+        label="You Send"
+        tokenIcon={sendTokenIcon}
+        tokenSymbol={sendTokenSymbol}
+        tokenAddress={sendTokenAddress}
+        balanceText="Balance: 0"
+        onTokenPillClick={onSendTokenClick}
+        amount={sendAmount}
+        onAmountChange={onSendAmountChange}
+        amountDisabled={submitBusy}
+      />
       <TradeAmountRow label="Recipient" tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
       <button
         type="button"
         onClick={onSubmit}
+        disabled={!onSubmit || submitBusy}
         style={{
           width: '100%',
           borderRadius: 8,
@@ -74,7 +112,8 @@ export default function SendTabPanel({
           fontSize: 12,
           fontWeight: 600,
           padding: '10px 0',
-          cursor: onSubmit ? 'pointer' : 'default',
+          cursor: onSubmit && !submitBusy ? 'pointer' : 'default',
+          opacity: onSubmit && !submitBusy ? 1 : 0.6,
         }}
       >
         {submitLabel}

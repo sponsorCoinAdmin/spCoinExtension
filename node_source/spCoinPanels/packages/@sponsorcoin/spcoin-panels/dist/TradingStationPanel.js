@@ -31,17 +31,12 @@
 // (previously duplicated here) re-exported from ExchangeTradingPairProps
 // so nothing about this component's own public API changes.
 'use client';
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = TradingStationPanel;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const ExchangeTradingPair_1 = __importDefault(require("./ExchangeTradingPair"));
-const packageBuildTag_1 = require("./packageBuildTag");
-const TabBodyMarker_1 = __importDefault(require("./TabBodyMarker"));
-function TradingStationPanel({ onSubmit, submitLabel = 'Enter an Amount', ...exchangeTradingPairProps }) {
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
+import ExchangeTradingPair from './ExchangeTradingPair';
+import { PACKAGE_BUILD } from './packageBuildTag';
+import TabBodyMarker from './TabBodyMarker';
+export default function TradingStationPanel({ onSubmit, submitLabel = 'Enter an Amount', ...exchangeTradingPairProps }) {
     return (
     // 2026-09-13, on request ("why is EXCHANGE_TRADING_PAIR not having the
     // same button spacing as on the web page?") — `gap` here had been an
@@ -53,7 +48,21 @@ function TradingStationPanel({ onSubmit, submitLabel = 'Enter an Amount', ...exc
     // UNI_SELECT_PANEL's own submit button explicitly matches it via its
     // own `pt-[4px]` (see that file's comment on its button wrapper).
     // Matched exactly here instead of re-guessing a new invented value.
-    (0, jsx_runtime_1.jsxs)("div", { style: { boxSizing: 'border-box', position: 'relative', display: 'flex', flexDirection: 'column', gap: 4, padding: 8 }, children: [(0, jsx_runtime_1.jsx)(TabBodyMarker_1.default, { path: "TradingStationPanel.tsx", build: packageBuildTag_1.PACKAGE_BUILD }), (0, jsx_runtime_1.jsx)(ExchangeTradingPair_1.default, { ...exchangeTradingPairProps }), (0, jsx_runtime_1.jsx)("button", { type: "button", onClick: onSubmit, style: {
+    //
+    // 2026-09-22 — `padding: 8` removed entirely. That value was itself
+    // never real (see this file's own git history: invented 12→10→8 across
+    // three same-week WIP commits, never reconciled against anything in the
+    // real web app — docs/npmPanelDisplayIssue.md). No replacement — Web
+    // App parity confirmed at zero self-padding here.
+    //
+    // 2026-09-22 — `gap` now reads PANEL_GAP from
+    // @sponsorcoin/spcoin-common/styles instead of a hardcoded `4` — the
+    // same value, same real source (TSP_TW.gap), but now defined exactly
+    // once instead of copy-pasted across this file/SendTabPanel.tsx/
+    // SponsorshipPanel.tsx. See that file's own header comment — PANEL_GAP
+    // is currently 2, a deliberate live test of a tighter value, not the
+    // previously-verified 4.
+    _jsxs("div", { style: { boxSizing: 'border-box', position: 'relative', display: 'flex', flexDirection: 'column', gap: PANEL_GAP }, children: [_jsx(TabBodyMarker, { path: "TradingStationPanel.tsx", build: PACKAGE_BUILD }), _jsx(ExchangeTradingPair, { ...exchangeTradingPairProps }), _jsx("button", { type: "button", onClick: onSubmit, style: {
                     boxSizing: 'border-box',
                     width: '100%',
                     borderRadius: 8,

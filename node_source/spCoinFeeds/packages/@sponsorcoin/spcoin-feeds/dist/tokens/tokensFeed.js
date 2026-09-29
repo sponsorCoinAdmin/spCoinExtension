@@ -139,6 +139,7 @@ function toAssetListEntries(records) {
         symbol: record.symbol,
         name: record.name,
         address: record.address,
+        decimals: record.decimals,
         logoURL: record.logoURL,
     }));
 }

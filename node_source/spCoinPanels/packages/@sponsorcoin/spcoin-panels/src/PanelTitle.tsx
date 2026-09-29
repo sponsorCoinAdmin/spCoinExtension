@@ -1,13 +1,19 @@
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/PanelTitle.tsx
-// Portable placeholder for PANEL_TITLE (2026-09-12) — the real app version
-// (components/views/Headers/ActiveWalletPanelTitle.tsx, via PopupHeader.tsx)
-// reads a live `useActiveWalletPanelTitle()` computed title and calls the
-// real panel-tree's `closePanel`/a caller-supplied menu handler — no panel
-// tree exists in a standalone consumer (the extension, today) to compute a
-// title from or navigate with. Same shape (back button, centered title,
-// menu/hamburger button), entirely inert unless the caller wires the two
-// callbacks — same "presentation only, no sync yet" scope every other
-// extension-bound component here follows. Inline styles (no Tailwind),
+// Portable shell for PANEL_TITLE (2026-09-12, reworked 2026-09-22 — see
+// WalletHeader.tsx's own "opaque slot" precedent for the pattern this
+// follows). Originally an inert placeholder (no panel tree existed in a
+// standalone consumer to navigate with); its prop surface (title/
+// onBackClick/onMenuClick/menuOpen) turned out to already fit the web
+// app's own real usage exactly — a live `useActiveWalletPanelTitle()`
+// computed title and a plain `() => closePanel(...)` callback for the
+// back button — so the web app's own separate copy
+// (components/views/PopupHeader.tsx, via ActiveWalletPanelTitle.tsx) was
+// retired entirely in favor of this one file. Real back-button behavior
+// still differs between the two apps (the web app's closePanel(...) is a
+// single generic call into the shared panel-tree engine covering every
+// "go back" case; the package's own MeritWallet.tsx still hand-rolls its
+// own local 4-way branch) — that's each caller's own callback, not
+// something this shell needs to know about. Inline styles (no Tailwind),
 // same reasoning as every sibling component.
 //
 // Sizing scaled down from the real app's 44px (h-11 w-11) buttons/20px
@@ -106,8 +112,15 @@ export default function PanelTitle({
         alignItems: 'center',
         gap: 6,
         borderBottom: '1px solid #21273a',
-        paddingLeft: 10,
-        paddingRight: 8,
+        // 2026-09-22, on direct request — 6px (was 10/8), matching the two
+        // header rows' own canonical left/right buffer (WalletHeader.tsx/
+        // WalletAccountHeader.tsx) for one continuous buffer top to
+        // bottom. Also the point this component became the web app's own
+        // real PANEL_TITLE too (see components/views/Headers/
+        // ActiveWalletPanelTitle.tsx's own header comment) — both apps
+        // now render through this one file.
+        paddingLeft: 6,
+        paddingRight: 6,
         paddingTop: 3,
         paddingBottom: 3,
       }}

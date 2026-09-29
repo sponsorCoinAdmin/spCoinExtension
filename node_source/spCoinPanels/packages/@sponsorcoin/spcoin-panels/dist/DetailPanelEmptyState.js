@@ -11,14 +11,8 @@
 // shared component instead of six near-identical copies — placeholders,
 // not logic, per explicit instruction.
 'use client';
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = DetailPanelEmptyState;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = __importDefault(require("react"));
-function DetailPanelEmptyState({ title, roles }) {
-    return ((0, jsx_runtime_1.jsxs)("div", { style: { padding: 12, fontSize: 12, color: '#e2e8f0' }, children: [(0, jsx_runtime_1.jsx)("p", { style: { margin: '0 0 6px', fontWeight: 600 }, children: title }), roles && roles.length > 0 && ((0, jsx_runtime_1.jsxs)("p", { style: { margin: 0 }, children: ["Select ", roles.length === 1 ? 'an' : 'a', ' ', roles.map((role, i) => ((0, jsx_runtime_1.jsxs)(react_1.default.Fragment, { children: [i > 0 ? (i === roles.length - 1 ? ' or ' : ', ') : '', (0, jsx_runtime_1.jsx)("strong", { children: role })] }, role))), ' ', "to manage."] }))] }));
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import React from 'react';
+export default function DetailPanelEmptyState({ title, roles }) {
+    return (_jsxs("div", { style: { padding: 12, fontSize: 12, color: '#e2e8f0' }, children: [_jsx("p", { style: { margin: '0 0 6px', fontWeight: 600 }, children: title }), roles && roles.length > 0 && (_jsxs("p", { style: { margin: 0 }, children: ["Select ", roles.length === 1 ? 'an' : 'a', ' ', roles.map((role, i) => (_jsxs(React.Fragment, { children: [i > 0 ? (i === roles.length - 1 ? ' or ' : ', ') : '', _jsx("strong", { children: role })] }, role))), ' ', "to manage."] }))] }));
 }

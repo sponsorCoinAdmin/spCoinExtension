@@ -17,10 +17,7 @@
 // network data exists yet to break down; a future slice can add both once
 // there's something real to feed them.
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = MessagePanel;
-const jsx_runtime_1 = require("react/jsx-runtime");
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 const STATUS_STYLES = {
     error: { border: 'rgba(239,68,68,0.4)', bg: 'rgba(127,29,29,0.2)', text: '#fee2e2' },
     warning: { border: '#f59e0b', bg: '#fde68a', text: '#451a03' },
@@ -35,10 +32,10 @@ const DEFAULT_TITLES = {
     info: 'Notice',
     trace: 'Trace Debugging',
 };
-function MessagePanel({ kind = 'info', title, message = 'No message yet.', source, wrap = true, }) {
+export default function MessagePanel({ kind = 'info', title, message = 'No message yet.', source, wrap = true, }) {
     const styles = STATUS_STYLES[kind];
-    const resolvedTitle = title !== null && title !== void 0 ? title : DEFAULT_TITLES[kind];
-    return ((0, jsx_runtime_1.jsxs)("div", { role: kind === 'error' ? 'alert' : 'status', style: {
+    const resolvedTitle = title ?? DEFAULT_TITLES[kind];
+    return (_jsxs("div", { role: kind === 'error' ? 'alert' : 'status', style: {
             display: 'flex',
             flexDirection: 'column',
             minWidth: 0,
@@ -49,11 +46,11 @@ function MessagePanel({ kind = 'info', title, message = 'No message yet.', sourc
             border: `1px solid ${styles.border}`,
             background: styles.bg,
             color: styles.text,
-        }, children: [resolvedTitle && ((0, jsx_runtime_1.jsx)("h3", { style: { margin: 0, fontSize: 13, fontWeight: 600 }, children: resolvedTitle })), (0, jsx_runtime_1.jsx)("p", { style: {
+        }, children: [resolvedTitle && (_jsx("h3", { style: { margin: 0, fontSize: 13, fontWeight: 600 }, children: resolvedTitle })), _jsx("p", { style: {
                     margin: 0,
                     fontSize: 12,
                     lineHeight: 1.5,
                     whiteSpace: wrap ? 'pre-wrap' : 'pre',
                     overflowWrap: wrap ? 'break-word' : undefined,
-                }, children: message }), source && ((0, jsx_runtime_1.jsxs)("div", { style: { fontSize: 10, opacity: 0.8 }, children: [(0, jsx_runtime_1.jsx)("span", { style: { fontWeight: 500 }, children: "Source:" }), " ", source] }))] }));
+                }, children: message }), source && (_jsxs("div", { style: { fontSize: 10, opacity: 0.8 }, children: [_jsx("span", { style: { fontWeight: 500 }, children: "Source:" }), " ", source] }))] }));
 }

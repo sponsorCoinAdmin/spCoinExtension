@@ -1,24 +1,25 @@
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/SendTabPanel.tsx
-// Portable placeholder for SEND_PANEL (2026-09-12) — the real app version
+// SEND_PANEL (2026-09-12) — real, portable shell. The real app's own version
 // (components/views/RadioOverlayPanels/SendPanel.tsx -> SendComponent.tsx)
-// reads a live sell-token contract/balance and a real recipient account,
-// and posts a real ERC20 transfer — none of which exists in a standalone
-// consumer (the extension, today). Same shape (send-amount row, recipient
-// pill, submit button), entirely inert. Named SendTabPanel, not SendPanel,
-// to avoid a same-named-different-shape export clash with a future real
-// port. Placeholder, not logic, per explicit instruction.
+// reads a live sell-token contract/balance, a real recipient account, and posts
+// a real ERC20 transfer; that ExchangeContext-bound logic stays in the caller.
+// The extension IS a standalone consumer and now drives this shell for real:
+// its MeritWallet.tsx renders this SendTabPanel with a live onSubmit wired to
+// sendNativeMerit (native + ERC20, with `decimals` threaded from the token-list
+// row through onSendSubmit per 2026-09-23 Stage 39) behind the always-explicit
+// signAndSendMeritTransaction confirmation screen. So the shell is no longer
+// inert — its submit path performs real, signed sends.
+// Named SendTabPanel, not SendPanel, to avoid a same-named-different-shape
+// export clash with the web app's own full SendPanel wrapper. Shell, not
+// logic, per the original split decision — behavior is supplied by the caller
+// via onSubmit/onRecipientClick/onSendTokenClick/onSendAmountChange.
 'use client';
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = SendTabPanel;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const packageBuildTag_1 = require("./packageBuildTag");
-const TabBodyMarker_1 = __importDefault(require("./TabBodyMarker"));
-const TradeAmountRow_1 = __importDefault(require("./TradeAmountRow"));
-function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, onSubmit, submitLabel = 'Enter an Amount', onSendTokenClick, onRecipientClick, }) {
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
+import { PACKAGE_BUILD } from './packageBuildTag';
+import TabBodyMarker from './TabBodyMarker';
+import TradeAmountRow from './TradeAmountRow';
+export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitLabel = 'Enter an Amount', submitBusy = false, onSendTokenClick, onRecipientClick, }) {
     return (
     // 2026-09-14, on request ("spacing between SEND_SELECT_PANEL,
     // SEND_ADDRESS_HEADER_BAR and SEND_BUTTON... not the case in the swap
@@ -27,9 +28,21 @@ function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipi
     // header comment already called out and fixed for that file. The real
     // app's SendComponent.tsx container is `gap-1` (4px, no explicit
     // padding of its own) — same TSP_TW.gap constant TradingStationPanel.tsx
-    // matches — so this now uses that file's own gap:4/padding:8 instead of
-    // a second, larger, made-up value.
-    (0, jsx_runtime_1.jsxs)("div", { style: { position: 'relative', display: 'flex', flexDirection: 'column', gap: 4, padding: 8 }, children: [(0, jsx_runtime_1.jsx)(TabBodyMarker_1.default, { path: "SendTabPanel.tsx", build: packageBuildTag_1.PACKAGE_BUILD }), (0, jsx_runtime_1.jsx)(TradeAmountRow_1.default, { label: "You Send", tokenIcon: sendTokenIcon, tokenSymbol: sendTokenSymbol, tokenAddress: sendTokenAddress, balanceText: "Balance: 0", onTokenPillClick: onSendTokenClick }), (0, jsx_runtime_1.jsx)(TradeAmountRow_1.default, { label: "Recipient", tokenIcon: recipientIcon, tokenSymbol: recipientSymbol, tokenAddress: recipientAddress, onTokenPillClick: onRecipientClick }), (0, jsx_runtime_1.jsx)("button", { type: "button", onClick: onSubmit, style: {
+    // matches.
+    //
+    // 2026-09-22 — `padding: 8` removed entirely (was itself still an
+    // invented value, just matched to TradingStationPanel.tsx's OLD number
+    // instead of a real one — this file's own comment above already says
+    // the real SendComponent.tsx container has "no explicit padding of its
+    // own"). No extension-only styling rule — see
+    // docs/npmPanelDisplayIssue.md and docs/design/spcoinPackagesDesign.md.
+    //
+    // 2026-09-22 — `gap` now reads PANEL_GAP from
+    // @sponsorcoin/spcoin-common/styles instead of a hardcoded `4` — see
+    // that file's own header comment; one shared source instead of a
+    // separately hardcoded `4` in this file/TradingStationPanel.tsx/
+    // SponsorshipPanel.tsx.
+    _jsxs("div", { style: { position: 'relative', display: 'flex', flexDirection: 'column', gap: PANEL_GAP }, children: [_jsx(TabBodyMarker, { path: "SendTabPanel.tsx", build: PACKAGE_BUILD }), _jsx(TradeAmountRow, { label: "You Send", tokenIcon: sendTokenIcon, tokenSymbol: sendTokenSymbol, tokenAddress: sendTokenAddress, balanceText: "Balance: 0", onTokenPillClick: onSendTokenClick, amount: sendAmount, onAmountChange: onSendAmountChange, amountDisabled: submitBusy }), _jsx(TradeAmountRow, { label: "Recipient", tokenIcon: recipientIcon, tokenSymbol: recipientSymbol, tokenAddress: recipientAddress, onTokenPillClick: onRecipientClick }), _jsx("button", { type: "button", onClick: onSubmit, disabled: !onSubmit || submitBusy, style: {
                     width: '100%',
                     borderRadius: 8,
                     border: 'none',
@@ -38,6 +51,7 @@ function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipi
                     fontSize: 12,
                     fontWeight: 600,
                     padding: '10px 0',
-                    cursor: onSubmit ? 'pointer' : 'default',
+                    cursor: onSubmit && !submitBusy ? 'pointer' : 'default',
+                    opacity: onSubmit && !submitBusy ? 1 : 0.6,
                 }, children: submitLabel })] }));
 }

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchAccountAvatarBlob = exports.fetchAccountRoleList = exports.getAccountAvatarURL = exports.fetchAccountListGroups = exports.removeKeystoreAccount = exports.addKeystoreAccount = exports.fetchAccountMetadata = exports.fetchKeystoreAccounts = void 0;
+exports.fetchAccountAvatarBlob = exports.fetchAccountDirectorySpecs = exports.fetchAccountRoleAddresses = exports.fetchAccountRoleList = exports.getAccountAvatarURL = exports.fetchAccountListGroups = exports.removeKeystoreAccount = exports.addKeystoreAccount = exports.fetchAccountMetadata = exports.fetchKeystoreAccounts = void 0;
 var accountsFeed_1 = require("./accountsFeed");
 Object.defineProperty(exports, "fetchKeystoreAccounts", { enumerable: true, get: function () { return accountsFeed_1.fetchKeystoreAccounts; } });
 Object.defineProperty(exports, "fetchAccountMetadata", { enumerable: true, get: function () { return accountsFeed_1.fetchAccountMetadata; } });
@@ -9,5 +9,7 @@ Object.defineProperty(exports, "removeKeystoreAccount", { enumerable: true, get:
 Object.defineProperty(exports, "fetchAccountListGroups", { enumerable: true, get: function () { return accountsFeed_1.fetchAccountListGroups; } });
 Object.defineProperty(exports, "getAccountAvatarURL", { enumerable: true, get: function () { return accountsFeed_1.getAccountAvatarURL; } });
 Object.defineProperty(exports, "fetchAccountRoleList", { enumerable: true, get: function () { return accountsFeed_1.fetchAccountRoleList; } });
+Object.defineProperty(exports, "fetchAccountRoleAddresses", { enumerable: true, get: function () { return accountsFeed_1.fetchAccountRoleAddresses; } });
+Object.defineProperty(exports, "fetchAccountDirectorySpecs", { enumerable: true, get: function () { return accountsFeed_1.fetchAccountDirectorySpecs; } });
 var accountIcons_1 = require("./accountIcons");
 Object.defineProperty(exports, "fetchAccountAvatarBlob", { enumerable: true, get: function () { return accountIcons_1.fetchAccountAvatarBlob; } });

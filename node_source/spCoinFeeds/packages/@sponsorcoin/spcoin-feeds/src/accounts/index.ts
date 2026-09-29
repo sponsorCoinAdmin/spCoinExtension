@@ -16,6 +16,8 @@ export {
   fetchAccountListGroups,
   getAccountAvatarURL,
   fetchAccountRoleList,
+  fetchAccountRoleAddresses,
+  fetchAccountDirectorySpecs,
 } from './accountsFeed';
 
 export { fetchAccountAvatarBlob } from './accountIcons';

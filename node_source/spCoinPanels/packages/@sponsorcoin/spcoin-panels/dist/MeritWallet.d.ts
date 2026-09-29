@@ -1,4 +1,8 @@
+import React from 'react';
+import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import { type MenuTabKey } from './MenuTabHeaderBar';
+import { type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from './ManageSponsorshipsPanel';
+import { type HydratedAgent } from './AgentHeaderPanel';
 import { type OpenTarget } from './WalletConfigPanel';
 import { type AssetListEntry } from './AssetListTable';
 import { type AccountListGroup } from './AccountListCard';
@@ -48,8 +52,18 @@ export interface MeritWalletProps {
     titleBadgeSrc?: string;
     onRefresh?: () => void;
     refreshing?: boolean;
-    /** Forwarded to WalletHeader's own closeIconSrc — see that file's own
-     *  doc comment on why the extension swaps the close X for this. */
+    /** Forwarded to WalletHeader's own appType — the real source of truth
+     *  for which close icon renders (see that file's own doc comment).
+     *  Omit for the default X, correct for the web app and any not-yet-wired
+     *  future platform. */
+    appType?: APP_TYPE;
+    /** Forwarded to WalletHeader's own wwwIconSrc — only meaningful when
+     *  `appType === APP_TYPE.EXTENSION`, since only that caller can resolve
+     *  the real chrome.runtime.getURL(...) asset path. */
+    wwwIconSrc?: string;
+    /** Forwarded to WalletHeader's own closeIconSrc — an explicit manual
+     *  override, still supported, that takes priority over the
+     *  `appType`-driven choice above. See that file's own doc comment. */
     closeIconSrc?: string;
     /** Forwarded to every AssetListRow's own infoIconSrc (see that file's
      *  doc comment) — same "extension bundles its own copy, passes
@@ -65,6 +79,9 @@ export interface MeritWalletProps {
     onOpenTargetChange?: (target: OpenTarget) => void;
     networkRows?: MeritWalletNetworkRow[];
     accountGroups?: AccountListGroup[];
+    /** 2026-09-27, Phase 4 — chainId for swap/stake execution. Defaults to
+     *  31337 (Hardhat) when omitted. */
+    activeChainId?: number;
     tokenRows?: AssetListEntry[];
     recipientRows?: AssetListEntry[];
     onAccountRowSelect?: (accountId: string) => void;
@@ -96,5 +113,96 @@ export interface MeritWalletProps {
         description?: string;
     } | null;
     onNetworkIconClick?: (networkId: string) => void;
+    sendAmount?: string;
+    onSendAmountChange?: (value: string) => void;
+    /** True while a real send is in flight — passed straight to SendTabPanel's submitLabel/disabled state. */
+    sendBusy?: boolean;
+    /**
+     * Fires on the SEND tab's submit click. `tokenAddress` is present for an
+     * ERC20 send (omitted for native); `decimals` is the picked token's real
+     * decimals (resolved from the token-list row, Stage 32's follow-up), the
+     * correct amount-to-wei source this component's own PickedEntry now carries
+     * — a caller wiring ERC20 sends should pass both through to its wei parser.
+     */
+    onSendSubmit?: (params: {
+        recipientAddress?: string;
+        tokenAddress?: string;
+        amount: string;
+        decimals?: number;
+        tokenSymbol?: string;
+    }) => void;
+    sponsorStakeSubmitBusy?: boolean;
+    onSponsorStakeSubmit?: (params: {
+        recipientAddress?: string;
+        agentAddress?: string;
+        amount: bigint;
+        recipientRateKey: number;
+        agentRateKey: number;
+    }) => void;
+    /** 2026-09-26, Phase 4 finish — real stake amount input for the SPONSOR
+     *  tab. Mirrors sendAmount/onSendAmountChange on the SEND tab. */
+    sponsorAmount?: string;
+    onSponsorAmountChange?: (value: string) => void;
+    sponsorAmountBusy?: boolean;
+    /** 2026-09-27, Phase 4 — swap execution callback for SPONSOR tab.
+       *  MeritWallet calls this with the current selections so the caller
+       *  (sidepanel.ts) can invoke executeUniswapV3Swap with the right params.
+       *  Omit to skip swap (inert-only behavior). */
+    onSponsorSwapSubmit?: (params: {
+        tokenIn: string;
+        tokenOut: string;
+        amountIn: bigint;
+        recipient: string;
+        chainId: number;
+    }) => void;
+    sponsorSwapBusy?: boolean;
+    /** 2026-09-28, TRADING_STATION_PANEL migration — SWAP tab swap execution. */
+    swapAmount?: string;
+    onSwapAmountChange?: (value: string) => void;
+    swapBusy?: boolean;
+    onSwapSubmit?: (params: {
+        sellTokenAddress: string;
+        buyTokenAddress: string;
+        amountIn: bigint;
+        recipient: string;
+        chainId: number;
+    }) => void;
+    /** 2026-09-27 — TODO 4 wiring: default agent address for AGENT_HEADER_PANEL
+    *  auto-seed. The web app reads this from NEXT_PUBLIC_DEFAULT_AGENT_ADDRESS;
+    *  the extension should pass the same env-derived value (or omit to skip
+    *  auto-seed). Omit to keep current inert behavior (no default agent). */
+    defaultAgentAddress?: string;
+    /** 2026-09-27 — TODO 4 wiring: resolve a HydratedAgent from an address.
+     *  Caller supplies the real fetch (fetchAccountMetadata + getAccountAvatarURL);
+     *  this package has no feed dependency of its own. Omit to skip auto-seed. */
+    onHydrateAgent?: (address: string) => Promise<HydratedAgent | undefined>;
+    /** 2026-09-27 — TODO 4 wiring: commit the hydrated default agent back into
+     *  account state (useAgentAccount's setter). Omit to skip auto-seed. */
+    onSetAgentAccount?: (account: HydratedAgent) => void;
+    tradingAmountText?: string;
+    stakedAmountText?: string;
+    pendingAmountText?: string;
+    totalCoinsText?: string;
+    tradingOrStalledLoading?: boolean;
+    tradingIsZero?: boolean;
+    stakedIsZero?: boolean;
+    pendingIsZero?: boolean;
+    pendingInitialLoading?: boolean;
+    pendingRoleUnavailable?: boolean;
+    pendingClaimInProgress?: boolean;
+    pendingClaimDisabled?: boolean;
+    pendingErrorText?: string;
+    rewardRows?: ManageSponsorshipRoleRow[];
+    onRoleEstimate?: (role: ManageSponsorshipRole) => void;
+    onRoleClaim?: (role: ManageSponsorshipRole) => void;
+    pendingVisible?: boolean;
+    onOpenPendingGroup?: () => void;
+    onPendingHeaderEstimate?: () => void;
+    onClosePendingGroup?: () => void;
+    onPendingEstimate?: () => void;
+    onPendingClaim?: () => void;
+    autoRefresh?: boolean;
+    onAutoRefreshChange?: (v: boolean) => void;
+    onStakedLabelClick?: () => void;
 }
-export default function MeritWallet({ docked, fullWidth, onClose, titleBadgeSrc, onRefresh, refreshing, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, }: MeritWalletProps): import("react/jsx-runtime").JSX.Element;
+export default function MeritWallet({ docked, fullWidth, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorStakeSubmitBusy, onSponsorStakeSubmit, sponsorAmount, onSponsorAmountChange, sponsorAmountBusy, onSponsorSwapSubmit, sponsorSwapBusy, swapAmount, onSwapAmountChange, swapBusy, onSwapSubmit, activeChainId, defaultAgentAddress, onHydrateAgent, onSetAgentAccount, tradingAmountText, stakedAmountText, pendingAmountText, totalCoinsText, tradingOrStalledLoading, tradingIsZero, stakedIsZero, pendingIsZero, pendingInitialLoading, pendingRoleUnavailable, pendingClaimInProgress, pendingClaimDisabled, pendingErrorText, rewardRows, onRoleEstimate, onRoleClaim, pendingVisible, onOpenPendingGroup, onPendingHeaderEstimate, onClosePendingGroup, onPendingEstimate, onPendingClaim, autoRefresh, onAutoRefreshChange, onStakedLabelClick, }: MeritWalletProps): React.JSX.Element;

@@ -29,13 +29,16 @@ export interface NetworkListRowProps {
   isActive?: boolean;
   onSelect?: () => void;
   // 2026-09-16, on request ("do the same for the info.png in the lists...
-  // there are 3 list types... ACCOUNT, TOKEN and NETWORK") — this row has
-  // no separate info button (its right-side slot is the auth-source
-  // toggle, not an info icon — see this file's own top comment), so the
-  // network's own logo fills that role instead, same "icon opens details,
-  // rest of the row opens/selects" split every other row in this package
-  // now has. AssetSelectDropDown already supports this (its own
-  // onIconClick prop), this row just never exposed it until now.
+  // there are 3 list types... ACCOUNT, TOKEN and NETWORK") — originally
+  // wired by MeritWallet.tsx to open NetworkDetailPanel per-row, on the
+  // (incorrect) belief that every other list row splits "icon opens
+  // details, rest of the row selects." 2026-09-17, on live report: no other
+  // list row in this package actually does that split — a list row's icon
+  // commits that row, same as the rest of the row (a separate (i) info
+  // button, where one exists, is what opens details). MeritWallet.tsx no
+  // longer passes this prop for that reason; left here, unused by that
+  // caller, as a plain optional override for any future one that
+  // genuinely wants per-row icon clicks to do something other than select.
   onIconClick?: () => void;
   onIconContextMenu?: (e: React.MouseEvent) => void;
   /** Current Merit/MetaMask radio selection for THIS row's own chainId —

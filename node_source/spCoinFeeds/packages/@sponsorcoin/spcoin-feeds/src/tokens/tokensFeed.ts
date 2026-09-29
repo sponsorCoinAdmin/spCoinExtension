@@ -183,6 +183,7 @@ export function toAssetListEntries(records: TokenRecord[]): TokenListRowData[] {
     symbol: record.symbol,
     name: record.name,
     address: record.address,
+    decimals: record.decimals,
     logoURL: record.logoURL,
   }));
 }

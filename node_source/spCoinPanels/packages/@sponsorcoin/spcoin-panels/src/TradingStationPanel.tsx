@@ -34,6 +34,7 @@
 'use client';
 
 import React from 'react';
+import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
 import ExchangeTradingPair, { type ExchangeTradingPairProps } from './ExchangeTradingPair';
 import { PACKAGE_BUILD } from './packageBuildTag';
 import TabBodyMarker from './TabBodyMarker';
@@ -59,7 +60,21 @@ export default function TradingStationPanel({
     // UNI_SELECT_PANEL's own submit button explicitly matches it via its
     // own `pt-[4px]` (see that file's comment on its button wrapper).
     // Matched exactly here instead of re-guessing a new invented value.
-    <div style={{ boxSizing: 'border-box', position: 'relative', display: 'flex', flexDirection: 'column', gap: 4, padding: 8 }}>
+    //
+    // 2026-09-22 — `padding: 8` removed entirely. That value was itself
+    // never real (see this file's own git history: invented 12→10→8 across
+    // three same-week WIP commits, never reconciled against anything in the
+    // real web app — docs/npmPanelDisplayIssue.md). No replacement — Web
+    // App parity confirmed at zero self-padding here.
+    //
+    // 2026-09-22 — `gap` now reads PANEL_GAP from
+    // @sponsorcoin/spcoin-common/styles instead of a hardcoded `4` — the
+    // same value, same real source (TSP_TW.gap), but now defined exactly
+    // once instead of copy-pasted across this file/SendTabPanel.tsx/
+    // SponsorshipPanel.tsx. See that file's own header comment — PANEL_GAP
+    // is currently 2, a deliberate live test of a tighter value, not the
+    // previously-verified 4.
+    <div style={{ boxSizing: 'border-box', position: 'relative', display: 'flex', flexDirection: 'column', gap: PANEL_GAP }}>
       <TabBodyMarker path="TradingStationPanel.tsx" build={PACKAGE_BUILD} />
       <ExchangeTradingPair {...exchangeTradingPairProps} />
       {/* boxSizing:'border-box' added defensively (no live bug today —

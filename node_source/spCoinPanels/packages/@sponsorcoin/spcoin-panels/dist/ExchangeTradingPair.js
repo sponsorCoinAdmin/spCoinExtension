@@ -13,16 +13,11 @@
 // EXCHANGE_TRADING_PAIR owns in the real app — not a generic layout detail
 // buried in the larger panel wrapper.
 'use client';
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = ExchangeTradingPair;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = require("react");
-const lucide_react_1 = require("lucide-react");
-const TradeAmountRow_1 = __importDefault(require("./TradeAmountRow"));
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
+import { ArrowDown } from 'lucide-react';
+import { SWAP_ARROW_BG, SWAP_ARROW_BORDER, SWAP_ARROW_IDLE_COLOR, SWAP_ARROW_HOVER_COLOR, } from '@sponsorcoin/spcoin-common/styles';
+import TradeAmountRow from './TradeAmountRow';
 // 2026-09-12 fix, on request — this used to diverge from the real app's
 // own SWAP_ARROW_BUTTON (components/views/TradingStationPanel/
 // SwapArrowButton/index.tsx) in every visual detail: a different lucide
@@ -47,8 +42,8 @@ const TradeAmountRow_1 = __importDefault(require("./TradeAmountRow"));
 // it instead of its own flex row between the two rows, and the sell/buy
 // rows sit flush (no gap) so the seam lines up under it.
 function SwapArrowButton({ onClick }) {
-    const [hovered, setHovered] = (0, react_1.useState)(false);
-    return ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: onClick, "aria-label": "Swap direction", onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), style: {
+    const [hovered, setHovered] = useState(false);
+    return (_jsx("button", { type: "button", onClick: onClick, "aria-label": "Swap direction", onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), style: {
             // 2026-09-13 fix, found during the same box-sizing audit as
             // TradeAmountRow.tsx: a fixed height/width + border with no
             // boxSizing:'border-box' rendered this larger than declared
@@ -78,14 +73,14 @@ function SwapArrowButton({ onClick }) {
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 5,
-            border: '2px solid #0E111B',
-            background: '#3a4157',
-            color: hovered ? '#ffffff' : '#5F6783',
+            border: `2px solid ${SWAP_ARROW_BORDER}`,
+            background: SWAP_ARROW_BG,
+            color: hovered ? SWAP_ARROW_HOVER_COLOR : SWAP_ARROW_IDLE_COLOR,
             transition: 'color 300ms',
             cursor: onClick ? 'pointer' : 'default',
-        }, children: (0, jsx_runtime_1.jsx)(lucide_react_1.ArrowDown, { size: 10 }) }));
+        }, children: _jsx(ArrowDown, { size: 10 }) }));
 }
-function ExchangeTradingPair({ sellLabel = 'You Exactly Pay:', sellAmount, onSellAmountChange, sellAmountDisabled, sellSymbol, sellAddress, sellIcon, onSellTokenClick, sellBalanceText = 'Balance: 0', sellBalanceClickable, onSellBalanceClick, buyLabel = 'You Receive:', buyAmount, onBuyAmountChange, buyAmountDisabled, buySymbol, buyAddress, buyIcon, onBuyTokenClick, buyBalanceText = 'Balance: 0', onCogClick, onSwapDirection, }) {
+export default function ExchangeTradingPair({ sellLabel = 'You Exactly Pay:', sellAmount, onSellAmountChange, sellAmountDisabled, sellSymbol, sellAddress, sellIcon, onSellTokenClick, sellBalanceText = 'Balance: 0', sellBalanceClickable, onSellBalanceClick, buyLabel = 'You Receive:', buyAmount, onBuyAmountChange, buyAmountDisabled, buySymbol, buyAddress, buyIcon, onBuyTokenClick, buyBalanceText = 'Balance: 0', onCogClick, onSwapDirection, buyPrefixContent, buySuffixContent, sellVisible = true, buyVisible = true, arrowVisible = true, }) {
     return (
     // 2026-09-12 fix, on request — "You Pay"/"You Receive" were this
     // package's own invented labels; the real app's default wording
@@ -103,5 +98,5 @@ function ExchangeTradingPair({ sellLabel = 'You Exactly Pay:', sellAmount, onSel
     // see SwapArrowButton's own comment above for why. The wrapper must
     // NOT clip (no overflow:hidden) or the button's bottom half would be
     // cut off by the sell row's own rounded corners.
-    (0, jsx_runtime_1.jsxs)("div", { id: "EXCHANGE_TRADING_PAIR", style: { boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 0 }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { boxSizing: 'border-box', position: 'relative' }, children: [(0, jsx_runtime_1.jsx)(TradeAmountRow_1.default, { label: sellLabel, tokenIcon: sellIcon, tokenSymbol: sellSymbol, tokenAddress: sellAddress, onTokenPillClick: onSellTokenClick, amount: sellAmount, onAmountChange: onSellAmountChange, amountDisabled: sellAmountDisabled, balanceText: sellBalanceText, balanceClickable: sellBalanceClickable, onBalanceClick: onSellBalanceClick }), (0, jsx_runtime_1.jsx)(SwapArrowButton, { onClick: onSwapDirection })] }), (0, jsx_runtime_1.jsx)("div", { style: { boxSizing: 'border-box', paddingTop: 2 }, children: (0, jsx_runtime_1.jsx)(TradeAmountRow_1.default, { label: buyLabel, onCogClick: onCogClick, tokenIcon: buyIcon, tokenSymbol: buySymbol, tokenAddress: buyAddress, onTokenPillClick: onBuyTokenClick, amount: buyAmount, onAmountChange: onBuyAmountChange, amountDisabled: buyAmountDisabled, balanceText: buyBalanceText }) })] }));
+    _jsxs("div", { id: "EXCHANGE_TRADING_PAIR", style: { boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 0 }, children: [_jsxs("div", { style: { boxSizing: 'border-box', position: 'relative' }, children: [sellVisible && (_jsx(TradeAmountRow, { label: sellLabel, tokenIcon: sellIcon, tokenSymbol: sellSymbol, tokenAddress: sellAddress, onTokenPillClick: onSellTokenClick, amount: sellAmount, onAmountChange: onSellAmountChange, amountDisabled: sellAmountDisabled, balanceText: sellBalanceText, balanceClickable: sellBalanceClickable, onBalanceClick: onSellBalanceClick })), arrowVisible && _jsx(SwapArrowButton, { onClick: onSwapDirection })] }), _jsxs("div", { style: { boxSizing: 'border-box', paddingTop: 2 }, children: [buyPrefixContent, buyVisible && (_jsx(TradeAmountRow, { label: buyLabel, onCogClick: onCogClick, tokenIcon: buyIcon, tokenSymbol: buySymbol, tokenAddress: buyAddress, onTokenPillClick: onBuyTokenClick, amount: buyAmount, onAmountChange: onBuyAmountChange, amountDisabled: buyAmountDisabled, balanceText: buyBalanceText })), buySuffixContent] })] }));
 }

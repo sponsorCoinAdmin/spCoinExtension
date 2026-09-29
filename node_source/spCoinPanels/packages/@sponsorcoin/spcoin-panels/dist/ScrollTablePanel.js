@@ -27,12 +27,9 @@
 // stylable properties) are still applied, so Firefox/legacy Edge still
 // hide it. Cosmetic only, not a functional gap — not worth a bigger fix.
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = ScrollTablePanel;
-const jsx_runtime_1 = require("react/jsx-runtime");
-function ScrollTablePanel({ id, header, footer, style, bufferPadding = '3px 12px', bodyRef, bodyStyle, children, }) {
-    return ((0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden', padding: bufferPadding }, children: (0, jsx_runtime_1.jsxs)("div", { id: id, style: { display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden', ...style }, children: [header, (0, jsx_runtime_1.jsx)("div", { ref: bodyRef, style: {
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+export default function ScrollTablePanel({ id, header, footer, style, bufferPadding = '3px 12px', bodyRef, bodyStyle, children, }) {
+    return (_jsx("div", { style: { display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden', padding: bufferPadding }, children: _jsxs("div", { id: id, style: { display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden', ...style }, children: [header, _jsx("div", { ref: bodyRef, style: {
                         minHeight: 0,
                         flex: 1,
                         overflowY: 'auto',

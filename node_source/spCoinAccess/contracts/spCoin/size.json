@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-08-02 15:48:12 -04:00",
+  "sourceRoot": "C:\\Users\\robin\\spCoin\\SPCOIN-PROJECT-MODULES\\spcoin-nextjs-front-end\\spCoinAccess\\contracts\\spCoin",
+  "entryFile": "SPCoin.sol",
+  "contractName": "SPCoin",
+  "solcVersion": "0.8.18",
+  "optimizerEnabled": true,
+  "optimizerRuns": 200,
+  "viaIR": true,
+  "sourceCount": 18,
+  "sourceFingerprint": "{\"sourceRoot\":\"C:\\\\Users\\\\robin\\\\spCoin\\\\SPCOIN-PROJECT-MODULES\\\\spcoin-nextjs-front-end\\\\spCoinAccess\\\\contracts\\\\spCoin\",\"entry\":\"SPCoin.sol:SPCoin\",\"compiler\":\"0.8.18\",\"optimizerRuns\":200,\"viaIR\":true,\"files\":[{\"relativePath\":\"SPCoin.sol\",\"size\":1418,\"mtimeMs\":1778011772104.176},{\"relativePath\":\"Token.sol\",\"size\":2998,\"mtimeMs\":1777967452779.5945},{\"relativePath\":\"accounts/Account.sol\",\"size\":11269,\"mtimeMs\":1785453130326.6787},{\"relativePath\":\"accounts/Agent.sol\",\"size\":4197,\"mtimeMs\":1785453130327.6797},{\"relativePath\":\"accounts/AgentRates.sol\",\"size\":6361,\"mtimeMs\":1785696292298.2512},{\"relativePath\":\"accounts/Recipient.sol\",\"size\":3546,\"mtimeMs\":1785453130328.6804},{\"relativePath\":\"accounts/RecipientRates.sol\",\"size\":3951,\"mtimeMs\":1785558164766.9626},{\"relativePath\":\"accounts/Sponsor.sol\",\"size\":351,\"mtimeMs\":1776152732405.75},{\"relativePath\":\"accounts/Transactions.sol\",\"size\":27568,\"mtimeMs\":1785696292300.2488},{\"relativePath\":\"accounts/UnSubscribe.sol\",\"size\":25183,\"mtimeMs\":1785699874539.749},{\"relativePath\":\"dataTypes/KYC.sol\",\"size\":868,\"mtimeMs\":1772703002139.735},{\"relativePath\":\"dataTypes/SpCoinDataTypes.sol\",\"size\":14738,\"mtimeMs\":1785696292303.7554},{\"relativePath\":\"rewardsManagement/RewardsManager.sol\",\"size\":28991,\"mtimeMs\":1785699852407.5913},{\"relativePath\":\"rewardsManagement/StakingManager.sol\",\"size\":6062,\"mtimeMs\":1785365731383.9634},{\"relativePath\":\"utils/Security.sol\",\"size\":9356,\"mtimeMs\":1785696292308.7625},{\"relativePath\":\"utils/TimeUtils.sol\",\"size\":1133,\"mtimeMs\":1778011772106.176},{\"relativePath\":\"utils/Utils.sol\",\"size\":217,\"mtimeMs\":1778011772106.176}]}",
+  "creationBytes": 25378,
+  "deployedBytes": 22967,
+  "abiLength": 0,
+  "eip170LimitBytes": 24576,
+  "deployedMarginBytes": 1609,
+  "deployedMarginLabel": "+1609 bytes vs EIP-170",
+  "sourceFiles": [
+    {
+      "key": "SPCoin.sol",
+      "size": 1418,
+      "mtimeMs": 1778011772104.176
+    },
+    {
+      "key": "Token.sol",
+      "size": 2998,
+      "mtimeMs": 1777967452779.5945
+    },
+    {
+      "key": "accounts/Account.sol",
+      "size": 11269,
+      "mtimeMs": 1785453130326.6787
+    },
+    {
+      "key": "accounts/Agent.sol",
+      "size": 4197,
+      "mtimeMs": 1785453130327.6797
+    },
+    {
+      "key": "accounts/AgentRates.sol",
+      "size": 6361,
+      "mtimeMs": 1785696292298.2512
+    },
+    {
+      "key": "accounts/Recipient.sol",
+      "size": 3546,
+      "mtimeMs": 1785453130328.6804
+    },
+    {
+      "key": "accounts/RecipientRates.sol",
+      "size": 3951,
+      "mtimeMs": 1785558164766.9626
+    },
+    {
+      "key": "accounts/Sponsor.sol",
+      "size": 351,
+      "mtimeMs": 1776152732405.75
+    },
+    {
+      "key": "accounts/Transactions.sol",
+      "size": 27568,
+      "mtimeMs": 1785696292300.2488
+    },
+    {
+      "key": "accounts/UnSubscribe.sol",
+      "size": 25183,
+      "mtimeMs": 1785699874539.749
+    },
+    {
+      "key": "dataTypes/KYC.sol",
+      "size": 868,
+      "mtimeMs": 1772703002139.735
+    },
+    {
+      "key": "dataTypes/SpCoinDataTypes.sol",
+      "size": 14738,
+      "mtimeMs": 1785696292303.7554
+    },
+    {
+      "key": "rewardsManagement/RewardsManager.sol",
+      "size": 28991,
+      "mtimeMs": 1785699852407.5913
+    },
+    {
+      "key": "rewardsManagement/StakingManager.sol",
+      "size": 6062,
+      "mtimeMs": 1785365731383.9634
+    },
+    {
+      "key": "utils/Security.sol",
+      "size": 9356,
+      "mtimeMs": 1785696292308.7625
+    },
+    {
+      "key": "utils/TimeUtils.sol",
+      "size": 1133,
+      "mtimeMs": 1778011772106.176
+    },
+    {
+      "key": "utils/Utils.sol",
+      "size": 217,
+      "mtimeMs": 1778011772106.176
+    }
+  ]
+}

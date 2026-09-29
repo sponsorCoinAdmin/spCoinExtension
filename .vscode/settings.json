@@ -1,0 +1,9 @@
+{
+  "files.exclude": {
+    "**/node_source/**/dist/**": true
+  },
+  "search.exclude": {
+    "**/node_source/**/dist/**": true
+  },
+  "typescript.preferences.excludeDirectories": "node_modules,.git,dist"
+}

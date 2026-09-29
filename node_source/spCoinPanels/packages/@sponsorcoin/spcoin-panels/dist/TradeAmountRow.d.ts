@@ -15,6 +15,7 @@ export interface TradeAmountRowProps {
     tokenIcon?: React.ReactNode;
     tokenSymbol?: string;
     tokenAddress?: string;
+    showTokenIdentity?: boolean;
     /** Omit for an inert pill (today's default) — provide to open a token
      *  picker, matching TokenSelectDropDown.tsx's real row-click behavior. */
     onTokenPillClick?: (e: React.SyntheticEvent) => void;
@@ -36,4 +37,4 @@ export interface TradeAmountRowProps {
     balanceClickable?: boolean;
     onBalanceClick?: () => void;
 }
-export default function TradeAmountRow({ label, labelColor, onCogClick, tokenIcon, tokenSymbol, tokenAddress, onTokenPillClick, onIconClick, amount, onAmountChange, amountDisabled, amountNote, balanceText, balanceClickable, onBalanceClick, }: TradeAmountRowProps): import("react/jsx-runtime").JSX.Element;
+export default function TradeAmountRow({ label, labelColor, onCogClick, tokenIcon, tokenSymbol, tokenAddress, showTokenIdentity, onTokenPillClick, onIconClick, amount, onAmountChange, amountDisabled, amountNote, balanceText, balanceClickable, onBalanceClick, }: TradeAmountRowProps): React.JSX.Element;

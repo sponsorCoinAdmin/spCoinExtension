@@ -32,6 +32,39 @@ export declare function removeKeystoreAccount(chainId: number, address: string, 
  */
 export declare function fetchAccountListGroups(chainId: number, config?: AccountsFeedConfig): Promise<AccountListGroupData[]>;
 /**
+ * GET /assets/blockchains/{diskChainId}/{role}.accounts.json — a plain
+ * array of addresses (confirmed by direct read of the real files), not a
+ * keystore. 404/empty resolves to [].
+ *
+ * 2026-09-17, on the feedType-parameterized-dropdowns migration — exported
+ * (was module-private) so the web app's own fetchAndBuildDataList.ts can
+ * route its REMOTE_RECIPIENT_ACCOUNTS/REMOTE_AGENT_ACCOUNTS/
+ * REMOTE_SPONSOR_ACCOUNTS transport call through here too, instead of a
+ * second hand-rolled fetch of the same URL. Deliberately stays at "fetch +
+ * unwrap the transport envelope only" — the web app's own
+ * accountHydration.ts still owns turning these bare addresses into full
+ * spCoinAccount records (SSOT-hydrated, inline-spec-overlaid); this
+ * function must never take over that job, or the two hydration pipelines
+ * (this package's simple per-address metadata fetch vs. the web app's
+ * batched accountStore-backed one) would silently diverge in output shape.
+ * cache: 'no-store' matches fetchAndBuildDataList.ts's own prior raw
+ * fetch() call — a real, standard fetch()-level instruction (bypass the
+ * browser's HTTP cache), not a Next.js-only convention, so it belongs here
+ * regardless of which consumer (web app or extension) calls this.
+ */
+export declare function fetchAccountRoleAddresses(role: AccountRole, chainId: number, config?: AccountsFeedConfig): Promise<string[]>;
+/**
+ * GET /api/spCoin/accounts?allData=true&page=&pageSize= — the flat,
+ * chain-agnostic "every known account" directory (FEED_TYPE.REMOTE_ACCOUNT_SEND_LIST).
+ * Returns each row's raw `data` spec (whatever inline fields the directory
+ * embeds), not a hydrated AccountListRowData — same "fetch + unwrap the
+ * transport envelope only" contract as fetchAccountRoleAddresses above, for
+ * the same reason: a caller's own hydration pipeline (accountHydration.ts's
+ * buildAccountFromJsonSpec on the web app side) still owns turning specs
+ * into full account records.
+ */
+export declare function fetchAccountDirectorySpecs(page: number, pageSize: number, config?: AccountsFeedConfig): Promise<unknown[]>;
+/**
  * 2026-09-16, on live report ("I think the selection lists are different
  * in the web site vs the extension") — the recipients/agents/sponsors
  * counterpart to fetchAccountListGroups above: same composition (role

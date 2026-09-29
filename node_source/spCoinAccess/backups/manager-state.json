@@ -1,0 +1,16 @@
+{
+  "packages": {
+    "@sponsorcoin/spcoin-access-modules": {
+      "downloadedVersion": "",
+      "activeArchive": ""
+    },
+    "@sponsorcoin/spcoin-panels": {
+      "downloadedVersion": "",
+      "activeArchive": ""
+    },
+    "@sponsorcoin/spcoin-exchange-engine": {
+      "downloadedVersion": "0.0.1",
+      "activeArchive": "sponsorcoin-spcoin-exchange-engine-0.0.1.tgz"
+    }
+  }
+}

@@ -36,6 +36,8 @@ export interface MeritTitleComponentProps {
    *  overlay). Omit to render a plain, non-interactive title — the correct
    *  default for any consumer with no such overlay to open yet. */
   onTitleClick?: () => void;
+  /** Hide the Merit badge while retaining the title text. */
+  showBadge?: boolean;
 }
 
 const DEFAULT_BADGE_SRC = '/assets/miscellaneous/meritWallet.png?v=22';
@@ -45,6 +47,24 @@ const wrapperStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   gap: 5,
+  marginTop: 0,
+  marginBottom: 0,
+  paddingTop: 0,
+  paddingBottom: 0,
+  // 2026-09-22, real fix confirmed via the orange debug backgrounds (see
+  // each leftSlot call site's own matching one) — this span is
+  // inline-flex, but its parent (WalletHeader.tsx's <h2>) is NOT a flex
+  // container, so it participates in normal inline text layout and gets
+  // the browser's default vertical-align: baseline, leaving a small
+  // descender gap below it. WalletHeader.tsx's row aligns the <h2>'s own
+  // box to the row bottom (flex-end), but that gap means the VISIBLE
+  // content stops short of it — exactly the "title's bottom sits higher
+  // than the network pill's bottom" the orange boxes showed.
+  // NetworkSelectDropDown's own leftSlot wrapper doesn't have this
+  // problem: it sits inside an already-flex div, not inline text layout.
+  // vertical-align: bottom removes the gap by aligning this inline box to
+  // the bottom of its line instead of its baseline.
+  verticalAlign: 'bottom',
 };
 
 const buttonStyle: React.CSSProperties = {
@@ -52,16 +72,16 @@ const buttonStyle: React.CSSProperties = {
   pointerEvents: 'auto',
   appearance: 'none',
   border: 'none',
-  background: 'transparent',
   padding: 0,
   cursor: 'pointer',
-  color: 'inherit',
+  color: '#ffffff',
   font: 'inherit',
 };
 
 export default function MeritTitleComponent({
   badgeSrc = DEFAULT_BADGE_SRC,
   onTitleClick,
+  showBadge = true,
 }: MeritTitleComponentProps) {
   const content = (
     <>
@@ -69,14 +89,21 @@ export default function MeritTitleComponent({
           png icon 75% LARGER") — 20px -> 35px (20 * 1.75), matching the
           app's own components/views/Headers/MeritTitleComponent.tsx (this
           file's own header comment: "a deliberate visual match, not a
-          shared source file"). */}
-      <img
-        src={badgeSrc}
-        alt=""
-        width={35}
-        height={35}
-        style={{ height: 35, width: 35, flexShrink: 0, objectFit: 'contain' }}
-      />
+          shared source file").
+          2026-09-20, reduced 20% (35 -> 28) — 9px -> 7px (or whatever the
+          intrinsic ratio resolves to at 28px height) to tighten the header.
+          2026-09-22 — briefly shrunk to 18 chasing an alignment complaint
+          that turned out not to be about icon size at all (see the
+          user's own correction: "I did not ask for a smaller icon, I
+          asked for a proper alignment"). Reverted to 26. */}
+      {showBadge && (
+        <img
+          src={badgeSrc}
+          alt=""
+          height={26}
+          style={{ height: 26, width: 'auto', flexShrink: 0, objectFit: 'contain' }}
+        />
+      )}
       Merit Wallet
     </>
   );

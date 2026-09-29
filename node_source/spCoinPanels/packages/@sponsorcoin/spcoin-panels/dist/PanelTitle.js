@@ -1,28 +1,31 @@
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/PanelTitle.tsx
-// Portable placeholder for PANEL_TITLE (2026-09-12) — the real app version
-// (components/views/Headers/ActiveWalletPanelTitle.tsx, via PopupHeader.tsx)
-// reads a live `useActiveWalletPanelTitle()` computed title and calls the
-// real panel-tree's `closePanel`/a caller-supplied menu handler — no panel
-// tree exists in a standalone consumer (the extension, today) to compute a
-// title from or navigate with. Same shape (back button, centered title,
-// menu/hamburger button), entirely inert unless the caller wires the two
-// callbacks — same "presentation only, no sync yet" scope every other
-// extension-bound component here follows. Inline styles (no Tailwind),
+// Portable shell for PANEL_TITLE (2026-09-12, reworked 2026-09-22 — see
+// WalletHeader.tsx's own "opaque slot" precedent for the pattern this
+// follows). Originally an inert placeholder (no panel tree existed in a
+// standalone consumer to navigate with); its prop surface (title/
+// onBackClick/onMenuClick/menuOpen) turned out to already fit the web
+// app's own real usage exactly — a live `useActiveWalletPanelTitle()`
+// computed title and a plain `() => closePanel(...)` callback for the
+// back button — so the web app's own separate copy
+// (components/views/PopupHeader.tsx, via ActiveWalletPanelTitle.tsx) was
+// retired entirely in favor of this one file. Real back-button behavior
+// still differs between the two apps (the web app's closePanel(...) is a
+// single generic call into the shared panel-tree engine covering every
+// "go back" case; the package's own MeritWallet.tsx still hand-rolls its
+// own local 4-way branch) — that's each caller's own callback, not
+// something this shell needs to know about. Inline styles (no Tailwind),
 // same reasoning as every sibling component.
 //
 // Sizing scaled down from the real app's 44px (h-11 w-11) buttons/20px
 // title to this panel's own established compact scale (see WalletHeader.tsx's
 // 30px buttons) rather than copying the real, popup-sized numbers verbatim.
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = PanelTitle;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = require("react");
-const lucide_react_1 = require("lucide-react");
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
+import { ArrowLeft, Menu } from 'lucide-react';
 function IconButton({ onClick, ariaLabel, active, children, }) {
-    const [hovered, setHovered] = (0, react_1.useState)(false);
-    return ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: onClick, "aria-label": ariaLabel, title: ariaLabel, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), style: {
+    const [hovered, setHovered] = useState(false);
+    return (_jsx("button", { type: "button", onClick: onClick, "aria-label": ariaLabel, title: ariaLabel, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), style: {
             display: 'flex',
             height: 28,
             width: 28,
@@ -36,8 +39,8 @@ function IconButton({ onClick, ariaLabel, active, children, }) {
             cursor: onClick ? 'pointer' : 'default',
         }, children: children }));
 }
-function PanelTitle({ title = 'Trading Station', onBackClick, onMenuClick, menuOpen, }) {
-    return ((0, jsx_runtime_1.jsxs)("div", { style: {
+export default function PanelTitle({ title = 'Trading Station', onBackClick, onMenuClick, menuOpen, }) {
+    return (_jsxs("div", { style: {
             display: 'flex',
             width: '100%',
             // 2026-09-12 fix: this row is the only header in the package that
@@ -62,11 +65,18 @@ function PanelTitle({ title = 'Trading Station', onBackClick, onMenuClick, menuO
             alignItems: 'center',
             gap: 6,
             borderBottom: '1px solid #21273a',
-            paddingLeft: 10,
-            paddingRight: 8,
+            // 2026-09-22, on direct request — 6px (was 10/8), matching the two
+            // header rows' own canonical left/right buffer (WalletHeader.tsx/
+            // WalletAccountHeader.tsx) for one continuous buffer top to
+            // bottom. Also the point this component became the web app's own
+            // real PANEL_TITLE too (see components/views/Headers/
+            // ActiveWalletPanelTitle.tsx's own header comment) — both apps
+            // now render through this one file.
+            paddingLeft: 6,
+            paddingRight: 6,
             paddingTop: 3,
             paddingBottom: 3,
-        }, children: [(0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: (0, jsx_runtime_1.jsx)(IconButton, { onClick: onBackClick, ariaLabel: "Go back", children: (0, jsx_runtime_1.jsx)(lucide_react_1.ArrowLeft, { size: 15, color: "#91a5ff", strokeWidth: 1.75 }) }) }), (0, jsx_runtime_1.jsx)("h2", { style: {
+        }, children: [_jsx("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: _jsx(IconButton, { onClick: onBackClick, ariaLabel: "Go back", children: _jsx(ArrowLeft, { size: 15, color: "#91a5ff", strokeWidth: 1.75 }) }) }), _jsx("h2", { style: {
                     pointerEvents: 'none',
                     margin: 0,
                     minWidth: 0,
@@ -79,5 +89,5 @@ function PanelTitle({ title = 'Trading Station', onBackClick, onMenuClick, menuO
                     fontWeight: 700,
                     lineHeight: 1.2,
                     color: '#ffffff',
-                }, children: title }), (0, jsx_runtime_1.jsx)("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: (0, jsx_runtime_1.jsx)(IconButton, { onClick: onMenuClick, ariaLabel: "Open wallet menu", active: menuOpen, children: (0, jsx_runtime_1.jsx)(lucide_react_1.Menu, { size: 15, color: "#91a5ff", strokeWidth: 1.75 }) }) })] }));
+                }, children: title }), _jsx("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center' }, children: _jsx(IconButton, { onClick: onMenuClick, ariaLabel: "Open wallet menu", active: menuOpen, children: _jsx(Menu, { size: 15, color: "#91a5ff", strokeWidth: 1.75 }) }) })] }));
 }

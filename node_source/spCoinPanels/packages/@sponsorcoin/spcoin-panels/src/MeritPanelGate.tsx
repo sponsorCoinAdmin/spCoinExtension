@@ -14,6 +14,17 @@
 // docs/design/extensionPlan.md §7's "Real bug found and fixed" note for
 // exactly this failure mode happening once already, on a component that
 // didn't even use PanelGate.
+//
+// 2026-09-21, Path A — RESTORED after being briefly deleted the same day;
+// see panelState.ts's own header comment for why it's not dead. This
+// package's own `PanelGate.tsx` (Path A's new real replacement, bound to
+// @sponsorcoin/spcoin-exchange-engine's own usePanelVisible) is used by
+// this package's own components now — this file stays only for the web
+// app's own remaining real consumer,
+// components/views/Headers/WalletNetworkPanel.tsx, which gates
+// WALLET_NETWORK_HEADER through this engine by deliberate 2026-09-14
+// design, not something this session's Path A work is in scope to
+// unwind.
 
 'use client';
 

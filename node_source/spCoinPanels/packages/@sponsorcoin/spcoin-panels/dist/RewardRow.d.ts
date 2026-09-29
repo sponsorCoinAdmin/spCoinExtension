@@ -1,3 +1,4 @@
+import React from 'react';
 export declare const REWARD_ROW_BG_A = "rgba(56,78,126,0.35)";
 export declare const REWARD_ROW_BG_B = "rgba(156,163,175,0.25)";
 export declare const REWARD_ROW_LABEL_WIDTH = 105;
@@ -17,4 +18,4 @@ export interface RewardRowProps {
      *  alternating per row, to match the real table's own rowA/rowB. */
     rowBg?: string;
 }
-export default function RewardRow({ label, amountText, buttonLabel, onClick, indent, unavailable, rowBg }: RewardRowProps): import("react/jsx-runtime").JSX.Element;
+export default function RewardRow({ label, amountText, buttonLabel, onClick, indent, unavailable, rowBg }: RewardRowProps): React.JSX.Element;

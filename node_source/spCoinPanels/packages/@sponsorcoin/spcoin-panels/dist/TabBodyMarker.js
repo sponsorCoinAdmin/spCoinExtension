@@ -17,18 +17,15 @@
 // own outer wrapper must set that itself (each already does, see that
 // file's own root element).
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = TabBodyMarker;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const packageBuildTag_1 = require("./packageBuildTag");
-function TabBodyMarker({ path, build }) {
+import { jsxs as _jsxs } from "react/jsx-runtime";
+import { SHOW_BUILD_MARKERS } from './packageBuildTag';
+export default function TabBodyMarker({ path, build }) {
     // 2026-09-15, on request — single choke point for packageBuildTag.ts's
     // own SHOW_BUILD_MARKERS flag (see that file's own doc comment), so none
     // of this component's 5 callers need their own conditional.
-    if (!packageBuildTag_1.SHOW_BUILD_MARKERS)
+    if (!SHOW_BUILD_MARKERS)
         return null;
-    return ((0, jsx_runtime_1.jsxs)("div", { style: {
+    return (_jsxs("div", { style: {
             position: 'absolute',
             top: 2,
             right: 4,

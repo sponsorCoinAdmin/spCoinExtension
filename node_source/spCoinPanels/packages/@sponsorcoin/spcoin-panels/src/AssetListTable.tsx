@@ -2,7 +2,7 @@
 // Portable version of the real app's DataListSelect.tsx (2026-09-15) — the
 // "TOKEN META | INFO" card shell shared by all four ACTIVE_LIST_PANEL_MODES
 // screens built on AssetListRow.tsx (REMOTE_TOKEN_LIST/REMOTE_ACCOUNT_
-// AGENT_LIST/REMOTE_ACCOUNT_RECIPIENT_LIST/REMOTE_ACCOUNT_LIST). Every value
+// AGENT_LIST/REMOTE_ACCOUNT_RECIPIENT_LIST/REMOTE_ACCOUNT_SEND_LIST). Every value
 // below (header labels/colors, rounded-[20px] corners, rowA/rowB zebra
 // colors) is copied from msTableTw.ts/DataListSelect.tsx's own real values,
 // not re-guessed. Placeholder: `rows` is caller-supplied static data, no

@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "updatedAt": "2026-03-06",
+  "networks": [
+    {
+      "name": "SponsorCoin HH BASE",
+      "chainId": 31337,
+      "currencySymbol": "ETH",
+      "defaultRpcUrl": "https://rpc.sponsorcoin.org/f5b4d4b4a2614a540189b979d068639c3fd44bbb1dfcdb5a",
+      "solcVersion": "0.8.18",
+      "optimizerEnabled": true,
+      "optimizerRuns": 200,
+      "failoverRpcUrl": null,
+      "blockExplorerUrl": null
+    },
+    {
+      "name": "Ethereum",
+      "chainId": 1,
+      "currencySymbol": "ETH",
+      "defaultRpcUrl": "https://mainnet.infura.io",
+      "solcVersion": "0.8.18",
+      "optimizerEnabled": true,
+      "optimizerRuns": 200,
+      "failoverRpcUrl": "https://dimensional-special-breeze.quiknode.pro",
+      "blockExplorerUrl": "https://etherscan.io"
+    },
+    {
+      "name": "Base",
+      "chainId": 8453,
+      "currencySymbol": "ETH",
+      "defaultRpcUrl": "https://mainnet.base.org",
+      "solcVersion": "0.8.18",
+      "optimizerEnabled": true,
+      "optimizerRuns": 200,
+      "failoverRpcUrl": null,
+      "blockExplorerUrl": "https://basescan.org"
+    },
+    {
+      "name": "Polygon",
+      "chainId": 137,
+      "currencySymbol": "POL",
+      "defaultRpcUrl": "https://polygon-mainnet.infura.io/v3/08b06e80980b4c1c9d9d450f4f71607d",
+      "solcVersion": "0.8.18",
+      "optimizerEnabled": true,
+      "optimizerRuns": 200,
+      "failoverRpcUrl": null,
+      "blockExplorerUrl": "https://polygonscan.com"
+    },
+    {
+      "name": "Sepolia",
+      "chainId": 11155111,
+      "currencySymbol": "SepoliaETH",
+      "defaultRpcUrl": "https://sepolia.infura.io",
+      "solcVersion": "0.8.18",
+      "optimizerEnabled": true,
+      "optimizerRuns": 200,
+      "failoverRpcUrl": null,
+      "blockExplorerUrl": "https://sepolia.etherscan.io"
+    }
+  ]
+}

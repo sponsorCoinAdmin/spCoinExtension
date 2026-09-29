@@ -1,3 +1,4 @@
+import React from 'react';
 export interface MeritTitleComponentProps {
     /** Icon badge shown in front of the title text. Defaults to the app's
      *  own hosted asset — override for any consumer that can't reach that
@@ -8,5 +9,7 @@ export interface MeritTitleComponentProps {
      *  overlay). Omit to render a plain, non-interactive title — the correct
      *  default for any consumer with no such overlay to open yet. */
     onTitleClick?: () => void;
+    /** Hide the Merit badge while retaining the title text. */
+    showBadge?: boolean;
 }
-export default function MeritTitleComponent({ badgeSrc, onTitleClick, }: MeritTitleComponentProps): import("react/jsx-runtime").JSX.Element;
+export default function MeritTitleComponent({ badgeSrc, onTitleClick, showBadge, }: MeritTitleComponentProps): React.JSX.Element;

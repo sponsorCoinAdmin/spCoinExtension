@@ -70,5 +70,14 @@ export interface TokenListRowData {
   symbol?: string;
   name?: string;
   address?: string;
+  /** 2026-09-23, Stage 39 (resume of the ERC20-send `decimals` follow-up paused
+   *  on 2026-09-22 in `docs/npmMigrationDesign.md` Stage 32) — threaded so an
+   *  ERC20 send has a correct, per-token amount-to-wei source at submit time
+   *  instead of rejecting the pick. Carried from the live `TokenRecord`
+   *  (server-hydrated `info.json` `decimals`) straight through
+   *  `toAssetListEntries` → `AssetListEntry`/`AssetListRow` → `PickedEntry`
+   *  → `onSendSubmit`. Optional: accounts have no decimals concept, so the same
+   *  row shape serves both token and account lists unchanged. */
+  decimals?: number;
   logoURL?: string;
 }

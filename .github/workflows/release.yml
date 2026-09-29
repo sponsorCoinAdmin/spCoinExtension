@@ -49,6 +49,9 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit -p tsconfig.json
 
+      - name: Lint (no ethers)
+        run: npm run lint
+
       - name: Build
         run: npm run build
 

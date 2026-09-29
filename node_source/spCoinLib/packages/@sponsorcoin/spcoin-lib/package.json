@@ -1,0 +1,38 @@
+{
+  "name": "@sponsorcoin/spcoin-lib",
+  "version": "1.0.4",
+  "description": "Sponsor Coin library's",
+  "type": "module",
+  "main": "./dist/utils.js",
+  "types": "./dist/utils.d.ts",
+  "exports": {
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.js",
+      "require": "./dist/utils.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sponsorCoinAdmin/spcoin-lib.git"
+  },
+  "author": "Robert Lanson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sponsorCoinAdmin/spcoin-lib/issues"
+  },
+  "homepage": "https://github.com/sponsorCoinAdmin/spcoin-lib#readme"
+}

@@ -168,10 +168,28 @@ export async function fetchAccountListGroups(
   ];
 }
 
-/** GET /assets/blockchains/{diskChainId}/{role}.accounts.json — a plain
- *  array of addresses (confirmed by direct read of the real files), not a
- *  keystore. 404/empty resolves to []. */
-async function fetchAccountRoleAddresses(
+/**
+ * GET /assets/blockchains/{diskChainId}/{role}.accounts.json — a plain
+ * array of addresses (confirmed by direct read of the real files), not a
+ * keystore. 404/empty resolves to [].
+ *
+ * 2026-09-17, on the feedType-parameterized-dropdowns migration — exported
+ * (was module-private) so the web app's own fetchAndBuildDataList.ts can
+ * route its REMOTE_RECIPIENT_ACCOUNTS/REMOTE_AGENT_ACCOUNTS/
+ * REMOTE_SPONSOR_ACCOUNTS transport call through here too, instead of a
+ * second hand-rolled fetch of the same URL. Deliberately stays at "fetch +
+ * unwrap the transport envelope only" — the web app's own
+ * accountHydration.ts still owns turning these bare addresses into full
+ * spCoinAccount records (SSOT-hydrated, inline-spec-overlaid); this
+ * function must never take over that job, or the two hydration pipelines
+ * (this package's simple per-address metadata fetch vs. the web app's
+ * batched accountStore-backed one) would silently diverge in output shape.
+ * cache: 'no-store' matches fetchAndBuildDataList.ts's own prior raw
+ * fetch() call — a real, standard fetch()-level instruction (bypass the
+ * browser's HTTP cache), not a Next.js-only convention, so it belongs here
+ * regardless of which consumer (web app or extension) calls this.
+ */
+export async function fetchAccountRoleAddresses(
   role: AccountRole,
   chainId: number,
   config?: AccountsFeedConfig,
@@ -179,9 +197,32 @@ async function fetchAccountRoleAddresses(
   const diskChainId = resolveDiskAssetChainId(chainId);
   const url = `/assets/blockchains/${diskChainId}/${role}.accounts.json`;
   return withMemoCache(roleListCache, `${config?.baseUrl ?? ''}:${url}`, async () => {
-    const raw = await fetchJsonOrNull<unknown>(url, config);
+    const raw = await fetchJsonOrNull<unknown>(url, config, { cache: 'no-store' });
     return Array.isArray(raw) ? raw.filter((entry): entry is string => typeof entry === 'string') : [];
   });
+}
+
+/**
+ * GET /api/spCoin/accounts?allData=true&page=&pageSize= — the flat,
+ * chain-agnostic "every known account" directory (FEED_TYPE.REMOTE_ACCOUNT_SEND_LIST).
+ * Returns each row's raw `data` spec (whatever inline fields the directory
+ * embeds), not a hydrated AccountListRowData — same "fetch + unwrap the
+ * transport envelope only" contract as fetchAccountRoleAddresses above, for
+ * the same reason: a caller's own hydration pipeline (accountHydration.ts's
+ * buildAccountFromJsonSpec on the web app side) still owns turning specs
+ * into full account records.
+ */
+export async function fetchAccountDirectorySpecs(
+  page: number,
+  pageSize: number,
+  config?: AccountsFeedConfig,
+): Promise<unknown[]> {
+  const url = `/api/spCoin/accounts?allData=true&page=${page}&pageSize=${pageSize}`;
+  const payload = await fetchJson<{ items?: { address?: string; data?: unknown }[] }>(url, config, {
+    cache: 'no-store',
+  });
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  return items.map((row) => row?.data).filter((d): d is unknown => d != null);
 }
 
 /**

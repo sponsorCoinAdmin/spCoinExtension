@@ -16,7 +16,8 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // Root barrel, matching @sponsorcoin/spcoin-common's own convention: a
 // fallback for `main`/`types`, but consumers should prefer the subpath
-// imports (spcoin-feeds/accounts, /tokens, /networks) below.
+// imports (spcoin-feeds/accounts, /tokens, /networks, /exchangeContext) below.
 __exportStar(require("./accounts"), exports);
 __exportStar(require("./tokens"), exports);
 __exportStar(require("./networks"), exports);
+__exportStar(require("./exchangeContext"), exports);

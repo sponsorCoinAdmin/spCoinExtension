@@ -21,4 +21,4 @@ export interface ScrollTablePanelProps {
     bodyStyle?: React.CSSProperties;
     children: React.ReactNode;
 }
-export default function ScrollTablePanel({ id, header, footer, style, bufferPadding, bodyRef, bodyStyle, children, }: ScrollTablePanelProps): import("react/jsx-runtime").JSX.Element;
+export default function ScrollTablePanel({ id, header, footer, style, bufferPadding, bodyRef, bodyStyle, children, }: ScrollTablePanelProps): React.JSX.Element;

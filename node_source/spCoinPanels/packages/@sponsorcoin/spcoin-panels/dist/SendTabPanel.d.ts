@@ -6,8 +6,13 @@ export interface SendTabPanelProps {
     recipientSymbol?: string;
     recipientAddress?: string;
     recipientIcon?: React.ReactNode;
+    /** 2026-09-22 — the "You Send" row's real, editable amount. Omit onAmountChange to leave it inert (today's original look). */
+    sendAmount?: string;
+    onSendAmountChange?: (value: string) => void;
     onSubmit?: () => void;
     submitLabel?: string;
+    /** True while a real send is in flight — disables the submit button (distinct from `onSubmit` being omitted, which also disables it via the cursor/click-handler check below). */
+    submitBusy?: boolean;
     /** 2026-09-15, on request ("the Token/Account/NetworkSelectListDropdown
      *  chevrons [need] to be linked to the required panels") — same shape as
      *  ExchangeTradingPair.tsx's own onSellTokenClick/onBuyTokenClick, just
@@ -19,4 +24,4 @@ export interface SendTabPanelProps {
     onSendTokenClick?: (e: React.SyntheticEvent) => void;
     onRecipientClick?: (e: React.SyntheticEvent) => void;
 }
-export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, onSubmit, submitLabel, onSendTokenClick, onRecipientClick, }: SendTabPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitLabel, submitBusy, onSendTokenClick, onRecipientClick, }: SendTabPanelProps): React.JSX.Element;

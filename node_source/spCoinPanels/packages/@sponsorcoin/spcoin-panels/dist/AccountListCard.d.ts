@@ -1,3 +1,4 @@
+import React from 'react';
 import { type AssetListRowProps } from './AssetListRow';
 export interface AccountListEntry extends Omit<AssetListRowProps, 'badge'> {
     id: string;
@@ -31,4 +32,4 @@ export interface AccountListCardProps {
     onAddWalletAccount?: () => void;
     infoIconSrc?: string;
 }
-export default function AccountListCard({ groups, onAddWalletAccount, infoIconSrc }: AccountListCardProps): import("react/jsx-runtime").JSX.Element;
+export default function AccountListCard({ groups, onAddWalletAccount, infoIconSrc }: AccountListCardProps): React.JSX.Element;

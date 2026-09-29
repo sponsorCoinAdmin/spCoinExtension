@@ -1,12 +1,8 @@
 // File: node_source/spCoinPanels/AssetSelectDropDowns/AssetSelectDropDown.tsx
 'use client';
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ASSET_SELECT_DISPLAY = void 0;
-exports.default = AssetSelectDropDown;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const react_1 = require("react");
-const lucide_react_1 = require("lucide-react");
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { useCallback, useEffect, useState } from 'react';
+import { ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 // Inlined (2026-09-11, portability pass) rather than imported from the
 // app-internal '@/lib/utils/addressUtils' (doesn't resolve outside this
 // app's own build). @sponsorcoin/spcoin-lib@1.0.4 now has the same
@@ -97,7 +93,7 @@ function parseTextColor(className, fallback) {
  * Bitwise flags controlling which sub-elements AssetSelectDropDown renders.
  * Shared by AccountSelectDropDown and TokenSelectDropDown.
  */
-exports.ASSET_SELECT_DISPLAY = {
+export const ASSET_SELECT_DISPLAY = {
     ICON: 1,
     ADDRESS: 2,
     SYMBOL: 4,
@@ -110,7 +106,7 @@ exports.ASSET_SELECT_DISPLAY = {
     /** Modifies ADDR_COMP: frosted-glass pill (backdrop-blur + translucent bg) instead of the solid one. No effect unless ADDR_COMP is also set. */
     ADDR_COMP_BLUR: 256,
 };
-function AssetSelectDropDown({ icon, symbol, name, address = '', addressTitle, hasEntity, placeholderLabel = 'Select', copyLabel = 'Copy address', showDisplay, showSymbol: showSymbolProp = false, showName: showNameProp = false, nameLineSuffix, 
+export default function AssetSelectDropDown({ icon, symbol, name, address = '', addressTitle, hasEntity, placeholderLabel = 'Select', copyLabel = 'Copy address', showDisplay, showSymbol: showSymbolProp = false, showName: showNameProp = false, nameLineSuffix, 
 // 2026-09-15, on request ("Symbol | Name scaling should be the exact same
 // size for all other DropDowns and throughout the program") — was
 // text-sm (14px), a leftover default nobody had actually reasoned about;
@@ -126,16 +122,16 @@ function AssetSelectDropDown({ icon, symbol, name, address = '', addressTitle, h
 // PanelSubTitle's call site, so every caller that relies on the default
 // (rather than setting its own) gets this one consistent size too.
 nameLineClassName = 'text-[11px] font-semibold leading-tight text-white', onRowClick, onAddressClick, onIconClick, onIconContextMenu, addrPrePostSize, addressSizeClassName = 'text-sm', panelGateId, panelGate: PanelGate, rootId = 'ASSET_SELECT_DROP_DOWN', defaultExpanded = false, restrictRowClickToChevron = false, collapseKey, onExpandedChange, iconSizeClassName = 'h-[22px] w-[22px]', pillHeightClassName = 'h-[16px]', pillFontClassName = 'text-[11px]', chevronSize = 12, copyIconSize = 12, }) {
-    const [copied, setCopied] = (0, react_1.useState)(false);
+    const [copied, setCopied] = useState(false);
     // Clicking the address toggles between compact and full display — separate
     // from addrPrePostSize, which just sets what "compact" means.
-    const [addressExpanded, setAddressExpanded] = (0, react_1.useState)(defaultExpanded);
-    (0, react_1.useEffect)(() => {
+    const [addressExpanded, setAddressExpanded] = useState(defaultExpanded);
+    useEffect(() => {
         setAddressExpanded(defaultExpanded);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [address, defaultExpanded, collapseKey]);
-    (0, react_1.useEffect)(() => {
-        onExpandedChange === null || onExpandedChange === void 0 ? void 0 : onExpandedChange(addressExpanded);
+    useEffect(() => {
+        onExpandedChange?.(addressExpanded);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [addressExpanded]);
     const iconPxSize = parsePxFromSizeClassName(iconSizeClassName);
@@ -148,15 +144,15 @@ nameLineClassName = 'text-[11px] font-semibold leading-tight text-white', onRowC
         lineHeight: parseLineHeight(nameLineClassName, 1.25),
         color: parseTextColor(nameLineClassName, '#ffffff'),
     };
-    const showIcon = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.ICON);
-    const showAddress = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.ADDRESS);
-    const showSymbol = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.SYMBOL) || showSymbolProp;
-    const showName = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.NAME) || showNameProp;
-    const showChevronUp = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.CHEVRON_UP);
-    const showChevronDn = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.CHEVRON_DN);
-    const showCopy = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.COPY);
-    const showAddrComp = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.ADDR_COMP);
-    const showAddrCompBlur = !!(showDisplay & exports.ASSET_SELECT_DISPLAY.ADDR_COMP_BLUR);
+    const showIcon = !!(showDisplay & ASSET_SELECT_DISPLAY.ICON);
+    const showAddress = !!(showDisplay & ASSET_SELECT_DISPLAY.ADDRESS);
+    const showSymbol = !!(showDisplay & ASSET_SELECT_DISPLAY.SYMBOL) || showSymbolProp;
+    const showName = !!(showDisplay & ASSET_SELECT_DISPLAY.NAME) || showNameProp;
+    const showChevronUp = !!(showDisplay & ASSET_SELECT_DISPLAY.CHEVRON_UP);
+    const showChevronDn = !!(showDisplay & ASSET_SELECT_DISPLAY.CHEVRON_DN);
+    const showCopy = !!(showDisplay & ASSET_SELECT_DISPLAY.COPY);
+    const showAddrComp = !!(showDisplay & ASSET_SELECT_DISPLAY.ADDR_COMP);
+    const showAddrCompBlur = !!(showDisplay & ASSET_SELECT_DISPLAY.ADDR_COMP_BLUR);
     const showDivider = showSymbol && showName;
     // Real inline-style equivalent of addrRowClassName below — same three
     // variants (ADDR_COMP+blur / ADDR_COMP solid / bare), computed as real
@@ -197,7 +193,7 @@ nameLineClassName = 'text-[11px] font-semibold leading-tight text-white', onRowC
         : addressExpanded
             ? address
             : truncateMiddle(address, addrPrePostSize, addrPrePostSize);
-    const handleAddressClick = (0, react_1.useCallback)((e) => {
+    const handleAddressClick = useCallback((e) => {
         // Always stop propagation: clicking the address must never fall
         // through to onRowClick (which returns the entity to the caller) —
         // that's the icon's job, not the address's.
@@ -239,7 +235,7 @@ nameLineClassName = 'text-[11px] font-semibold leading-tight text-white', onRowC
         // it) so it reads at a consistent scale regardless of whatever ambient
         // font-size the caller's own container happens to set.
         : `flex self-start items-center gap-1 ${addressSizeClassName} min-w-0`;
-    const handleCopy = (0, react_1.useCallback)((e) => {
+    const handleCopy = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
         if (!address)
@@ -258,7 +254,7 @@ nameLineClassName = 'text-[11px] font-semibold leading-tight text-white', onRowC
     // Token" panel while the still-compact SPCOIN_V99/V0 rows next to it
     // didn't). Every ancestor down to the address span itself needs this —
     // see that span's own comment below for the other end of the chain.
-    (0, jsx_runtime_1.jsxs)("div", { id: rootId, className: `flex items-center gap-1 min-w-0 ${restrictRowClickToChevron ? '' : 'cursor-pointer'}`, style: { display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, cursor: restrictRowClickToChevron ? 'default' : 'pointer' }, onMouseDown: (e) => e.stopPropagation(), onClick: restrictRowClickToChevron ? undefined : onRowClick, children: [hasEntity && showIcon && icon && ((0, jsx_runtime_1.jsx)("div", { className: `flex ${iconSizeClassName} shrink-0 items-center justify-center overflow-hidden rounded-lg relative -top-[2px] ${onIconClick ? 'cursor-pointer' : ''}`, style: {
+    _jsxs("div", { id: rootId, className: `flex items-center gap-1 min-w-0 ${restrictRowClickToChevron ? '' : 'cursor-pointer'}`, style: { display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, cursor: restrictRowClickToChevron ? 'default' : 'pointer' }, onMouseDown: (e) => e.stopPropagation(), onClick: restrictRowClickToChevron ? undefined : onRowClick, children: [hasEntity && showIcon && icon && (_jsx("div", { className: `flex ${iconSizeClassName} shrink-0 items-center justify-center overflow-hidden rounded-lg relative -top-[2px] ${onIconClick ? 'cursor-pointer' : ''}`, style: {
                     display: 'flex',
                     flexShrink: 0,
                     alignItems: 'center',
@@ -286,8 +282,8 @@ nameLineClassName = 'text-[11px] font-semibold leading-tight text-white', onRowC
                         e.stopPropagation();
                         onIconContextMenu(e);
                     }
-                    : undefined, children: icon })), (0, jsx_runtime_1.jsxs)("div", { className: "flex flex-col justify-center items-start min-w-0", style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', minWidth: 0, width: 'fit-content', maxWidth: '100%' }, children: [hasEntity && (showSymbol || showName) && (symbol || name) && ((0, jsx_runtime_1.jsxs)("div", { className: `flex items-center gap-1 ${nameLineClassName} ${onAddressClick || canToggleAddress ? 'cursor-pointer' : ''}`, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: onAddressClick || canToggleAddress ? 'pointer' : undefined, ...nameLineStyle }, onClick: handleAddressClick, onMouseDown: (e) => e.stopPropagation(), children: [showSymbol && (0, jsx_runtime_1.jsx)("span", { children: symbol }), showDivider && (0, jsx_runtime_1.jsx)("span", { className: "text-slate-400", style: { color: '#94a3b8' }, children: "|" }), showName && (0, jsx_runtime_1.jsx)("span", { children: name }), nameLineSuffix] })), (0, jsx_runtime_1.jsxs)("div", { className: addrRowClassName, style: { ...addrRowStyle, width: 'fit-content', maxWidth: '100%' }, children: [hasEntity ? (renderAddress &&
-                                (address ? ((0, jsx_runtime_1.jsx)("span", { title: addressTitle !== null && addressTitle !== void 0 ? addressTitle : address, onClick: handleAddressClick, onMouseDown: (e) => e.stopPropagation(), 
+                    : undefined, children: icon })), _jsxs("div", { className: "flex flex-col justify-center items-start min-w-0", style: { display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'flex-start', minWidth: 0, width: 'fit-content', maxWidth: '100%' }, children: [hasEntity && (showSymbol || showName) && (symbol || name) && (_jsxs("div", { className: `flex items-center gap-1 ${nameLineClassName} ${onAddressClick || canToggleAddress ? 'cursor-pointer' : ''}`, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: onAddressClick || canToggleAddress ? 'pointer' : undefined, ...nameLineStyle }, onClick: handleAddressClick, onMouseDown: (e) => e.stopPropagation(), children: [showSymbol && _jsx("span", { children: symbol }), showDivider && _jsx("span", { className: "text-slate-400", style: { color: '#94a3b8' }, children: "|" }), showName && _jsx("span", { children: name }), nameLineSuffix] })), _jsxs("div", { className: addrRowClassName, style: { ...addrRowStyle, width: 'fit-content', maxWidth: '100%' }, children: [hasEntity ? (renderAddress &&
+                                (address ? (_jsx("span", { title: addressTitle ?? address, onClick: handleAddressClick, onMouseDown: (e) => e.stopPropagation(), 
                                     // truncate = overflow-hidden + text-ellipsis + whitespace-nowrap
                                     // — the actual clip point of the min-w-0 chain started on the
                                     // ancestor divs above. Only bites once the row genuinely has
@@ -310,7 +306,7 @@ nameLineClassName = 'text-[11px] font-semibold leading-tight text-white', onRowC
                                 // path also suppresses the icon and symbol/name row, which a
                                 // caller deliberately showing placeholder icon/N/A content
                                 // doesn't want.
-                                (0, jsx_runtime_1.jsx)("span", { className: "text-slate-400", style: { color: '#94a3b8' }, children: placeholderLabel })))) : ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: ["\u00A0", placeholderLabel, ": "] })), address && showCopy && ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: handleCopy, onMouseDown: (e) => e.stopPropagation(), className: "shrink-0 flex items-center justify-center rounded hover:bg-white/10 p-0.5", style: {
+                                _jsx("span", { className: "text-slate-400", style: { color: '#94a3b8' }, children: placeholderLabel })))) : (_jsxs(_Fragment, { children: ["\u00A0", placeholderLabel, ": "] })), address && showCopy && (_jsx("button", { type: "button", onClick: handleCopy, onMouseDown: (e) => e.stopPropagation(), className: "shrink-0 flex items-center justify-center rounded hover:bg-white/10 p-0.5", style: {
                                     flexShrink: 0,
                                     display: 'flex',
                                     alignItems: 'center',
@@ -322,14 +318,14 @@ nameLineClassName = 'text-[11px] font-semibold leading-tight text-white', onRowC
                                     cursor: 'pointer',
                                     color: 'inherit',
                                 }, "aria-label": copyLabel, title: copyLabel, children: copied
-                                    ? (0, jsx_runtime_1.jsx)(lucide_react_1.Check, { size: copyIconSize, className: "text-green-400", style: { color: '#4ade80' } })
-                                    : (0, jsx_runtime_1.jsx)(lucide_react_1.Copy, { size: copyIconSize }) })), (showChevronUp || showChevronDn) && ((0, jsx_runtime_1.jsxs)("span", { className: `inline-flex ${restrictRowClickToChevron ? 'cursor-pointer' : ''}`, style: { display: 'inline-flex', cursor: restrictRowClickToChevron ? 'pointer' : undefined }, title: placeholderLabel, onClick: restrictRowClickToChevron
+                                    ? _jsx(Check, { size: copyIconSize, className: "text-green-400", style: { color: '#4ade80' } })
+                                    : _jsx(Copy, { size: copyIconSize }) })), (showChevronUp || showChevronDn) && (_jsxs("span", { className: `inline-flex ${restrictRowClickToChevron ? 'cursor-pointer' : ''}`, style: { display: 'inline-flex', cursor: restrictRowClickToChevron ? 'pointer' : undefined }, title: placeholderLabel, onClick: restrictRowClickToChevron
                                     ? (e) => {
                                         e.stopPropagation();
-                                        onRowClick === null || onRowClick === void 0 ? void 0 : onRowClick(e);
+                                        onRowClick?.(e);
                                     }
-                                    : undefined, onMouseDown: restrictRowClickToChevron ? (e) => e.stopPropagation() : undefined, children: [showChevronUp && (0, jsx_runtime_1.jsx)(lucide_react_1.ChevronUp, { size: chevronSize, "aria-label": placeholderLabel }), showChevronDn && (0, jsx_runtime_1.jsx)(lucide_react_1.ChevronDown, { size: chevronSize, "aria-label": placeholderLabel })] }))] })] })] }));
+                                    : undefined, onMouseDown: restrictRowClickToChevron ? (e) => e.stopPropagation() : undefined, children: [showChevronUp && _jsx(ChevronUp, { size: chevronSize, "aria-label": placeholderLabel }), showChevronDn && _jsx(ChevronDown, { size: chevronSize, "aria-label": placeholderLabel })] }))] })] })] }));
     if (panelGateId === undefined || !PanelGate)
         return content;
-    return ((0, jsx_runtime_1.jsx)(PanelGate, { panel: panelGateId, lazyLoad: false, children: content }));
+    return (_jsx(PanelGate, { panel: panelGateId, lazyLoad: false, children: content }));
 }

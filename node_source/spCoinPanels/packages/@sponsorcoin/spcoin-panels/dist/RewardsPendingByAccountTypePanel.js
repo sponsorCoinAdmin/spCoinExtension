@@ -2,60 +2,32 @@
 // Portable placeholder for the real app's MANAGE_PENDING_REWARDS —
 // specifically, the Sponsor/Recipient/Agent rows real ManageSponsorshipsPanel.tsx
 // (components/views/RadioOverlayPanels) renders in place of the collapsed
-// "Pending" row once expanded. See docs/design/extensionPlan.md's "Fourth
-// slice" entry for why this is a NEW, Merit-only panel id
-// ('MERIT_REWARDS_PENDING', panelState.ts) rather than the real
-// MANAGE_PENDING_REWARDS (12) — that real id already has confirmed
-// non-Merit readers, so it stays exactly where it is, untouched.
+// "Pending" row once expanded.
+//
+// 2026-09-21, Path A — now gated by the REAL `MANAGE_PENDING_REWARDS` (12)
+// id, via the real engine's `usePanelVisible` (this package's own
+// `PanelGate`), not the synthetic `MERIT_REWARDS_PENDING` id this file
+// used to carry. That original "avoid the real id, it has non-Merit
+// readers" concern (see git history) was about the wrong risk under this
+// architecture: this component's own runtime instance is fully isolated
+// from the web app's (separate process, no shared memory — see
+// docs/npmMigrationDesign.md's standalone-first decision), so reusing the
+// id can't cross-contaminate anything there. `MANAGE_PENDING_REWARDS` is
+// also a genuinely purpose-built match — a real, existing child of
+// `MANAGE_SPONSORSHIPS_PANEL` in the registry for exactly this
+// "pending rewards expanded" concept — not a semantic stretch the way
+// reusing an unrelated id would be.
 //
 // Same "shape only, entirely inert" treatment as every other placeholder
 // here: no hover/loading states, no real per-role on-chain estimate/claim
 // calls — a plain label/amount/button row, repeated three times, nested
 // (rendered) inside ManageSponsorshipsPanel.tsx.
 'use client';
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = RewardsPendingByAccountTypePanel;
-const jsx_runtime_1 = require("react/jsx-runtime");
-const MeritPanelGate_1 = __importDefault(require("./MeritPanelGate"));
-const RewardRow_1 = __importStar(require("./RewardRow"));
-function RewardsPendingByAccountTypePanel({ sponsorAmountText = '0', 
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
+import PanelGate from './PanelGate';
+import RewardRow, { REWARD_ROW_BG_A, REWARD_ROW_BG_B } from './RewardRow';
+export default function RewardsPendingByAccountTypePanel({ sponsorAmountText = '0', 
 // 2026-09-15, on direct request ("there should bo no red N/A. 0 is
 // file for the placement") — this is an inert, disconnected placeholder
 // (see file header), not a real account read, so there's no real
@@ -64,5 +36,5 @@ function RewardsPendingByAccountTypePanel({ sponsorAmountText = '0',
 // painted these two rows red for no real reason. '0' matches Sponsor's
 // own already-correct default.
 recipientAmountText = '0', agentAmountText = '0', onClaimSponsor, onClaimRecipient, onClaimAgent, }) {
-    return ((0, jsx_runtime_1.jsxs)(MeritPanelGate_1.default, { panel: "MERIT_REWARDS_PENDING", lazyLoad: false, children: [(0, jsx_runtime_1.jsx)(RewardRow_1.default, { label: "Sponsor", amountText: sponsorAmountText, buttonLabel: "Claim", onClick: onClaimSponsor, indent: true, rowBg: RewardRow_1.REWARD_ROW_BG_B }), (0, jsx_runtime_1.jsx)(RewardRow_1.default, { label: "Recipient", amountText: recipientAmountText, buttonLabel: "Claim", onClick: onClaimRecipient, indent: true, rowBg: RewardRow_1.REWARD_ROW_BG_A }), (0, jsx_runtime_1.jsx)(RewardRow_1.default, { label: "Agent", amountText: agentAmountText, buttonLabel: "Claim", onClick: onClaimAgent, indent: true, rowBg: RewardRow_1.REWARD_ROW_BG_B })] }));
+    return (_jsxs(PanelGate, { panel: SP_COIN_DISPLAY.MANAGE_PENDING_REWARDS, lazyLoad: false, children: [_jsx(RewardRow, { label: "Sponsor", amountText: sponsorAmountText, buttonLabel: "Claim", onClick: onClaimSponsor, indent: true, rowBg: REWARD_ROW_BG_B }), _jsx(RewardRow, { label: "Recipient", amountText: recipientAmountText, buttonLabel: "Claim", onClick: onClaimRecipient, indent: true, rowBg: REWARD_ROW_BG_A }), _jsx(RewardRow, { label: "Agent", amountText: agentAmountText, buttonLabel: "Claim", onClick: onClaimAgent, indent: true, rowBg: REWARD_ROW_BG_B })] }));
 }

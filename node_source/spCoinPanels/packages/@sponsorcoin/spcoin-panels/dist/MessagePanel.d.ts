@@ -1,3 +1,4 @@
+import React from 'react';
 export type MessageKind = 'error' | 'warning' | 'success' | 'info' | 'trace';
 export interface MessagePanelProps {
     /** Drives border/background/text color and the default title. Defaults
@@ -16,4 +17,4 @@ export interface MessagePanelProps {
      *  wrapping on). */
     wrap?: boolean;
 }
-export default function MessagePanel({ kind, title, message, source, wrap, }: MessagePanelProps): import("react/jsx-runtime").JSX.Element;
+export default function MessagePanel({ kind, title, message, source, wrap, }: MessagePanelProps): React.JSX.Element;

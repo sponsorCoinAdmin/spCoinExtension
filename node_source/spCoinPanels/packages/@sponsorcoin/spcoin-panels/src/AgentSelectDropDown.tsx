@@ -1,58 +1,126 @@
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/AgentSelectDropDown.tsx
-// Portable placeholder for AGENT_SELECT_DROP_DOWN (2026-09-12) — the real
-// app version (node_source/spCoinPanels/AssetSelectDropDowns/
-// AgentSelectDropDown.tsx) wraps AccountSelectDropDown/AssetSelectDropDown
-// with useAgentAccount, useOpenActiveListPanel, and the Sponsor/Recipient/
-// Agent mutual-exclusion rule (validateAccount) — all of which need a real
-// ExchangeContext/panel-tree that doesn't exist in a standalone consumer
-// (the extension, today). This is the same shape (icon + symbol/address
-// pill + chevron), entirely inert, same "presentation only, no sync yet"
-// scope every other extension-bound component in this package has
-// followed so far.
 //
-// Not `AssetSelectDropDown` reused directly: that component is real and
-// already portable, but it's styled with Tailwind classes — fine for the
-// web app, which runs Tailwind, but the extension has no Tailwind
-// pipeline (confirmed: no tailwind.config/postcss.config in
-// spCoinExtension), so those classes would render unstyled there. Inline
-// styles instead, same reasoning as every other component here.
+// 2026-09-12 — portable placeholder for AGENT_SELECT_DROP_DOWN. Promoted
+// 2026-09-18, on request (the "make npm the single source of truth"
+// migration) — first of the five real dropdown wrapper components
+// (Token/Account/Agent/Recipient/Pool SelectDropDown) to go real, since it
+// already had a dead, unused npm-side placeholder (a literal two-copies
+// case) and the web app's real implementation
+// (node_source/spCoinPanels/AssetSelectDropDowns/AgentSelectDropDown.tsx)
+// is a comparatively thin wrapper: useAgentAccount + useOpenActiveListPanel
+// + usePanelVisible + validateAccount, all ExchangeContext-runtime hooks
+// that don't exist in a portable package yet. Same treatment TradeAmountRow
+// got: every hook-derived value becomes an optional prop, the component
+// itself stays entirely hook-free — a real caller (the web app's own
+// AgentSelectDropDown, now a thin hook-wiring wrapper around this one)
+// resolves the real values and feeds them in; an extension caller with no
+// ExchangeContext yet can render this exact same component inert, same
+// look as before this promotion, by simply omitting the optional props.
 //
-// Deliberately its own small pill, not a clone of WalletAccountHeader's
-// row — the real AGENT_SELECT_DROP_DOWN is a compact, centered trigger
-// pill (icon + symbol + address + chevron), not a full-width header row.
-//
-// 2026-09-13 fix, on request, reversing the icon handling described
-// above (kept literally so the history is legible, not because it's
-// still current): the icon was inside a single rounded capsule together
-// with the symbol/address/chevron, at a flat 18x18 "consistent across
-// every dropdown" size. Neither matches the real component — AgentSelect
-// DropDown -> AccountSelectDropDown -> AssetSelectDropDown.tsx (node_
-// source/spCoinPanels/AssetSelectDropDowns/), whose `content` JSX has the
-// icon as a SIBLING of (outside) the pill that wraps only the address/
-// copy/chevron, sized via `iconSizeClassName`'s default `h-10 w-10` (40px
-// — neither AccountSelectDropDown nor AgentSelectDropDown overrides it
-// for this call site). Restructured to match both: icon slot moved
-// outside the pill, resized 18->40 to reflect that actual real-app size
-// rather than an invented compact placeholder value.
+// Deliberately NOT built on AssetSelectDropDown (the package's other real,
+// portable dropdown) despite the obvious shape overlap — AssetSelectDropDown
+// is styled with real Tailwind utility classes (`flex`, `gap-1`,
+// `rounded-lg`, etc.), and spCoinExtension still has no Tailwind pipeline
+// (confirmed 2026-09-18: no tailwind.config/postcss.config there either),
+// so those classes render unstyled in the one environment this package
+// exists to serve. Kept this file's own original inline-style approach
+// instead, same reasoning every other extension-bound component in this
+// package already follows — this is a real, currently-latent gap in
+// AssetSelectDropDown itself (fine today only because nothing in the
+// extension's live UI renders it yet), flagged here rather than silently
+// worked around by inheriting it into a second component.
 
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, CheckCheck } from 'lucide-react';
+
+// Same component/reasoning as TradeAmountRow.tsx's own CopyAddressButton —
+// duplicated rather than shared across files on purpose (this package has
+// no internal-only shared-utility convention yet; see that file's own
+// header comment history for why extracting one wasn't done speculatively).
+function CopyAddressButton({ address }: { address: string }) {
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigator.clipboard.writeText(address).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        });
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-label="Copy address"
+      title="Copy address"
+      style={{
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexShrink: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 2,
+        borderRadius: 3,
+        border: 'none',
+        background: hovered ? 'rgba(255,255,255,0.1)' : 'transparent',
+        color: copied ? '#4ade80' : 'inherit',
+        cursor: 'pointer',
+      }}
+    >
+      {copied ? <CheckCheck size={11} /> : <Copy size={11} />}
+    </button>
+  );
+}
 
 export interface AgentSelectDropDownProps {
   /** Rendered in the icon slot when an agent is selected. Omit for the
    *  unselected placeholder — no default avatar, since there's no default
-   *  agent to show one for. */
+   *  agent to show one for. Real caller passes its own resolved
+   *  AccountAvatar-or-fallback element, same convention as TradeAmountRow's
+   *  tokenIcon prop. */
   icon?: React.ReactNode;
   address?: string;
   symbol?: string;
-  /** Shown (as "$placeholderLabel: ") when nothing is selected — the only
-   *  real state this component has anything to render for today. */
+  /** Shown (as "$placeholderLabel: ") when nothing is selected. */
   placeholderLabel?: string;
-  /** Called on click (e.g. open an agent picker). Omit for an inert pill
-   *  with no picker to open yet. */
-  onSelectClick?: () => void;
+  /** Called on click (e.g. open/close an agent picker). Omit for an inert
+   *  pill with no picker to open — today's placeholder default. */
+  onSelectClick?: (e: React.SyntheticEvent) => void;
+  /** Whether the picker this trigger opens is currently open — flips the
+   *  chevron direction (matches AccountSelectDropDown's own
+   *  CHEVRON_UP/CHEVRON_DN convention: up means open). Omit for a
+   *  permanently-closed-looking chevron (today's placeholder default). */
+  listOpen?: boolean;
+  /** Chars kept before/after the "..." filler (see AssetSelectDropDown's
+   *  own truncateMiddle). Omit for the full, untruncated address. */
+  addrPrePostSize?: number;
+  /** Panel id this instance is gated by. If omitted, renders unconditionally
+   *  (no PanelGate) — same contract as AssetSelectDropDown's own
+   *  panelGateId/panelGate pair, duplicated here rather than imported
+   *  since this component deliberately has no dependency on
+   *  AssetSelectDropDown (see this file's own header comment on why). */
+  panelGateId?: number;
+  /** The PanelGate implementation to gate with, when panelGateId is set —
+   *  injected so this file has no hardcoded dependency on any one app's
+   *  PanelGate. The web app passes its real '@/components/utility/PanelGate';
+   *  an extension caller can pass this package's own PanelGate.tsx (2026-09-21,
+   *  Path A — bound to the real @sponsorcoin/spcoin-exchange-engine, same
+   *  code both apps share), or omit both props for unconditional
+   *  rendering. No effect when panelGateId is omitted. */
+  panelGate?: React.ComponentType<{
+    panel: number;
+    children: React.ReactNode;
+    lazyLoad?: boolean;
+    className?: string;
+  }>;
+}
+
+function truncateMiddle(addr: string, size: number): string {
+  return addr.length > size * 2 + 3 ? `${addr.slice(0, size)}...${addr.slice(-size)}` : addr;
 }
 
 export default function AgentSelectDropDown({
@@ -61,11 +129,16 @@ export default function AgentSelectDropDown({
   symbol,
   placeholderLabel = 'Select Agent',
   onSelectClick,
+  listOpen,
+  addrPrePostSize,
+  panelGateId,
+  panelGate: PanelGate,
 }: AgentSelectDropDownProps) {
   const [hovered, setHovered] = useState(false);
   const hasEntity = Boolean(address);
+  const displayAddress = address && addrPrePostSize != null ? truncateMiddle(address, addrPrePostSize) : address;
 
-  return (
+  const content = (
     <div
       onClick={onSelectClick}
       onMouseEnter={() => onSelectClick && setHovered(true)}
@@ -73,8 +146,7 @@ export default function AgentSelectDropDown({
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: onSelectClick ? 'pointer' : 'default' }}
     >
       {/* 40x40 (h-10 w-10), outside the pill — matches the real
-          AssetSelectDropDown.tsx's default icon slot exactly (see this
-          file's own header comment). */}
+          AssetSelectDropDown.tsx's default icon slot exactly. */}
       <span
         style={{
           display: 'flex',
@@ -105,10 +177,23 @@ export default function AgentSelectDropDown({
         }}
       >
         <span style={{ fontSize: 10, fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap' }}>
-          {hasEntity ? [symbol, address].filter(Boolean).join(' ') : placeholderLabel}
+          {hasEntity ? [symbol, displayAddress].filter(Boolean).join(' ') : placeholderLabel}
         </span>
-        <ChevronDown size={11} style={{ flexShrink: 0, color: '#f8fafc' }} />
+        {hasEntity && address && <CopyAddressButton address={address} />}
+        {listOpen ? (
+          <ChevronUp size={11} style={{ flexShrink: 0, color: '#f8fafc' }} />
+        ) : (
+          <ChevronDown size={11} style={{ flexShrink: 0, color: '#f8fafc' }} />
+        )}
       </div>
     </div>
+  );
+
+  if (panelGateId === undefined || !PanelGate) return content;
+
+  return (
+    <PanelGate panel={panelGateId} lazyLoad={false}>
+      {content}
+    </PanelGate>
   );
 }

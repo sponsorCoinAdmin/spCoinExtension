@@ -1,4 +1,3 @@
-"use strict";
 // File: node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels/src/panelState.ts
 // (moved from node_source/spCoinPanels/engine/, 2026-09-10 — see index.ts's
 // own comment for why)
@@ -11,6 +10,19 @@
 // see docs/design/extensionPlan.md §7 ("Panel-write architecture
 // redesign") for the full reasoning.
 //
+// 2026-09-21, Path A — RESTORED after being briefly deleted the same day.
+// Not dead: `WALLET_NETWORK_HEADER`/`MENU_TAB_HEADER_BAR` were migrated
+// onto this engine in the WEB APP itself back on 2026-09-14 (see
+// components/views/MeritWallet.tsx's/Headers/WalletNetworkPanel.tsx's own
+// import comments, and Branch.tsx's/AgentHeaderContainer.tsx's own
+// MERIT_ENGINE_PANEL_IDS patches) — a real, deliberate, pre-Path-A design
+// decision this session didn't touch and isn't in scope to unwind. The
+// extension's own MeritWallet.tsx (@sponsorcoin/spcoin-panels) no longer
+// imports from here (moved onto the real engine, Path A) — the web app's
+// own, separate consumers still do, confirmed by direct grep of the whole
+// web app repo (not just this package's own folder — the gap that caused
+// the brief deletion) before restoring this file.
+//
 // Single source of truth, single write chokepoint (2026-09-10, on
 // request): `setVisible` is the ONLY way this state ever changes — no
 // second path exists, by construction, so the "two writers racing"
@@ -22,8 +34,6 @@
 //
 // Zero dependency on the web app's `@/` alias — only the already-portable
 // `SP_COIN_DISPLAY` from the published `@sponsorcoin/spcoin-common/panels`.
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.meritPanelState = void 0;
 class MeritPanelState {
     constructor() {
         this.state = new Map();
@@ -33,13 +43,12 @@ class MeritPanelState {
         this.pending = new Set();
         this.scheduled = false;
         // --- reads --------------------------------------------------
-        this.isVisible = (id) => { var _a; return (_a = this.state.get(id)) !== null && _a !== void 0 ? _a : false; };
-        this.getSnapshot = (id) => { var _a; return (_a = this.state.get(id)) !== null && _a !== void 0 ? _a : false; };
+        this.isVisible = (id) => this.state.get(id) ?? false;
+        this.getSnapshot = (id) => this.state.get(id) ?? false;
         this.getAll = () => new Map(this.state);
         // --- the single write chokepoint -----------------------------
         this.setVisible = (id, visible) => {
-            var _a;
-            const prev = (_a = this.state.get(id)) !== null && _a !== void 0 ? _a : false;
+            const prev = this.state.get(id) ?? false;
             if (prev === visible)
                 return;
             this.state.set(id, visible);
@@ -83,4 +92,4 @@ class MeritPanelState {
             fn();
     }
 }
-exports.meritPanelState = new MeritPanelState();
+export const meritPanelState = new MeritPanelState();

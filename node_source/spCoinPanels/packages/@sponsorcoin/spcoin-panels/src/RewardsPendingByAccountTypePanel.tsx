@@ -2,11 +2,21 @@
 // Portable placeholder for the real app's MANAGE_PENDING_REWARDS —
 // specifically, the Sponsor/Recipient/Agent rows real ManageSponsorshipsPanel.tsx
 // (components/views/RadioOverlayPanels) renders in place of the collapsed
-// "Pending" row once expanded. See docs/design/extensionPlan.md's "Fourth
-// slice" entry for why this is a NEW, Merit-only panel id
-// ('MERIT_REWARDS_PENDING', panelState.ts) rather than the real
-// MANAGE_PENDING_REWARDS (12) — that real id already has confirmed
-// non-Merit readers, so it stays exactly where it is, untouched.
+// "Pending" row once expanded.
+//
+// 2026-09-21, Path A — now gated by the REAL `MANAGE_PENDING_REWARDS` (12)
+// id, via the real engine's `usePanelVisible` (this package's own
+// `PanelGate`), not the synthetic `MERIT_REWARDS_PENDING` id this file
+// used to carry. That original "avoid the real id, it has non-Merit
+// readers" concern (see git history) was about the wrong risk under this
+// architecture: this component's own runtime instance is fully isolated
+// from the web app's (separate process, no shared memory — see
+// docs/npmMigrationDesign.md's standalone-first decision), so reusing the
+// id can't cross-contaminate anything there. `MANAGE_PENDING_REWARDS` is
+// also a genuinely purpose-built match — a real, existing child of
+// `MANAGE_SPONSORSHIPS_PANEL` in the registry for exactly this
+// "pending rewards expanded" concept — not a semantic stretch the way
+// reusing an unrelated id would be.
 //
 // Same "shape only, entirely inert" treatment as every other placeholder
 // here: no hover/loading states, no real per-role on-chain estimate/claim
@@ -16,7 +26,8 @@
 'use client';
 
 import React from 'react';
-import MeritPanelGate from './MeritPanelGate';
+import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
+import PanelGate from './PanelGate';
 import RewardRow, { REWARD_ROW_BG_A, REWARD_ROW_BG_B } from './RewardRow';
 
 export interface RewardsPendingByAccountTypePanelProps {
@@ -44,13 +55,13 @@ export default function RewardsPendingByAccountTypePanel({
   onClaimAgent,
 }: RewardsPendingByAccountTypePanelProps) {
   return (
-    <MeritPanelGate panel="MERIT_REWARDS_PENDING" lazyLoad={false}>
+    <PanelGate panel={SP_COIN_DISPLAY.MANAGE_PENDING_REWARDS} lazyLoad={false}>
       {/* rowBg continues the A/B/A/B zebra sequence from ManageSponsorshipsPanel.tsx's
           preceding Trading(A)/Staked(B)/Pending(A) rows — always rendered
           right after Pending, so Sponsor picks up at B. */}
       <RewardRow label="Sponsor" amountText={sponsorAmountText} buttonLabel="Claim" onClick={onClaimSponsor} indent rowBg={REWARD_ROW_BG_B} />
       <RewardRow label="Recipient" amountText={recipientAmountText} buttonLabel="Claim" onClick={onClaimRecipient} indent rowBg={REWARD_ROW_BG_A} />
       <RewardRow label="Agent" amountText={agentAmountText} buttonLabel="Claim" onClick={onClaimAgent} indent rowBg={REWARD_ROW_BG_B} />
-    </MeritPanelGate>
+    </PanelGate>
   );
 }

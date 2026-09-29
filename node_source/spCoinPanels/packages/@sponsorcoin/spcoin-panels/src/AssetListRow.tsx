@@ -2,7 +2,7 @@
 // Portable version of the real app's TokenListItem.tsx/AccountListItem.tsx
 // (2026-09-15) — the single row shape shared by all four "TOKEN META"-style
 // ACTIVE_LIST_PANEL_MODES screens (REMOTE_TOKEN_LIST, REMOTE_ACCOUNT_AGENT_LIST,
-// REMOTE_ACCOUNT_RECIPIENT_LIST, REMOTE_ACCOUNT_LIST). Every sizing value
+// REMOTE_ACCOUNT_RECIPIENT_LIST, REMOTE_ACCOUNT_SEND_LIST). Every sizing value
 // below (row height, padding, pill/icon/info-button dimensions) is copied
 // from the real components' own doc comments, which record the same-day
 // measurements this package was built to match — not re-guessed here.
@@ -42,6 +42,14 @@ export interface AssetListRowProps {
    *  other caller of this row (Token/Agent/Recipient/Account-list), which
    *  have no such badge. */
   badge?: React.ReactNode;
+  /** 2026-09-22, Phase B.2 Stage 4 follow-up (ERC20 send) — pure passthrough
+   *  data, not rendered by this row at all. `fetchTokenList`'s own items
+   *  already carry this (allData=true), just not previously threaded
+   *  through row-building into MeritWallet.tsx's onSelect commit — see
+   *  that file's own PickedEntry.decimals doc comment for the real
+   *  consumer. Optional and ignored by every non-token row (accounts have
+   *  no decimals concept). */
+  decimals?: number;
 }
 
 export default function AssetListRow({

@@ -2,15 +2,15 @@
   "name": "@sponsorcoin/spcoin-panels",
   "version": "0.0.8",
   "description": "Merit Wallet's independent panel-visibility engine (single write chokepoint, no ExchangeContext dependency) — shared between spcoin-nextjs-front-end and the Merit Wallet browser extension (spCoinExtension).",
-  "type": "commonjs",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js"
     },
+    "./dist/styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
   },
   "files": [
@@ -19,15 +19,19 @@
     "package.json"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && cp src/styles.css dist/styles.css",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@sponsorcoin/spcoin-common": "^0.0.1",
+    "@sponsorcoin/spcoin-common": "^1.0.0",
+    "@sponsorcoin/spcoin-exchange-engine": "^0.0.1",
     "lucide-react": "^0.487.0"
   },
   "peerDependencies": {
-    "react": "^18 || ^19"
+    "react": "^18 || ^19",
+    "tailwindcss": "^4.0.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "autoprefixer": "^10.0.0"
   },
   "devDependencies": {
     "@types/react": "^18",

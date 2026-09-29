@@ -1,1 +1,0 @@
-export declare const backDateAgentTransaction: (context: any, _adminSigner: any, _recipientKey: any, _recipientRateKey: any, _accountAgentKey: any, _agentRateKey: any, _transactionIndex: any, _transactionBackDate: any) => Promise<any>;

@@ -1,1 +1,0 @@
-export declare const depositAgentStakingRewards: (context: any, _sponsorAccount: any, _recipientAccount: any, _recipientRate: any, _agentAccount: any, _agentRate: any, _amount: any) => Promise<never>;

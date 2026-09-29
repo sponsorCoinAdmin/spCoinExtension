@@ -26,17 +26,17 @@ import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import {
   fetchAccountListGroups,
   fetchAccountMetadata,
-  fetchAccountRoleList,
   getAccountAvatarURL,
   type AccountListGroupData,
 } from '@sponsorcoin/spcoin-feeds/accounts';
-import { fetchTokenList, fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/tokens';
+import { fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/tokens';
 import { openOrFocusApp } from './src/openApp';
 import { readOpenTarget, writeOpenTarget, urlForOpenTarget, type OpenTarget } from './src/openTargetStorage';
 import { readMeritWalletUiState, writeMeritWalletUiState } from './src/meritWalletUiStorage';
 import { getCachedNetworkIconDataUrl } from './src/networkIconCache';
 import { getCachedAccountIconDataUrl } from './src/accountIconCache';
 import { getCachedTokenIconDataUrl } from './src/tokenIconCache';
+import { chromeIconCacheStorage } from './src/chromeIconCacheStorage';
 import { ActiveAccountHydrator } from './src/hydrateActiveAccount';
 import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
 import { TransactionConfirmOrchestrator } from './src/TransactionConfirmOrchestrator';
@@ -216,102 +216,18 @@ async function unlockMeritWalletAccount(
   }
 }
 
-// 2026-09-17, feedType-parameterized-dropdowns migration — the shared
-// "resolve icons in parallel, then map row+iconSrc to an AssetListEntry"
-// tail every real-data list builder in this file was hand-rolling
-// separately (buildRecipientRows/buildTokenRows below; buildNetworkRows and
-// fetchAccountGroups above stay separate — their own source calls aren't a
-// spcoin-feeds row fetch in the first place, listConfiguredNetworks is a
-// synchronous local config read, and fetchAccountGroups' own grouped
-// AccountListGroupData shape isn't a flat row list). Each caller still owns
-// its own fetch call and its own try/catch + console.error message — only
-// the icon-resolution/mapping step, genuinely identical across both, is
-// shared here.
-async function withAssetIcons<TRow>(
-  rows: TRow[],
-  baseUrl: string,
-  forceRefresh: boolean,
-  getIconUrl: (row: TRow) => string,
-  getCachedIconDataUrl: (url: string, baseUrl: string, forceRefresh?: boolean) => Promise<string | undefined>,
-  toEntry: (row: TRow, iconSrc: string | undefined) => AssetListEntry,
-): Promise<AssetListEntry[]> {
-  const iconUrls = await Promise.all(rows.map((row) => getCachedIconDataUrl(getIconUrl(row), baseUrl, forceRefresh)));
-  return rows.map((row, i) => toEntry(row, iconUrls[i]));
-}
-
-// 2026-09-16, on live report ("I think the selection lists are different
-// in the web site vs the extension") — Send/Sponsor's recipient picker was
-// silently reusing the wallet's own accounts (fetchAccountGroups above,
-// HH_BASE_1..19) as a placeholder; the real app reads a genuinely
-// different, chain-scoped directory instead (real sponsor-selected causes
-// like "FREE | Born Free USA") — see spcoin-feeds/accounts'
-// fetchAccountRoleList doc comment for the full reasoning. Same icon-
-// resolution shape as fetchAccountGroups above.
-async function buildRecipientRows(chainId: number, baseUrl: string, forceRefresh = false): Promise<AssetListEntry[] | undefined> {
-  try {
-    const rows = await fetchAccountRoleList('recipients', chainId, { baseUrl });
-    return await withAssetIcons(
-      rows,
-      baseUrl,
-      forceRefresh,
-      (row) => row.avatarURL,
-      getCachedAccountIconDataUrl,
-      (row, iconSrc) => ({ id: row.id, symbol: row.symbol, name: row.name, address: row.address, iconSrc }),
-    );
-  } catch (error) {
-    // Same "undefined, not a real-but-empty array" fallback reasoning as
-    // fetchAccountGroups above — lets MeritWallet's own `recipientRows ??
-    // flatAccountRows` fallback kick in instead of rendering a genuinely
-    // empty recipient list.
-    console.error('Failed to load real recipient rows, falling back to wallet accounts:', error);
-    return undefined;
-  }
-}
-
-// 2026-09-16 — switched from a 3-address hardcoded sample to the real,
-// full per-chain token list (on report: "the web and extension lists are
-// different for the same swap tokenSelectDropDown chevron selection" — the
-// web app's own Select-a-Token screen, via fetchAndBuildDataList.ts's
-// loadTokenPageRecords, calls this exact same `/api/spCoin/tokens?
-// allData=true&chainId=&page=&pageSize=` endpoint; spcoin-feeds/tokens
-// already exported `fetchTokenList` wrapping it, this file just wasn't
-// calling it yet — fetchTokensBatch (address-lookup-shaped, kept the list
-// capped at whichever 3 addresses were hardcoded here) was never the right
-// function for "enumerate the token list" to begin with).
-//
-// Icon still does NOT depend on the token record's own `logoURL` (kept
-// from the prior fix, still correct): getTokenLogoURL computes the SAME
-// on-disk path convention the real web app's own client-side TokenLogo.tsx
-// uses, independent of DB registration, so a token with no DB record still
-// gets a real attempt at its real icon; getCachedTokenIconDataUrl's own
-// try/catch still degrades gracefully to no icon for whichever address
-// genuinely has no logo.png file at that path.
-const TOKEN_LIST_PAGE_SIZE = 200;
-
-async function buildTokenRows(chainId: number, baseUrl: string, forceRefresh = false): Promise<AssetListEntry[] | undefined> {
-  try {
-    const { items } = await fetchTokenList(
-      chainId,
-      { pageSize: TOKEN_LIST_PAGE_SIZE },
-      { baseUrl },
-    );
-    return await withAssetIcons(
-      items,
-      baseUrl,
-      forceRefresh,
-      (t) => getTokenLogoURL(chainId, t.address),
-      getCachedTokenIconDataUrl,
-      (t, iconSrc) => ({ id: t.address, symbol: t.symbol, name: t.name, address: t.address, decimals: t.decimals, iconSrc }),
-    );
-  } catch (error) {
-    // Same "undefined, not a real-but-iconless array" fallback reasoning
-    // as fetchAccountGroups above — lets MeritWallet's own `tokenRows ??
-    // SAMPLE_TOKEN_ROWS` fallback kick in instead of rendering a real
-    // lookup that partially failed.
-    console.error('Failed to load real token rows, falling back to sample data:', error);
-    return undefined;
-  }
-}
+// 2026-09-29, stage 8 of spcoin-nextjs-front-end's
+// docs/meritWalletConvergence.txt — withAssetIcons/buildRecipientRows/
+// buildTokenRows removed from here (were only ever called by each other
+// and the two Promise.all fetch sites below, now also removed): MeritWallet
+// now self-fetches tokenRows/recipientRows itself (via chainId/baseUrl/
+// storage props below), using the exact same underlying spcoin-feeds calls
+// this file used to make by hand. accountGroups/networkRows deliberately
+// NOT migrated the same way — see activateAccount/handleNetworkRowSelect
+// below, which mutate those two closure variables directly for real
+// account-activation/network-selection state that self-fetch's own
+// internal state has no way to receive; migrating those two would silently
+// disconnect that logic from what actually renders.
 
 // 2026-09-14 — simplified further, on direct request ("the extension
 // should embed just MeritWallet.tsx"). Previously this file hand-assembled
@@ -410,10 +326,13 @@ async function renderWallet() {
   // change just re-runs this same render() against the same root, same
   // pattern React's own docs use for a plain-script root.
   let refreshing = false;
+  // 2026-09-29 — bumped (not booleaned) so MeritWallet's own self-fetch
+  // effect (chainId/baseUrl/refreshToken deps) can tell "the user asked
+  // for fresh data again" apart from "still the same mount" — see that
+  // prop's own doc comment in MeritWallet.tsx (the package component).
+  let refreshToken = 0;
   let accountGroups: AccountListGroupData[] | undefined;
   let networkRows: MeritWalletNetworkRow[] = [];
-  let tokenRows: AssetListEntry[] | undefined;
-  let recipientRows: AssetListEntry[] | undefined;
   // Phase B.2 Stage 2.c — real wallet-source state, same "plain outer-scope
   // variable, mutated then render() called" shape as every other piece of
   // state in this file (accountGroups, refreshing, etc.), not React state.
@@ -594,8 +513,15 @@ async function renderWallet() {
           : React.createElement(MeritWallet, {
           networkRows,
           accountGroups,
-          tokenRows,
-          recipientRows,
+          // 2026-09-29, stage 8 — tokenRows/recipientRows no longer passed
+          // explicitly; MeritWallet self-fetches them via these 4 props
+          // instead (same underlying spcoin-feeds calls this file used to
+          // make by hand — see the removed buildTokenRows/buildRecipientRows
+          // comment above for why accountGroups/networkRows stayed explicit).
+          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+          baseUrl,
+          storage: chromeIconCacheStorage,
+          refreshToken,
           // A Chrome side panel is closer to the web app's own docked/split-
           // pane mode (full-height, no floating-dialog corners) than its
           // floating popup mode — see MeritWallet.tsx's own `docked` doc
@@ -1201,11 +1127,18 @@ async function renderWallet() {
   async function handleRefresh() {
     refreshing = true;
     render();
-    [accountGroups, networkRows, tokenRows, recipientRows, lockStatusByAddress] = await Promise.all([
+    // tokenRows/recipientRows no longer fetched here — MeritWallet's own
+    // self-fetch (chainId/baseUrl props, already wired below) owns their
+    // fetching now. Bumping refreshToken is what tells it to re-fetch them
+    // with forceRefresh:true, same as this function already does explicitly
+    // for accountGroups/networkRows (kept explicit — see this file's own
+    // comment above where withAssetIcons/buildRecipientRows/buildTokenRows
+    // used to be defined, re: activateAccount/handleNetworkRowSelect's real
+    // closure-mutation dependence on these two).
+    refreshToken += 1;
+    [accountGroups, networkRows, lockStatusByAddress] = await Promise.all([
       fetchAccountGroups(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
       buildNetworkRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
-      buildTokenRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
-      buildRecipientRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
       fetchKeystoreLockStatus(baseUrl),
     ]);
     refreshing = false;
@@ -1223,11 +1156,12 @@ async function renderWallet() {
   // handleRefresh already uses, just applied to the very first load too.
   render();
 
-  [accountGroups, networkRows, tokenRows, recipientRows, lockStatusByAddress] = await Promise.all([
+  // tokenRows/recipientRows no longer fetched here either — MeritWallet's
+  // own self-fetch (chainId/baseUrl props, wired into the render call above)
+  // handles their first fetch itself once chainId is set.
+  [accountGroups, networkRows, lockStatusByAddress] = await Promise.all([
     fetchAccountGroups(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
     buildNetworkRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
-    buildTokenRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
-    buildRecipientRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
     fetchKeystoreLockStatus(baseUrl),
   ]);
   render();

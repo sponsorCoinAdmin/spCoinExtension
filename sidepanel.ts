@@ -98,7 +98,7 @@ const DISCONNECTED_WALLET_SOURCE: ExchangeContextWalletSource = {
 // icon fetch fails just renders with no icon (getCachedNetworkIconDataUrl
 // never throws) rather than breaking the whole list. forceRefresh bypasses
 // the icon cache's TTL — wired to the header's own refresh button below.
-async function buildNetworkRows(baseUrl: string, forceRefresh = false): Promise<MeritWalletNetworkRow[]> {
+async function buildNetworkRows(chainId: number, baseUrl: string, forceRefresh = false): Promise<MeritWalletNetworkRow[]> {
   const networks = listConfiguredNetworks({ showTestNets: true });
   const iconUrls = await Promise.all(
     networks.map((network) => getCachedNetworkIconDataUrl(network.logoURL, baseUrl, forceRefresh)),
@@ -108,7 +108,7 @@ async function buildNetworkRows(baseUrl: string, forceRefresh = false): Promise<
     id: String(network.chainId),
     symbol: network.symbol,
     name: network.name,
-    isActive: network.chainId === MERIT_WALLET_HARDHAT_CHAIN_ID,
+    isActive: network.chainId === chainId,
     defaultAuthSource: network.defaultAuthSource,
     isTestnet: network.isTestnet,
     iconSrc: iconUrls[i],
@@ -121,11 +121,12 @@ async function buildNetworkRows(baseUrl: string, forceRefresh = false): Promise<
 // renders with no icon (getCachedAccountIconDataUrl never throws) rather
 // than breaking the whole list.
 async function fetchAccountGroups(
+  chainId: number,
   baseUrl: string,
   forceRefresh = false,
 ): Promise<AccountListGroupData[] | undefined> {
   try {
-    const groups = await fetchAccountListGroups(MERIT_WALLET_HARDHAT_CHAIN_ID, { baseUrl });
+    const groups = await fetchAccountListGroups(chainId, { baseUrl });
     const flatAccounts = groups.flatMap((group) => group.accounts);
     const iconUrls = await Promise.all(
       flatAccounts.map((account) => getCachedAccountIconDataUrl(account.avatarURL, baseUrl, forceRefresh)),
@@ -246,9 +247,9 @@ async function withAssetIcons<TRow>(
 // like "FREE | Born Free USA") — see spcoin-feeds/accounts'
 // fetchAccountRoleList doc comment for the full reasoning. Same icon-
 // resolution shape as fetchAccountGroups above.
-async function buildRecipientRows(baseUrl: string, forceRefresh = false): Promise<AssetListEntry[] | undefined> {
+async function buildRecipientRows(chainId: number, baseUrl: string, forceRefresh = false): Promise<AssetListEntry[] | undefined> {
   try {
-    const rows = await fetchAccountRoleList('recipients', MERIT_WALLET_HARDHAT_CHAIN_ID, { baseUrl });
+    const rows = await fetchAccountRoleList('recipients', chainId, { baseUrl });
     return await withAssetIcons(
       rows,
       baseUrl,
@@ -287,10 +288,10 @@ async function buildRecipientRows(baseUrl: string, forceRefresh = false): Promis
 // genuinely has no logo.png file at that path.
 const TOKEN_LIST_PAGE_SIZE = 200;
 
-async function buildTokenRows(baseUrl: string, forceRefresh = false): Promise<AssetListEntry[] | undefined> {
+async function buildTokenRows(chainId: number, baseUrl: string, forceRefresh = false): Promise<AssetListEntry[] | undefined> {
   try {
     const { items } = await fetchTokenList(
-      MERIT_WALLET_HARDHAT_CHAIN_ID,
+      chainId,
       { pageSize: TOKEN_LIST_PAGE_SIZE },
       { baseUrl },
     );
@@ -298,7 +299,7 @@ async function buildTokenRows(baseUrl: string, forceRefresh = false): Promise<As
       items,
       baseUrl,
       forceRefresh,
-      (t) => getTokenLogoURL(MERIT_WALLET_HARDHAT_CHAIN_ID, t.address),
+      (t) => getTokenLogoURL(chainId, t.address),
       getCachedTokenIconDataUrl,
       (t, iconSrc) => ({ id: t.address, symbol: t.symbol, name: t.name, address: t.address, decimals: t.decimals, iconSrc }),
     );
@@ -1201,10 +1202,10 @@ async function renderWallet() {
     refreshing = true;
     render();
     [accountGroups, networkRows, tokenRows, recipientRows, lockStatusByAddress] = await Promise.all([
-      fetchAccountGroups(baseUrl, /* forceRefresh */ true),
-      buildNetworkRows(baseUrl, /* forceRefresh */ true),
-      buildTokenRows(baseUrl, /* forceRefresh */ true),
-      buildRecipientRows(baseUrl, /* forceRefresh */ true),
+      fetchAccountGroups(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
+      buildNetworkRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
+      buildTokenRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
+      buildRecipientRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
       fetchKeystoreLockStatus(baseUrl),
     ]);
     refreshing = false;
@@ -1223,10 +1224,10 @@ async function renderWallet() {
   render();
 
   [accountGroups, networkRows, tokenRows, recipientRows, lockStatusByAddress] = await Promise.all([
-    fetchAccountGroups(baseUrl),
-    buildNetworkRows(baseUrl),
-    buildTokenRows(baseUrl),
-    buildRecipientRows(baseUrl),
+    fetchAccountGroups(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
+    buildNetworkRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
+    buildTokenRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
+    buildRecipientRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
     fetchKeystoreLockStatus(baseUrl),
   ]);
   render();

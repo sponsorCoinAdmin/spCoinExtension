@@ -26,7 +26,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      # submodules: recursive pulls in the 8 shared @sponsorcoin/* package
+      # repos (2026-09-28 submodule conversion, docs/migrationTodo.txt item
+      # 11b in spcoin-nextjs-front-end). They're private, so the default
+      # GITHUB_TOKEN (scoped to this repo only) can't clone them -- needs a
+      # PAT with repo access to the sponsorCoinAdmin org, stored as the
+      # SUBMODULES_PAT repository secret.
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_PAT }}
 
       - uses: actions/setup-node@v4
         with:

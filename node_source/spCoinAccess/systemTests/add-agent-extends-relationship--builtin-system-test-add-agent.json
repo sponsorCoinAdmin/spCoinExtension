@@ -1,0 +1,111 @@
+{
+  "id": "builtin-system-test-add-agent",
+  "name": "Add Agent Extends Relationship",
+  "Date Created": "Mar-27-2026, 05:18:00",
+  "network": "Hardhat Ec2-BASE",
+  "steps": [
+    {
+      "step": 1,
+      "name": "addRecipient",
+      "panel": "spcoin_write",
+      "method": "addRecipient",
+      "msg.sender": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+      "params": [
+        {
+          "key": "Recipient Key",
+          "value": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+        }
+      ],
+      "breakpoint": false,
+      "hasMissingRequiredParams": false
+    },
+    {
+      "step": 2,
+      "name": "addAgent",
+      "panel": "spcoin_write",
+      "method": "addAgent",
+      "msg.sender": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+      "params": [
+        {
+          "key": "Recipient Key",
+          "value": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+        },
+        {
+          "key": "Recipient Rate Key",
+          "value": "10"
+        },
+        {
+          "key": "Agent Key",
+          "value": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc"
+        }
+      ],
+      "breakpoint": false,
+      "hasMissingRequiredParams": false
+    },
+    {
+      "step": 3,
+      "name": "addSponsorship",
+      "panel": "spcoin_write",
+      "method": "addSponsorship",
+      "msg.sender": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+      "params": [
+        {
+          "key": "Recipient Key",
+          "value": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+        },
+        {
+          "key": "Recipient Rate Key",
+          "value": "10"
+        },
+        {
+          "key": "Agent Key",
+          "value": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc"
+        },
+        {
+          "key": "Agent Rate Key",
+          "value": "10"
+        },
+        {
+          "key": "Whole Amount",
+          "value": "1"
+        },
+        {
+          "key": "Decimal Amount",
+          "value": "25"
+        }
+      ],
+      "breakpoint": false,
+      "hasMissingRequiredParams": false
+    },
+    {
+      "step": 4,
+      "name": "getAgentTransaction",
+      "panel": "spcoin_rread",
+      "method": "getAgentTransaction",
+      "params": [
+        {
+          "key": "Sponsor Key",
+          "value": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+        },
+        {
+          "key": "Recipient Key",
+          "value": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+        },
+        {
+          "key": "Recipient Rate Key",
+          "value": "10"
+        },
+        {
+          "key": "Agent Key",
+          "value": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc"
+        },
+        {
+          "key": "Agent Rate Key",
+          "value": "10"
+        }
+      ],
+      "breakpoint": false,
+      "hasMissingRequiredParams": false
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "builtin-system-test-backdated-reject",
+  "name": "Backdated Sponsorship Rejects Non-Admin",
+  "Date Created": "Mar-27-2026, 05:15:00",
+  "network": "Hardhat Ec2-BASE",
+  "steps": [
+    {
+      "step": 1,
+      "name": "addBackDatedSponsorship",
+      "panel": "spcoin_write",
+      "method": "addBackDatedSponsorship",
+      "msg.sender": "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
+      "params": [
+        {
+          "key": "Sponsor Key",
+          "value": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+        },
+        {
+          "key": "Recipient Key",
+          "value": "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
+        },
+        {
+          "key": "Recipient Rate Key",
+          "value": "10"
+        },
+        {
+          "key": "Agent Key",
+          "value": "0x0000000000000000000000000000000000000000"
+        },
+        {
+          "key": "Agent Rate Key",
+          "value": "0"
+        },
+        {
+          "key": "Whole Amount",
+          "value": "1"
+        },
+        {
+          "key": "Decimal Amount",
+          "value": "25"
+        },
+        {
+          "key": "Transaction Back Date",
+          "value": "2026-03-20"
+        }
+      ],
+      "breakpoint": true,
+      "hasMissingRequiredParams": false
+    }
+  ]
+}

@@ -6,20 +6,33 @@
   "description": "Merit Wallet browser extension for the spCoin app.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "lint": "node scripts/check-no-ethers.mjs",
+    "postinstall": "node scripts/fix-nested-spcoin-common.mjs"
   },
   "dependencies": {
+    "@sponsorcoin/spcoin-common": "file:./node_source/spCoinCommon/packages/@sponsorcoin/spcoin-common",
+    "@sponsorcoin/spcoin-exchange-engine": "file:./node_source/spCoinExchangeEngine/packages/@sponsorcoin/spcoin-exchange-engine",
     "@sponsorcoin/spcoin-feeds": "file:./node_source/spCoinFeeds/packages/@sponsorcoin/spcoin-feeds",
+    "@sponsorcoin/spcoin-onchain": "file:./node_source/spCoinOnChain/packages/@sponsorcoin/spcoin-onchain",
     "@sponsorcoin/spcoin-panels": "file:./node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels",
+    "@tanstack/react-query": "^5.104.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "viem": "^2.56.9",
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.7.1",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/chrome": "^0.2.9",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"
+  },
+  "overrides": {
+    "@sponsorcoin/spcoin-common": "file:./node_source/spCoinCommon/packages/@sponsorcoin/spcoin-common"
   }
 }

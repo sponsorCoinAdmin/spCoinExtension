@@ -1,0 +1,24 @@
+[submodule "node_source/spCoinAccess/packages/@sponsorcoin/spcoin-access-modules"]
+	path = node_source/spCoinAccess/packages/@sponsorcoin/spcoin-access-modules
+	url = https://github.com/sponsorCoinAdmin/spcoin-access-modules.git
+[submodule "node_source/spCoinCommon/packages/@sponsorcoin/spcoin-common"]
+	path = node_source/spCoinCommon/packages/@sponsorcoin/spcoin-common
+	url = https://github.com/sponsorCoinAdmin/spcoin-common.git
+[submodule "node_source/spCoinExchangeEngine/packages/@sponsorcoin/spcoin-exchange-engine"]
+	path = node_source/spCoinExchangeEngine/packages/@sponsorcoin/spcoin-exchange-engine
+	url = https://github.com/sponsorCoinAdmin/spcoin-exchange-engine.git
+[submodule "node_source/spCoinFeeds/packages/@sponsorcoin/spcoin-feeds"]
+	path = node_source/spCoinFeeds/packages/@sponsorcoin/spcoin-feeds
+	url = https://github.com/sponsorCoinAdmin/spcoin-feeds.git
+[submodule "node_source/spCoinHooks/packages/@sponsorcoin/spcoin-hooks"]
+	path = node_source/spCoinHooks/packages/@sponsorcoin/spcoin-hooks
+	url = https://github.com/sponsorCoinAdmin/spcoin-hooks.git
+[submodule "node_source/spCoinLib/packages/@sponsorcoin/spcoin-lib"]
+	path = node_source/spCoinLib/packages/@sponsorcoin/spcoin-lib
+	url = https://github.com/sponsorCoinAdmin/spcoin-lib.git
+[submodule "node_source/spCoinOnChain/packages/@sponsorcoin/spcoin-onchain"]
+	path = node_source/spCoinOnChain/packages/@sponsorcoin/spcoin-onchain
+	url = https://github.com/sponsorCoinAdmin/spcoin-onchain.git
+[submodule "node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels"]
+	path = node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels
+	url = https://github.com/sponsorCoinAdmin/spcoin-panels.git

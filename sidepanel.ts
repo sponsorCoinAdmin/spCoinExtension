@@ -659,40 +659,20 @@ async function renderWallet() {
              sponsorStakeAmount = value;
              render();
            },
-          sponsorAmountBusy: sponsorStakeBusy,
-          // 2026-09-27, Phase 4 — swap execution wiring for SPONSOR tab.
-          onSponsorSwapSubmit: (params: {
-            tokenIn: string;
-            tokenOut: string;
-            amountIn: bigint;
-            recipient: string;
-            chainId: number;
-          }) => void handleSponsorSwapSubmit(params),
-           sponsorSwapBusy,
-           // 2026-09-28, TRADING_STATION_PANEL migration — SWAP tab execution props.
-           swapAmount,
-           onSwapAmountChange: (value: string) => {
-             swapAmount = value;
-             render();
-           },
-           swapBusy,
-           onSwapSubmit: (params: {
-             sellTokenAddress: string;
-             buyTokenAddress: string;
-             amountIn: bigint;
-             recipient: string;
-             chainId: number;
-           }) => void handleSponsorSwapSubmit({
-             tokenIn: params.sellTokenAddress,
-             tokenOut: params.buyTokenAddress,
-             amountIn: params.amountIn,
-             recipient: params.recipient,
-             chainId: params.chainId,
-           }),
-           activeChainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-         // 2026-09-27, TODO 4 — AGENT_HEADER_PANEL auto-seed wiring.
-          defaultAgentAddress: import.meta.env.NEXT_PUBLIC_DEFAULT_AGENT_ADDRESS,
-          onHydrateAgent: (address: string) => hydrateAccountFromAddress(address, { baseUrl }),
+           sponsorAmountBusy: sponsorStakeBusy,
+           // 2026-10-04 — the SPONSOR-swap and SWAP execution props
+           // (onSponsorSwapSubmit, sponsorSwapBusy, swapAmount,
+           // onSwapAmountChange, swapBusy, onSwapSubmit, activeChainId)
+           // and the AGENT_HEADER_PANEL auto-seed props
+           // (defaultAgentAddress, onHydrateAgent) were removed:
+           // MeritWalletProps never declared them (verified absent even in
+           // the pre-submodule-conversion copy — a planned-but-never-landed
+           // API), and tsc --noEmit in CI fails on unknown props. MeritWallet
+           // ignores unknown props at runtime, so this changes nothing
+           // behaviorally; the real swap and agent-hydration wiring is the
+           // C1-C3 phase. The handlers (handleSponsorSwapSubmit,
+           // hydrateAccountFromAddress) and state (swapAmount, swapBusy,
+           // sponsorSwapBusy) stay declared for that phase.
            // 2026-09-27, Phase C — REWARDS tab claim/estimate wiring for
            // ManageSponsorshipsPanel. Display strings parsed from
            // accountRecord via parseRewardDisplay(); claim callbacks use the
@@ -700,19 +680,18 @@ async function renderWallet() {
            // + TradeExecutor/meritSign pipeline); estimate callbacks use the
            // extension's estimateOffChainRewards client (spcoin_rread via
            // /api/spCoin/run-script, already CORS-trusted cross-origin).
-           tradingAmountText: rewardTradingText,
-           stakedAmountText: rewardStakedText,
-           pendingAmountText: rewardPendingText,
-           totalCoinsText: rewardTotalCoinsText,
-           rewardRows,
-           onRoleEstimate: (role: ManageSponsorshipRole) => void handleRoleEstimate(role),
-           onRoleClaim: (role: ManageSponsorshipRole) => void handleRoleClaim(role),
-           pendingInitialLoading: !rewardEstimate && !rewardClaimBusy,
-           pendingClaimInProgress: rewardClaimBusy,
-           pendingClaimDisabled: rewardClaimBusy || !walletSource.address,
-           pendingErrorText: rewardError,
-            onPendingEstimate: () => void handlePendingEstimate(),
-            onPendingClaim: () => void handlePendingClaim(),
+            // 2026-10-04 — the REWARDS/PENDING tab props
+            // (tradingAmountText, stakedAmountText, pendingAmountText,
+            // totalCoinsText, rewardRows, onRoleEstimate, onRoleClaim,
+            // pendingInitialLoading, pendingClaimInProgress,
+            // pendingClaimDisabled, pendingErrorText, onPendingEstimate,
+            // onPendingClaim) were removed for the same reason as the swap
+            // props above: MeritWalletProps never declared them (the rewards
+            // wiring was written against a planned-but-never-landed API), and
+            // tsc --noEmit in CI fails on unknown props. MeritWallet ignores
+            // unknown props at runtime; the real rewards wiring is the C1-C3
+            // phase. The parsed display strings, rewardRows and the
+            // estimate/claim handlers stay declared for that phase.
             // 2026-10-03 — the Config tab. WalletConfigPanel is a fully
             // CONTROLLED component: every option is a `value` + `onChange`
             // pair (WalletConfigPanel.tsx:271-330), and CheckboxRow derives

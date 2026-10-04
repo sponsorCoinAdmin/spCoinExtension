@@ -22,6 +22,12 @@ import {
   extensionExchangeContextWriteExtensions,
 } from './src/exchangeContextStorage';
 import { readDisplayStackRaw, makeSyncDisplayStackStorage } from './src/displayStackStorage';
+// 2026-09-30 (docs/design/visibilityEnumDesign.txt, Stage A) — panelStore's
+// own chrome.storage.local persistence + boot seeding.
+import {
+  readPanelVisibilityAndLegacy,
+  bootstrapPanelVisibility,
+} from './src/panelVisibilityStorage';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import {
   fetchAccountListGroups,
@@ -33,6 +39,20 @@ import { fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/
 import { openOrFocusApp } from './src/openApp';
 import { readOpenTarget, writeOpenTarget, urlForOpenTarget, type OpenTarget } from './src/openTargetStorage';
 import { readMeritWalletUiState, writeMeritWalletUiState } from './src/meritWalletUiStorage';
+import {
+  readMeritWalletConfigState,
+  writeMeritWalletConfigState,
+  passwordDescriptionFor,
+  syncDescriptionFor,
+  extensionDownloadPathFor,
+  type MeritWalletConfigState,
+} from './src/meritWalletConfigStorage';
+import {
+  getEngineSetters,
+  readEngineVisibility,
+  type EngineVisibility,
+} from './src/meritWalletConfigEngineStore';
+import { MeritWalletConfigBridge } from './src/MeritWalletConfigBridge';
 import { getCachedNetworkIconDataUrl } from './src/networkIconCache';
 import { getCachedAccountIconDataUrl } from './src/accountIconCache';
 import { getCachedTokenIconDataUrl } from './src/tokenIconCache';
@@ -41,6 +61,7 @@ import { ActiveAccountHydrator } from './src/hydrateActiveAccount';
 import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
 import { TransactionConfirmOrchestrator } from './src/TransactionConfirmOrchestrator';
 import { sendNativeMerit } from './src/sendNative';
+import { makeFetchBalance } from './src/fetchBalance';
 import { getAccountRecord } from './src/getAccountRecord';
 import { estimateOffChainRewards } from './src/estimateOffChainRewards';
 import { executeStakeTransaction, SPOIN_STAKE_ABI } from './src/executeStakeTransaction';
@@ -60,6 +81,10 @@ import { parseAbi } from 'viem';
 // exact string is served today from that same static JSON file, not a
 // secret newly exposed here.
 const MERIT_WALLET_HARDHAT_RPC_URL = 'https://rpc.sponsorcoin.org/f5b4d4b4a2614a540189b979d068639c3fd44bbb1dfcdb5a';
+
+// 2026-10-03 — token balance reader for every balance row (see src/fetchBalance.ts). Built once
+// at module scope: MeritWallet re-fetches whenever this prop's identity changes.
+const fetchBalance = makeFetchBalance(MERIT_WALLET_HARDHAT_RPC_URL);
 
 // 2026-09-16 — real data, added on request ("network connect and
 // activeAccount initialization"). Only Hardhat has any real keystore
@@ -308,11 +333,22 @@ async function renderWallet() {
   if (!walletRoot) return;
   const root = createRoot(walletRoot);
 
-  const [openTarget, uiState, persistedDisplayStack] = await Promise.all([
+  const [openTarget, uiState, persistedDisplayStack, panelVisibility, persistedConfig] = await Promise.all([
     readOpenTarget(),
     readMeritWalletUiState(),
     readDisplayStackRaw(),
+    readPanelVisibilityAndLegacy(),
+    readMeritWalletConfigState(),
   ]);
+  // 2026-09-30 (docs/design/visibilityEnumDesign.txt, Stage A) — panelStore's
+  // own persisted panel-visibility state. Seeded HERE, inside the same
+  // pre-render storage reads as everything else, because panelStore's read
+  // sink is synchronous while chrome.storage.local is not (the same
+  // sync/async bridge displayStackStorage.ts exists for) and because
+  // LiteExchangeProvider's first non-null render already mounts components
+  // that read panelStore. Idempotent — see bootstrapPanelVisibility's own
+  // doc comment.
+  bootstrapPanelVisibility(panelVisibility.persisted, panelVisibility.legacy);
   const baseUrl = urlForOpenTarget(openTarget);
   // 2026-09-21, Path A — DisplayStackProvider's own storage contract is
   // synchronous (see displayStackStorage.ts's own header comment for why
@@ -333,6 +369,17 @@ async function renderWallet() {
   let refreshToken = 0;
   let accountGroups: AccountListGroupData[] | undefined;
   let networkRows: MeritWalletNetworkRow[] = [];
+  // 2026-10-03 — Merit Wallet Config tab state. Two halves with different
+  // sources of truth, matching how the web app's own useMeritWalletConfig
+  // splits them: the options below live in chrome.storage.local (this
+  // file's established pre-render-read pattern, same as openTargetStorage
+  // / meritWalletUiStorage), while the two exchange-engine toggles are NOT
+  // stored here at all — they are live reads of the real panelStore,
+  // written through the engine's own setPanelVisible by
+  // MeritWalletConfigBridge below. See meritWalletConfigStorage.ts and
+  // meritWalletConfigEngineStore.ts.
+  let configState: MeritWalletConfigState = persistedConfig;
+  let engineVisibility: EngineVisibility = readEngineVisibility();
   // Phase B.2 Stage 2.c — real wallet-source state, same "plain outer-scope
   // variable, mutated then render() called" shape as every other piece of
   // state in this file (accountGroups, refreshing, etc.), not React state.
@@ -485,6 +532,19 @@ async function renderWallet() {
         // once a wallet source resolves to a real address; no UI of its
         // own (see hydrateActiveAccount.ts's own doc comment).
         React.createElement(ActiveAccountHydrator, { baseUrl }),
+        // 2026-10-03 — supplies the Config tab's two exchange-engine
+        // handlers. setPanelVisible is a hook, so the writes have to come
+        // from inside the React tree; this component's only job is to
+        // register them into meritWalletConfigEngineStore and call back
+        // after each write so render() re-reads panelStore. Same "no UI of
+        // its own, mounted as a sibling" shape as ActiveAccountHydrator
+        // above.
+        React.createElement(MeritWalletConfigBridge, {
+          onEngineVisibilityChange: () => {
+            engineVisibility = readEngineVisibility();
+            render();
+          },
+        }),
         // Phase B.2 Stage 4.c — renders TransactionConfirmPanel (always an
         // explicit Approve/Reject gate — see pendingSignRequestStore.ts's
         // own header comment for why this doesn't mirror the web app's
@@ -576,6 +636,7 @@ async function renderWallet() {
             render();
           },
           sendBusy,
+          fetchBalance,
           onSendSubmit: (params: {
             recipientAddress?: string;
             tokenAddress?: string;
@@ -650,11 +711,88 @@ async function renderWallet() {
            pendingClaimInProgress: rewardClaimBusy,
            pendingClaimDisabled: rewardClaimBusy || !walletSource.address,
            pendingErrorText: rewardError,
-           onPendingEstimate: () => void handlePendingEstimate(),
-           onPendingClaim: () => void handlePendingClaim(),
-          }),
+            onPendingEstimate: () => void handlePendingEstimate(),
+            onPendingClaim: () => void handlePendingClaim(),
+            // 2026-10-03 — the Config tab. WalletConfigPanel is a fully
+            // CONTROLLED component: every option is a `value` + `onChange`
+            // pair (WalletConfigPanel.tsx:271-330), and CheckboxRow derives
+            // `interactive = typeof onSelect === 'function'` (:193) and
+            // passes readOnly={!interactive} (:205). With no handler passed,
+            // every row is inert AND `checked={undefined}` makes the input
+            // UNCONTROLLED — the DOM flips, React never hears about it, and
+            // it snaps back on the next render. That was the live "Config
+            // is not working" report; this block is the fix.
+            //
+            // passwordMode / mandatorySecurity / mandatoryApproval / syncMode
+            // persist and are selectable, but their ENFORCEMENT has no
+            // consumer in this host yet — the web app reads them from inside
+            // provider.ts / getConnectedSigner.ts, which do not run here.
+            // The extension's approval gate is always-explicit by
+            // construction (pendingSignRequestStore), so mandatoryApproval
+            // is effectively already true. Documented in
+            // docs/design/meritWalletHostExtraction.txt section 6.
+            configPasswordMode: configState.passwordMode,
+            onConfigPasswordModeChange: (mode) => void applyConfig({ passwordMode: mode }),
+            configPasswordDescription: passwordDescriptionFor(configState.passwordMode),
+            configMandatorySecurity: configState.mandatorySecurity,
+            onConfigMandatorySecurityChange: (value) => void applyConfig({ mandatorySecurity: value }),
+            configMandatoryApproval: configState.mandatoryApproval,
+            onConfigMandatoryApprovalChange: (value) => void applyConfig({ mandatoryApproval: value }),
+            configSyncMode: configState.syncMode,
+            onConfigSyncModeChange: (mode) => void applyConfig({ syncMode: mode }),
+            configSyncDescription: syncDescriptionFor(configState.syncMode),
+            configLocation: configState.location,
+            onConfigLocationChange: (loc) => void applyConfig({ location: loc }),
+            configShowBackgroundPage: configState.showBackgroundPage,
+            onConfigShowBackgroundPageChange: (value) => void applyConfig({ showBackgroundPage: value }),
+            configModalMode: configState.modalMode,
+            onConfigModalModeChange: (value) => void applyConfig({ modalMode: value }),
+            configExtensionChannel: configState.extensionChannel,
+            onConfigExtensionChannelChange: (channel) => void applyConfig({ extensionChannel: channel }),
+            configExtensionDownloadPath: extensionDownloadPathFor(configState.extensionChannel),
+            // The two exchange-engine toggles. Real panelStore reads, not
+            // stored values — same reason the web app's own
+            // useMeritWalletConfig derives these from usePanelVisible rather
+            // than its persisted config blob.
+            configUniSelectVisible: engineVisibility.uniSelectVisible,
+            onConfigUniswapEngineChange: (checked) => handleEngineToggle('uniswap', checked),
+            configConnectTradeButtonVisible: engineVisibility.connectTradeButtonVisible,
+            onConfig0xEngineChange: (checked) => handleEngineToggle('zeroX', checked),
+            // configSecurityPanelContent / configPasswordResetPanelContent /
+            // configResetPanelsContent / persistedTimeoutContent are
+            // deliberately NOT passed: key reveal, password reset and
+            // persisted-password storage are same-origin server work with no
+            // extension counterpart, and reveal in particular is a security
+            // regression rather than a parity win. See meritWalletHostExtraction.txt
+            // section 6.
+           }),
       ),
     );
+  }
+
+  // 2026-10-03 — Config tab change handlers. applyConfig is the
+  // chrome.storage.local half (optimistic local update first, matching every
+  // other writer in this file, then the persisted write). handleEngineToggle
+  // is the panelStore half and deliberately does NOT await: the actual write
+  // happens inside MeritWalletConfigBridge, which owns the setPanelVisible
+  // hook, and it calls back into render() once panelStore is updated. Both
+  // no-op safely if the bridge has not mounted yet.
+  function applyConfig(patch: Partial<MeritWalletConfigState>) {
+    configState = { ...configState, ...patch };
+    render();
+    void writeMeritWalletConfigState(patch).catch((error) => {
+      console.error('Failed to persist Merit Wallet config:', error);
+    });
+  }
+
+  function handleEngineToggle(engine: 'uniswap' | 'zeroX', checked: boolean) {
+    const setters = getEngineSetters();
+    if (!setters) {
+      console.warn(`Merit Wallet config bridge not mounted yet; ignoring ${engine} toggle.`);
+      return;
+    }
+    if (engine === 'uniswap') setters.setUniswapEngine(checked);
+    else setters.setZeroXEngine(checked);
   }
 
   // 2026-09-16, on request ("when the avatar.png is selected we should get

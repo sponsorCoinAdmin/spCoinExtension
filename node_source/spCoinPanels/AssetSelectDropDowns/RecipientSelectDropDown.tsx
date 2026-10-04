@@ -7,13 +7,17 @@ import { FEED_TYPE, SP_COIN_DISPLAY } from '@/lib/structure';
 // Merit-exclusive (2026-09-04, part of the real split, on request) —
 // nested under TradingStationPanel, Merit-exclusive.
 import { useExchangeContext } from '@/lib/context/hooks';
-import { useOpenActiveListPanel } from '@/lib/context/exchangeContext/hooks/useOpenActiveListPanel';
-import { usePanelVisible } from '@/lib/context/exchangeContext/hooks/usePanelVisible';
+// 2026-09-22, dropdown-hooks consolidation — see TokenSelectDropDown.tsx's
+// own header comment for why these come from the real packages now, and why
+// usePanelVisible/useOpenActiveListPanel specifically must come from
+// @sponsorcoin/spcoin-exchange-engine (not spcoin-panels, whose own
+// usePanelVisible export is a different, meritPanelState-bound hook).
+import { usePanelVisible, useOpenActiveListPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { useSelectionCommit } from '@/lib/context/hooks/ExchangeContext/selectionCommit/useSelectionCommit';
 import { validateAccount } from '@/lib/context/hooks/ExchangeContext/nested/accounts/validateAccount';
 import AccountAvatar from '@/components/utility/AccountAvatar';
-import PanelGate from '@/components/utility/PanelGate';
 import {
+  PanelGate,
   AccountSelectDropDown as PortableAccountSelectDropDown,
   ACCOUNT_SELECT_DISPLAY,
 } from '@sponsorcoin/spcoin-panels';
@@ -155,23 +159,16 @@ export default function RecipientSelectDropDown({
   return (
     <PortableAccountSelectDropDown
       hasEntity={!!recipientAccount}
+      // 2026-10-03 — unselected recipient falls through to the shared Anonymous
+      // avatar (see AccountSelectDropDown.tsx's identical change).
       icon={
-        recipientAccount ? (
-          isUnselected ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src="/assets/miscellaneous/QuestionRed.png"
-              alt="No account selected"
-              className="h-full w-full object-contain"
-            />
-          ) : (
-            <AccountAvatar
-              account={recipientAccount}
-              mode={SP_COIN_DISPLAY.RECIPIENT_ACCOUNT}
-              className="h-full w-full object-cover"
-              roleLabel="RECIPIENT"
-            />
-          )
+        recipientAccount && !isUnselected ? (
+          <AccountAvatar
+            account={recipientAccount}
+            mode={SP_COIN_DISPLAY.RECIPIENT_ACCOUNT}
+            className="h-full w-full object-cover"
+            roleLabel="RECIPIENT"
+          />
         ) : undefined
       }
       symbol={isUnselected ? undefined : recipientAccount?.symbol}

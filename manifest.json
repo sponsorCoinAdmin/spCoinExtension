@@ -22,7 +22,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/meritWallet.png", "assets/www.png", "assets/info.png"],
+      "resources": ["assets/meritWallet.png", "assets/www.png", "assets/info.png", "assets/miscellaneous/Anonymous.png"],
       "matches": ["<all_urls>"]
     }
   ],

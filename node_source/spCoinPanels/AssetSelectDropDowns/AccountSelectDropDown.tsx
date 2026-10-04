@@ -5,12 +5,16 @@ import React, { useCallback } from 'react';
 import type { spCoinAccount } from '@/lib/structure';
 import { FEED_TYPE, SP_COIN_DISPLAY } from '@/lib/structure';
 import { createDebugLogger } from '@/lib/utils/debugLogger';
-import { useOpenActiveListPanel } from '@/lib/context/exchangeContext/hooks/useOpenActiveListPanel';
-import { usePanelVisible } from '@/lib/context/exchangeContext/hooks/usePanelVisible';
+// 2026-09-22, dropdown-hooks consolidation — see TokenSelectDropDown.tsx's
+// own header comment for why these come from the real packages now, and why
+// usePanelVisible/useOpenActiveListPanel specifically must come from
+// @sponsorcoin/spcoin-exchange-engine (not spcoin-panels, whose own
+// usePanelVisible export is a different, meritPanelState-bound hook).
+import { usePanelVisible, useOpenActiveListPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { useSelectionCommit } from '@/lib/context/hooks/ExchangeContext/selectionCommit/useSelectionCommit';
 import AccountAvatar from '@/components/utility/AccountAvatar';
-import PanelGate from '@/components/utility/PanelGate';
 import {
+  PanelGate,
   AccountSelectDropDown as PortableAccountSelectDropDown,
   ACCOUNT_SELECT_DISPLAY,
 } from '@sponsorcoin/spcoin-panels';
@@ -179,29 +183,20 @@ const AccountSelectDropDown: React.FC<Props> = ({
   return (
     <PortableAccountSelectDropDown
       hasEntity={!!recipientAccount}
+      // 2026-10-03, on request ("if there is no agent, the avatar should be
+      // Anonymous.png ... global for all accountSelectDropDowns") — an unselected
+      // account used to render QuestionRed.png here (the "missing logo" glyph,
+      // object-contain so its padding wasn't crop-zoomed). It now falls through
+      // to the portable component's shared Anonymous avatar, same as no account
+      // at all, so every account pill shows one placeholder.
       icon={
-        recipientAccount ? (
-          isUnselected ? (
-            // object-contain, not object-cover — QuestionRed.png is this
-            // app's standard "missing logo" glyph (assetHelpers.ts's
-            // defaultMissingImage, same file TokenLogo.tsx/SendSelectPanel.tsx
-            // render it with); it has real padding baked in and isn't meant
-            // to fill-crop like a photo avatar. object-cover zoomed/cropped
-            // it to fill the 40x40 box, which read as oversized/zoomed in.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src="/assets/miscellaneous/QuestionRed.png"
-              alt="No account selected"
-              className="h-full w-full object-contain"
-            />
-          ) : (
-            <AccountAvatar
-              account={recipientAccount}
-              mode={mode}
-              className="h-full w-full object-cover"
-              roleLabel={roleLabel}
-            />
-          )
+        recipientAccount && !isUnselected ? (
+          <AccountAvatar
+            account={recipientAccount}
+            mode={mode}
+            className="h-full w-full object-cover"
+            roleLabel={roleLabel}
+          />
         ) : undefined
       }
       // No "N/A | N/A" placeholder text — an unselected account just omits

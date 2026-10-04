@@ -8,12 +8,15 @@ import { FEED_TYPE, SP_COIN_DISPLAY } from '@/lib/structure';
 // nested under TradingStationPanel, Merit-exclusive.
 import { useExchangeContext } from '@/lib/context/hooks';
 import { useAgentAccount } from '@/lib/context/hooks/ExchangeContext/nested/accounts/useAgentAccount';
-import { useOpenActiveListPanel } from '@/lib/context/exchangeContext/hooks/useOpenActiveListPanel';
-import { usePanelVisible } from '@/lib/context/exchangeContext/hooks/usePanelVisible';
+// 2026-09-22, dropdown-hooks consolidation — see TokenSelectDropDown.tsx's
+// own header comment for why these come from the real packages now, and why
+// usePanelVisible/useOpenActiveListPanel specifically must come from
+// @sponsorcoin/spcoin-exchange-engine (not spcoin-panels, whose own
+// usePanelVisible export is a different, meritPanelState-bound hook).
+import { usePanelVisible, useOpenActiveListPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { validateAccount } from '@/lib/context/hooks/ExchangeContext/nested/accounts/validateAccount';
 import AccountAvatar from '@/components/utility/AccountAvatar';
-import PanelGate from '@/components/utility/PanelGate';
-import { AgentSelectDropDown as PortableAgentSelectDropDown } from '@sponsorcoin/spcoin-panels';
+import { PanelGate, AgentSelectDropDown as PortableAgentSelectDropDown } from '@sponsorcoin/spcoin-panels';
 
 /**
  * Agent picker — real, ExchangeContext-bound hook wiring (data resolution,
@@ -87,18 +90,12 @@ export default function AgentSelectDropDown({
 
   return (
     <PortableAgentSelectDropDown
+      // 2026-10-03 — no agent (never selected, or selection cleared) now falls
+      // through to the portable component's shared Anonymous avatar, instead of
+      // a blank circle / QuestionRed.png.
       icon={
-        agentAccount ? (
-          isUnselected ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src="/assets/miscellaneous/QuestionRed.png"
-              alt="No agent selected"
-              className="h-full w-full object-contain"
-            />
-          ) : (
-            <AccountAvatar account={agentAccount} mode={SP_COIN_DISPLAY.AGENT_ACCOUNT} className="h-full w-full object-cover" roleLabel="AGENT" />
-          )
+        agentAccount && !isUnselected ? (
+          <AccountAvatar account={agentAccount} mode={SP_COIN_DISPLAY.AGENT_ACCOUNT} className="h-full w-full object-cover" roleLabel="AGENT" />
         ) : undefined
       }
       address={isUnselected ? undefined : address || undefined}

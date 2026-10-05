@@ -62,6 +62,7 @@ import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
 import { TransactionConfirmOrchestrator } from './src/TransactionConfirmOrchestrator';
 import { sendNativeMerit } from './src/sendNative';
 import { makeFetchBalance } from './src/fetchBalance';
+import { makeResolveAssetAddress } from './src/resolveAssetAddress';
 import { getAccountRecord } from './src/getAccountRecord';
 import { estimateOffChainRewards } from './src/estimateOffChainRewards';
 import { executeStakeTransaction, SPOIN_STAKE_ABI } from './src/executeStakeTransaction';
@@ -97,6 +98,16 @@ const fetchBalance = makeFetchBalance(MERIT_WALLET_HARDHAT_RPC_URL);
 // comes from whichever app instance this side panel is actually pointed
 // at, not a hardcoded origin.
 const MERIT_WALLET_HARDHAT_CHAIN_ID = 31337;
+
+// 2026-10-05 — resolves an address typed into a list's ADDRESS_PANEL that isn't one of the loaded rows
+// (see src/resolveAssetAddress.ts). Module scope for a stable identity; the app origin follows the
+// open-target setting, so it reads currentBaseUrl, which every render refreshes.
+let currentBaseUrl = '';
+const resolveAssetAddress = makeResolveAssetAddress({
+  rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+  chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+  getBaseUrl: () => currentBaseUrl,
+});
 
 // spCoin contract address for the Hardhat chain — the same V0 fallback the
 // web app uses (components/views/TradingStationPanel/StakingStatusPanel.tsx's
@@ -350,6 +361,7 @@ async function renderWallet() {
   // doc comment.
   bootstrapPanelVisibility(panelVisibility.persisted, panelVisibility.legacy);
   const baseUrl = urlForOpenTarget(openTarget);
+  currentBaseUrl = baseUrl;
   // 2026-09-21, Path A — DisplayStackProvider's own storage contract is
   // synchronous (see displayStackStorage.ts's own header comment for why
   // this needs pre-resolving here rather than passed as an async
@@ -637,6 +649,7 @@ async function renderWallet() {
           },
           sendBusy,
           fetchBalance,
+          resolveAssetAddress,
           onSendSubmit: (params: {
             recipientAddress?: string;
             tokenAddress?: string;

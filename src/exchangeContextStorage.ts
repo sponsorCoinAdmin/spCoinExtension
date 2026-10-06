@@ -16,6 +16,8 @@ import type {
   ExchangeContextWriteExtensions,
 } from '@sponsorcoin/spcoin-exchange-engine';
 
+import { migrateDefaultOnPanelList } from './panelVisibilityStorage';
+
 const STORAGE_KEY = 'spcoin_exchange_context';
 
 // Real bug, found live 2026-09-18 ("extension opens, no content") —
@@ -48,7 +50,14 @@ async function readExchangeContext(): Promise<unknown | undefined> {
     const stored = await chrome.storage.local.get(STORAGE_KEY);
     const raw = stored[STORAGE_KEY];
     if (typeof raw !== 'string') return undefined;
-    return parseWithBigInt(raw);
+    const parsed = parseWithBigInt(raw);
+    // 2026-10-05 — a panel whose default became ON (ZERO_X_TRADE_BUTTON) must also flip in this saved tree, which
+    // wins over the panel-visibility snapshot at boot. Written back so the change survives the next boot.
+    const list = (parsed as { apiCoreSyncedMembers?: { displayPanels?: unknown } } | undefined)?.apiCoreSyncedMembers?.displayPanels;
+    if (Array.isArray(list) && (await migrateDefaultOnPanelList(list))) {
+      await chrome.storage.local.set({ [STORAGE_KEY]: stringifyWithBigInt(parsed) });
+    }
+    return parsed;
   } catch (error) {
     // A malformed/corrupted persisted blob shouldn't block boot — see
     // LiteExchangeProvider's own boot-effect try/catch, which falls back

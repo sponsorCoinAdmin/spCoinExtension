@@ -748,7 +748,7 @@ async function renderWallet() {
             // than its persisted config blob.
             configUniSelectVisible: engineVisibility.uniSelectVisible,
             onConfigUniswapEngineChange: (checked) => handleEngineToggle('uniswap', checked),
-            configConnectTradeButtonVisible: engineVisibility.connectTradeButtonVisible,
+            configZeroXEngineVisible: engineVisibility.zeroXEngineVisible,
             onConfig0xEngineChange: (checked) => handleEngineToggle('zeroX', checked),
             // configSecurityPanelContent / configPasswordResetPanelContent /
             // configResetPanelsContent / persistedTimeoutContent are

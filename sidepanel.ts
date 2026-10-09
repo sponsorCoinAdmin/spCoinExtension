@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './src/tailwind.css';
-import './src/bundledFeeds';
+import { bundledFeedData } from './src/bundledFeeds';
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
 import { vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
@@ -20,6 +20,8 @@ import {
 import {
   LiteExchangeProvider,
   PanelBootstrap,
+  loadSpCoinDeploymentMap,
+  getPreferredSpCoinContractAddress,
   type ExchangeContextWalletSource,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import {
@@ -136,7 +138,10 @@ const SPOIN_HARDHAT_CONTRACT_ADDRESS = '0x0E9166c03194E40eE84532e9A659abcE40ab17
 // (GET /api/exchangeContext?key=<account> -> apiCoreSyncedMembers.activeTokens.activeSpCoinAddress). The V0
 // constant above has no contract on the fork (eth_getCode is empty), so every spCoin read and the SPONSOR tab's
 // "Sponsor Staked spCoins" balance came back empty/0. The constant stays only as a last-resort fallback.
-let activeSpCoinAddress: string | undefined;
+// 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 25): the default no longer needs the web app. The spCoin deployment map is bundled (src/bundledFeedData.json), the engine's registry answers
+// "which spCoin is deployed on this chain" from it, and the newest deployment is the starting point; the synced value from the web app (below) only REFINES it when the hosted app answers.
+loadSpCoinDeploymentMap(bundledFeedData['/resources/data/networks/spCoinDeployment.json']);
+let activeSpCoinAddress: string | undefined = getPreferredSpCoinContractAddress(MERIT_WALLET_HARDHAT_CHAIN_ID);
 let activeSpCoinLoadedFor = '';
 const spCoinAddress = (): string => activeSpCoinAddress ?? SPOIN_HARDHAT_CONTRACT_ADDRESS;
 

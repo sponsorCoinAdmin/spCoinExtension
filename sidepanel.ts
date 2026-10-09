@@ -5,7 +5,7 @@ import { bundledFeedData } from './src/bundledFeeds';
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
 import { vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, WalletSecuritySection, type AccountProfileHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost, type WalletSecurityApi } from '@sponsorcoin/merit-wallet';
+import { estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, WalletSecuritySection, type AccountProfileHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost, type WalletSecurityApi } from '@sponsorcoin/merit-wallet';
 import { PasswordPanel, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
@@ -462,13 +462,19 @@ async function renderWallet() {
     onChanged: () => void walletRefresh.run(),
   };
   // The Rewards tab (the same card and data hook as the web app's): reads go to the hosted app's run-script route, a CLAIM is signed by the vault behind the confirmation screen.
+  // 2026-10-09 (row 25): one throttled direct read of the active spCoin contract's views, shared by the reward estimate and the account record (no hosted app needed for either).
+  const chainRead = throttleRead((m, a) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL, accessSource: 'local', readMode: 'hardhat' }, m, a, baseUrl));
   const rewardsHost: RewardsHost = {
     contractAddress: () => spCoinAddress(),
     rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
     accessSource: 'local',
     readMode: 'hardhat',
     endpoint: `${baseUrl}/api/spCoin/run-script`,
-    // Trading and Staked come straight from the contract's getAccountRecord view; only the reward ESTIMATES still go through the hosted app's run-script route.
+    // Trading and Staked come straight from the contract's getAccountRecord view.
+    // 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 25): the reward ESTIMATES are computed here too, from direct reads of the contract's views (estimateRewards.ts, a port of the access module's calculation,
+    // checked against the run-script result for 18 live accounts), so the Rewards tab needs no hosted app.
+    estimate: (method, accountKey) =>
+      estimateRewardsByMethod(method, { accountKey, read: chainRead }),
     readAccountRecord: (accountKey) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL, accessSource: 'local', readMode: 'hardhat' }, 'getAccountRecord', [{ key: 'Account Key', value: accountKey }], baseUrl),
     claim: async (method, accountKey) => {
       const result = await executeClaimTransaction({
@@ -1266,18 +1272,9 @@ async function renderWallet() {
     render();
     try {
       [accountRecord, rewardEstimate] = await Promise.all([
-        getAccountRecord(address, {
-          baseUrl,
-          contractAddress: spCoinAddress(),
-          rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-        }),
-        estimateOffChainRewards(address, 'estimateOffChainTotalRewards', {
-          baseUrl,
-          contractAddress: spCoinAddress(),
-          rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-        }).catch((error) => {
+        // Both straight from the contract's views (2026-10-09, row 25): the record is the getAccountRecord view, the estimate the client-side calculation.
+        chainRead('getAccountRecord', [{ key: 'Account Key', value: address }]),
+        estimateRewardsByMethod('estimateOffChainTotalRewards', { accountKey: address, read: chainRead }).catch((error) => {
           console.error('Failed to load reward estimate:', error);
           return null;
         }),

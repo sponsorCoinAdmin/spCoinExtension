@@ -27,6 +27,13 @@ export const SPOIN_STAKE_ABI = parseAbi([
   'function getSponsorRecipientRates(address _sponsorKey, address _recipientKey) view returns (uint256[])',
   'function getRecipientRateAgentList(address _sponsorKey, address _recipientKey, uint256 _recipientRateKey) view returns (address[])',
   'function getAgentRateList(address _sponsorKey, address _recipientKey, uint256 _recipientRateKey, address _agentKey) view returns (uint256[])',
+  // the views the client-side reward estimate walks (2026-10-09, row 25)
+  'function getInflationRate() view returns (uint256)',
+  'function getSponsorKeys(address _accountKey) view returns (address[])',
+  'function getParentRecipientKeys(address _accountKey) view returns (address[])',
+  'function getRecipientRateTransactionSetKey(address _sponsorKey, address _recipientKey, uint256 _recipientRateKey) view returns (bytes32)',
+  'function getAgentRateTransactionSetKey(address _sponsorKey, address _recipientKey, uint256 _recipientRateKey, address _agentKey, uint256 _agentRateKey) view returns (bytes32)',
+  'function getRateTransactionSet(bytes32 _setKey) view returns (bytes32 setKey, uint256 rate, uint256 creationTimeStamp, uint256 rewardsSettledThroughTimeStamp, uint256 totalStaked, uint256 transactionCount, bool inserted)',
   'function getRecipientTransaction(address _sponsorKey, address _recipientKey, uint256 _recipientRateKey) view returns (address sponsorKey, address recipientKey, uint256 recipientRateKey, uint256 creationTime, uint256 lastUpdateTime, uint256 stakedSPCoins, bool inserted)',
   'function getAgentTransaction(address _sponsorKey, address _recipientKey, uint256 _recipientRateKey, address _agentKey, uint256 _agentRateKey) view returns (address sponsorKey, address recipientKey, uint256 recipientRateKey, address agentKey, uint256 agentRateKey, uint256 creationTime, uint256 lastUpdateTime, uint256 stakedSPCoins, bool inserted)',
 ]) as Abi;

@@ -1,0 +1,21 @@
+# Compiled output must never live in src/.
+#
+# A 2026-09-28 import commit ("Initial import: single-source-of-truth
+# extraction") checked 166 tsc artifacts into src/ across these packages. The
+# current tsconfig emits to dist/ (outDir "dist", rootDir "src"), so nothing
+# regenerates them: they stayed frozen while the .ts sources moved on, leaving
+# two versions of the same module side by side. 17 were provably stale.
+#
+# Not cosmetic. Vite's default resolve.extensions prefers .js over .ts, so a
+# bundler walking src/ can load the stale copy while Next.js loads the live
+# .ts. That is the WALLET_NETWORK_HEADER dual-store failure class, reproduced
+# by the filesystem instead of by two stores -- and tsc/next build never see it.
+#
+# dist/ is deliberately NOT ignored: it is the tracked build output that
+# package.json main/exports point at, and every consumer resolves there.
+src/**/*.js
+src/**/*.jsx
+src/**/*.d.ts
+
+# Installed dependencies are never part of the package repo.
+node_modules/

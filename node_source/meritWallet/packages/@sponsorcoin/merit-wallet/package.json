@@ -1,0 +1,42 @@
+{
+  "name": "@sponsorcoin/merit-wallet",
+  "version": "0.0.1",
+  "description": "Merit Wallet: the one universal wallet component shared by the web app, the browser extension and (later) the phone apps. Each host supplies only a small adapter.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json",
+    "./vault": {
+      "types": "./dist/vault/index.d.ts",
+      "import": "./dist/vault/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node test/vault.test.mjs && node test/accounts.test.mjs && node test/signer.test.mjs && node test/send.test.mjs && node test/session.test.mjs && node test/directReads.test.mjs && node test/provider.test.mjs && node test/injected.test.mjs && node test/security.test.mjs && node test/quoteClient.test.mjs && node test/swapPrice.test.mjs"
+  },
+  "peerDependencies": {
+    "@sponsorcoin/spcoin-common": "*",
+    "@sponsorcoin/spcoin-exchange-engine": "*",
+    "@sponsorcoin/spcoin-feeds": "*",
+    "@sponsorcoin/spcoin-panels": "*",
+    "react": "^18 || ^19",
+    "viem": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "typescript": "5.8.3"
+  },
+  "license": "ISC"
+}

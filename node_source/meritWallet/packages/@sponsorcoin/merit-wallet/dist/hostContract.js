@@ -1,0 +1,1 @@
+export const MERIT_WALLET_PROPS_ARE_ALL_CLASSIFIED = true;

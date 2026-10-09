@@ -388,7 +388,8 @@ async function renderWallet() {
   const walletRefresh = createWalletRefresh(
     {
       reload: async () => {
-        lockStatusByAddress = await fetchKeystoreLockStatus(baseUrl);
+        // The lock status belongs to the hosted app's keystore accounts, which only exist when the vault is not required (2026-10-09, row 25: no request to the web app in the default vault mode).
+        lockStatusByAddress = requireVault ? new Map() : await fetchKeystoreLockStatus(baseUrl);
       },
     },
     () => render(),
@@ -1622,7 +1623,7 @@ async function renderWallet() {
   // tokenRows/recipientRows no longer fetched here either — MeritWallet's
   // own self-fetch (chainId/baseUrl props, wired into the render call above)
   // handles their first fetch itself once chainId is set.
-  lockStatusByAddress = await fetchKeystoreLockStatus(baseUrl);
+  lockStatusByAddress = requireVault ? new Map() : await fetchKeystoreLockStatus(baseUrl);
   render();
 }
 

@@ -56,6 +56,7 @@ import { PanelTitle } from './panels';
 import ConnectedMessagePanel from './ConnectedMessagePanel';
 import ConnectedRewardsPanel from './rewards/ConnectedRewardsPanel';
 import AccountProfileEditor from './account/AccountProfileEditor';
+import AddAccountFlow from './account/AddAccountFlow';
 import ConnectedSponsorStakingList from './sponsor/ConnectedSponsorStakingList';
 import { getStakedRawForPair } from './sponsor/sponsorReads';
 import { buildSendReceipt, buildStakeReceipt } from './receipt/transactionReceipts';
@@ -270,7 +271,7 @@ function currentSponsorRateKeys() {
     const { sponsorPct, recipientPct, agentPct } = deriveSponsorRatePercentages(config, range, range);
     return { recipient: clamp(config.sponsorStep), agent: clamp(config.agentStep), sponsorPct, recipientPct, agentPct };
 }
-export default function MeritWallet({ resolveAssetAddress, docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, activeSpCoinAddress, fetchStakedAmount: fetchStakedAmountProp, rewardsHost, stakingHost, accountProfileHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorStakeSubmitBusy, onSponsorStakeSubmit, sponsorAmount, onSponsorAmountChange, sponsorAmountBusy, manageRadioPanels = true, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode = 'unlock', passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }) {
+export default function MeritWallet({ resolveAssetAddress, docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, activeSpCoinAddress, fetchStakedAmount: fetchStakedAmountProp, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorStakeSubmitBusy, onSponsorStakeSubmit, sponsorAmount, onSponsorAmountChange, sponsorAmountBusy, manageRadioPanels = true, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode = 'unlock', passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }) {
     const [menuOpen, setMenuOpen] = useState(initialMenuOpen ?? true);
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
@@ -737,6 +738,7 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
     // closed; a real address string while showing that account's details.
     const [accountDetailAddress, setAccountDetailAddress] = useState(null);
     const [editingProfile, setEditingProfile] = useState(false);
+    const [addingAccount, setAddingAccount] = useState(false);
     useEffect(() => setEditingProfile(false), [accountDetailAddress]);
     // Same idea, for the token-list's own info icon (Select a Token).
     const [tokenDetailAddress, setTokenDetailAddress] = useState(null);
@@ -1514,7 +1516,7 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
                                 })),
                             })),
                             infoIconSrc,
-                            onAddWalletAccount: onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
+                            onAddWalletAccount: addAccountHost ? () => { closeListOverlay(); setAddingAccount(true); } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
                         }),
                     });
                 })()
@@ -1605,6 +1607,8 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
     // 2026-10-09: an account the wallet owns can be edited from its Account Details (the profile editor), when the host supplies accountProfileHost.
     const profileLoaded = !!accountDetail && !!accountDetailAddress && accountDetail.address === accountDetailAddress;
     const profileEditable = !!accountProfileHost && !!accountDetailAddress && profileLoaded && accountProfileHost.canEdit(accountDetailAddress);
+    // 2026-10-10: the shared Add a Wallet/Account flow (the host's addAccountHost), shown over the wallet like the profile editor.
+    const addAccountOverlay = addingAccount && addAccountHost ? React.createElement(AddAccountFlow, { host: addAccountHost, onDone: () => setAddingAccount(false) }) : null;
     const accountDetailOverlay = accountDetailAddress && accountProfileHost && editingProfile && profileLoaded
         ? React.createElement(AccountProfileEditor, {
             address: accountDetailAddress,
@@ -1681,7 +1685,7 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
     // 2026-10-09 -- the result card of a swap (Success / error, from the shared runUniswapSwap flow). The web app shows MESSAGE_PANEL through its
     // overlayHost; a host without one (the extension) gets it here, in place of the body, until the user closes it.
     const messageOverlay = messageVisible && !overlayHost ? React.createElement(ConnectedMessagePanel) : null;
-    const body = messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? listOverlay ?? gatedTabBody;
+    const body = messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? listOverlay ?? gatedTabBody;
     // Matches the real app's own per-tab titles (useActiveWalletPanelTitle.tsx,
     // its `sponsorshipPanelVisible`/`tradingTabVisible`/`sendTabVisible`/
     // `rewardsTabVisible` ternary) — PanelTitle's own default ("Trading

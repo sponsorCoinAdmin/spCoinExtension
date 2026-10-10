@@ -8,7 +8,7 @@ export type HostUiState = Pick<MeritWalletProps, 'initialActiveTab' | 'onActiveT
 /** Data the host supplies or lets the component fetch itself (chainId + baseUrl + storage turn the self-fetch on). */
 export type HostData = Pick<MeritWalletProps, 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'activeSpCoinAddress' | 'fetchStakedAmount' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'>;
 /** What the host does when the user picks or inspects a row. */
-export type HostSelection = Pick<MeritWalletProps, 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'swapHost' | 'accountDetail' | 'accountProfileHost' | 'onTokenIconClick' | 'tokenDetail' | 'onNetworkIconClick'>;
+export type HostSelection = Pick<MeritWalletProps, 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'swapHost' | 'accountDetail' | 'accountProfileHost' | 'addAccountHost' | 'onTokenIconClick' | 'tokenDetail' | 'onNetworkIconClick'>;
 /** Transactions the user starts from the Send and Sponsor tabs, and the input state around them. */
 export type HostActions = Pick<MeritWalletProps, 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit' | 'sponsorStakeSubmitBusy' | 'onSponsorStakeSubmit' | 'sponsorAmount' | 'onSponsorAmountChange' | 'sponsorAmountBusy'>;
 /** The body: who owns the radio groups, the overlay host, and the slots a host fills with its own panels. */

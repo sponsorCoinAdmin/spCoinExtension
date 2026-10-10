@@ -6,7 +6,7 @@ import { extensionAuthenticatorRegistry } from './src/localVaultAuthenticator';
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
 import { vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, WalletSecuritySection, type AccountProfileHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost, type WalletSecurityApi } from '@sponsorcoin/merit-wallet';
+import { estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, WalletSecuritySection, type AccountProfileHost, type AddAccountHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost, type WalletSecurityApi } from '@sponsorcoin/merit-wallet';
 import { PasswordPanel, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
@@ -441,6 +441,26 @@ async function renderWallet() {
   // The Swap tab's trade button (table row 22): price from Uniswap on-chain or the hosted 0x quote service, swap through the same executor as stake.
   // Editing the public profile of the wallet's own accounts (Account Details > Edit Profile): the hosted app's nonce / verify / save sequence, the account signing its challenge
   // with the vault behind the confirmation screen (a test account signs without it). After a save the details, header and list read the new values at once.
+  // 2026-10-10 (docs/connectionDesign.txt item 2): the shared Add a Wallet/Account flow (the same menu the web app shows), over this vault. Create derives the next account
+  // from the recovery phrase; Import takes a private key. Neither makes the new account the active one: the user picks it from the list (connectionDesign 2.6). The entries the
+  // vault cannot offer are shown disabled with the reason.
+  const addAccountHost: AddAccountHost = {
+    createAccount: async () => {
+      await vaultAccountsApi.addDerived();
+      vaultRowsStale = true;
+      await loadVaultAccounts();
+    },
+    importAccount: async (privateKey) => {
+      await vaultAccountsApi.importPrivateKey(privateKey);
+      vaultRowsStale = true;
+      await loadVaultAccounts();
+    },
+    unavailable: {
+      importWallet: 'This wallet holds one recovery phrase; importing a second wallet is not supported yet.',
+      connectMetaMask: 'Connecting MetaMask from the extension is not available yet.',
+      connectHardware: 'Using USB or a QR Code — Coming Soon',
+    },
+  };
   const accountProfileHost: AccountProfileHost = {
     baseUrl,
     canEdit: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),
@@ -1017,6 +1037,7 @@ async function renderWallet() {
                 onAccountIconClick: (address: string) => void handleAccountIconClick(address),
                 accountDetail,
                 accountProfileHost,
+                addAccountHost,
                 onTokenIconClick: (address: string) => void handleTokenIconClick(address),
                 tokenDetail,
               },

@@ -76,6 +76,7 @@ import { PanelTitle } from './panels';
 import ConnectedMessagePanel from './ConnectedMessagePanel';
 import ConnectedRewardsPanel, { type RewardsHost } from './rewards/ConnectedRewardsPanel';
 import AccountProfileEditor, { type AccountProfileHost } from './account/AccountProfileEditor';
+import AddAccountFlow, { type AddAccountHost } from './account/AddAccountFlow';
 import ConnectedSponsorStakingList, { type SponsorStakingHost } from './sponsor/ConnectedSponsorStakingList';
 import { getStakedRawForPair } from './sponsor/sponsorReads';
 import { buildSendReceipt, buildStakeReceipt, type HostTransactionResult } from './receipt/transactionReceipts';
@@ -532,6 +533,8 @@ export interface MeritWalletProps {
    * app's account editor over the host's signer. Omit and Account Details stays read-only.
    */
   accountProfileHost?: AccountProfileHost;
+  /** 2026-10-10 (connectionDesign item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
+  addAccountHost?: AddAccountHost;
   // 2026-09-16, on request ("do the same for the info.png in the lists")
   // — every AssetListRow already had a real, unwired `onInfoClick` (see
   // that file's own doc comment); this is the same icon-click-opens-a-
@@ -848,6 +851,7 @@ export default function MeritWallet({
   rewardsHost,
   stakingHost,
   accountProfileHost,
+  addAccountHost,
   activeAccountAddress,
   chainId,
   baseUrl,
@@ -1432,6 +1436,7 @@ export default function MeritWallet({
   // closed; a real address string while showing that account's details.
   const [accountDetailAddress, setAccountDetailAddress] = useState<string | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [addingAccount, setAddingAccount] = useState(false);
   useEffect(() => setEditingProfile(false), [accountDetailAddress]);
   // Same idea, for the token-list's own info icon (Select a Token).
   const [tokenDetailAddress, setTokenDetailAddress] = useState<string | null>(null);
@@ -2246,7 +2251,7 @@ export default function MeritWallet({
                     })),
                   })),
                   infoIconSrc,
-                  onAddWalletAccount: onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
+                  onAddWalletAccount: addAccountHost ? () => { closeListOverlay(); setAddingAccount(true); } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
                 }),
               });
             })()
@@ -2344,6 +2349,8 @@ export default function MeritWallet({
   // 2026-10-09: an account the wallet owns can be edited from its Account Details (the profile editor), when the host supplies accountProfileHost.
   const profileLoaded = !!accountDetail && !!accountDetailAddress && accountDetail.address === accountDetailAddress;
   const profileEditable = !!accountProfileHost && !!accountDetailAddress && profileLoaded && accountProfileHost.canEdit(accountDetailAddress);
+  // 2026-10-10: the shared Add a Wallet/Account flow (the host's addAccountHost), shown over the wallet like the profile editor.
+  const addAccountOverlay = addingAccount && addAccountHost ? React.createElement(AddAccountFlow, { host: addAccountHost, onDone: () => setAddingAccount(false) }) : null;
   const accountDetailOverlay =
     accountDetailAddress && accountProfileHost && editingProfile && profileLoaded
       ? React.createElement(AccountProfileEditor, {
@@ -2456,7 +2463,7 @@ export default function MeritWallet({
   const messageOverlay = messageVisible && !overlayHost ? React.createElement(ConnectedMessagePanel) : null;
 
   const body =
-    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? listOverlay ?? gatedTabBody;
+    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? listOverlay ?? gatedTabBody;
 
   // Matches the real app's own per-tab titles (useActiveWalletPanelTitle.tsx,
   // its `sponsorshipPanelVisible`/`tradingTabVisible`/`sendTabVisible`/

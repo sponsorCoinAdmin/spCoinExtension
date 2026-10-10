@@ -40,7 +40,7 @@ export type HostData = Pick<
 /** What the host does when the user picks or inspects a row. */
 export type HostSelection = Pick<
   MeritWalletProps,
-  | 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'swapHost' | 'accountDetail' | 'accountProfileHost' | 'onTokenIconClick' | 'tokenDetail'
+  | 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'swapHost' | 'accountDetail' | 'accountProfileHost' | 'addAccountHost' | 'onTokenIconClick' | 'tokenDetail'
   | 'onNetworkIconClick'
 >;
 

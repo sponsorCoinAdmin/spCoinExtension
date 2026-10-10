@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './src/tailwind.css';
 import { bundledFeedData } from './src/bundledFeeds';
+import { extensionAuthenticatorRegistry } from './src/localVaultAuthenticator';
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
 import { vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
@@ -116,6 +117,9 @@ function fetchBalanceFor(chainId: number): ReturnType<typeof makeFetchBalance> |
 // comes from whichever app instance this side panel is actually pointed
 // at, not a hardcoded origin.
 const MERIT_WALLET_HARDHAT_CHAIN_ID = 31337;
+// 2026-10-09 (docs/authenticationDesign.txt row 6): the extension's authenticator registry (localVault). Read-only handle for diagnostics and the live checks (scripts/extensionRequests.cjs).
+(globalThis as unknown as { __spcoinAuthenticators?: typeof extensionAuthenticatorRegistry }).__spcoinAuthenticators = extensionAuthenticatorRegistry;
+
 
 // 2026-10-05 — resolves an address typed into a list's ADDRESS_PANEL that isn't one of the loaded rows
 // (see src/resolveAssetAddress.ts). Module scope for a stable identity; the app origin follows the

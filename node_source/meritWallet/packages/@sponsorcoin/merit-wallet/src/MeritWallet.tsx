@@ -35,7 +35,7 @@
 'use client';
 
 import { walletColors } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { formatUnits, getAddress } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
@@ -105,7 +105,7 @@ import { AssetListSelectPanel } from '@sponsorcoin/spcoin-panels';
 import { AddressPanel } from './panels';
 import { PanelTreePanel } from '@sponsorcoin/spcoin-panels';
 import { WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance } from '@sponsorcoin/spcoin-panels';
-import { classifyAddressText, type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-exchange-engine';
+import { balancesChangedStore, classifyAddressText, type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-exchange-engine';
 import type { AssetPreviewRowProps } from '@sponsorcoin/spcoin-panels';
 import { AccountDetailPanel } from './panels';
 import { TokenDetailPanel } from './panels';
@@ -1348,8 +1348,11 @@ export default function MeritWallet({
   const stakedRecipientAddress = selections.sponsorRecipient?.address;
   // Read at the moment of use through a getter object so the click handlers always see the sliders' latest values.
   const sponsorRateKeys = { get recipient() { return currentSponsorRateKeys().recipient; }, get agent() { return currentSponsorRateKeys().agent; }, get sponsorPct() { return currentSponsorRateKeys().sponsorPct; }, get recipientPct() { return currentSponsorRateKeys().recipientPct; } };
-  const [pairStaked, setPairStaked] = useState<{ key: string; amount?: bigint } | undefined>(undefined);
-  const pairKey = `${activeBalanceAccount ?? ''}|${stakedRecipientAddress ?? ''}|${refreshToken ?? 0}`;
+  const [pairStaked, setPairStaked] = useState<{ key: string; base: string; amount?: bigint } | undefined>(undefined);
+  // 2026-10-10: a confirmed write (stake, send, swap) bumps balancesChangedStore, so the staked amount is re-read at once, as the balance rows are.
+  const balancesTick = useSyncExternalStore(balancesChangedStore.subscribe, balancesChangedStore.getSnapshot, balancesChangedStore.getServerSnapshot);
+  const pairBase = `${activeBalanceAccount ?? ''}|${stakedRecipientAddress ?? ''}`;
+  const pairKey = `${pairBase}|${refreshToken ?? 0}|${balancesTick}`;
   useEffect(() => {
     if (!fetchStakedAmount || !activeBalanceAccount || !stakedRecipientAddress) {
       setPairStaked(undefined);
@@ -1357,15 +1360,15 @@ export default function MeritWallet({
     }
     let cancelled = false;
     fetchStakedAmount(activeBalanceAccount, stakedRecipientAddress)
-      .then((amount) => !cancelled && setPairStaked({ key: pairKey, amount }))
-      .catch(() => !cancelled && setPairStaked({ key: pairKey, amount: undefined }));
+      .then((amount) => !cancelled && setPairStaked({ key: pairKey, base: pairBase, amount }))
+      .catch(() => !cancelled && setPairStaked({ key: pairKey, base: pairBase, amount: undefined }));
     return () => {
       cancelled = true;
     };
-  }, [fetchStakedAmount, activeBalanceAccount, stakedRecipientAddress, pairKey]);
+  }, [fetchStakedAmount, activeBalanceAccount, stakedRecipientAddress, pairKey, pairBase]);
   const stakedBalanceText =
     fetchStakedAmount && stakedRecipientAddress
-      ? `Sponsor Staked spCoins: ${pairStaked?.key !== pairKey ? '…' : pairStaked.amount != null ? formatUnits(pairStaked.amount, 18) : '—'}`
+      ? `Sponsor Staked spCoins: ${pairStaked?.base !== pairBase ? '…' : pairStaked.amount != null ? formatUnits(pairStaked.amount, 18) : '—'}`
       : undefined;
 
   // The Send button's text and readiness are the shared computeSendButton (spcoin-panels), the same rules and the same button the web app's Send tab uses.

@@ -5,12 +5,14 @@
 'use client';
 import { useCallback } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { useExchangeContext, usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
+import { balancesChangedStore, useExchangeContext, usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
 export function useTransactionReceipt() {
     const { setErrorMessage } = useExchangeContext();
     const { openPanel } = usePanelTree();
     return useCallback((message, invoker) => {
         setErrorMessage(message);
         openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, invoker);
+        // A receipt follows a confirmed write: every balance row re-reads now (2026-10-10: the balances used to stay stale until the page was reloaded).
+        balancesChangedStore.bump();
     }, [setErrorMessage, openPanel]);
 }

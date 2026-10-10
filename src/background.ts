@@ -1,3 +1,7 @@
+// 2026-10-08 (docs/meritWalletNpmDesignToDo.txt, E1): the wallet vault lives in this worker; see walletBackground.ts.
+import './walletBackground';
+import './bundledFeeds';
+
 // Phase 1 (spcoin-nextjs-front-end's docs/design/extensionPlan.md,
 // "2026-09-09" section). Real open/focus-tab logic for the "Open" button
 // lives in openApp.ts.

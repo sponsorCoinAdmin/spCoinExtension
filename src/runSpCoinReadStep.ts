@@ -8,6 +8,12 @@
 // for rate-key resolution (getRecipientRateIncrement, getAgentRateIncrement).
 
 import type { RunScriptParams, ReadStepFn } from '@sponsorcoin/spcoin-onchain';
+import { createDirectReadStep } from '@sponsorcoin/merit-wallet';
+import { SPOIN_STAKE_ABI } from './spCoinStakeAbi';
+
+// 2026-10-08 (table row 16, E4): views that the stake ABI slice covers (the rate increments) are read straight from the chain's RPC with viem,
+// no hosted app needed. Everything else still goes through the hosted run-script route until the account-record reads move (see the doc, row 16).
+const directReads = createDirectReadStep(SPOIN_STAKE_ABI);
 
 interface RunScriptResultEntry {
   success?: boolean;
@@ -24,6 +30,7 @@ export async function runSpCoinReadStep(
   args: { key: string; value: string }[] = [],
   baseUrl?: string,
 ): Promise<unknown> {
+  if (directReads.handles(method) && params.rpcUrl) return directReads.read({ contractAddress: params.contractAddress, rpcUrl: params.rpcUrl }, method, args);
   const response = await fetch(`${baseUrl ?? ''}/api/spCoin/run-script`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

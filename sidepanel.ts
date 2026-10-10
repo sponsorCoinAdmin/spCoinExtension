@@ -1,7 +1,13 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './src/tailwind.css';
-import { MeritWallet, PasswordPanel, type MeritWalletNetworkRow, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
+import { bundledFeedData } from './src/bundledFeeds';
+import { extensionAuthenticatorRegistry } from './src/localVaultAuthenticator';
+import { startDappApprovals } from './src/dappApprovals';
+import { createSwapHost } from './src/swapHost';
+import { vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
+import { estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, WalletSecuritySection, type AccountProfileHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost, type WalletSecurityApi } from '@sponsorcoin/merit-wallet';
+import { PasswordPanel, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
   readRecordValue,
@@ -15,6 +21,8 @@ import {
 import {
   LiteExchangeProvider,
   PanelBootstrap,
+  loadSpCoinDeploymentMap,
+  getPreferredSpCoinContractAddress,
   type ExchangeContextWalletSource,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import {
@@ -29,12 +37,7 @@ import {
   bootstrapPanelVisibility,
 } from './src/panelVisibilityStorage';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
-import {
-  fetchAccountListGroups,
-  fetchAccountMetadata,
-  getAccountAvatarURL,
-  type AccountListGroupData,
-} from '@sponsorcoin/spcoin-feeds/accounts';
+import { fetchAccountMetadata, getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
 import { fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/tokens';
 import { openOrFocusApp } from './src/openApp';
 import { readOpenTarget, writeOpenTarget, urlForOpenTarget, type OpenTarget } from './src/openTargetStorage';
@@ -53,7 +56,6 @@ import {
   type EngineVisibility,
 } from './src/meritWalletConfigEngineStore';
 import { MeritWalletConfigBridge } from './src/MeritWalletConfigBridge';
-import { getCachedNetworkIconDataUrl } from './src/networkIconCache';
 import { getCachedAccountIconDataUrl } from './src/accountIconCache';
 import { getCachedTokenIconDataUrl } from './src/tokenIconCache';
 import { chromeIconCacheStorage } from './src/chromeIconCacheStorage';
@@ -61,7 +63,12 @@ import { ActiveAccountHydrator } from './src/hydrateActiveAccount';
 import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
 import { TransactionConfirmOrchestrator } from './src/TransactionConfirmOrchestrator';
 import { sendNativeMerit } from './src/sendNative';
+import { allowLegacySigning, signMessageWithVault } from './src/localSigning';
+import { encodeFunctionData } from 'viem';
+import { runSpCoinReadStep } from './src/runSpCoinReadStep';
+import { buildMeritTradeExecutorContext } from './src/tradeExecutorMerit';
 import { makeFetchBalance } from './src/fetchBalance';
+import { rpcUrlForChain } from './src/chainRpc';
 import { makeResolveAssetAddress } from './src/resolveAssetAddress';
 import { getAccountRecord } from './src/getAccountRecord';
 import { estimateOffChainRewards } from './src/estimateOffChainRewards';
@@ -83,9 +90,21 @@ import { parseAbi } from 'viem';
 // secret newly exposed here.
 const MERIT_WALLET_HARDHAT_RPC_URL = 'https://rpc.sponsorcoin.org/f5b4d4b4a2614a540189b979d068639c3fd44bbb1dfcdb5a';
 
-// 2026-10-03 — token balance reader for every balance row (see src/fetchBalance.ts). Built once
-// at module scope: MeritWallet re-fetches whenever this prop's identity changes.
-const fetchBalance = makeFetchBalance(MERIT_WALLET_HARDHAT_RPC_URL);
+// 2026-10-03 — token balance reader for every balance row (see src/fetchBalance.ts). 2026-10-08 (row 5): one reader per chain, chosen by
+// the ACTIVE network instead of always the Hardhat proxy (src/chainRpc.ts names the endpoints). Each reader is built once and cached so
+// its identity stays stable: MeritWallet re-fetches whenever this prop's identity changes. No RPC for a chain means no reader (balances
+// read as unavailable rather than coming from the wrong chain).
+const fetchBalanceByChain = new Map<number, ReturnType<typeof makeFetchBalance>>();
+function fetchBalanceFor(chainId: number): ReturnType<typeof makeFetchBalance> | undefined {
+  const rpc = rpcUrlForChain(chainId);
+  if (!rpc) return undefined;
+  let reader = fetchBalanceByChain.get(chainId);
+  if (!reader) {
+    reader = makeFetchBalance(rpc);
+    fetchBalanceByChain.set(chainId, reader);
+  }
+  return reader;
+}
 
 // 2026-09-16 — real data, added on request ("network connect and
 // activeAccount initialization"). Only Hardhat has any real keystore
@@ -98,6 +117,9 @@ const fetchBalance = makeFetchBalance(MERIT_WALLET_HARDHAT_RPC_URL);
 // comes from whichever app instance this side panel is actually pointed
 // at, not a hardcoded origin.
 const MERIT_WALLET_HARDHAT_CHAIN_ID = 31337;
+// 2026-10-09 (docs/authenticationDesign.txt row 6): the extension's authenticator registry (localVault). Read-only handle for diagnostics and the live checks (scripts/extensionRequests.cjs).
+(globalThis as unknown as { __spcoinAuthenticators?: typeof extensionAuthenticatorRegistry }).__spcoinAuthenticators = extensionAuthenticatorRegistry;
+
 
 // 2026-10-05 — resolves an address typed into a list's ADDRESS_PANEL that isn't one of the loaded rows
 // (see src/resolveAssetAddress.ts). Module scope for a stable identity; the app origin follows the
@@ -116,6 +138,29 @@ const resolveAssetAddress = makeResolveAssetAddress({
 // exchangeContextTypes.ts). This is the deployed spCoin V0 on Hardhat 31337.
 const SPOIN_HARDHAT_CONTRACT_ADDRESS = '0x0E9166c03194E40eE84532e9A659abcE40ab1724';
 
+// 2026-10-07 — the REAL active spCoin address, read from the web app's saved ExchangeContext
+// (GET /api/exchangeContext?key=<account> -> apiCoreSyncedMembers.activeTokens.activeSpCoinAddress). The V0
+// constant above has no contract on the fork (eth_getCode is empty), so every spCoin read and the SPONSOR tab's
+// "Sponsor Staked spCoins" balance came back empty/0. The constant stays only as a last-resort fallback.
+// 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 25): the default no longer needs the web app. The spCoin deployment map is bundled (src/bundledFeedData.json), the engine's registry answers
+// "which spCoin is deployed on this chain" from it, and the newest deployment is the starting point; the synced value from the web app (below) only REFINES it when the hosted app answers.
+loadSpCoinDeploymentMap(bundledFeedData['/resources/data/networks/spCoinDeployment.json']);
+let activeSpCoinAddress: string | undefined = getPreferredSpCoinContractAddress(MERIT_WALLET_HARDHAT_CHAIN_ID);
+let activeSpCoinLoadedFor = '';
+const spCoinAddress = (): string => activeSpCoinAddress ?? SPOIN_HARDHAT_CONTRACT_ADDRESS;
+
+async function loadActiveSpCoinAddress(baseUrl: string, account: string): Promise<string | undefined> {
+  try {
+    const response = await fetch(`${baseUrl}/api/exchangeContext?key=${encodeURIComponent(account.toLowerCase())}`);
+    if (!response.ok) return undefined;
+    const body = await response.json();
+    const address = body?.apiCoreSyncedMembers?.activeTokens?.activeSpCoinAddress?.address;
+    return typeof address === 'string' && /^0x[0-9a-fA-F]{40}$/.test(address) ? address : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // Initial ExchangeContextWalletSource, disconnected — a plain object, not
 // a hook, since this file isn't a React component (renderWallet's own
 // `walletSource` local variable is what actually varies now, Stage 2.c;
@@ -129,66 +174,10 @@ const DISCONNECTED_WALLET_SOURCE: ExchangeContextWalletSource = {
   chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
 };
 
-// Icons fetched (and cached — see networkIconCache.ts) in parallel, same
-// baseUrl every other real fetch in this file goes through. A row whose
-// icon fetch fails just renders with no icon (getCachedNetworkIconDataUrl
-// never throws) rather than breaking the whole list. forceRefresh bypasses
-// the icon cache's TTL — wired to the header's own refresh button below.
-async function buildNetworkRows(chainId: number, baseUrl: string, forceRefresh = false): Promise<MeritWalletNetworkRow[]> {
-  const networks = listConfiguredNetworks({ showTestNets: true });
-  const iconUrls = await Promise.all(
-    networks.map((network) => getCachedNetworkIconDataUrl(network.logoURL, baseUrl, forceRefresh)),
-  );
-
-  const rows = networks.map((network, i) => ({
-    id: String(network.chainId),
-    symbol: network.symbol,
-    name: network.name,
-    isActive: network.chainId === chainId,
-    defaultAuthSource: network.defaultAuthSource,
-    isTestnet: network.isTestnet,
-    iconSrc: iconUrls[i],
-  }));
-  return rows;
-}
-
-// Icons fetched (and cached — see accountIconCache.ts) in parallel, same
-// pattern as buildNetworkRows above. A row whose icon fetch fails just
-// renders with no icon (getCachedAccountIconDataUrl never throws) rather
-// than breaking the whole list.
-async function fetchAccountGroups(
-  chainId: number,
-  baseUrl: string,
-  forceRefresh = false,
-): Promise<AccountListGroupData[] | undefined> {
-  try {
-    const groups = await fetchAccountListGroups(chainId, { baseUrl });
-    const flatAccounts = groups.flatMap((group) => group.accounts);
-    const iconUrls = await Promise.all(
-      flatAccounts.map((account) => getCachedAccountIconDataUrl(account.avatarURL, baseUrl, forceRefresh)),
-    );
-    let cursor = 0;
-    // fetchAccountListGroups doesn't know which account is "active" (that's
-    // a wallet-session concern, not this keystore-read's job) — mark the
-    // first real account active here, same "first is the sensible default"
-    // treatment as the network list above, not a live selection yet.
-    return groups.map((group, i) => ({
-      ...group,
-      accounts: group.accounts.map((account, j) => ({
-        ...account,
-        isActive: i === 0 && j === 0,
-        iconSrc: iconUrls[cursor++],
-      })),
-    }));
-  } catch (error) {
-    // The configured app instance may not be reachable (wrong port, not
-    // running, etc.) — undefined (not []) so MeritWallet's own `accountGroups
-    // ?? SAMPLE_ACCOUNT_GROUPS` fallback actually kicks in, rather than
-    // rendering a real-but-empty account list.
-    console.error('Failed to load real account groups, falling back to sample data:', error);
-    return undefined;
-  }
-}
+// 2026-10-08 (docs/meritWalletNpmDesignToDo.txt row 4, S2b-1): buildNetworkRows and fetchAccountGroups were deleted from this file.
+// They were copies of what @sponsorcoin/merit-wallet's own self-fetch already does (chainId + baseUrl + storage props below), and the
+// fetchAccountGroups copy still marked the FIRST account active, which made the header show an account nobody had selected.
+// The active account is now the host's activeAccountAddress (walletSource.address) and the active network is activeChainId.
 
 // 2026-09-18, Phase B.2 Stage 2.c — spcoin-feeds' own KeystoreAccountEntry
 // (accountsFeed.ts) deliberately mirrors toClientSafeKeyStoreEntries'
@@ -252,18 +241,8 @@ async function unlockMeritWalletAccount(
   }
 }
 
-// 2026-09-29, stage 8 of spcoin-nextjs-front-end's
-// docs/meritWalletConvergence.txt — withAssetIcons/buildRecipientRows/
-// buildTokenRows removed from here (were only ever called by each other
-// and the two Promise.all fetch sites below, now also removed): MeritWallet
-// now self-fetches tokenRows/recipientRows itself (via chainId/baseUrl/
-// storage props below), using the exact same underlying spcoin-feeds calls
-// this file used to make by hand. accountGroups/networkRows deliberately
-// NOT migrated the same way — see activateAccount/handleNetworkRowSelect
-// below, which mutate those two closure variables directly for real
-// account-activation/network-selection state that self-fetch's own
-// internal state has no way to receive; migrating those two would silently
-// disconnect that logic from what actually renders.
+// 2026-09-29, stage 8 of spcoin-nextjs-front-end's docs/meritWalletConvergence.txt — withAssetIcons/buildRecipientRows/buildTokenRows
+// removed from here: MeritWallet self-fetches tokenRows/recipientRows (and, since 2026-10-08, accountGroups/networkRows too).
 
 // 2026-09-14 — simplified further, on direct request ("the extension
 // should embed just MeritWallet.tsx"). Previously this file hand-assembled
@@ -370,17 +349,261 @@ async function renderWallet() {
   // sync closure once, here, rather than on every render() call.
   const displayStackStorage = makeSyncDisplayStackStorage(persistedDisplayStack);
 
-  // refreshing/data live outside React (this file isn't a component) — each
-  // change just re-runs this same render() against the same root, same
-  // pattern React's own docs use for a plain-script root.
-  let refreshing = false;
-  // 2026-09-29 — bumped (not booleaned) so MeritWallet's own self-fetch
-  // effect (chainId/baseUrl/refreshToken deps) can tell "the user asked
-  // for fresh data again" apart from "still the same mount" — see that
-  // prop's own doc comment in MeritWallet.tsx (the package component).
-  let refreshToken = 0;
-  let accountGroups: AccountListGroupData[] | undefined;
-  let networkRows: MeritWalletNetworkRow[] = [];
+  // Data lives outside React (this file isn't a component): each change just re-runs render() against the same root, the pattern
+  // React's own docs use for a plain-script root.
+  // 2026-10-08 (docs/meritWalletNpmDesignToDo.txt row 5): the refresh sequence (refreshing flag, re-entrancy guard, refreshToken bump after
+  // the reload) is @sponsorcoin/merit-wallet's createWalletRefresh, the same code the web adapter runs through useWalletRefresh. This file
+  // supplies only what is extension-specific: reload the keystore lock status. MeritWallet's own self-fetch re-runs when refreshToken
+  // changes (it can tell "the user asked for fresh data" apart from "still the same mount"), which is what refetches accounts, networks,
+  // tokens and recipients with forceRefresh.
+  // 2026-10-08 (table row 15): the unlock gate over the vault in the background worker, the shared createWalletSession from
+  // @sponsorcoin/merit-wallet (same password rules and messages as the web app). The gate shows only when a vault EXISTS and is locked; creating
+  // the vault (setup) is not forced on anyone until the hosted-app accounts are retired (table row 23).
+  type VaultReply = { ok: boolean; initialized?: boolean; unlocked?: boolean; mnemonic?: string; error?: string; message?: string };
+  const vaultCall = (message: unknown) => chrome.runtime.sendMessage(message) as Promise<VaultReply>;
+  const vaultSession = createWalletSession(
+    {
+      status: async () => {
+        const reply = await vaultCall({ type: 'merit/vault/status' }).catch(() => undefined);
+        return reply?.ok ? { initialized: !!reply.initialized, unlocked: !!reply.unlocked } : null;
+      },
+      create: async (password) => {
+        const reply = await vaultCall({ type: 'merit/vault/create', password });
+        if (!reply.ok) throw new Error(reply.message || 'The wallet could not be created.');
+        return { recoveryPhrase: reply.mnemonic };
+      },
+      unlock: async (password) => {
+        const reply = await vaultCall({ type: 'merit/vault/unlock', password });
+        if (reply.ok) return true;
+        if (reply.error === 'wrong-password') return false;
+        throw new Error(reply.message || 'The wallet could not be unlocked.');
+      },
+      lock: async () => {
+        await vaultCall({ type: 'merit/vault/lock' });
+      },
+    },
+    () => render(),
+  );
+  void vaultSession.refresh();
+  chrome.runtime.onMessage.addListener((message: { type?: string }) => {
+    if (message?.type === 'merit/vault/changed') void vaultSession.refresh();
+  });
+
+  const walletRefresh = createWalletRefresh(
+    {
+      reload: async () => {
+        // The lock status belongs to the hosted app's keystore accounts, which only exist when the vault is not required (2026-10-09, row 25: no request to the web app in the default vault mode).
+        lockStatusByAddress = requireVault ? new Map() : await fetchKeystoreLockStatus(baseUrl);
+      },
+    },
+    () => render(),
+  );
+  // The active network (chain id), the same role appChainId plays in the web app. MeritWallet self-fetches the network rows and marks
+  // this one active; selecting a network row changes it (handleNetworkRowSelect).
+  let activeChainId: number = MERIT_WALLET_HARDHAT_CHAIN_ID;
+  // 2026-10-08 (table row 18): the worker owns the active network so web pages and the side panel agree on it (MetaMask: one selected network).
+  void (chrome.runtime.sendMessage({ type: 'merit/network/get' }) as Promise<{ ok?: boolean; chainId?: number }>).then((reply) => {
+    if (reply?.ok && typeof reply.chainId === 'number' && reply.chainId !== activeChainId) {
+      activeChainId = reply.chainId;
+      render();
+    }
+  }).catch(() => undefined);
+  chrome.runtime.onMessage.addListener((message: { type?: string; chainId?: number }) => {
+    if (message?.type === 'merit/network/changed' && typeof message.chainId === 'number' && message.chainId !== activeChainId) {
+      activeChainId = message.chainId;
+      render();
+    }
+    return false;
+  });
+  startDappApprovals();
+  // The wallet's own account screens (VaultAccountsPanel / WalletOnboardingPanel): opened from the account list's Add button.
+  // The Swap tab's trade button (table row 22): price from Uniswap on-chain or the hosted 0x quote service, swap through the same executor as stake.
+  // Editing the public profile of the wallet's own accounts (Account Details > Edit Profile): the hosted app's nonce / verify / save sequence, the account signing its challenge
+  // with the vault behind the confirmation screen (a test account signs without it). After a save the details, header and list read the new values at once.
+  const accountProfileHost: AccountProfileHost = {
+    baseUrl,
+    canEdit: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),
+    signMessage: (address, message) =>
+      signMessageWithVault(address, message, {
+        title: 'Save account profile',
+        message: 'Sign in to the hosted app to save this account profile. This does not send a transaction.',
+        signerAddress: address,
+        chainId: activeChainId,
+      }),
+    onSaved: (address, saved, avatarChanged) => {
+      void (async () => {
+        const avatarSrc = await getCachedAccountIconDataUrl(getAccountAvatarURL(address), baseUrl, avatarChanged);
+        const key = address.toLowerCase();
+        vaultMeta.set(key, { symbol: saved.symbol || undefined, name: saved.name || undefined, iconSrc: avatarSrc ?? vaultMeta.get(key)?.iconSrc });
+        accountDetail = { address, avatarSrc: avatarSrc ?? accountDetail?.avatarSrc, ...saved, recipientNetwork: accountDetail?.recipientNetwork };
+        render();
+      })();
+    },
+  };
+  // Sponsor staking (the Rewards tab's Unstake list and the Sponsor tab's "Sponsor Staked spCoins" line): contract views are read straight from the chain's RPC, an Un-Stake
+  // leg is encoded here and signed by the vault behind the confirmation screen, one transaction per leg, each waited for. One stable object so the wallet does not refetch every render.
+  const sponsorReadParams = () => ({ contractAddress: spCoinAddress(), rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL, accessSource: 'local' as const, readMode: 'hardhat' as const });
+  const stakingHost: SponsorStakingHost = {
+    contractAddress: () => spCoinAddress(),
+    read: (method, args) => runSpCoinReadStep(sponsorReadParams(), method, args, baseUrl),
+    send: async (method, args) => {
+      const from = walletSource.address;
+      if (!from) throw new Error('Select and activate an account first.');
+      const data = encodeFunctionData({ abi: SPOIN_STAKE_ABI, functionName: method, args: args as never });
+      const context = buildMeritTradeExecutorContext({ baseUrl, rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL }, { address: from, isConnected: true, chainId: MERIT_WALLET_HARDHAT_CHAIN_ID });
+      const result = await context.executor.execute({
+        to: spCoinAddress(),
+        data,
+        chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+        rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+        display: { title: 'Un-Stake', label: method, contractAddress: spCoinAddress() } as never,
+      });
+      const receipt = result.receipt;
+      return { hash: result.transactionHash, gasUsed: receipt ? BigInt(receipt.gasUsed) : undefined, gasPrice: receipt?.gasPrice != null ? BigInt(receipt.gasPrice) : undefined };
+    },
+    loadProfile: async (address) => (await hydrateAccountFromAddress(address, { baseUrl })) ?? { address },
+    spCoinContract: { address: spCoinAddress() as `0x${string}`, chainId: MERIT_WALLET_HARDHAT_CHAIN_ID, name: 'Sponsor Coin', symbol: 'SPCOIN', decimals: 18, balance: 0n } as never,
+    onChanged: () => void walletRefresh.run(),
+  };
+  // The Rewards tab (the same card and data hook as the web app's): reads go to the hosted app's run-script route, a CLAIM is signed by the vault behind the confirmation screen.
+  // 2026-10-09 (row 25): one throttled direct read of the active spCoin contract's views, shared by the reward estimate and the account record (no hosted app needed for either).
+  const chainRead = throttleRead((m, a) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL, accessSource: 'local', readMode: 'hardhat' }, m, a, baseUrl));
+  const rewardsHost: RewardsHost = {
+    contractAddress: () => spCoinAddress(),
+    rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+    accessSource: 'local',
+    readMode: 'hardhat',
+    endpoint: `${baseUrl}/api/spCoin/run-script`,
+    // Trading and Staked come straight from the contract's getAccountRecord view.
+    // 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 25): the reward ESTIMATES are computed here too, from direct reads of the contract's views (estimateRewards.ts, a port of the access module's calculation,
+    // checked against the run-script result for 18 live accounts), so the Rewards tab needs no hosted app.
+    estimate: (method, accountKey) =>
+      estimateRewardsByMethod(method, { accountKey, read: chainRead }),
+    readAccountRecord: (accountKey) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL, accessSource: 'local', readMode: 'hardhat' }, 'getAccountRecord', [{ key: 'Account Key', value: accountKey }], baseUrl),
+    claim: async (method, accountKey) => {
+      const result = await executeClaimTransaction({
+        baseUrl,
+        rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+        accountKey,
+        method: method as Parameters<typeof executeClaimTransaction>[0]['method'],
+        abi: SPOIN_CLAIM_ABI,
+        contractAddress: spCoinAddress(),
+        chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+        fromAddress: accountKey,
+      });
+      return { transactionHash: result.transactionHash };
+    },
+    onClaimed: () => void walletRefresh.run(),
+  };
+  // Config > Wallet Security: reveal the active account's private key or the Secret Recovery Phrase, each behind the wallet password (MetaMask's Security & privacy).
+  const revealReply = async (message: unknown) => {
+    const reply = (await chrome.runtime.sendMessage(message)) as { ok: boolean; error?: string; message?: string; privateKey?: string; mnemonic?: string };
+    if (!reply.ok) throw new Error(reply.error === 'wrong-password' ? 'Incorrect password.' : reply.error === 'too-many-attempts' ? 'Too many incorrect passwords. Wait a moment and try again.' : reply.message || 'The wallet could not do that. If you just updated the extension, reload it at chrome://extensions.');
+    return reply;
+  };
+  const walletSecurityApi: WalletSecurityApi = {
+    revealPrivateKey: async (password, address) => String((await revealReply({ type: 'merit/accounts/exportPrivateKey', password, address })).privateKey ?? ''),
+    revealPhrase: async (password) => String((await revealReply({ type: 'merit/accounts/revealMnemonic', password })).mnemonic ?? ''),
+  };
+  const swapHost = createSwapHost({
+    baseUrl,
+    getAccount: () => walletSource.address,
+    // After a swap: reload balances through the same refresh the header icon runs.
+    onSettled: () => void walletRefresh.run(),
+    onResult: (result) => {
+      alert(result.ok ? `Swap sent.${result.hash ? ` Transaction hash: ${result.hash}` : ''}` : `Swap failed: ${result.message}`);
+    },
+  });
+  // Setup is required (the wallet is unusable until a vault exists, MetaMask's onboarding) only when this storage flag is set; until the hosted-app
+  // accounts are retired it stays off, so an extension without a vault keeps working as before.
+  let requireVault = true;
+  let onboardingOpen = false;
+  void chrome.storage.local.get('spcoin_merit_require_vault').then((stored) => {
+    // 2026-10-08: the vault is the wallet by default (MetaMask). Only an explicit false keeps the old hosted-account path.
+    requireVault = stored.spcoin_merit_require_vault !== false;
+    allowLegacySigning(!requireVault);
+    render();
+  });
+
+  // The accounts of the unlocked vault feed the account list and the active account (the hosted-app accounts are only used when requireVault is false).
+  let vaultRows: Array<{ address: string; name: string }> | null = null;
+  let vaultActive: string | undefined;
+  let vaultRowsStale = true;
+  // Public profile of each vault account (name, symbol, avatar) from the hosted app's account.json / avatar files, the same source the web wallet's list reads,
+  // so a Hardhat test account shows as "Doggie | Hot Dog" with its picture in both apps. Accounts with no profile keep the vault's own name.
+  const vaultMeta = new Map<string, { symbol?: string; name?: string; iconSrc?: string }>();
+  async function enrichVaultRows(addresses: string[]) {
+    await Promise.all(
+      addresses.map(async (address) => {
+        const key = address.toLowerCase();
+        if (vaultMeta.has(key)) return;
+        const [meta, iconSrc] = await Promise.all([
+          fetchAccountMetadata(address, { baseUrl }).catch(() => null),
+          getCachedAccountIconDataUrl(getAccountAvatarURL(address), baseUrl).catch(() => undefined),
+        ]);
+        vaultMeta.set(key, { symbol: meta?.symbol || undefined, name: meta?.name || undefined, iconSrc: iconSrc || undefined });
+      }),
+    );
+    render();
+  }
+  async function loadVaultAccounts() {
+    const status = await vaultStatus();
+    if (!status.initialized || !status.unlocked) {
+      vaultRows = null;
+      vaultActive = undefined;
+      return;
+    }
+    const result = await vaultAccountsApi.list();
+    vaultRows = result.accounts;
+    vaultActive = result.active;
+    void enrichVaultRows(result.accounts.map((a) => a.address));
+    if (vaultActive && walletSource.address?.toLowerCase() !== vaultActive.toLowerCase()) activateAccount(vaultActive);
+    else render();
+  }
+  let vaultScreen: 'accounts' | 'onboarding' | 'password' | null = null;
+  function closeVaultScreen() {
+    vaultScreen = null;
+    vaultRowsStale = true;
+    render();
+  }
+  // Delete the wallet from this device (after a confirmation); the account list falls back to setup. Used by the lock screen's reset link and Config's Delete Account.
+  function resetWallet() {
+    if (!window.confirm('Reset this wallet? This deletes the wallet from this device. You can only get your accounts back with your Secret Recovery Phrase.')) return;
+    void chrome.runtime.sendMessage({ type: 'merit/vault/wipe' }).then(() => {
+      vaultRows = null;
+      vaultRowsStale = true;
+      vaultScreen = null;
+      return vaultSession.refresh();
+    });
+  }
+  // Config's Remove Account: remove the active account from the wallet. Only accounts imported by private key can go (the others come from the Secret Recovery Phrase).
+  let deleteWalletDialogOpen = false;
+  function removeActiveAccount() {
+    const address = walletSource.address;
+    if (!address) {
+      alert('Select an account first.');
+      return;
+    }
+    if (!window.confirm('Remove this account from the wallet? You can add it again only with its private key.')) return;
+    void vaultAccountsApi
+      .remove(address)
+      .then(async () => {
+        walletSource = { ...walletSource, address: undefined, isConnected: false };
+        vaultRowsStale = true;
+        await loadVaultAccounts();
+      })
+      .catch((error: unknown) => alert(error instanceof Error ? error.message : 'The account could not be removed.'));
+  }
+  function openChangePassword() {
+    vaultScreen = 'password';
+    render();
+  }
+  function openVaultScreen() {
+    void vaultStatus().then((status) => {
+      vaultScreen = status.initialized ? 'accounts' : 'onboarding';
+      render();
+    });
+  }
   // 2026-10-03 — Merit Wallet Config tab state. Two halves with different
   // sources of truth, matching how the web app's own useMeritWalletConfig
   // splits them: the options below live in chrome.storage.local (this
@@ -390,11 +613,25 @@ async function renderWallet() {
   // written through the engine's own setPanelVisible by
   // MeritWalletConfigBridge below. See meritWalletConfigStorage.ts and
   // meritWalletConfigEngineStore.ts.
-  let configState: MeritWalletConfigState = persistedConfig;
+  // 2026-10-08 (row 6): the config state and the set / persist / notify sequence are @sponsorcoin/merit-wallet's createWalletConfig, the same code
+  // the web app runs through useWalletConfig. This file supplies only the storage (chrome.storage.local) and re-renders on every change.
+  const walletConfig = createWalletConfig(
+    {
+      read: () => persistedConfig,
+      write: (patch) =>
+        writeMeritWalletConfigState(patch).then(
+          () => undefined,
+          (error) => {
+            console.error('Failed to persist Merit Wallet config:', error);
+          },
+        ),
+    },
+    () => render(),
+  );
   let engineVisibility: EngineVisibility = readEngineVisibility();
   // Phase B.2 Stage 2.c — real wallet-source state, same "plain outer-scope
   // variable, mutated then render() called" shape as every other piece of
-  // state in this file (accountGroups, refreshing, etc.), not React state.
+  // state in this file (walletSource, activeChainId, etc.), not React state.
   let walletSource: ExchangeContextWalletSource = DISCONNECTED_WALLET_SOURCE;
   let lockStatusByAddress = new Map<string, boolean>();
   // The single currently-unlocked account's capability token (one at a
@@ -483,6 +720,7 @@ async function renderWallet() {
         email?: string;
         website?: string;
         description?: string;
+        recipientNetwork?: number[];
       }
     | null = null;
   // Same idea, for the token-list's own info icon (Select a Token) — see
@@ -530,6 +768,26 @@ async function renderWallet() {
    let rewardError: string | undefined;
 
   function render() {
+    if (requireVault && vaultSession.getState().phase === 'setup') onboardingOpen = true;
+    const vaultPhase = vaultSession.getState().phase;
+    if (vaultPhase === 'unlocked' && vaultRowsStale) {
+      vaultRowsStale = false;
+      void loadVaultAccounts().catch(() => undefined);
+    } else if (vaultPhase === 'locked' && vaultRows) {
+      vaultRows = null;
+      vaultRowsStale = true;
+    }
+    // Load the active spCoin address once per account (and base URL), then re-render with it.
+    const loadKey = `${baseUrl}|${walletSource.address ?? ''}`;
+    if (walletSource.address && loadKey !== activeSpCoinLoadedFor) {
+      activeSpCoinLoadedFor = loadKey;
+      void loadActiveSpCoinAddress(baseUrl, walletSource.address).then((address) => {
+        if (address && address !== activeSpCoinAddress) {
+          activeSpCoinAddress = address;
+          render();
+        }
+      });
+    }
     root.render(
       React.createElement(
         LiteExchangeProvider,
@@ -568,13 +826,78 @@ async function renderWallet() {
         // MeritWallet/PasswordPanel below, not nested under either, since
         // it needs to overlay regardless of which of those two is showing.
         React.createElement(TransactionConfirmOrchestrator),
+        deleteWalletDialogOpen
+          ? React.createElement(DeleteWalletDialog, {
+              confirmDelete: async (password: string) => {
+                let verified = (await chrome.runtime.sendMessage({ type: 'merit/vault/verifyPassword', password })) as { ok: boolean; error?: string; message?: string };
+                // A background service that has not been reloaded yet does not know verifyPassword; checking through the (password-protected) phrase reveal gives the same answer.
+                if (!verified.ok && verified.error === 'invalid-request') {
+                  verified = (await chrome.runtime.sendMessage({ type: 'merit/accounts/revealMnemonic', password })) as { ok: boolean; error?: string; message?: string };
+                }
+                if (!verified.ok) throw new Error(verified.error === 'wrong-password' ? 'Incorrect password.' : verified.error === 'too-many-attempts' ? 'Too many incorrect passwords. Wait a moment and try again.' : verified.message || (verified.error === 'invalid-request' ? 'The wallet service is out of date. Reload the extension at chrome://extensions and try again.' : 'The password could not be checked (' + (verified.error ?? 'no answer') + ').'));
+                await chrome.runtime.sendMessage({ type: 'merit/vault/wipe' });
+                deleteWalletDialogOpen = false;
+                vaultRows = null;
+                vaultRowsStale = true;
+                vaultScreen = null;
+                walletSource = DISCONNECTED_WALLET_SOURCE;
+                await vaultSession.refresh();
+                render();
+              },
+              onClose: () => {
+                deleteWalletDialogOpen = false;
+                render();
+              },
+            })
+          : null,
         // Phase B.2 Stage 2.c — PasswordPanel replaces MeritWallet
         // entirely while a locked account's password is being requested,
         // same shape as the web app's own PasswordGateOrchestrator
         // (whole-wallet gate, not a modal-over-content overlay) — simpler
         // to reason about for this first real wallet-source wiring than a
         // layered overlay would be.
-        unlockPrompt
+        // 2026-10-08 (table rows 21 and 23): the wallet's own account screens, shown instead of the wallet body while open.
+        vaultScreen && vaultSession.getState().phase !== 'locked'
+          ? React.createElement(
+              'div',
+              { style: { display: 'flex', flexDirection: 'column', height: '100%', color: '#fff' } },
+              React.createElement(
+                'button',
+                { type: 'button', onClick: closeVaultScreen, style: { alignSelf: 'flex-start', margin: '8px 12px 0', background: 'none', border: 0, color: '#5981F3', cursor: 'pointer', font: 'inherit' } },
+                '← Back to wallet',
+              ),
+              vaultScreen === 'password'
+                ? React.createElement(ChangePasswordPanel, {
+                    changePassword: async (oldPassword: string, newPassword: string) => {
+                      const reply = (await chrome.runtime.sendMessage({ type: 'merit/vault/changePassword', oldPassword, newPassword })) as { ok: boolean; error?: string; message?: string };
+                      if (!reply.ok) throw new Error(reply.error === 'wrong-password' ? 'Incorrect current password.' : reply.error === 'too-many-attempts' ? 'Too many incorrect passwords. Wait a moment and try again.' : reply.message || 'The password could not be changed.');
+                    },
+                    onDone: closeVaultScreen,
+                  })
+                : vaultScreen === 'onboarding'
+                ? React.createElement(WalletOnboardingPanel, {
+                    createWallet: vaultOnboarding.createWallet,
+                    importWallet: vaultOnboarding.importWallet,
+                    onDone: () => {
+                      void vaultSession.refresh().then(closeVaultScreen);
+                    },
+                  })
+                : React.createElement(VaultAccountsPanel, { api: vaultAccountsApi, onActiveChanged: (address: string) => activateAccount(address) }),
+            )
+          : requireVault && (vaultSession.getState().phase === 'setup' || onboardingOpen)
+          ? React.createElement(WalletOnboardingPanel, {
+              createWallet: vaultOnboarding.createWallet,
+              importWallet: vaultOnboarding.importWallet,
+              // The panel stays up through the recovery-phrase step even though the vault already exists by then (phase is no longer 'setup').
+              onDone: () => {
+                // Close only after the status says a vault exists, or render() would re-open setup from the stale phase.
+                void vaultSession.refresh().then(() => {
+                  onboardingOpen = false;
+                  render();
+                });
+              },
+            })
+          : unlockPrompt
           ? React.createElement(PasswordPanel, {
               mode: 'unlock',
               icon: React.createElement('img', { src: brandLogoUrl, alt: '' }),
@@ -582,201 +905,250 @@ async function renderWallet() {
               submitting: unlocking,
               onSubmit: (password: string) => void handleUnlockSubmit(password),
             })
-          : React.createElement(MeritWallet, {
-          networkRows,
-          accountGroups,
-          // 2026-09-29, stage 8 — tokenRows/recipientRows no longer passed
-          // explicitly; MeritWallet self-fetches them via these 4 props
-          // instead (same underlying spcoin-feeds calls this file used to
-          // make by hand — see the removed buildTokenRows/buildRecipientRows
-          // comment above for why accountGroups/networkRows stayed explicit).
-          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-          baseUrl,
-          storage: chromeIconCacheStorage,
-          refreshToken,
-          // A Chrome side panel is closer to the web app's own docked/split-
-          // pane mode (full-height, no floating-dialog corners) than its
-          // floating popup mode — see MeritWallet.tsx's own `docked` doc
-          // comment. fullWidth drops the web app's 364px cap, which assumes a
-          // fixed-width floating context — wrong here, where the panel itself
-          // is already narrow and user-resizable.
-          docked: true,
-          fullWidth: true,
-          titleBadgeSrc: brandLogoUrl,
-          // 2026-09-21, on direct request — `onClose` stays wired to the
-          // same handler as the (removed) bottom Open button: this means
-          // "open the real web app" (which closes the side panel as a
-          // result). `appType: APP_TYPE.EXTENSION` + `wwwIconSrc` is the
-          // real, centralized mechanism (WalletHeader.tsx/@sponsorcoin/
-          // spcoin-common's new APP_TYPE flag) that tells WalletHeader to
-          // show `wwwIconUrl` instead of its own default X — see this
-          // file's own `wwwIconUrl` comment above for why this replaced a
-          // bare `closeIconSrc` override.
-          onClose: handleOpenApp,
-          appType: APP_TYPE.EXTENSION,
-          wwwIconSrc: wwwIconUrl,
-          infoIconSrc: infoIconUrl,
-          // 2026-09-16 — real refresh, added on request. Forces a real
-          // re-fetch of the account list and network icons (bypassing the
-          // icon cache's TTL via forceRefresh), not just a spinner —
-          // previously unwired, so clicking this icon did nothing at all.
-          onRefresh: () => void handleRefresh(),
-          refreshing,
-          // 2026-09-21, Path A — initialActiveTab/onActiveTabChange
-          // deliberately NOT wired here anymore. MeritWallet.tsx's
-          // activeTab now comes from the real engine's own
-          // usePanelTree()/activeMainOverlay, and that engine already
-          // persists which tab was active via its own storage extension
-          // (LiteExchangeProvider's default window.localStorage) — wiring
-          // this too would just be a second, separately-written copy of
-          // the same fact. See meritWalletUiStorage.ts's own header
-          // comment for the full reasoning.
-          initialMenuOpen: uiState.menuOpen,
-          onMenuOpenChange: (open: boolean) => void writeMeritWalletUiState({ menuOpen: open }),
-          initialOpenTarget: openTarget,
-          onOpenTargetChange: (target: OpenTarget) => void writeOpenTarget(target),
-          onAccountRowSelect: handleAccountRowSelect,
-          onNetworkRowSelect: handleNetworkRowSelect,
-          onAccountIconClick: (address: string) => void handleAccountIconClick(address),
-          accountDetail,
-          onTokenIconClick: (address: string) => void handleTokenIconClick(address),
-          tokenDetail,
-          // Phase B.2 Stage 4 follow-up — the real SEND tab wiring.
-          sendAmount,
-          onSendAmountChange: (value: string) => {
-            sendAmount = value;
-            render();
-          },
-          sendBusy,
-          fetchBalance,
-          resolveAssetAddress,
-          onSendSubmit: (params: {
-            recipientAddress?: string;
-            tokenAddress?: string;
-            amount: string;
-            decimals?: number;
-            tokenSymbol?: string;
-           }) => void handleSendSubmit(params),
-           // 2026-09-26, Phase 4 — SPONSOR tab stake execution wiring.
-           sponsorStakeSubmitBusy: sponsorStakeBusy,
-           onSponsorStakeSubmit: (params: {
-             recipientAddress?: string;
-             agentAddress?: string;
-             amount: bigint;
-             recipientRateKey: number;
-             agentRateKey: number;
-           }) => void handleSponsorStakeSubmit(params),
-           // 2026-09-26, Phase 4 finish — real amount input for SPONSOR tab.
-           sponsorAmount: sponsorStakeAmount,
-           onSponsorAmountChange: (value: string) => {
-             sponsorStakeAmount = value;
-             render();
-           },
-           sponsorAmountBusy: sponsorStakeBusy,
-           // 2026-10-04 — the SPONSOR-swap and SWAP execution props
-           // (onSponsorSwapSubmit, sponsorSwapBusy, swapAmount,
-           // onSwapAmountChange, swapBusy, onSwapSubmit, activeChainId)
-           // and the AGENT_HEADER_PANEL auto-seed props
-           // (defaultAgentAddress, onHydrateAgent) were removed:
-           // MeritWalletProps never declared them (verified absent even in
-           // the pre-submodule-conversion copy — a planned-but-never-landed
-           // API), and tsc --noEmit in CI fails on unknown props. MeritWallet
-           // ignores unknown props at runtime, so this changes nothing
-           // behaviorally; the real swap and agent-hydration wiring is the
-           // C1-C3 phase. The handlers (handleSponsorSwapSubmit,
-           // hydrateAccountFromAddress) and state (swapAmount, swapBusy,
-           // sponsorSwapBusy) stay declared for that phase.
-           // 2026-09-27, Phase C — REWARDS tab claim/estimate wiring for
-           // ManageSponsorshipsPanel. Display strings parsed from
-           // accountRecord via parseRewardDisplay(); claim callbacks use the
-           // extension's executeClaimTransaction adapter (viem encodeFunctionData
-           // + TradeExecutor/meritSign pipeline); estimate callbacks use the
-           // extension's estimateOffChainRewards client (spcoin_rread via
-           // /api/spCoin/run-script, already CORS-trusted cross-origin).
-            // 2026-10-04 — the REWARDS/PENDING tab props
-            // (tradingAmountText, stakedAmountText, pendingAmountText,
-            // totalCoinsText, rewardRows, onRoleEstimate, onRoleClaim,
-            // pendingInitialLoading, pendingClaimInProgress,
-            // pendingClaimDisabled, pendingErrorText, onPendingEstimate,
-            // onPendingClaim) were removed for the same reason as the swap
-            // props above: MeritWalletProps never declared them (the rewards
-            // wiring was written against a planned-but-never-landed API), and
-            // tsc --noEmit in CI fails on unknown props. MeritWallet ignores
-            // unknown props at runtime; the real rewards wiring is the C1-C3
-            // phase. The parsed display strings, rewardRows and the
-            // estimate/claim handlers stay declared for that phase.
-            // 2026-10-03 — the Config tab. WalletConfigPanel is a fully
-            // CONTROLLED component: every option is a `value` + `onChange`
-            // pair (WalletConfigPanel.tsx:271-330), and CheckboxRow derives
-            // `interactive = typeof onSelect === 'function'` (:193) and
-            // passes readOnly={!interactive} (:205). With no handler passed,
-            // every row is inert AND `checked={undefined}` makes the input
-            // UNCONTROLLED — the DOM flips, React never hears about it, and
-            // it snaps back on the next render. That was the live "Config
-            // is not working" report; this block is the fix.
-            //
-            // passwordMode / mandatorySecurity / mandatoryApproval / syncMode
-            // persist and are selectable, but their ENFORCEMENT has no
-            // consumer in this host yet — the web app reads them from inside
-            // provider.ts / getConnectedSigner.ts, which do not run here.
-            // The extension's approval gate is always-explicit by
-            // construction (pendingSignRequestStore), so mandatoryApproval
-            // is effectively already true. Documented in
-            // docs/design/meritWalletHostExtraction.txt section 6.
-            configPasswordMode: configState.passwordMode,
-            onConfigPasswordModeChange: (mode) => void applyConfig({ passwordMode: mode }),
-            configPasswordDescription: passwordDescriptionFor(configState.passwordMode),
-            configMandatorySecurity: configState.mandatorySecurity,
-            onConfigMandatorySecurityChange: (value) => void applyConfig({ mandatorySecurity: value }),
-            configMandatoryApproval: configState.mandatoryApproval,
-            onConfigMandatoryApprovalChange: (value) => void applyConfig({ mandatoryApproval: value }),
-            configSyncMode: configState.syncMode,
-            onConfigSyncModeChange: (mode) => void applyConfig({ syncMode: mode }),
-            configSyncDescription: syncDescriptionFor(configState.syncMode),
-            configLocation: configState.location,
-            onConfigLocationChange: (loc) => void applyConfig({ location: loc }),
-            configShowBackgroundPage: configState.showBackgroundPage,
-            onConfigShowBackgroundPageChange: (value) => void applyConfig({ showBackgroundPage: value }),
-            configModalMode: configState.modalMode,
-            onConfigModalModeChange: (value) => void applyConfig({ modalMode: value }),
-            configExtensionChannel: configState.extensionChannel,
-            onConfigExtensionChannelChange: (channel) => void applyConfig({ extensionChannel: channel }),
-            configExtensionDownloadPath: extensionDownloadPathFor(configState.extensionChannel),
-            // The two exchange-engine toggles. Real panelStore reads, not
-            // stored values — same reason the web app's own
-            // useMeritWalletConfig derives these from usePanelVisible rather
-            // than its persisted config blob.
-            configUniSelectVisible: engineVisibility.uniSelectVisible,
-            onConfigUniswapEngineChange: (checked) => handleEngineToggle('uniswap', checked),
-            configZeroXEngineVisible: engineVisibility.zeroXEngineVisible,
-            onConfig0xEngineChange: (checked) => handleEngineToggle('zeroX', checked),
-            // configSecurityPanelContent / configPasswordResetPanelContent /
-            // configResetPanelsContent / persistedTimeoutContent are
-            // deliberately NOT passed: key reveal, password reset and
-            // persisted-password storage are same-origin server work with no
-            // extension counterpart, and reveal in particular is a security
-            // regression rather than a parity win. See meritWalletHostExtraction.txt
-            // section 6.
-           }),
+          : React.createElement(MeritWalletHostView, {
+            host: {
+              layout: {
+                refreshToken: walletRefresh.getState().refreshToken,
+                // A Chrome side panel is closer to the web app's own docked/split-
+                // pane mode (full-height, no floating-dialog corners) than its
+                // floating popup mode — see MeritWallet.tsx's own `docked` doc
+                // comment. fullWidth drops the web app's 364px cap, which assumes a
+                // fixed-width floating context — wrong here, where the panel itself
+                // is already narrow and user-resizable.
+                docked: true,
+                fullWidth: true,
+                titleBadgeSrc: brandLogoUrl,
+                // 2026-09-21, on direct request — `onClose` stays wired to the
+                // same handler as the (removed) bottom Open button: this means
+                // "open the real web app" (which closes the side panel as a
+                // result). `appType: APP_TYPE.EXTENSION` + `wwwIconSrc` is the
+                // real, centralized mechanism (WalletHeader.tsx/@sponsorcoin/
+                // spcoin-common's new APP_TYPE flag) that tells WalletHeader to
+                // show `wwwIconUrl` instead of its own default X — see this
+                // file's own `wwwIconUrl` comment above for why this replaced a
+                // bare `closeIconSrc` override.
+                onClose: handleOpenApp,
+                appType: APP_TYPE.EXTENSION,
+                wwwIconSrc: wwwIconUrl,
+                infoIconSrc: infoIconUrl,
+                // 2026-09-16 — real refresh, added on request. Forces a real
+                // re-fetch of the account list and network icons (bypassing the
+                // icon cache's TTL via forceRefresh), not just a spinner —
+                // previously unwired, so clicking this icon did nothing at all.
+                onRefresh: () => void walletRefresh.run(),
+                refreshing: walletRefresh.getState().refreshing,
+              },
+              uiState: {
+                // 2026-09-21, Path A — initialActiveTab/onActiveTabChange
+                // deliberately NOT wired here anymore. MeritWallet.tsx's
+                // activeTab now comes from the real engine's own
+                // usePanelTree()/activeMainOverlay, and that engine already
+                // persists which tab was active via its own storage extension
+                // (LiteExchangeProvider's default window.localStorage) — wiring
+                // this too would just be a second, separately-written copy of
+                // the same fact. See meritWalletUiStorage.ts's own header
+                // comment for the full reasoning.
+                initialMenuOpen: uiState.menuOpen,
+                onMenuOpenChange: (open: boolean) => void writeMeritWalletUiState({ menuOpen: open }),
+                initialOpenTarget: openTarget,
+                onOpenTargetChange: (target: OpenTarget) => void writeOpenTarget(target),
+              },
+              data: {
+                // The host's real active account; '' means none selected, so the header reads "Select Account".
+                activeAccountAddress: walletSource.address ?? '',
+                accountGroups: vaultRows
+                  ? [
+                      {
+                        id: 'merit-wallet',
+                        label: 'Merit Wallet',
+                        isActiveSource: true,
+                        accounts: vaultRows.map((a) => ({
+                          id: a.address,
+                          symbol: vaultMeta.get(a.address.toLowerCase())?.symbol || a.name,
+                          name: vaultMeta.get(a.address.toLowerCase())?.name || a.name,
+                          iconSrc: vaultMeta.get(a.address.toLowerCase())?.iconSrc,
+                          address: a.address,
+                          isActive: a.address.toLowerCase() === (walletSource.address ?? '').toLowerCase(),
+                        })),
+                      },
+                    ]
+                  : undefined,
+                // 2026-09-29, stage 8 — tokenRows/recipientRows no longer passed
+                // explicitly; MeritWallet self-fetches them via these 4 props
+                // instead (same underlying spcoin-feeds calls this file used to
+                // make by hand — see the removed buildTokenRows/buildRecipientRows
+                // comment above). accountGroups/networkRows are self-fetched now too.
+                chainId: activeChainId,
+                baseUrl,
+                storage: chromeIconCacheStorage,
+                fetchBalance: fetchBalanceFor(activeChainId),
+                resolveAssetAddress,
+                activeSpCoinAddress: spCoinAddress(),
+                rewardsHost,
+                stakingHost,
+              },
+              selection: {
+                onAddAccount: openVaultScreen,
+                swapHost,
+                onAccountRowSelect: handleAccountRowSelect,
+                onNetworkRowSelect: handleNetworkRowSelect,
+                onAccountIconClick: (address: string) => void handleAccountIconClick(address),
+                accountDetail,
+                accountProfileHost,
+                onTokenIconClick: (address: string) => void handleTokenIconClick(address),
+                tokenDetail,
+              },
+              actions: {
+                // Phase B.2 Stage 4 follow-up — the real SEND tab wiring.
+                sendAmount,
+                onSendAmountChange: (value: string) => {
+                  sendAmount = value;
+                  render();
+                },
+                sendBusy,
+                onSendSubmit: (params: {
+                  recipientAddress?: string;
+                  tokenAddress?: string;
+                  amount: string;
+                  decimals?: number;
+                  tokenSymbol?: string;
+                 }) => handleSendSubmit(params),
+                // 2026-09-26, Phase 4 — SPONSOR tab stake execution wiring.
+                sponsorStakeSubmitBusy: sponsorStakeBusy,
+                onSponsorStakeSubmit: (params: {
+                  recipientAddress?: string;
+                  agentAddress?: string;
+                  amount: bigint;
+                  recipientRateKey: number;
+                  agentRateKey: number;
+                }) => handleSponsorStakeSubmit(params),
+                // 2026-09-26, Phase 4 finish — real amount input for SPONSOR tab.
+                sponsorAmount: sponsorStakeAmount,
+                onSponsorAmountChange: (value: string) => {
+                  sponsorStakeAmount = value;
+                  render();
+                },
+                sponsorAmountBusy: sponsorStakeBusy,
+              },
+              slots: {
+                configSecurityPanelContent: React.createElement(WalletSecuritySection, { api: walletSecurityApi }),
+                configTestAccountsContent: React.createElement(TestAccountsSection, {
+                  api: vaultTestAccountsApi,
+                  authenticationType: AuthenticationType.VAULT,
+                  onChanged: () => {
+                    vaultRowsStale = true;
+                    render();
+                  },
+                }),
+              },
+              lock: {
+                // 2026-10-08 (table row 23): the lock gate is the component's own: while the vault is locked it shows the password screen in place of everything.
+                walletLocked: vaultSession.getState().phase === 'locked',
+                onResetWallet: resetWallet,
+                passwordMode: 'unlock',
+                passwordIcon: React.createElement('img', { src: brandLogoUrl, alt: '' }),
+                passwordErrorText: vaultSession.getState().error || undefined,
+                passwordSubmitting: vaultSession.getState().submitting,
+                onPasswordSubmit: (password: string) => void vaultSession.submit(password, ''),
+              },
+              config: {
+                // 2026-10-04 — the SPONSOR-swap and SWAP execution props
+                // (onSponsorSwapSubmit, sponsorSwapBusy, swapAmount,
+                // onSwapAmountChange, swapBusy, onSwapSubmit, activeChainId)
+                // and the AGENT_HEADER_PANEL auto-seed props
+                // (defaultAgentAddress, onHydrateAgent) were removed:
+                // MeritWalletProps never declared them (verified absent even in
+                // the pre-submodule-conversion copy — a planned-but-never-landed
+                // API), and tsc --noEmit in CI fails on unknown props. MeritWallet
+                // ignores unknown props at runtime, so this changes nothing
+                // behaviorally; the real swap and agent-hydration wiring is the
+                // C1-C3 phase. The handlers (handleSponsorSwapSubmit,
+                // hydrateAccountFromAddress) and state (swapAmount, swapBusy,
+                // sponsorSwapBusy) stay declared for that phase.
+                // 2026-09-27, Phase C — REWARDS tab claim/estimate wiring for
+                // ManageSponsorshipsPanel. Display strings parsed from
+                // accountRecord via parseRewardDisplay(); claim callbacks use the
+                // extension's executeClaimTransaction adapter (viem encodeFunctionData
+                // + TradeExecutor/meritSign pipeline); estimate callbacks use the
+                // extension's estimateOffChainRewards client (spcoin_rread via
+                // /api/spCoin/run-script, already CORS-trusted cross-origin).
+                 // 2026-10-04 — the REWARDS/PENDING tab props
+                 // (tradingAmountText, stakedAmountText, pendingAmountText,
+                 // totalCoinsText, rewardRows, onRoleEstimate, onRoleClaim,
+                 // pendingInitialLoading, pendingClaimInProgress,
+                 // pendingClaimDisabled, pendingErrorText, onPendingEstimate,
+                 // onPendingClaim) were removed for the same reason as the swap
+                 // props above: MeritWalletProps never declared them (the rewards
+                 // wiring was written against a planned-but-never-landed API), and
+                 // tsc --noEmit in CI fails on unknown props. MeritWallet ignores
+                 // unknown props at runtime; the real rewards wiring is the C1-C3
+                 // phase. The parsed display strings, rewardRows and the
+                 // estimate/claim handlers stay declared for that phase.
+                 // 2026-10-03 — the Config tab. WalletConfigPanel is a fully
+                 // CONTROLLED component: every option is a `value` + `onChange`
+                 // pair (WalletConfigPanel.tsx:271-330), and CheckboxRow derives
+                 // `interactive = typeof onSelect === 'function'` (:193) and
+                 // passes readOnly={!interactive} (:205). With no handler passed,
+                 // every row is inert AND `checked={undefined}` makes the input
+                 // UNCONTROLLED — the DOM flips, React never hears about it, and
+                 // it snaps back on the next render. That was the live "Config
+                 // is not working" report; this block is the fix.
+                 //
+                 // passwordMode / mandatorySecurity / mandatoryApproval / syncMode
+                 // persist and are selectable, but their ENFORCEMENT has no
+                 // consumer in this host yet — the web app reads them from inside
+                 // provider.ts / getConnectedSigner.ts, which do not run here.
+                 // The extension's approval gate is always-explicit by
+                 // construction (pendingSignRequestStore), so mandatoryApproval
+                 // is effectively already true. Documented in
+                 // docs/design/meritWalletHostExtraction.txt section 6.
+                 configPasswordMode: walletConfig.getState().passwordMode,
+            authenticationType: AuthenticationType.VAULT,
+            onConfigLogoff: () => void vaultSession.lock(),
+            onConfigResetPassword: openChangePassword,
+            onConfigDeleteAccount: removeActiveAccount,
+            onConfigDeleteWallet: () => {
+              deleteWalletDialogOpen = true;
+              render();
+            },
+                onConfigPasswordModeChange: (mode) => walletConfig.set({ passwordMode: mode }),
+                configPasswordDescription: passwordDescriptionFor(walletConfig.getState().passwordMode),
+                configMandatorySecurity: walletConfig.getState().mandatorySecurity,
+                onConfigMandatorySecurityChange: (value) => walletConfig.set({ mandatorySecurity: value }),
+                configMandatoryApproval: walletConfig.getState().mandatoryApproval,
+                onConfigMandatoryApprovalChange: (value) => walletConfig.set({ mandatoryApproval: value }),
+                configSyncMode: walletConfig.getState().syncMode,
+                onConfigSyncModeChange: (mode) => walletConfig.set({ syncMode: mode }),
+                configSyncDescription: syncDescriptionFor(walletConfig.getState().syncMode),
+                configLocation: walletConfig.getState().location,
+                onConfigLocationChange: (loc) => walletConfig.set({ location: loc }),
+                configShowBackgroundPage: walletConfig.getState().showBackgroundPage,
+                onConfigShowBackgroundPageChange: (value) => walletConfig.set({ showBackgroundPage: value }),
+                configModalMode: walletConfig.getState().modalMode,
+                onConfigModalModeChange: (value) => walletConfig.set({ modalMode: value }),
+                configExtensionChannel: walletConfig.getState().extensionChannel,
+                onConfigExtensionChannelChange: (channel) => walletConfig.set({ extensionChannel: channel }),
+                configExtensionDownloadPath: extensionDownloadPathFor(walletConfig.getState().extensionChannel),
+                // The two exchange-engine toggles. Real panelStore reads, not
+                // stored values — same reason the web app's own
+                // useMeritWalletConfig derives these from usePanelVisible rather
+                // than its persisted config blob.
+                configUniSelectVisible: engineVisibility.uniSelectVisible,
+                onConfigUniswapEngineChange: (checked) => handleEngineToggle('uniswap', checked),
+                configZeroXEngineVisible: engineVisibility.zeroXEngineVisible,
+                onConfig0xEngineChange: (checked) => handleEngineToggle('zeroX', checked),
+              },
+            },
+          }),
       ),
     );
   }
 
-  // 2026-10-03 — Config tab change handlers. applyConfig is the
-  // chrome.storage.local half (optimistic local update first, matching every
-  // other writer in this file, then the persisted write). handleEngineToggle
+  // 2026-10-03 — Config tab change handlers. The chrome.storage.local half is walletConfig above (2026-10-08). handleEngineToggle
   // is the panelStore half and deliberately does NOT await: the actual write
   // happens inside MeritWalletConfigBridge, which owns the setPanelVisible
-  // hook, and it calls back into render() once panelStore is updated. Both
-  // no-op safely if the bridge has not mounted yet.
-  function applyConfig(patch: Partial<MeritWalletConfigState>) {
-    configState = { ...configState, ...patch };
-    render();
-    void writeMeritWalletConfigState(patch).catch((error) => {
-      console.error('Failed to persist Merit Wallet config:', error);
-    });
-  }
-
+  // hook, and it calls back into render() once panelStore is updated. It
+  // no-ops safely if the bridge has not mounted yet.
   function handleEngineToggle(engine: 'uniswap' | 'zeroX', checked: boolean) {
     const setters = getEngineSetters();
     if (!setters) {
@@ -814,6 +1186,7 @@ async function renderWallet() {
       email: metadata?.email,
       website: metadata?.website,
       description: metadata?.description,
+      recipientNetwork: metadata?.recipientNetwork,
     };
     render();
   }
@@ -862,7 +1235,14 @@ async function renderWallet() {
   // everything else (unencrypted entries, or an account this session
   // already unlocked) activates the wallet source immediately, no prompt.
   function handleAccountRowSelect(accountId: string) {
-    if (!accountGroups) return;
+    if (vaultRows) {
+      // A vault account: the vault keeps the active choice; no hosted-app unlock exists or is needed.
+      void vaultAccountsApi.setActive(accountId).then(() => {
+        vaultActive = accountId;
+        activateAccount(accountId);
+      });
+      return;
+    }
     const address = accountId.trim().toLowerCase();
     const isLocked = lockStatusByAddress.get(address) ?? false;
     const alreadyUnlocked = unlockTokenAddress === address;
@@ -877,17 +1257,9 @@ async function renderWallet() {
     activateAccount(accountId);
   }
 
-  // Marks the row active (existing local-selection behavior, unchanged)
-  // and sets it as the real ExchangeContextWalletSource's active address.
+  // Sets the picked account as the real ExchangeContextWalletSource's active address. The header and the list's ACTIVE badge follow it
+  // through MeritWallet's activeAccountAddress prop (no per-row isActive flags are kept here any more).
   function activateAccount(accountId: string) {
-    if (!accountGroups) return;
-    accountGroups = accountGroups.map((group) => ({
-      ...group,
-      accounts: group.accounts.map((account) => ({
-        ...account,
-        isActive: account.id === accountId,
-      })),
-    }));
     walletSource = { ...walletSource, address: accountId, isConnected: true };
     render();
     void fetchAccountRecord(accountId);
@@ -904,18 +1276,9 @@ async function renderWallet() {
     render();
     try {
       [accountRecord, rewardEstimate] = await Promise.all([
-        getAccountRecord(address, {
-          baseUrl,
-          contractAddress: SPOIN_HARDHAT_CONTRACT_ADDRESS,
-          rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-        }),
-        estimateOffChainRewards(address, 'estimateOffChainTotalRewards', {
-          baseUrl,
-          contractAddress: SPOIN_HARDHAT_CONTRACT_ADDRESS,
-          rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-        }).catch((error) => {
+        // Both straight from the contract's views (2026-10-09, row 25): the record is the getAccountRecord view, the estimate the client-side calculation.
+        chainRead('getAccountRecord', [{ key: 'Account Key', value: address }]),
+        estimateRewardsByMethod('estimateOffChainTotalRewards', { accountKey: address, read: chainRead }).catch((error) => {
           console.error('Failed to load reward estimate:', error);
           return null;
         }),
@@ -965,18 +1328,21 @@ async function renderWallet() {
     amount: string;
     decimals?: number;
     tokenSymbol?: string;
-  }) {
+  }): Promise<HostTransactionResult> {
     const from = walletSource.address;
-    if (!from) {
-      alert('Select and activate an account first.');
-      return;
-    }
+    if (!from) return { ok: false, message: 'Select and activate an account first.' };
 
     sendBusy = true;
     render();
 
-    const network = networkRows.find((row) => row.isActive);
+    // Table row 13: an account that belongs to the unlocked vault signs locally in the worker; any other account still goes through the hosted app.
+    const vaultList = (await chrome.runtime.sendMessage({ type: 'merit/accounts/list' }).catch(() => undefined)) as
+      | { ok?: boolean; accounts?: Array<{ address: string }> }
+      | undefined;
+    const useVault = !!vaultList?.ok && !!vaultList.accounts?.some((a) => a.address.toLowerCase() === from.trim().toLowerCase());
+    const network = listConfiguredNetworks({ showTestNets: true }).find((row) => row.chainId === activeChainId);
     const result = await sendNativeMerit({
+      useVault,
       baseUrl,
       chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
       rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
@@ -991,17 +1357,11 @@ async function renderWallet() {
     });
 
     sendBusy = false;
-    if (result.ok) {
-      sendAmount = '';
-      // No MESSAGE_PANEL-equivalent result UI exists in the extension yet
-      // (a real, separate gap — same class as the web app's own
-      // confirmation-flow richness not being ported) — a plain alert is
-      // the honest minimum until that's built.
-      alert(`Sent. Transaction hash: ${result.hash}`);
-    } else {
-      alert(`Send failed: ${result.message}`);
-    }
+    if (result.ok) sendAmount = '';
     render();
+    // The wallet shows the result card (MESSAGE_PANEL) from what is returned, the same one the web app shows after a send.
+    if (result.ok) void walletRefresh.run();
+    return result.ok ? { ok: true, hash: result.hash, receipt: result.receipt as never } : { ok: false, message: result.message };
   }
 
   // 2026-09-26, Phase 4 — SPONSOR tab stake execution wiring.
@@ -1019,12 +1379,9 @@ async function renderWallet() {
     amount: bigint;
     recipientRateKey: number;
     agentRateKey: number;
-  }) {
+  }): Promise<HostTransactionResult> {
     const from = walletSource.address;
-    if (!from) {
-      alert('Select and activate an account first.');
-      return;
-    }
+    if (!from) return { ok: false, message: 'Select and activate an account first.' };
 
     sponsorStakeBusy = true;
     render();
@@ -1044,18 +1401,17 @@ async function renderWallet() {
         recipientRateRange: [0, 100],
         agentRateRange: [0, 100],
         abi: SPOIN_STAKE_ABI,
-        contractAddress: SPOIN_HARDHAT_CONTRACT_ADDRESS,
+        contractAddress: spCoinAddress(),
         chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
         fromAddress: from,
       });
 
-      if (result.transactionHash) {
-        alert(`Stake submitted. Transaction hash: ${result.transactionHash}`);
-      } else {
-        alert('Stake completed with no transaction hash.');
-      }
+      void walletRefresh.run();
+      return result.transactionHash
+        ? { ok: true, hash: result.transactionHash, receipt: result.receipt as never, methodName: (result as { methodName?: string }).methodName }
+        : { ok: false, message: 'Stake completed with no transaction hash.' };
     } catch (error) {
-      alert(`Stake failed: ${error instanceof Error ? error.message : String(error)}`);
+      return { ok: false, message: error instanceof Error ? error.message : String(error) };
     } finally {
       sponsorStakeBusy = false;
       sponsorStakeAmount = '';
@@ -1125,7 +1481,7 @@ async function renderWallet() {
      try {
        rewardEstimate = await estimateOffChainRewards(from, TOTAL_REWARD_CONFIG.estimateMethod, {
          baseUrl,
-         contractAddress: SPOIN_HARDHAT_CONTRACT_ADDRESS,
+         contractAddress: spCoinAddress(),
          rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
        });
@@ -1155,7 +1511,7 @@ async function renderWallet() {
      try {
         await estimateOffChainRewards(from, config.estimateMethod as Parameters<typeof estimateOffChainRewards>[1], {
          baseUrl,
-         contractAddress: SPOIN_HARDHAT_CONTRACT_ADDRESS,
+         contractAddress: spCoinAddress(),
          rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
        });
@@ -1193,7 +1549,7 @@ async function renderWallet() {
          accountKey: from,
          method: TOTAL_REWARD_CONFIG.claimMethod,
          abi: SPOIN_CLAIM_ABI,
-         contractAddress: SPOIN_HARDHAT_CONTRACT_ADDRESS,
+         contractAddress: spCoinAddress(),
          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
          fromAddress: from,
          onConfirmed: () => void fetchAccountRecord(from),
@@ -1229,7 +1585,7 @@ async function renderWallet() {
          accountKey: from,
           method: config.claimMethod as Parameters<typeof executeClaimTransaction>[0]['method'],
          abi: SPOIN_CLAIM_ABI,
-         contractAddress: SPOIN_HARDHAT_CONTRACT_ADDRESS,
+         contractAddress: spCoinAddress(),
          chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
          fromAddress: from,
          onConfirmed: () => void fetchAccountRecord(from),
@@ -1247,31 +1603,10 @@ async function renderWallet() {
    }
 
    function handleNetworkRowSelect(networkId: string) {
-    networkRows = networkRows.map((row) => ({
-      ...row,
-      isActive: row.id === networkId,
-    }));
-    render();
-  }
-
-  async function handleRefresh() {
-    refreshing = true;
-    render();
-    // tokenRows/recipientRows no longer fetched here — MeritWallet's own
-    // self-fetch (chainId/baseUrl props, already wired below) owns their
-    // fetching now. Bumping refreshToken is what tells it to re-fetch them
-    // with forceRefresh:true, same as this function already does explicitly
-    // for accountGroups/networkRows (kept explicit — see this file's own
-    // comment above where withAssetIcons/buildRecipientRows/buildTokenRows
-    // used to be defined, re: activateAccount/handleNetworkRowSelect's real
-    // closure-mutation dependence on these two).
-    refreshToken += 1;
-    [accountGroups, networkRows, lockStatusByAddress] = await Promise.all([
-      fetchAccountGroups(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
-      buildNetworkRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl, /* forceRefresh */ true),
-      fetchKeystoreLockStatus(baseUrl),
-    ]);
-    refreshing = false;
+    const next = Number(networkId);
+    if (!Number.isFinite(next) || next === activeChainId) return;
+    activeChainId = next;
+    void chrome.runtime.sendMessage({ type: 'merit/network/set', chainId: next }).catch(() => undefined);
     render();
   }
 
@@ -1283,17 +1618,13 @@ async function renderWallet() {
   // account/network/token rows) instead of leaving `wallet-root` blank
   // for however long the three real fetches below take. Real data then
   // replaces it in place once it resolves — same two-render pattern
-  // handleRefresh already uses, just applied to the very first load too.
+  // the refresh does too, just applied to the very first load.
   render();
 
   // tokenRows/recipientRows no longer fetched here either — MeritWallet's
   // own self-fetch (chainId/baseUrl props, wired into the render call above)
   // handles their first fetch itself once chainId is set.
-  [accountGroups, networkRows, lockStatusByAddress] = await Promise.all([
-    fetchAccountGroups(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
-    buildNetworkRows(MERIT_WALLET_HARDHAT_CHAIN_ID, baseUrl),
-    fetchKeystoreLockStatus(baseUrl),
-  ]);
+  lockStatusByAddress = requireVault ? new Map() : await fetchKeystoreLockStatus(baseUrl);
   render();
 }
 

@@ -32,6 +32,8 @@ export interface ExecuteUniswapV3SwapParamsExt {
   recipient: string;
   fee?: number;
   fromAddress: string;
+  /** What the confirmation screen shows for the swap itself (the approval-details request the shared swap flow builds); filled in where the portable call has none. */
+  confirm?: { title?: string; message?: string; amount?: { label: string; value: string }; tokens?: unknown[]; accounts?: unknown[] };
 }
 
 export type { ExecuteUniswapV3SwapResult };
@@ -47,6 +49,7 @@ export async function executeUniswapV3Swap({
   recipient,
   fee,
   fromAddress,
+  confirm,
 }: ExecuteUniswapV3SwapParamsExt): Promise<ExecuteUniswapV3SwapResult> {
   const account: TradeExecutorAccount = {
     address: fromAddress,
@@ -58,6 +61,16 @@ export async function executeUniswapV3Swap({
     { baseUrl, rpcUrl },
     account,
   );
+
+  if (confirm) {
+    const inner = context.executor.execute.bind(context.executor);
+    context.executor.execute = (req) =>
+      inner(
+        req.display?.label === 'Uniswap V3 Swap'
+          ? { ...req, display: { ...req.display, title: confirm.title ?? req.display.title, label: confirm.message ?? req.display.label, amount: confirm.amount ?? req.display.amount, tokens: (confirm.tokens ?? req.display.tokens) as never, accounts: (confirm.accounts ?? req.display.accounts) as never } }
+          : req,
+      );
+  }
 
   const portableParams: PortableSwapParams = {
     chainId,

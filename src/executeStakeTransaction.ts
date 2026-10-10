@@ -8,26 +8,13 @@
 // lib/spCoin/executeStakeTransactionCore.ts.
 
 import type { Abi } from 'viem';
-import { parseAbi } from 'viem';
 import { executeStakeTransactionCore, type ExecuteStakeTransactionResult, type RunScriptParams } from '@sponsorcoin/spcoin-onchain';
 import type { TradeExecutorContext, TradeExecutorAccount } from '@sponsorcoin/spcoin-exchange-engine';
 import { buildMeritTradeExecutorContext } from './tradeExecutorMerit';
 import { runSpCoinReadStep } from './runSpCoinReadStep';
 import type { PendingSignRequestAccountEntry } from './pendingSignRequestStore';
 
-/** Minimal spCoin contract ABI — only the functions needed for stake execution.
- *  Used by encodeFunctionData in the portable onchain module. The full runtime
- *  ABI is loaded dynamically by the web app via ensureSpCoinLabAbiLoaded +
- *  getSpCoinLabAbi(); the extension has no equivalent loader yet, so this
- *  static slice covers the two stake methods + the two rate-increment reads
- *  executeStakeTransactionCore calls via readStep.
- */
-export const SPOIN_STAKE_ABI = parseAbi([
-  'function sponsorAgentTransaction(string _recipientKey, string _recipientRateKey, string _accountAgentKey, string _agentRateKey, uint256 _amount) external',
-  'function sponsorRecipientTransaction(string _recipientKey, string _recipientRateKey, uint256 _amount) external',
-  'function getRecipientRateIncrement() view returns (uint256)',
-  'function getAgentRateIncrement() view returns (uint256)',
-]) as Abi;
+export { SPOIN_STAKE_ABI } from './spCoinStakeAbi';
 
 export interface ExecuteStakeTransactionParams {
   baseUrl: string;

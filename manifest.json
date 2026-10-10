@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "spCoin Merit Wallet",
   "version": "0.0.1",
-  "description": "Merit Wallet browser extension for the spCoin app. Phase 1: opens as a docked side panel (real Merit Wallet UI coming later) — no signing, no injection yet.",
+  "description": "Merit Wallet browser extension for the spCoin app: a side-panel wallet that holds its own keys and, through an EIP-6963 provider, lets web pages ask it to connect and sign.",
   "icons": {
     "16": "icons/icon16-square.png",
     "32": "icons/icon32-square.png",
@@ -22,17 +22,57 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/meritWallet.png", "assets/www.png", "assets/info.png", "assets/miscellaneous/Anonymous.png", "assets/miscellaneous/step.png"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "assets/meritWallet.png",
+        "assets/www.png",
+        "assets/info.png",
+        "assets/miscellaneous/Anonymous.png",
+        "assets/miscellaneous/step.png",
+        "assets/miscellaneous/QuestionRed.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "background": {
     "service_worker": "src/background.ts",
     "type": "module"
   },
-  "permissions": ["tabs", "sidePanel", "storage", "unlimitedStorage"],
+  "permissions": [
+    "tabs",
+    "sidePanel",
+    "storage",
+    "unlimitedStorage"
+  ],
   "host_permissions": [
     "http://localhost:3000/*",
     "https://sponsorcoin.org/*"
-  ]
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/contentScript.ts"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/inpage.ts"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+  }
 }

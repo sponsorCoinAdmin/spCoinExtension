@@ -23,12 +23,15 @@ import {
   type SignAndSendMeritTransactionParams,
 } from './meritSign';
 import type { PendingSignRequestAccountEntry, PendingSignRequestTokenEntry } from './pendingSignRequestStore';
+import { ethCall, isLegacySigningAllowed, isVaultAccount, signWithVault, vaultUnavailableMessage, waitForReceipt } from './localSigning';
 
 export interface MeritTradeExecutorParams {
   /** Base URL for the Merit Wallet API (e.g. chrome-extension://xxx or https://spcoin.app). */
   baseUrl: string;
   /** RPC URL — required by the Merit sign route, not resolved internally. */
   rpcUrl: string;
+  /** 2026-10-08 (table row 14): the signing account. When it belongs to the unlocked vault, execute() signs locally in the worker (src/localSigning.ts). */
+  from?: string;
 }
 
 /**
@@ -54,11 +57,31 @@ export function createMeritTradeExecutor(params: MeritTradeExecutorParams): Trad
       display,
     }): Promise<TradeExecutionResult> {
       const amountEntry = display?.amount;
+      // LOCAL: an account of the unlocked vault signs in the background worker, behind the same confirmation screen.
+      if (params.from && (await isVaultAccount(params.from))) {
+        const { hash } = await signWithVault(
+          { from: params.from, to, data, value: value !== undefined ? BigInt(value).toString() : undefined, chainId },
+          {
+            title: display?.title ?? display?.label ?? 'Transaction',
+            message: display?.label,
+            signerAddress: params.from,
+            chainId,
+            contractAddress: display?.contractAddress,
+            accounts: display?.accounts as PendingSignRequestAccountEntry[] | undefined,
+            tokens: display?.tokens as PendingSignRequestTokenEntry[] | undefined,
+            amount: amountEntry ? { label: amountEntry.label, value: amountEntry.value } : undefined,
+          },
+        );
+        // Wait for the block so the caller can say "confirmed" (the web app's signer does the same) and show block / gas.
+        const receipt = await waitForReceipt(rpcUrl || params.rpcUrl, hash);
+        return { transactionHash: hash, receipt };
+      }
+      if (!isLegacySigningAllowed()) throw new Error(await vaultUnavailableMessage());
       const signParams: SignAndSendMeritTransactionParams = {
         baseUrl: params.baseUrl,
         chainId,
         rpcUrl: rpcUrl || params.rpcUrl,
-        from: '', // filled below from account context
+        from: params.from ?? '',
         to,
         data,
         value: value !== undefined ? BigInt(value).toString() : undefined,
@@ -82,7 +105,9 @@ export function createMeritTradeExecutor(params: MeritTradeExecutorParams): Trad
       };
     },
 
-    async call(): Promise<string> {
+    async call({ to, data, rpcUrl }): Promise<string> {
+      // LOCAL accounts read straight from the chain's RPC (allowances and the like).
+      if (params.from && (await isVaultAccount(params.from))) return ethCall(rpcUrl || params.rpcUrl, to, data);
       // Extension-side eth_call is intentionally skipped — the extension has
       // no cross-origin RPC relay for read operations. The portable
       // executeErc20Approve/executeUniswapV3Swap modules catch this and
@@ -105,6 +130,6 @@ export function buildMeritTradeExecutorContext(
 ): TradeExecutorContext {
   return {
     account,
-    executor: createMeritTradeExecutor(executorParams),
+    executor: createMeritTradeExecutor({ ...executorParams, from: account.address }),
   };
 }

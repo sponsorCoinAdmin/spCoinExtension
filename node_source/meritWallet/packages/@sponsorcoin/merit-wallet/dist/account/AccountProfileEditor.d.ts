@@ -1,5 +1,5 @@
 import React from 'react';
-import { type ProfileFormData } from './profileForm';
+import type { ProfileFormData } from './profileForm';
 export interface AccountProfileHost {
     /** The hosted app's origin ('' for the same origin). */
     baseUrl: string;
@@ -14,11 +14,11 @@ export interface AccountProfileInitial extends Partial<ProfileFormData> {
     avatarSrc?: string;
     recipientNetwork?: number[];
 }
-export default function AccountProfileEditor({ address, initial, exists, host, onDone, }: {
+export default function AccountProfileEditor({ address, initial, host, onDone, }: {
     address: string;
     initial: AccountProfileInitial;
-    /** The account already has a profile on the server (saved with PUT) or is new (POST). */
-    exists: boolean;
+    /** Kept for the callers' sake: whether the account has a profile is now read from the server by the shared hook. */
+    exists?: boolean;
     host: AccountProfileHost;
     onDone(): void;
 }): React.JSX.Element;

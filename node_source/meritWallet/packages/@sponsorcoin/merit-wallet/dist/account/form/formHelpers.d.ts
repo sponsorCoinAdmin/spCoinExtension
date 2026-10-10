@@ -1,0 +1,37 @@
+import type { AccountFormData, AccountFormField } from './formTypes';
+export declare const DEFAULT_ACCOUNT_LOGO_URL = "/assets/miscellaneous/Anonymous.png";
+export declare const LOGO_TARGET_WIDTH_PX = 400;
+export declare const LOGO_TARGET_HEIGHT_PX = 400;
+export declare const LOGO_MAX_OUTPUT_BYTES: number;
+export declare const LOGO_MAX_INPUT_BYTES: number;
+export declare const EMPTY_FORM_DATA: AccountFormData;
+export declare const FORM_FIELDS: AccountFormField[];
+export declare const FORM_ERROR_FOCUS_ORDER: AccountFormField[];
+export declare const FIELD_MAX_LENGTHS: Partial<Record<AccountFormField, number>>;
+export declare const FIELD_TITLES: {
+    readonly publicKey: 'Required Account on a connected Metamask Account.';
+    readonly name: 'Account Name, Do Not use a personal name';
+    readonly symbol: 'Account Symbol';
+    readonly email: 'Account Email';
+    readonly website: 'Accounts Website';
+    readonly description: 'Account Description';
+};
+export declare const FIELD_PLACEHOLDERS: {
+    readonly publicKey: 'Required Account on a connected Metamask Account.';
+    readonly name: 'Account Name Title, Example: "Save the World"';
+    readonly symbol: 'Account Symbol, For Example "WORLD"';
+    readonly email: 'Account Email, do not use a personal Email';
+    readonly website: 'Accounts Website URL';
+    readonly description: 'Account Description';
+};
+export declare function normalizeAddress(value: string): string;
+export declare function ensureAbsoluteAssetURL(value: string): string;
+export { withCacheBust } from '@sponsorcoin/spcoin-exchange-engine';
+export declare function isValidEmail(value: string): boolean;
+export declare function isValidWebsite(value: string): boolean;
+export declare function toPreviewHref(field: keyof AccountFormData, rawValue: string): string | null;
+export declare function getAbsoluteFieldError(field: AccountFormField, rawValue: string): string | null;
+export declare function getFieldTooLargeMessage(field: AccountFormField): string | null;
+export declare function shouldBlockAdditionalInput(field: AccountFormField, currentRawValue: string, nextRawValue: string): boolean;
+export declare function shouldOpenLinkFromInputClick(input: HTMLInputElement, value: string, event: React.MouseEvent<HTMLInputElement>): boolean;
+export declare function trimForm(data: AccountFormData): AccountFormData;

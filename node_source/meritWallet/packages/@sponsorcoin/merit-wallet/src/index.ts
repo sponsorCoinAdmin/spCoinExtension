@@ -102,3 +102,17 @@ export * from './account/profileForm';
 
 export * from './auth/authenticator';
 export * from './auth/resolve';
+
+// 2026-10-09 (row 18) -- the shared account editor: state/actions hook, its host interface, form types and the form's pure helpers (the profile-form names that collide keep their own export above).
+export { useAccountForm } from './account/form/useAccountForm';
+export type { AccountFormHost, UseAccountFormParams } from './account/form/useAccountForm';
+export type * from './account/form/formTypes';
+export {
+  DEFAULT_ACCOUNT_LOGO_URL, EMPTY_FORM_DATA, FORM_FIELDS, FORM_ERROR_FOCUS_ORDER, FIELD_TITLES, FIELD_PLACEHOLDERS, LOGO_TARGET_WIDTH_PX, LOGO_TARGET_HEIGHT_PX, LOGO_MAX_INPUT_BYTES as ACCOUNT_LOGO_MAX_INPUT_BYTES, LOGO_MAX_OUTPUT_BYTES as ACCOUNT_LOGO_MAX_OUTPUT_BYTES,
+  normalizeAddress, ensureAbsoluteAssetURL, withCacheBust, toPreviewHref, getAbsoluteFieldError, getFieldTooLargeMessage, shouldBlockAdditionalInput, shouldOpenLinkFromInputClick, trimForm,
+  FIELD_MAX_LENGTHS as ACCOUNT_FIELD_MAX_LENGTHS, isValidEmail as isValidAccountEmail, isValidWebsite as isValidAccountWebsite,
+} from './account/form/formHelpers';
+export { useAccountFormDerivedState } from './account/form/useAccountFormDerivedState';
+export { default as AccountFormPanel } from './account/form/AccountFormPanel';
+export { default as AccountAvatarPanel } from './account/form/AccountAvatarPanel';
+export { default as DisconnectedControl } from './account/form/DisconnectedControl';

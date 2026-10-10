@@ -70,3 +70,5 @@ export { default as AccountProfileEditor } from './account/AccountProfileEditor'
 export type { AccountProfileHost, AccountProfileInitial } from './account/AccountProfileEditor';
 export { saveAccountProfile } from './account/accountProfileClient';
 export * from './account/profileForm';
+export * from './auth/authenticator';
+export * from './auth/resolve';

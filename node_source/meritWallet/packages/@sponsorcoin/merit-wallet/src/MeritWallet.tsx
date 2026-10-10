@@ -1812,6 +1812,8 @@ export default function MeritWallet({
                        }),
                        'MeritWallet:send',
                      );
+                     // A confirmed send clears the amount; a failed one leaves everything as it was.
+                     if (result.ok) onSendAmountChange?.('');
                    });
                  }
                : undefined,
@@ -1908,6 +1910,8 @@ export default function MeritWallet({
                          }),
                          'MeritWallet:stake',
                        );
+                       // A confirmed stake clears the amount; a failed one leaves everything as it was.
+                       if (result.ok) onSponsorAmountChange?.('');
                      });
                    }
                  : undefined,

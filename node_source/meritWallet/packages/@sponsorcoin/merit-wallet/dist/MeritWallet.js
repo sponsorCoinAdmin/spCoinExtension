@@ -1098,6 +1098,9 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
                                 from: activeProfileRef.current,
                                 to: { address: selections.sendRecipient?.address, name: selections.sendRecipient?.name, symbol: selections.sendRecipient?.symbol, logoURL: selections.sendRecipient?.iconSrc },
                             }), 'MeritWallet:send');
+                            // A confirmed send clears the amount; a failed one leaves everything as it was.
+                            if (result.ok)
+                                onSendAmountChange?.('');
                         });
                     }
                     : undefined,
@@ -1185,6 +1188,9 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
                                     recipientRatePct: sponsorRateKeys.recipientPct,
                                     agentRatePct: stakeAgentAddress() ? currentSponsorRateKeys().agentPct : undefined,
                                 }), 'MeritWallet:stake');
+                                // A confirmed stake clears the amount; a failed one leaves everything as it was.
+                                if (result.ok)
+                                    onSponsorAmountChange?.('');
                             });
                         }
                         : undefined,

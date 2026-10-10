@@ -91,6 +91,8 @@ export default function SendComponent() {
           }),
         );
         openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'SendComponent:handleSend:success');
+        // A confirmed send clears the amount, so the tab behind the receipt is ready for the next one (2026-10-10, same as the swap).
+        setAmount('0');
       }
     } catch (error) {
       setErrorMessage(

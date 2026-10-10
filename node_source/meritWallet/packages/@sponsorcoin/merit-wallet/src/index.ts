@@ -119,3 +119,4 @@ export { default as DisconnectedControl } from './account/form/DisconnectedContr
 export { default as AddAccountFlow } from './account/AddAccountFlow';
 export type { AddAccountHost, AddAccountEntry } from './account/AddAccountFlow';
 export { default as SendComponent } from './send/SendComponent';
+export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownWithAvatar';

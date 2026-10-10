@@ -58,3 +58,4 @@ export { default as AccountAvatarPanel } from './account/form/AccountAvatarPanel
 export { default as DisconnectedControl } from './account/form/DisconnectedControl';
 export { default as AddAccountFlow } from './account/AddAccountFlow';
 export { default as SendComponent } from './send/SendComponent';
+export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownWithAvatar';

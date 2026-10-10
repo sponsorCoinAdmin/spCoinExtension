@@ -67,6 +67,8 @@ export interface Authenticator {
   accounts(): Promise<AuthenticatorAccount[]>;
   /** Ask the user to connect (remote ones: the wallet's own connect popup). */
   connect?(): Promise<AuthenticatorAccount[]>;
+  /** Optional: give up whatever permission connect() was granted (MetaMask: revoke the page's access). Never touches keys or the wallet's account list. */
+  disconnect?(): Promise<void>;
   /** Always behind this authenticator's own approval. */
   signMessage(address: string, message: string): Promise<string>;
   signTypedData?(address: string, typedData: unknown): Promise<string>;

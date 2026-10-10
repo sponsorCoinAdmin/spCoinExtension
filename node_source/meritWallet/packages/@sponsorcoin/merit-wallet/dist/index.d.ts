@@ -84,3 +84,4 @@ export { default as AddAccountFlow } from './account/AddAccountFlow';
 export type { AddAccountHost, AddAccountEntry } from './account/AddAccountFlow';
 export { default as SendComponent } from './send/SendComponent';
 export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownWithAvatar';
+export { connectAccount, disconnectAccount, ConnectChoiceRequired, type ConnectHost, type ConnectParams, type DisconnectParams } from './auth/connect';

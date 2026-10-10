@@ -19,7 +19,12 @@ import {
   getAccountRecordPendingReward,
 } from '@sponsorcoin/spcoin-panels';
 import {
-  LiteExchangeProvider,
+  ExchangeProviderCore,
+  DisplayStackProvider,
+  buildDefaultExchangeContext,
+  deriveStandardBootPanelState,
+  clone as cloneContext,
+  type ExchangeProviderHost,
   PanelBootstrap,
   loadSpCoinDeploymentMap,
   getPreferredSpCoinContractAddress,
@@ -348,6 +353,22 @@ async function renderWallet() {
   // above, alongside this file's other storage reads, and wrapped into a
   // sync closure once, here, rather than on every render() call.
   const displayStackStorage = makeSyncDisplayStackStorage(persistedDisplayStack);
+
+  // 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 3): the extension mounts the SAME provider the web app does (the engine's ExchangeProviderCore) instead of its own smaller LiteExchangeProvider. This host
+  // is what makes it the extension's: it builds the first context from the stored blob or the minimal default, never signs with a server keystore, mounts the display stack with the extension's storage, and
+  // turns OFF the web's account / token hydration (ActiveAccountHydrator hydrates with the hosted app's base URL) while keeping the active account following the wallet source.
+  const providerHost: ExchangeProviderHost = {
+    initContext: async (stored, chainId) => {
+      const base = (stored && typeof stored === 'object' ? cloneContext(stored as never) : buildDefaultExchangeContext(chainId)) as ReturnType<typeof buildDefaultExchangeContext>;
+      base.settings = base.settings ?? {};
+      base.apiCoreSyncedMembers = base.apiCoreSyncedMembers ?? buildDefaultExchangeContext(chainId).apiCoreSyncedMembers;
+      base.apiCoreSyncedMembers = { ...base.apiCoreSyncedMembers, network: { ...base.apiCoreSyncedMembers.network, appChainId: chainId } };
+      return base;
+    },
+    isMeritAuth: () => false,
+    wrap: (children) => React.createElement(DisplayStackProvider, { storage: displayStackStorage, children }),
+    features: { hydrateActiveAccount: false, hydrateRoleAccounts: false, normalizeListLogos: false, tokenRegistryRefresh: false, injectedWalletListener: false, followWalletMinimal: true },
+  };
 
   // Data lives outside React (this file isn't a component): each change just re-runs render() against the same root, the pattern
   // React's own docs use for a plain-script root.
@@ -790,12 +811,13 @@ async function renderWallet() {
     }
     root.render(
       React.createElement(
-        LiteExchangeProvider,
+        ExchangeProviderCore,
         {
           walletSource,
           storageExtensions: extensionExchangeContextStorageExtensions,
           writeExtensions: extensionExchangeContextWriteExtensions,
-          displayStackStorage,
+          bootExtensions: { derivePanelState: deriveStandardBootPanelState as never },
+          host: providerHost,
         },
         React.createElement(PanelBootstrap),
         // Phase B.2 Stage 3 — hydrates activeAccount's real name/logo/etc

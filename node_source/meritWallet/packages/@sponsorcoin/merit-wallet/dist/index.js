@@ -60,3 +60,4 @@ export { default as AddAccountFlow } from './account/AddAccountFlow';
 export { default as SendComponent } from './send/SendComponent';
 export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownWithAvatar';
 export { connectAccount, disconnectAccount, ConnectChoiceRequired } from './auth/connect';
+export { createInjectedAuthenticator, translateProviderError } from './auth/injectedAuthenticator';

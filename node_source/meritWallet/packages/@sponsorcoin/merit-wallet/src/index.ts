@@ -118,3 +118,4 @@ export { default as AccountAvatarPanel } from './account/form/AccountAvatarPanel
 export { default as DisconnectedControl } from './account/form/DisconnectedControl';
 export { default as AddAccountFlow } from './account/AddAccountFlow';
 export type { AddAccountHost, AddAccountEntry } from './account/AddAccountFlow';
+export { default as SendComponent } from './send/SendComponent';

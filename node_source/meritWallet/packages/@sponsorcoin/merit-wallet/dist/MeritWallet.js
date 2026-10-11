@@ -1680,7 +1680,7 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
  * prop the host passes explicitly, is unchanged.
  */
 export default function MeritWallet(props) {
-    const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress);
+    const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress, props.walletDerives);
     const merged = props.wallet ? mergeWalletProps(props, derived, props.wallet, props.activeAccountAddress) : props;
     return React.createElement(MeritWalletInner, merged);
 }

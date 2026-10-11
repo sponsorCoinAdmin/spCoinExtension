@@ -1,8 +1,9 @@
 import { unlockErrorText } from './walletLock';
 /** The API for the active account, or undefined when its backend can reveal neither the key nor the phrase (then there is nothing to show). */
 export function createWalletSecurityApi(wallet, activeAddress) {
-    const canKey = !!activeAddress && wallet.can('revealKey', activeAddress);
-    const canPhrase = !!activeAddress && wallet.can('revealPhrase', activeAddress);
+    // With no active account yet, any backend that can reveal counts: the section then shows its own 'select an account first' hint, as it always did.
+    const canKey = wallet.can('revealKey', activeAddress);
+    const canPhrase = wallet.can('revealPhrase', activeAddress);
     if (!canKey && !canPhrase)
         return undefined;
     const api = {
@@ -20,7 +21,7 @@ export function createWalletSecurityApi(wallet, activeAddress) {
     };
     if (canPhrase) {
         api.revealPhrase = async (password) => {
-            const vault = wallet.vaultFor(activeAddress);
+            const vault = activeAddress ? wallet.vaultFor(activeAddress) : undefined;
             if (!vault)
                 throw new Error('This account is held by a wallet that has no recovery phrase to show.');
             try {

@@ -113,7 +113,7 @@ export * from './auth/resolve';
 export * from './wallet/wallet';
 export { createWalletLockStore, unlockErrorText, type WalletLockState, type WalletLockStore, type WalletLockPhase } from './wallet/walletLock';
 export { createWalletSecurityApi } from './wallet/walletSecurity';
-export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf } from './wallet/walletProps';
+export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf, ALL_WALLET_DERIVATIONS, type WalletDerivation } from './wallet/walletProps';
 
 // 2026-10-09 (row 18) -- the shared account editor: state/actions hook, its host interface, form types and the form's pure helpers (the profile-form names that collide keep their own export above).
 export { useAccountForm } from './account/form/useAccountForm';

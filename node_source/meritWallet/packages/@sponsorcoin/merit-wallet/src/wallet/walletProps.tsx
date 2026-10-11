@@ -13,6 +13,10 @@ import type { Wallet } from './wallet';
 
 export type WalletDerivedProps = Partial<MeritWalletProps>;
 
+/** What a host lets the wallet derive. A host with its own gate (the web app's password panel) leaves 'lock' and 'logoff' out. The delete-wallet / change-password gating always applies. */
+export type WalletDerivation = 'lock' | 'logoff' | 'authType' | 'security';
+export const ALL_WALLET_DERIVATIONS: readonly WalletDerivation[] = ['lock', 'logoff', 'authType', 'security'];
+
 export function authenticationTypeOf(backendId: string | undefined): AuthenticationType | undefined {
   if (!backendId) return undefined;
   return backendId === 'serverKeystore' ? AuthenticationType.KEYSTORE : AuthenticationType.VAULT;
@@ -23,21 +27,27 @@ export function deriveWalletProps(input: {
   lock: WalletLockState;
   lockStore: Pick<WalletLockStore, 'submit' | 'lock'>;
   activeAddress: string | undefined;
+  derives?: readonly WalletDerivation[];
 }): WalletDerivedProps {
   const { wallet, lock, lockStore, activeAddress } = input;
+  const derives = new Set<WalletDerivation>(input.derives ?? ALL_WALLET_DERIVATIONS);
   const out: WalletDerivedProps = {};
   if (lock.phase === 'locked' || lock.phase === 'unlocked') {
-    out.walletLocked = lock.phase === 'locked';
-    out.passwordMode = 'unlock';
-    out.onPasswordSubmit = (password: string) => void lockStore.submit(password);
-    out.passwordErrorText = lock.error;
-    out.passwordSubmitting = lock.submitting;
-    out.onConfigLogoff = () => void lockStore.lock();
+    if (derives.has('lock')) {
+      out.walletLocked = lock.phase === 'locked';
+      out.passwordMode = 'unlock';
+      out.onPasswordSubmit = (password: string) => void lockStore.submit(password);
+      out.passwordErrorText = lock.error;
+      out.passwordSubmitting = lock.submitting;
+    }
+    if (derives.has('logoff')) out.onConfigLogoff = () => void lockStore.lock();
   }
   const type = authenticationTypeOf(lock.backendId);
-  if (type) out.authenticationType = type;
-  const security = createWalletSecurityApi(wallet, activeAddress);
-  if (security) out.configSecurityPanelContent = React.createElement(WalletSecuritySection, { api: security });
+  if (type && derives.has('authType')) out.authenticationType = type;
+  if (derives.has('security')) {
+    const security = createWalletSecurityApi(wallet, activeAddress);
+    if (security) out.configSecurityPanelContent = React.createElement(WalletSecuritySection, { api: security });
+  }
   return out;
 }
 
@@ -64,7 +74,7 @@ function walletVersion(wallet: Wallet | undefined): number {
 }
 
 /** The component's wrapper uses this: the wallet's lock store and the derived props, refreshed when the wallet or the lock changes. */
-export function useWalletDerivedProps(wallet: Wallet | undefined, activeAddress: string | undefined): WalletDerivedProps {
+export function useWalletDerivedProps(wallet: Wallet | undefined, activeAddress: string | undefined, derives?: readonly WalletDerivation[]): WalletDerivedProps {
   const store = useMemo(() => (wallet ? createWalletLockStore(wallet) : undefined), [wallet]);
   useEffect(() => () => store?.dispose(), [store]);
   const lock = useSyncExternalStore(
@@ -79,8 +89,8 @@ export function useWalletDerivedProps(wallet: Wallet | undefined, activeAddress:
     () => walletVersion(wallet),
   );
   return useMemo(
-    () => (wallet && store && lock ? deriveWalletProps({ wallet, lock, lockStore: store, activeAddress }) : {}),
+    () => (wallet && store && lock ? deriveWalletProps({ wallet, lock, lockStore: store, activeAddress, derives }) : {}),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [wallet, store, lock, activeAddress, version],
+    [wallet, store, lock, activeAddress, version, derives],
   );
 }

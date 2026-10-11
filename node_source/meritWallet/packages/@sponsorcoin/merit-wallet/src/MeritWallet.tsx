@@ -57,7 +57,7 @@ import {
 } from '@sponsorcoin/spcoin-exchange-engine';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
-import { mergeWalletProps, useWalletDerivedProps } from './wallet/walletProps';
+import { mergeWalletProps, useWalletDerivedProps, type WalletDerivation } from './wallet/walletProps';
 import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
 import { ConfigSlippagePanel } from '@sponsorcoin/spcoin-panels';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
@@ -581,6 +581,8 @@ export interface MeritWalletProps {
    * still wins over the derived one, so a host can move over one prop at a time.
    */
   wallet?: Wallet;
+  /** What the component may derive from `wallet` (default: everything). A host that has its own lock gate (the web app) leaves out 'lock' and 'logoff'. */
+  walletDerives?: readonly WalletDerivation[];
   /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */
   sponsorPanel?: React.ReactNode;
   /** 2026-10-11 (plan row 13): the host's list overlay (spcoin-panels' ActiveListPanelHost) for the lists the shared panels open through the panel tree; shown in place of the tab body while a panel-tree list is open. */
@@ -2605,7 +2607,7 @@ function MeritWalletInner({
  * prop the host passes explicitly, is unchanged.
  */
 export default function MeritWallet(props: MeritWalletProps) {
-  const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress);
+  const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress, props.walletDerives);
   const merged = props.wallet ? mergeWalletProps(props, derived, props.wallet, props.activeAccountAddress) : props;
   return React.createElement(MeritWalletInner, merged);
 }

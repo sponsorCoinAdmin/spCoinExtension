@@ -81,7 +81,7 @@ export * from './auth/resolve';
 export * from './wallet/wallet';
 export { createWalletLockStore, unlockErrorText, type WalletLockState, type WalletLockStore, type WalletLockPhase } from './wallet/walletLock';
 export { createWalletSecurityApi } from './wallet/walletSecurity';
-export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf } from './wallet/walletProps';
+export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf, ALL_WALLET_DERIVATIONS, type WalletDerivation } from './wallet/walletProps';
 export { useAccountForm } from './account/form/useAccountForm';
 export type { AccountFormHost, UseAccountFormParams } from './account/form/useAccountForm';
 export type * from './account/form/formTypes';

@@ -60,7 +60,7 @@ export * from './auth/resolve';
 export * from './wallet/wallet';
 export { createWalletLockStore, unlockErrorText } from './wallet/walletLock';
 export { createWalletSecurityApi } from './wallet/walletSecurity';
-export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf } from './wallet/walletProps';
+export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf, ALL_WALLET_DERIVATIONS } from './wallet/walletProps';
 // 2026-10-09 (row 18) -- the shared account editor: state/actions hook, its host interface, form types and the form's pure helpers (the profile-form names that collide keep their own export above).
 export { useAccountForm } from './account/form/useAccountForm';
 export { DEFAULT_ACCOUNT_LOGO_URL, EMPTY_FORM_DATA, FORM_FIELDS, FORM_ERROR_FOCUS_ORDER, FIELD_TITLES, FIELD_PLACEHOLDERS, LOGO_TARGET_WIDTH_PX, LOGO_TARGET_HEIGHT_PX, LOGO_MAX_INPUT_BYTES as ACCOUNT_LOGO_MAX_INPUT_BYTES, LOGO_MAX_OUTPUT_BYTES as ACCOUNT_LOGO_MAX_OUTPUT_BYTES, normalizeAddress, ensureAbsoluteAssetURL, withCacheBust, toPreviewHref, getAbsoluteFieldError, getFieldTooLargeMessage, shouldBlockAdditionalInput, shouldOpenLinkFromInputClick, trimForm, FIELD_MAX_LENGTHS as ACCOUNT_FIELD_MAX_LENGTHS, isValidEmail as isValidAccountEmail, isValidWebsite as isValidAccountWebsite, } from './account/form/formHelpers';

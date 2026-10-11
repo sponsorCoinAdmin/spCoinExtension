@@ -10,7 +10,11 @@ const BORDER = '#334155';
 const box = { boxSizing: 'border-box', width: '100%', padding: 12, color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 };
 const field = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: '1px solid ' + BORDER, background: '#0E111B', padding: '8px 12px', color: '#fff', font: 'inherit', outline: 'none' };
 const primary = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: 0, background: '#5981F3', padding: '8px 16px', fontWeight: 600, color: '#fff', cursor: 'pointer', font: 'inherit' };
-export default function ChangePasswordPanel({ changePassword, onDone }) {
+/**
+ * 2026-10-11 (docs/authenticationDesign.txt 14.3, item V5): `note` is the host's own small print (the web's development keystore says that every account is re-encrypted); `title` and `confirmLabel`
+ * let a host keep its wording. The new password must also differ from the current one.
+ */
+export default function ChangePasswordPanel({ changePassword, onDone, note, title = 'Change password', confirmLabel = 'Change password' }) {
     const [oldPw, setOldPw] = useState('');
     const [newPw, setNewPw] = useState('');
     const [confirm, setConfirm] = useState('');
@@ -26,11 +30,13 @@ export default function ChangePasswordPanel({ changePassword, onDone }) {
                 return setError('Password must be at least ' + MIN_WALLET_PASSWORD_LENGTH + ' characters.');
             if (newPw !== confirm)
                 return setError('Passwords do not match.');
+            if (newPw === oldPw)
+                return setError('The new password must be different from the current password.');
             setBusy(true);
             setError('');
             changePassword(oldPw, newPw)
                 .then(() => setChanged(true))
                 .catch((err) => setError(err instanceof Error ? err.message : 'The password could not be changed.'))
                 .finally(() => setBusy(false));
-        }, children: [_jsx("p", { style: { margin: 0, fontWeight: 600 }, children: "Change password" }), _jsx("input", { type: "password", autoComplete: "current-password", placeholder: "Current password", value: oldPw, onChange: (e) => setOldPw(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "New password", value: newPw, onChange: (e) => setNewPw(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "Confirm new password", value: confirm, onChange: (e) => setConfirm(e.target.value), style: field }), error && _jsx("p", { style: { color: '#f87171', fontSize: 12, margin: 0 }, children: error }), _jsx("button", { type: "submit", disabled: busy || !oldPw, style: { ...primary, opacity: busy || !oldPw ? 0.6 : 1 }, children: busy ? 'Changing…' : 'Change password' })] }));
+        }, children: [_jsx("p", { style: { margin: 0, fontWeight: 600 }, children: title }), _jsx("input", { type: "password", autoComplete: "current-password", placeholder: "Current password", value: oldPw, onChange: (e) => setOldPw(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "New password", value: newPw, onChange: (e) => setNewPw(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "Confirm new password", value: confirm, onChange: (e) => setConfirm(e.target.value), style: field }), error && _jsx("p", { style: { color: '#f87171', fontSize: 12, margin: 0 }, children: error }), _jsx("button", { type: "submit", disabled: busy || !oldPw, style: { ...primary, opacity: busy || !oldPw ? 0.6 : 1 }, children: busy ? 'Changing…' : confirmLabel }), note && _jsx("p", { style: { margin: 0, fontSize: 12, color: '#9ca3af' }, children: note })] }));
 }

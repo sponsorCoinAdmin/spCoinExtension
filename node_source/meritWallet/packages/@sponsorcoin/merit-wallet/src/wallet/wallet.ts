@@ -109,6 +109,8 @@ export interface Wallet {
   unregister(id: string): void;
   backends(): WalletBackendInfo[];
   backend(id: string): WalletBackendInfo | undefined;
+  /** The id of the backend that signs for `address` (its saved choice, else the app default), or undefined. Does not check that the backend is reachable; the chain plays no part. */
+  backendIdFor(address: string): AuthenticatorId | undefined;
   /** The backend that signs for an account (throws a specific AuthenticatorError; never asks another backend). */
   authenticatorFor(account: { address: string; sourceAuthenticator?: AuthenticatorId }): Promise<Authenticator>;
   /** Save (or clear, with undefined) the account's active backend. */
@@ -180,6 +182,7 @@ export function createWallet(options: CreateWalletOptions): Wallet {
     registry,
     register: (authenticator) => registry.register(authenticator),
     unregister: (id) => registry.unregister(id),
+    backendIdFor,
     backends: () => registry.list().map(infoOf),
     backend: (id) => {
       const a = registry.get(id);

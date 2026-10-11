@@ -95,6 +95,7 @@ export function createWallet(options) {
         registry,
         register: (authenticator) => registry.register(authenticator),
         unregister: (id) => registry.unregister(id),
+        backendIdFor,
         backends: () => registry.list().map(infoOf),
         backend: (id) => {
             const a = registry.get(id);

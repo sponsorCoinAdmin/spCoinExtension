@@ -37,6 +37,8 @@ export interface Wallet {
     unregister(id: string): void;
     backends(): WalletBackendInfo[];
     backend(id: string): WalletBackendInfo | undefined;
+    /** The id of the backend that signs for `address` (its saved choice, else the app default), or undefined. Does not check that the backend is reachable; the chain plays no part. */
+    backendIdFor(address: string): AuthenticatorId | undefined;
     /** The backend that signs for an account (throws a specific AuthenticatorError; never asks another backend). */
     authenticatorFor(account: {
         address: string;

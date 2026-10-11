@@ -27,6 +27,7 @@ import {
   type ExchangeProviderHost,
   PanelBootstrap,
   loadSpCoinDeploymentMap,
+  setHostApiBase,
   getPreferredSpCoinContractAddress,
   type ExchangeContextWalletSource,
 } from '@sponsorcoin/spcoin-exchange-engine';
@@ -346,6 +347,8 @@ async function renderWallet() {
   bootstrapPanelVisibility(panelVisibility.persisted, panelVisibility.legacy);
   const baseUrl = urlForOpenTarget(openTarget);
   currentBaseUrl = baseUrl;
+  // 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 2, capability "api"): the hosted app's origin, registered once for every library that reads the hosted API.
+  setHostApiBase({ baseUrl });
   // 2026-09-21, Path A — DisplayStackProvider's own storage contract is
   // synchronous (see displayStackStorage.ts's own header comment for why
   // this needs pre-resolving here rather than passed as an async

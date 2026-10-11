@@ -6,7 +6,7 @@
 // Modelled on MetaMask's KeyringController / ApprovalController and on this package's existing hostContract (MeritWalletApi).
 
 /** 'serverKeystore' (the web app's server keystore), 'localVault' (the extension vault), 'injected:<rdns>' (an EIP-6963 wallet), 'hardware:<kind>'. */
-export type AuthenticatorId = 'serverKeystore' | 'localVault' | `injected:${string}` | `hardware:${string}`;
+export type AuthenticatorId = 'serverKeystore' | 'localVault' | 'browserVault' | 'deviceVault' | `injected:${string}` | `hardware:${string}`;
 
 export interface AuthenticatorCapabilities {
   signMessage: boolean;
@@ -94,6 +94,8 @@ export interface AccountAuthenticatorRef {
 export function authenticatorBadge(id: string): string {
   if (id === 'serverKeystore') return 'Merit Wallet';
   if (id === 'localVault') return 'Extension';
+  if (id === 'browserVault') return 'Browser';
+  if (id === 'deviceVault') return 'Device';
   if (id.startsWith('hardware:')) return 'Hardware';
   if (id === 'injected:io.metamask') return 'MetaMask';
   if (id === 'injected:org.sponsorcoin.merit') return 'Extension';

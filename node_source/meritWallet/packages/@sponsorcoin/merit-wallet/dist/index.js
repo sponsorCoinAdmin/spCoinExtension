@@ -17,6 +17,9 @@ export { default as ConnectedNetworkPanel, networkElementFromRegistry, useLiveNe
 export { MERIT_WALLET_PROPS_ARE_ALL_CLASSIFIED } from './hostContract';
 export { VAULT_VERSION, VAULT_ALGORITHM, DEFAULT_PBKDF2_ITERATIONS, WrongPasswordError, createEncryptedVault, unlockEncryptedVault, deriveVaultKey, encryptWithKey, decryptWithKey, } from './vault/vaultCrypto';
 export { VaultSession, VaultLockedError } from './vault/vaultSession';
+export { createLocalVaultParts } from './vault/vaultCapability';
+export { createIndexedDbVaultStorage, createWebSessionStore } from './vault/browserStorage';
+export { createVaultAuthenticator } from './vault/vaultAuthenticator';
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';

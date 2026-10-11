@@ -62,6 +62,10 @@ function mapError(error) {
 const toAccount = (a) => ({ address: a.address, name: a.name, source: a.source, devOrigin: a.devOrigin });
 /** The whole vault capability over a VaultStorage (ciphertext only): the extension passes chrome.storage, a browser IndexedDB, a test a Map. */
 export function createLocalVault(options) {
+    return createLocalVaultParts(options).vault;
+}
+/** Like createLocalVault, but also returns the session and the accounts (for createVaultAuthenticator). */
+export function createLocalVaultParts(options) {
     const session = new VaultSession(options);
     const wallet = new WalletAccounts(session);
     const guard = async (run) => {
@@ -73,7 +77,7 @@ export function createLocalVault(options) {
         }
     };
     const list = () => wallet.list().map(toAccount);
-    return {
+    const vault = {
         label: options.label ?? 'this device',
         capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
         hasWallet: () => session.isInitialized(),
@@ -131,4 +135,5 @@ export function createLocalVault(options) {
         revealRecoveryPhrase: (credential) => guard(async () => wallet.revealMnemonic(secretOf(credential, false))),
         onChange: (listener) => session.onChange(listener),
     };
+    return { vault, session, accounts: wallet };
 }

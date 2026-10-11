@@ -129,8 +129,20 @@ function mapError(error: unknown): never {
 
 const toAccount = (a: WalletAccountRecord): VaultAccount => ({ address: a.address, name: a.name, source: a.source, devOrigin: a.devOrigin });
 
+/** The pieces behind a local vault, for a host that also needs to SIGN with it (the session and the accounts stay inside that host; a UI page only ever gets the capability). */
+export interface LocalVaultParts {
+  vault: VaultCapability;
+  session: VaultSession<WalletVaultContents>;
+  accounts: WalletAccounts;
+}
+
 /** The whole vault capability over a VaultStorage (ciphertext only): the extension passes chrome.storage, a browser IndexedDB, a test a Map. */
 export function createLocalVault(options: LocalVaultOptions): VaultCapability {
+  return createLocalVaultParts(options).vault;
+}
+
+/** Like createLocalVault, but also returns the session and the accounts (for createVaultAuthenticator). */
+export function createLocalVaultParts(options: LocalVaultOptions): LocalVaultParts {
   const session = new VaultSession<WalletVaultContents>(options);
   const wallet = new WalletAccounts(session);
   const guard = async <R>(run: () => Promise<R>): Promise<R> => {
@@ -142,7 +154,7 @@ export function createLocalVault(options: LocalVaultOptions): VaultCapability {
   };
   const list = () => wallet.list().map(toAccount);
 
-  return {
+  const vault: VaultCapability = {
     label: options.label ?? 'this device',
     capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
     hasWallet: () => session.isInitialized(),
@@ -202,4 +214,5 @@ export function createLocalVault(options: LocalVaultOptions): VaultCapability {
     revealRecoveryPhrase: (credential) => guard(async () => wallet.revealMnemonic(secretOf(credential, false))),
     onChange: (listener) => session.onChange(listener),
   };
+  return { vault, session, accounts: wallet };
 }

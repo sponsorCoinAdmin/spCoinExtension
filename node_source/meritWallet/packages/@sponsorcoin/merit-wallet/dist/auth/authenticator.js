@@ -18,6 +18,10 @@ export function authenticatorBadge(id) {
         return 'Merit Wallet';
     if (id === 'localVault')
         return 'Extension';
+    if (id === 'browserVault')
+        return 'Browser';
+    if (id === 'deviceVault')
+        return 'Device';
     if (id.startsWith('hardware:'))
         return 'Hardware';
     if (id === 'injected:io.metamask')

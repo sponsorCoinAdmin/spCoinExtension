@@ -1,4 +1,5 @@
-import { type VaultSessionOptions } from './vaultSession';
+import { VaultSession, type VaultSessionOptions } from './vaultSession';
+import { WalletAccounts, type WalletVaultContents } from './walletAccounts';
 export type VaultCredentialKind = 'password' | 'pin' | 'biometric';
 export interface VaultCredential {
     kind: VaultCredentialKind;
@@ -64,5 +65,13 @@ export declare const BACKUP_FORMAT = "merit-vault-backup";
 export interface LocalVaultOptions extends VaultSessionOptions {
     label?: string;
 }
+/** The pieces behind a local vault, for a host that also needs to SIGN with it (the session and the accounts stay inside that host; a UI page only ever gets the capability). */
+export interface LocalVaultParts {
+    vault: VaultCapability;
+    session: VaultSession<WalletVaultContents>;
+    accounts: WalletAccounts;
+}
 /** The whole vault capability over a VaultStorage (ciphertext only): the extension passes chrome.storage, a browser IndexedDB, a test a Map. */
 export declare function createLocalVault(options: LocalVaultOptions): VaultCapability;
+/** Like createLocalVault, but also returns the session and the accounts (for createVaultAuthenticator). */
+export declare function createLocalVaultParts(options: LocalVaultOptions): LocalVaultParts;

@@ -1,5 +1,5 @@
 /** 'serverKeystore' (the web app's server keystore), 'localVault' (the extension vault), 'injected:<rdns>' (an EIP-6963 wallet), 'hardware:<kind>'. */
-export type AuthenticatorId = 'serverKeystore' | 'localVault' | `injected:${string}` | `hardware:${string}`;
+export type AuthenticatorId = 'serverKeystore' | 'localVault' | 'browserVault' | 'deviceVault' | `injected:${string}` | `hardware:${string}`;
 export interface AuthenticatorCapabilities {
     signMessage: boolean;
     signTypedData: boolean;

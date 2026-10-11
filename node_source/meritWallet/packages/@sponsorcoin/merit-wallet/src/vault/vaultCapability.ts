@@ -75,6 +75,12 @@ export interface VaultCapability {
   /** Set a wallet up from an existing recovery phrase (the same derivation as every other vault, so the same phrase gives the same accounts). */
   importPhrase(phrase: string, credential: VaultCredential): Promise<VaultAccount[]>;
   importKey(privateKey: string, name?: string): Promise<VaultAccount>;
+  /** Derive the next account from the recovery phrase (unlocked only). */
+  addAccount(name?: string): Promise<VaultAccount>;
+  /** Make an account of this vault the active one (the vault remembers it; the host decides what the app does with that). */
+  setActive(address: string): Promise<void>;
+  /** The address the vault last marked active, if any. */
+  activeAddress(): string | undefined;
   unlock(credential: VaultCredential): Promise<void>;
   lock(): void;
   accounts(): VaultAccount[];
@@ -172,6 +178,15 @@ export function createLocalVaultParts(options: LocalVaultOptions): LocalVaultPar
         return list();
       }),
     importKey: (privateKey, name) => guard(async () => toAccount(await wallet.importPrivateKey(privateKey, name))),
+    addAccount: (name) => guard(async () => toAccount(await wallet.addDerived(name))),
+    setActive: (address) => guard(() => wallet.setActive(address)),
+    activeAddress: () => {
+      try {
+        return wallet.activeAddress();
+      } catch {
+        return undefined;
+      }
+    },
     unlock: (credential) => guard(() => session.unlock(secretOf(credential, false))),
     lock: () => session.lock(),
     accounts: () => {

@@ -93,6 +93,16 @@ export function createLocalVaultParts(options) {
             return list();
         }),
         importKey: (privateKey, name) => guard(async () => toAccount(await wallet.importPrivateKey(privateKey, name))),
+        addAccount: (name) => guard(async () => toAccount(await wallet.addDerived(name))),
+        setActive: (address) => guard(() => wallet.setActive(address)),
+        activeAddress: () => {
+            try {
+                return wallet.activeAddress();
+            }
+            catch {
+                return undefined;
+            }
+        },
         unlock: (credential) => guard(() => session.unlock(secretOf(credential, false))),
         lock: () => session.lock(),
         accounts: () => {

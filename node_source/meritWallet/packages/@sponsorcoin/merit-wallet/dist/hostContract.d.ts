@@ -10,7 +10,7 @@ export type HostData = Pick<MeritWalletProps, 'networkRows' | 'accountGroups' | 
 /** What the host does when the user picks or inspects a row. */
 export type HostSelection = Pick<MeritWalletProps, 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'swapHost' | 'accountDetail' | 'accountProfileHost' | 'addAccountHost' | 'onTokenIconClick' | 'tokenDetail' | 'onNetworkIconClick'>;
 /** Transactions the user starts from the Send and Sponsor tabs, and the input state around them. */
-export type HostActions = Pick<MeritWalletProps, 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit' | 'sponsorStakeSubmitBusy' | 'onSponsorStakeSubmit' | 'sponsorAmount' | 'onSponsorAmountChange' | 'sponsorAmountBusy'>;
+export type HostActions = Pick<MeritWalletProps, 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit' | 'sponsorStakeSubmitBusy' | 'onSponsorStakeSubmit' | 'sponsorAmount' | 'onSponsorAmountChange' | 'sponsorAmountBusy' | 'sponsorPanel' | 'listHost'>;
 /** The body: who owns the radio groups, the overlay host, and the slots a host fills with its own panels. */
 export type HostSlots = Pick<MeritWalletProps, 'manageRadioPanels' | 'overlayHost' | 'agentSelectSlot' | 'listPanelIdOverrides' | 'zeroXTradeButtonContent' | 'uniSelectContent' | 'configPersistedTimeoutContent' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configTestAccountsContent' | 'configResetPanelsContent'>;
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */

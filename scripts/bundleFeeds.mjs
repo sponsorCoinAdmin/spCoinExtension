@@ -31,6 +31,8 @@ for (const id of chains) {
     if (/^(info|defaultNetworkSettings|tokenlist|tokenlist-extended)\.json$/i.test(file) || ROLE_FILES.includes(file)) add(`/assets/blockchains/${id}/${file}`, path.join(dir, file));
   }
 }
+// 2026-10-11 (plan row 13): the recipient / agent / sponsor role lists the shared pickers read (the engine's bundled-feed registry, see src/bundledFeeds.ts).
+for (const role of ['recipients', 'agents', 'sponsors']) add('/assets/accounts/accountRoles/' + role + '.json', path.join(web, 'public', 'assets', 'accounts', 'accountRoles', role + '.json'));
 const abiDir = path.join(web, 'public', 'assets', 'ABIs', 'spCoin');
 if (fs.existsSync(abiDir)) for (const f of fs.readdirSync(abiDir)) if (/^V_.+\.json$/.test(f)) add(`/assets/ABIs/spCoin/${f}`, path.join(abiDir, f));
 add('/resources/data/networks/spCoinDeployment.json', path.join(web, 'resources', 'data', 'networks', 'spCoinDeployment.json'));
@@ -64,6 +66,31 @@ for (const id of chains) {
   if (dir && add(`/api/native-token/${id}`, path.join(contracts, dir, 'info.json'))) natives += 1;
 }
 console.log(`bundled ${natives} native tokens`);
+
+// 2026-10-11 (plan row 13): the details (name, symbol, decimals) of every token in the bundled token lists, under the path the hosted tokens API serves them from
+// (/api/spCoin/tokens/<chainId>/<address, lower case>), so the shared token picker shows names and symbols without asking the hosted app. The Hardhat chain (31337)
+// keeps its token folders under Base (8453) on disk, so its lists are the Base list plus its own, as the engine builds them.
+let tokenDetails = 0;
+const listOfChain = (id) => {
+  const key = Object.keys(out).find((k) => k.toLowerCase() === '/assets/blockchains/' + id + '/tokenlist.json');
+  return key && Array.isArray(out[key]) ? out[key] : [];
+};
+for (const id of chains) {
+  const diskId = id === 31337 ? 8453 : id;
+  const contracts = path.join(web, 'public', 'assets', 'blockchains', String(diskId), 'contracts');
+  if (!fs.existsSync(contracts)) continue;
+  const folders = new Map(fs.readdirSync(contracts).map((d) => [d.toLowerCase(), d]));
+  const addresses = new Set([...(id === 31337 ? listOfChain(8453) : []), ...listOfChain(id)].map((a) => String(a).toLowerCase()));
+  for (const address of addresses) {
+    const folder = folders.get(address);
+    const file = folder && path.join(contracts, folder, 'info.json');
+    if (!file || !fs.existsSync(file)) continue;
+    const info = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, ''));
+    out['/api/spCoin/tokens/' + id + '/' + address] = { chainId: id, address, data: info };
+    tokenDetails += 1;
+  }
+}
+console.log('bundled ' + tokenDetails + ' token detail records');
 
 const target = path.join(here, '..', 'src', 'bundledFeedData.json');
 fs.writeFileSync(target, JSON.stringify(out));

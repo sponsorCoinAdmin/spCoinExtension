@@ -47,6 +47,13 @@ import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import { fetchAccountMetadata, getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
 import { fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/tokens';
 import { openOrFocusApp } from './src/openApp';
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { registerExtensionEngineHosts } from './src/engineHosts';
+import { ActiveSpCoinLoader } from './src/ActiveSpCoinLoader';
+import { createExtensionListHost, createExtensionSponsorPanel } from './src/sponsorPanelHost';
+
+// 2026-10-11 (row 13): the shared panels' hooks (quotes, balances) read through React Query; one client for the side panel.
+const queryClient = new QueryClient();
 import { readOpenTarget, writeOpenTarget, urlForOpenTarget, type OpenTarget } from './src/openTargetStorage';
 import { readMeritWalletUiState, writeMeritWalletUiState } from './src/meritWalletUiStorage';
 import {
@@ -358,6 +365,8 @@ async function renderWallet() {
   currentBaseUrl = baseUrl;
   // 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 2, capability "api"): the hosted app's origin, registered once for every library that reads the hosted API.
   disableHostApi();
+  // 2026-10-11 (row 13): the engine's trade hooks, registered once so the shared Sponsor panel can run here.
+  registerExtensionEngineHosts();
   // 2026-09-21, Path A — DisplayStackProvider's own storage contract is
   // synchronous (see displayStackStorage.ts's own header comment for why
   // this needs pre-resolving here rather than passed as an async
@@ -843,6 +852,9 @@ async function renderWallet() {
     }
     root.render(
       React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+      React.createElement(
         ExchangeProviderCore,
         {
           walletSource,
@@ -856,6 +868,8 @@ async function renderWallet() {
         // once a wallet source resolves to a real address; no UI of its
         // own (see hydrateActiveAccount.ts's own doc comment).
         React.createElement(ActiveAccountHydrator, { baseUrl }),
+        // 2026-10-11 (row 13): the active spCoin (bundled) and its contract metadata go into the exchange context, where the shared Sponsor panel reads them.
+        React.createElement(ActiveSpCoinLoader),
         // 2026-10-03 — supplies the Config tab's two exchange-engine
         // handlers. setPanelVisible is a hook, so the writes have to come
         // from inside the React tree; this component's only job is to
@@ -1068,6 +1082,9 @@ async function renderWallet() {
                   decimals?: number;
                   tokenSymbol?: string;
                  }) => handleSendSubmit(params),
+                // 2026-10-11 (row 13): the Sponsor tab is the shared panel, driven by the exchange context.
+                sponsorPanel: createExtensionSponsorPanel(),
+                listHost: createExtensionListHost(),
                 // 2026-09-26, Phase 4 — SPONSOR tab stake execution wiring.
                 sponsorStakeSubmitBusy: sponsorStakeBusy,
                 onSponsorStakeSubmit: (params: {
@@ -1195,6 +1212,7 @@ async function renderWallet() {
               },
             },
           }),
+      ),
       ),
     );
   }

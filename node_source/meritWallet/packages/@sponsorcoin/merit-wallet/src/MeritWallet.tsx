@@ -597,6 +597,10 @@ export interface MeritWalletProps {
    // SPONSOR tab's submit (stake) click. The caller supplies the real
    // recipientKey/agentKey/rate config; this component only resolves the
    // picked addresses from its own selections state and passes them back.
+  /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */
+  sponsorPanel?: React.ReactNode;
+  /** 2026-10-11 (plan row 13): the host's list overlay (spcoin-panels' ActiveListPanelHost) for the lists the shared panels open through the panel tree; shown in place of the tab body while a panel-tree list is open. */
+  listHost?: React.ReactNode;
   sponsorStakeSubmitBusy?: boolean;
   onSponsorStakeSubmit?: (params: {
     recipientAddress?: string;
@@ -872,6 +876,8 @@ export default function MeritWallet({
   onSendSubmit,
   sponsorStakeSubmitBusy,
   onSponsorStakeSubmit,
+  sponsorPanel,
+  listHost,
   sponsorAmount,
   onSponsorAmountChange,
   sponsorAmountBusy,
@@ -1313,6 +1319,8 @@ export default function MeritWallet({
   );
   // Pinned to the spCoin only in STAKE mode (arriving from Rewards > Stake), as the web app does; the default Sponsor tab starts on "Select Token" in both apps.
   const { mode: sponsorMode } = useSponsorMode();
+  // 2026-10-11 (row 13): a list the shared panels opened through the panel tree (pay token, recipient, agent); the host's listHost renders it.
+  const panelTreeListOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL);
   const sponsorPayEntry: PickedEntry | undefined = selections.sponsorPayToken ?? (sponsorMode === 'STAKE' ? spCoinPayEntry : undefined);
   const sponsorPayIsSpCoin = !!sponsorPayEntry && (!activeSpCoinAddress || String(sponsorPayEntry.address ?? '').toLowerCase() === activeSpCoinAddress.toLowerCase());
 
@@ -1820,7 +1828,9 @@ export default function MeritWallet({
                  }
                : undefined,
           })
-        : activeTab === 'SPONSOR'
+        : activeTab === 'SPONSOR' && sponsorPanel
+          ? sponsorPanel
+          : activeTab === 'SPONSOR'
           ? React.createElement(SponsorshipPanel, {
               onPayTokenClick: () => setActiveList('sponsorPayToken'),
               onRecipientClick: () => setActiveList('sponsorRecipient'),
@@ -2472,7 +2482,7 @@ export default function MeritWallet({
   const messageOverlay = messageVisible && !overlayHost ? React.createElement(ConnectedMessagePanel) : null;
 
   const body =
-    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? listOverlay ?? gatedTabBody;
+    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? (listHost && panelTreeListOpen ? listHost : null) ?? listOverlay ?? gatedTabBody;
 
   // Matches the real app's own per-tab titles (useActiveWalletPanelTitle.tsx,
   // its `sponsorshipPanelVisible`/`tradingTabVisible`/`sendTabVisible`/

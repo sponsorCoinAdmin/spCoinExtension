@@ -48,7 +48,7 @@ export type HostSelection = Pick<
 export type HostActions = Pick<
   MeritWalletProps,
   | 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit'
-  | 'sponsorStakeSubmitBusy' | 'onSponsorStakeSubmit' | 'sponsorAmount' | 'onSponsorAmountChange' | 'sponsorAmountBusy'
+  | 'sponsorStakeSubmitBusy' | 'onSponsorStakeSubmit' | 'sponsorAmount' | 'onSponsorAmountChange' | 'sponsorAmountBusy' | 'sponsorPanel' | 'listHost'
 >;
 
 /** The body: who owns the radio groups, the overlay host, and the slots a host fills with its own panels. */

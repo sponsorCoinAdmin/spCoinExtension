@@ -50,6 +50,7 @@ export {
   type EncryptedVault,
 } from './vault/vaultCrypto';
 export { VaultSession, VaultLockedError, type VaultStorage, type VaultSessionOptions, type VaultSessionStore, type PersistedVaultSession } from './vault/vaultSession';
+export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT, type VaultCapability, type VaultCapabilities, type VaultCredential, type VaultCredentialKind, type VaultAccount, type VaultErrorCode, type LocalVaultOptions } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export type { PreparedTransaction, PrepareResult, TransferParams, SendRequest, SendOutcome, SendTransport, ExecuteSendParams, SendResult } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';

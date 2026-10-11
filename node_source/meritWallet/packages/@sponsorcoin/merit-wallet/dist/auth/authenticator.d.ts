@@ -36,12 +36,15 @@ export declare class AuthenticatorError extends Error {
     readonly authenticatorId: string | undefined;
     constructor(code: AuthenticatorErrorCode, message: string, authenticatorId?: string);
 }
+import type { VaultCapability } from '../vault/vaultCapability';
 export interface Authenticator {
     readonly id: AuthenticatorId;
     /** For the account list and the Add menu. */
     readonly label: string;
     readonly icon?: string;
     readonly capabilities: AuthenticatorCapabilities;
+    /** 2026-10-11 (docs/authenticationDesign.txt 14.3): present when this authenticator keeps keys itself under a credential; the shared password / delete / backup / security panels drive it. */
+    readonly vault?: VaultCapability;
     status(): Promise<AuthenticatorStatus>;
     /** The accounts this authenticator can sign for. */
     accounts(): Promise<AuthenticatorAccount[]>;

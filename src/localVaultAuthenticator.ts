@@ -7,10 +7,13 @@
 import {
   AuthenticatorError,
   createAuthenticatorRegistry,
+  createWallet,
+  createWorkerVault,
   type Authenticator,
   type AuthenticatorAccount,
   type AuthenticatorChange,
   type AuthenticatorTransaction,
+  type WorkerReply as VaultWorkerReply,
 } from '@sponsorcoin/merit-wallet';
 import { signMessageWithVault, signWithVault, type ConfirmCopy } from './localSigning';
 
@@ -19,10 +22,25 @@ const worker = (message: unknown) => chrome.runtime.sendMessage(message) as Prom
 
 const confirmCopy = (title: string, signerAddress: string, chainId: number, message?: string): ConfirmCopy => ({ title, message, signerAddress, chainId });
 
+// 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1c): the extension's vault as the one VaultCapability interface, over the worker's messages (no change to the worker). The lock screen, the lock button,
+// the security section and the delete / change-password buttons are derived from it by the component when the host passes `wallet`.
+export const extensionVault = createWorkerVault(
+  {
+    send: (message) => chrome.runtime.sendMessage(message) as Promise<VaultWorkerReply>,
+    subscribe: (handler) => {
+      const listener = (message: { type?: string; unlocked?: boolean }) => handler(message);
+      chrome.runtime.onMessage.addListener(listener);
+      return () => chrome.runtime.onMessage.removeListener(listener);
+    },
+  },
+  { label: 'this device' },
+);
+
 export const localVaultAuthenticator: Authenticator = {
   id: 'localVault',
   label: 'Extension',
   capabilities: { signMessage: true, signTypedData: false, sendTransaction: true, listAccounts: true, createAccount: true, importKey: true, lock: true },
+  vault: extensionVault,
   async status() {
     const reply = await worker({ type: 'merit/vault/status' }).catch(() => undefined);
     // Available once a vault exists; unlocked when its keys are in the worker's memory.
@@ -67,3 +85,6 @@ function translate(error: unknown): AuthenticatorError {
 /** The extension's registry: it has the one authenticator. */
 export const extensionAuthenticatorRegistry = createAuthenticatorRegistry();
 extensionAuthenticatorRegistry.register(localVaultAuthenticator);
+
+/** The extension's wallet (src/wallet in the package): its one backend today, the local vault; MetaMask-style backends join the same registry later. */
+export const extensionWallet = createWallet({ registry: extensionAuthenticatorRegistry, appDefault: () => 'localVault' });

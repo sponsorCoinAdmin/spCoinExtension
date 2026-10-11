@@ -26,6 +26,7 @@ export { useWalletConfigPanelProps, splitPersistedTimeout, joinPersistedTimeout,
 export { createLocalVaultParts, type LocalVaultParts } from './vault/vaultCapability';
 export { createIndexedDbVaultStorage, createWebSessionStore, type IndexedDbVaultStorageOptions } from './vault/browserStorage';
 export { createVaultAuthenticator, type VaultAuthenticatorOptions } from './vault/vaultAuthenticator';
+export { createWorkerVault, workerError, type WorkerVault, type WorkerVaultTransport, type WorkerReply } from './vault/workerVault';
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT, type VaultCapability, type VaultCapabilities, type VaultCredential, type VaultCredentialKind, type VaultAccount, type VaultErrorCode, type LocalVaultOptions } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export type { PreparedTransaction, PrepareResult, TransferParams, SendRequest, SendOutcome, SendTransport, ExecuteSendParams, SendResult } from './send/sendTransfer';
@@ -77,6 +78,10 @@ export { saveAccountProfile } from './account/accountProfileClient';
 export * from './account/profileForm';
 export * from './auth/authenticator';
 export * from './auth/resolve';
+export * from './wallet/wallet';
+export { createWalletLockStore, unlockErrorText, type WalletLockState, type WalletLockStore, type WalletLockPhase } from './wallet/walletLock';
+export { createWalletSecurityApi } from './wallet/walletSecurity';
+export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf } from './wallet/walletProps';
 export { useAccountForm } from './account/form/useAccountForm';
 export type { AccountFormHost, UseAccountFormParams } from './account/form/useAccountForm';
 export type * from './account/form/formTypes';

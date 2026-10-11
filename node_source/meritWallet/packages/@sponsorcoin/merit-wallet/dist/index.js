@@ -21,6 +21,8 @@ export { useWalletConfigPanelProps, splitPersistedTimeout, joinPersistedTimeout,
 export { createLocalVaultParts } from './vault/vaultCapability';
 export { createIndexedDbVaultStorage, createWebSessionStore } from './vault/browserStorage';
 export { createVaultAuthenticator } from './vault/vaultAuthenticator';
+// 2026-10-11 (section 15.7, item W1c): the vault capability over a message transport (the extension's background worker, later a phone's native key manager).
+export { createWorkerVault, workerError } from './vault/workerVault';
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';
@@ -54,6 +56,11 @@ export { saveAccountProfile } from './account/accountProfileClient';
 export * from './account/profileForm';
 export * from './auth/authenticator';
 export * from './auth/resolve';
+// 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1a): the wallet object (registry, saved choice per account, resolver, accounts, capabilities) a host hands the component.
+export * from './wallet/wallet';
+export { createWalletLockStore, unlockErrorText } from './wallet/walletLock';
+export { createWalletSecurityApi } from './wallet/walletSecurity';
+export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf } from './wallet/walletProps';
 // 2026-10-09 (row 18) -- the shared account editor: state/actions hook, its host interface, form types and the form's pure helpers (the profile-form names that collide keep their own export above).
 export { useAccountForm } from './account/form/useAccountForm';
 export { DEFAULT_ACCOUNT_LOGO_URL, EMPTY_FORM_DATA, FORM_FIELDS, FORM_ERROR_FOCUS_ORDER, FIELD_TITLES, FIELD_PLACEHOLDERS, LOGO_TARGET_WIDTH_PX, LOGO_TARGET_HEIGHT_PX, LOGO_MAX_INPUT_BYTES as ACCOUNT_LOGO_MAX_INPUT_BYTES, LOGO_MAX_OUTPUT_BYTES as ACCOUNT_LOGO_MAX_OUTPUT_BYTES, normalizeAddress, ensureAbsoluteAssetURL, withCacheBust, toPreviewHref, getAbsoluteFieldError, getFieldTooLargeMessage, shouldBlockAdditionalInput, shouldOpenLinkFromInputClick, trimForm, FIELD_MAX_LENGTHS as ACCOUNT_FIELD_MAX_LENGTHS, isValidEmail as isValidAccountEmail, isValidWebsite as isValidAccountWebsite, } from './account/form/formHelpers';

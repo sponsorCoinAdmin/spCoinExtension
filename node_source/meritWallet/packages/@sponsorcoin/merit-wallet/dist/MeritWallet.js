@@ -40,6 +40,7 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION } from '@sponsorcoin/spcoin-common/context';
 import { usePanelTree, usePanelVisible, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useEnforceRadioPanelContainers, useAgentAccount, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, } from '@sponsorcoin/spcoin-exchange-engine';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import { mergeWalletProps, useWalletDerivedProps } from './wallet/walletProps';
 import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
 import { ConfigSlippagePanel } from '@sponsorcoin/spcoin-panels';
 import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildRecipientRows as selfFetchRecipientRows, buildAllAccountRows as selfFetchAllAccountRows, buildTokenRows as selfFetchTokenRows } from './panels';
@@ -256,7 +257,7 @@ const SAMPLE_NETWORK_ROWS = [
 // the header account list now renders AccountListCard directly, which takes
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
-export default function MeritWallet({ resolveAssetAddress, docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorPanel, listHost, manageRadioPanels = true, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode = 'unlock', passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }) {
+function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorPanel, listHost, manageRadioPanels = true, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode = 'unlock', passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }) {
     const [menuOpen, setMenuOpen] = useState(initialMenuOpen ?? true);
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
@@ -1673,4 +1674,13 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
                                 color: walletColors.slateMid,
                                 pointerEvents: 'none',
                             }, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] }))] }) }) }) }));
+}
+/**
+ * The component. A host that passes `wallet` gets the lock screen, the lock button, the authentication type and the Wallet Security section from it (src/wallet/walletProps.tsx); everything else, and every
+ * prop the host passes explicitly, is unchanged.
+ */
+export default function MeritWallet(props) {
+    const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress);
+    const merged = props.wallet ? mergeWalletProps(props, derived, props.wallet, props.activeAccountAddress) : props;
+    return React.createElement(MeritWalletInner, merged);
 }

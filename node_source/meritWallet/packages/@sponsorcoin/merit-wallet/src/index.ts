@@ -54,6 +54,8 @@ export { useWalletConfigPanelProps, splitPersistedTimeout, joinPersistedTimeout,
 export { createLocalVaultParts, type LocalVaultParts } from './vault/vaultCapability';
 export { createIndexedDbVaultStorage, createWebSessionStore, type IndexedDbVaultStorageOptions } from './vault/browserStorage';
 export { createVaultAuthenticator, type VaultAuthenticatorOptions } from './vault/vaultAuthenticator';
+// 2026-10-11 (section 15.7, item W1c): the vault capability over a message transport (the extension's background worker, later a phone's native key manager).
+export { createWorkerVault, workerError, type WorkerVault, type WorkerVaultTransport, type WorkerReply } from './vault/workerVault';
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT, type VaultCapability, type VaultCapabilities, type VaultCredential, type VaultCredentialKind, type VaultAccount, type VaultErrorCode, type LocalVaultOptions } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export type { PreparedTransaction, PrepareResult, TransferParams, SendRequest, SendOutcome, SendTransport, ExecuteSendParams, SendResult } from './send/sendTransfer';
@@ -107,6 +109,11 @@ export * from './account/profileForm';
 
 export * from './auth/authenticator';
 export * from './auth/resolve';
+// 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1a): the wallet object (registry, saved choice per account, resolver, accounts, capabilities) a host hands the component.
+export * from './wallet/wallet';
+export { createWalletLockStore, unlockErrorText, type WalletLockState, type WalletLockStore, type WalletLockPhase } from './wallet/walletLock';
+export { createWalletSecurityApi } from './wallet/walletSecurity';
+export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf } from './wallet/walletProps';
 
 // 2026-10-09 (row 18) -- the shared account editor: state/actions hook, its host interface, form types and the form's pure helpers (the profile-form names that collide keep their own export above).
 export { useAccountForm } from './account/form/useAccountForm';

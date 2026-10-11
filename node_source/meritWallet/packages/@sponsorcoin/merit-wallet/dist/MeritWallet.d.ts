@@ -1,6 +1,7 @@
 import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
+import type { Wallet } from './wallet/wallet';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
 import { type RewardsHost } from './rewards/ConnectedRewardsPanel';
 import { type AccountProfileHost } from './account/AccountProfileEditor';
@@ -150,6 +151,12 @@ export interface MeritWalletProps {
         decimals?: number;
         tokenSymbol?: string;
     }) => void | Promise<HostTransactionResult | void>;
+    /**
+     * 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1): the host's WALLET: every key backend behind one object (src/wallet/wallet.ts). When given, the lock screen, the lock button, the
+     * authentication type and the Wallet Security section are derived from it, and the delete-wallet / change-password buttons are removed for a backend that cannot do them. A prop the host passes itself
+     * still wins over the derived one, so a host can move over one prop at a time.
+     */
+    wallet?: Wallet;
     /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */
     sponsorPanel?: React.ReactNode;
     /** 2026-10-11 (plan row 13): the host's list overlay (spcoin-panels' ActiveListPanelHost) for the lists the shared panels open through the panel tree; shown in place of the tab body while a panel-tree list is open. */
@@ -229,4 +236,8 @@ export interface MeritWalletProps {
     /** The Config tab's Delete Wallet button (below Reset Password); the host asks for the password and wipes. */
     onConfigDeleteWallet?: () => void;
 }
-export default function MeritWallet({ resolveAssetAddress, docked, fullWidth, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorPanel, listHost, manageRadioPanels, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode, passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }: MeritWalletProps): React.JSX.Element;
+/**
+ * The component. A host that passes `wallet` gets the lock screen, the lock button, the authentication type and the Wallet Security section from it (src/wallet/walletProps.tsx); everything else, and every
+ * prop the host passes explicitly, is unchanged.
+ */
+export default function MeritWallet(props: MeritWalletProps): React.FunctionComponentElement<MeritWalletProps>;

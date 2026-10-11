@@ -6,7 +6,7 @@ export type HostLayout = Pick<MeritWalletProps, 'docked' | 'fullWidth' | 'onClos
 /** UI state the host remembers across loads (its own storage). */
 export type HostUiState = Pick<MeritWalletProps, 'initialActiveTab' | 'onActiveTabChange' | 'initialMenuOpen' | 'onMenuOpenChange' | 'initialOpenTarget' | 'onOpenTargetChange'>;
 /** Data the host supplies or lets the component fetch itself (chainId + baseUrl + storage turn the self-fetch on). */
-export type HostData = Pick<MeritWalletProps, 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'>;
+export type HostData = Pick<MeritWalletProps, 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage' | 'wallet' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'>;
 /** What the host does when the user picks or inspects a row. */
 export type HostSelection = Pick<MeritWalletProps, 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'swapHost' | 'accountDetail' | 'accountProfileHost' | 'addAccountHost' | 'onTokenIconClick' | 'tokenDetail' | 'onNetworkIconClick'>;
 /** Transactions the user starts from the Send and Sponsor tabs, and the input state around them. */

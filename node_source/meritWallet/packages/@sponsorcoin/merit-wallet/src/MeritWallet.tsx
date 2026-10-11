@@ -56,6 +56,8 @@ import {
   useBuyAmount,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import type { Wallet } from './wallet/wallet';
+import { mergeWalletProps, useWalletDerivedProps } from './wallet/walletProps';
 import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
 import { ConfigSlippagePanel } from '@sponsorcoin/spcoin-panels';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
@@ -573,6 +575,12 @@ export interface MeritWalletProps {
    */
    /** May return the outcome (hash + receipt, or a failure message): the wallet then shows the same result card the web app shows. */
    onSendSubmit?: (params: { recipientAddress?: string; tokenAddress?: string; amount: string; decimals?: number; tokenSymbol?: string }) => void | Promise<HostTransactionResult | void>;
+  /**
+   * 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1): the host's WALLET: every key backend behind one object (src/wallet/wallet.ts). When given, the lock screen, the lock button, the
+   * authentication type and the Wallet Security section are derived from it, and the delete-wallet / change-password buttons are removed for a backend that cannot do them. A prop the host passes itself
+   * still wins over the derived one, so a host can move over one prop at a time.
+   */
+  wallet?: Wallet;
   /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */
   sponsorPanel?: React.ReactNode;
   /** 2026-10-11 (plan row 13): the host's list overlay (spcoin-panels' ActiveListPanelHost) for the lists the shared panels open through the panel tree; shown in place of the tab body while a panel-tree list is open. */
@@ -774,7 +782,7 @@ export interface MeritWalletProps {
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
 
-export default function MeritWallet({
+function MeritWalletInner({
   resolveAssetAddress,
   docked = false,
   fullWidth = false,
@@ -2590,4 +2598,14 @@ export default function MeritWallet({
     </WalletConnectProvider>
     </WalletBalanceContext.Provider>
   );
+}
+
+/**
+ * The component. A host that passes `wallet` gets the lock screen, the lock button, the authentication type and the Wallet Security section from it (src/wallet/walletProps.tsx); everything else, and every
+ * prop the host passes explicitly, is unchanged.
+ */
+export default function MeritWallet(props: MeritWalletProps) {
+  const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress);
+  const merged = props.wallet ? mergeWalletProps(props, derived, props.wallet, props.activeAccountAddress) : props;
+  return React.createElement(MeritWalletInner, merged);
 }

@@ -28,6 +28,7 @@ import {
   PanelBootstrap,
   loadSpCoinDeploymentMap,
   setHostApiBase,
+  disableHostApi,
   getPreferredSpCoinContractAddress,
   type ExchangeContextWalletSource,
 } from '@sponsorcoin/spcoin-exchange-engine';
@@ -156,6 +157,10 @@ let activeSpCoinLoadedFor = '';
 const spCoinAddress = (): string => activeSpCoinAddress ?? SPOIN_HARDHAT_CONTRACT_ADDRESS;
 
 async function loadActiveSpCoinAddress(baseUrl: string, account: string): Promise<string | undefined> {
+  // 2026-10-11: the bundled snapshot of the server's activeSpCoin.json answers first, and the hosted app is not asked when there is none (no base).
+  const bundled = (bundledFeedData as Record<string, { address?: unknown } | undefined>)[`/api/spCoin/lab/networks/${MERIT_WALLET_HARDHAT_CHAIN_ID}/activeSpCoin`];
+  if (typeof bundled?.address === 'string' && /^0x[0-9a-fA-F]{40}$/.test(bundled.address)) return bundled.address;
+  if (!baseUrl) return undefined;
   try {
     const response = await fetch(`${baseUrl}/api/exchangeContext?key=${encodeURIComponent(account.toLowerCase())}`);
     if (!response.ok) return undefined;
@@ -200,6 +205,7 @@ interface RawTestAccountEntry {
 
 async function fetchKeystoreLockStatus(baseUrl: string): Promise<Map<string, boolean>> {
   const lockStatus = new Map<string, boolean>();
+  if (!baseUrl) return lockStatus;
   try {
     const response = await fetch(`${baseUrl}/api/spCoin/lab/networks/${MERIT_WALLET_HARDHAT_CHAIN_ID}/testAccounts`);
     if (!response.ok) return lockStatus;
@@ -345,10 +351,13 @@ async function renderWallet() {
   // that read panelStore. Idempotent — see bootstrapPanelVisibility's own
   // doc comment.
   bootstrapPanelVisibility(panelVisibility.persisted, panelVisibility.legacy);
-  const baseUrl = urlForOpenTarget(openTarget);
+  // 2026-10-11 (owner: "I do not want any dependency on the web app"): the extension uses its own bundle and the chain, never the hosted app. `baseUrl` is what the libraries fetch hosted data from: empty, so none of them requests anything from the web app;
+  // the Open button has its own address (src/openApp.ts, urlForOpenTarget) and is unaffected.
+  const baseUrl = '';
+  void openTarget;
   currentBaseUrl = baseUrl;
   // 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 2, capability "api"): the hosted app's origin, registered once for every library that reads the hosted API.
-  setHostApiBase({ baseUrl });
+  disableHostApi();
   // 2026-09-21, Path A — DisplayStackProvider's own storage contract is
   // synchronous (see displayStackStorage.ts's own header comment for why
   // this needs pre-resolving here rather than passed as an async

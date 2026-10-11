@@ -81,7 +81,7 @@ import { AssetListSelectPanel } from '@sponsorcoin/spcoin-panels';
 import { AddressPanel } from './panels';
 import { PanelTreePanel } from '@sponsorcoin/spcoin-panels';
 import { WalletBalanceContext, useFetchedBalance, fetchedBalanceText } from '@sponsorcoin/spcoin-panels';
-import { balancesChangedStore, classifyAddressText } from '@sponsorcoin/spcoin-exchange-engine';
+import { balancesChangedStore, classifyAddressText, useNativeToken } from '@sponsorcoin/spcoin-exchange-engine';
 import { AccountDetailPanel } from './panels';
 import { TokenDetailPanel } from './panels';
 import { NetworkDetailPanel } from './panels';
@@ -605,17 +605,19 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
     // 2026-10-09 -- the Send tab starts on the network's native token (the web app's Send tab shows ETH until another token is picked): the native row of the token list
     // when it has one, otherwise a plain entry built from the active network's symbol.
     const NATIVE_SEND_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+    // 2026-10-11 -- the chain's native token record (bundled in the extension) names the token when the list has no native row, ahead of the network's own symbol (HH_BASE on the fork).
+    const nativeMeta = useNativeToken();
     const nativeSendEntry = useMemo(() => {
         const row = (resolvedTokenRows ?? []).find((r) => String(r.address ?? '').toLowerCase() === NATIVE_SEND_ADDRESS.toLowerCase());
         const network = (resolvedNetworkRows ?? []).find((r) => r.isActive);
         return {
-            symbol: row?.symbol ?? network?.symbol ?? 'ETH',
-            name: row?.name,
+            symbol: row?.symbol ?? nativeMeta?.symbol ?? network?.symbol ?? 'ETH',
+            name: row?.name ?? nativeMeta?.name,
             address: NATIVE_SEND_ADDRESS,
             iconSrc: row?.iconSrc,
             decimals: 18,
         };
-    }, [resolvedTokenRows, resolvedNetworkRows]);
+    }, [resolvedTokenRows, resolvedNetworkRows, nativeMeta]);
     const sendTokenEntry = selections.sendToken ?? nativeSendEntry;
     // 2026-10-09 -- the Sponsor tab stakes spCoins, so (as the web app does in STAKE mode) the pay token is the active spCoin until another is picked, and only the spCoin can
     // be staked: another pay token means "swap, then stake", which is not available here yet (it is not wired in the web app either), and the button says so.

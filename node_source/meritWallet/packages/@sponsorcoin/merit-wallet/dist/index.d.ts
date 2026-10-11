@@ -22,6 +22,7 @@ export type { HostLayout, HostUiState, HostData, HostSelection, HostActions, Hos
 export { MERIT_WALLET_PROPS_ARE_ALL_CLASSIFIED } from './hostContract';
 export { VAULT_VERSION, VAULT_ALGORITHM, DEFAULT_PBKDF2_ITERATIONS, WrongPasswordError, createEncryptedVault, unlockEncryptedVault, deriveVaultKey, encryptWithKey, decryptWithKey, type EncryptedVault, } from './vault/vaultCrypto';
 export { VaultSession, VaultLockedError, type VaultStorage, type VaultSessionOptions, type VaultSessionStore, type PersistedVaultSession } from './vault/vaultSession';
+export { useWalletConfigPanelProps, splitPersistedTimeout, joinPersistedTimeout, HOUR_OPTIONS, MINUTE_OPTIONS, type WalletConfigEngine } from './walletConfigPanelProps';
 export { createLocalVaultParts, type LocalVaultParts } from './vault/vaultCapability';
 export { createIndexedDbVaultStorage, createWebSessionStore, type IndexedDbVaultStorageOptions } from './vault/browserStorage';
 export { createVaultAuthenticator, type VaultAuthenticatorOptions } from './vault/vaultAuthenticator';

@@ -22,6 +22,40 @@ export class VaultError extends Error {
 export const MIN_PASSWORD_LENGTH = 8;
 export const MIN_PIN_LENGTH = 4;
 export const BACKUP_FORMAT = 'merit-vault-backup';
+/** The backup file's own version (the vault inside has its own, see vaultCrypto). */
+export const BACKUP_FILE_VERSION = 1;
+/** Bounds on the key-derivation work a backup file may ask for: a hostile file must not be able to stall the page with billions of rounds. */
+export const MIN_BACKUP_ITERATIONS = 1;
+export const MAX_BACKUP_ITERATIONS = 5000000;
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+/** Read a backup file and check its shape BEFORE any key is derived. Throws invalid_backup (not a backup, damaged, or from a newer version). Nothing here decrypts: a wrong password and a tampered ciphertext both fail later as wrong_credential. */
+export function parseBackupFile(file) {
+    const notBackup = () => new VaultError('invalid_backup', 'That file is not a wallet backup.');
+    let parsed;
+    try {
+        parsed = JSON.parse(file);
+    }
+    catch {
+        throw notBackup();
+    }
+    if (!parsed || typeof parsed !== 'object' || parsed.format !== BACKUP_FORMAT)
+        throw notBackup();
+    if (typeof parsed.version === 'number' && parsed.version > BACKUP_FILE_VERSION)
+        throw new VaultError('invalid_backup', 'That backup was made by a newer version of the wallet. Update the wallet to restore it.');
+    if (parsed.version !== BACKUP_FILE_VERSION)
+        throw notBackup();
+    const v = parsed.vault;
+    if (!v || typeof v !== 'object' || Array.isArray(v))
+        throw notBackup();
+    const text = (x) => typeof x === 'string' && x.length > 0 && BASE64.test(x);
+    if (typeof v.version !== 'number' || typeof v.algorithm !== 'string')
+        throw notBackup();
+    if (typeof v.iterations !== 'number' || !Number.isInteger(v.iterations) || v.iterations < MIN_BACKUP_ITERATIONS || v.iterations > MAX_BACKUP_ITERATIONS)
+        throw new VaultError('invalid_backup', 'That backup file is damaged.');
+    if (!text(v.salt) || !text(v.iv) || !text(v.data))
+        throw new VaultError('invalid_backup', 'That backup file is damaged.');
+    return v;
+}
 function secretOf(credential, forNew) {
     if (credential.kind === 'biometric')
         throw new VaultError('unsupported', 'This vault opens with a password or a PIN.');
@@ -129,16 +163,8 @@ export function createLocalVaultParts(options) {
             return JSON.stringify({ format: BACKUP_FORMAT, version: 1, vault: await session.exportBackup() });
         }),
         importBackup: (file, credential) => guard(async () => {
-            let parsed;
-            try {
-                parsed = JSON.parse(file);
-            }
-            catch {
-                throw new VaultError('invalid_backup', 'That file is not a wallet backup.');
-            }
-            if (parsed.format !== BACKUP_FORMAT || parsed.version !== 1 || !parsed.vault || typeof parsed.vault !== 'object')
-                throw new VaultError('invalid_backup', 'That file is not a wallet backup.');
-            await session.importBackup(parsed.vault, secretOf(credential, false));
+            const backupVault = parseBackupFile(file);
+            await session.importBackup(backupVault, secretOf(credential, false));
             return list();
         }),
         revealPrivateKey: (credential, address) => guard(async () => wallet.revealPrivateKey(secretOf(credential, false), address)),

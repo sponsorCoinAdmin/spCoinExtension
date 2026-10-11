@@ -1,3 +1,4 @@
+import { type EncryptedVault } from './vaultCrypto';
 import { VaultSession, type VaultSessionOptions } from './vaultSession';
 import { WalletAccounts, type WalletVaultContents } from './walletAccounts';
 export type VaultCredentialKind = 'password' | 'pin' | 'biometric';
@@ -68,6 +69,13 @@ export interface VaultCapability {
 export declare const MIN_PASSWORD_LENGTH = 8;
 export declare const MIN_PIN_LENGTH = 4;
 export declare const BACKUP_FORMAT = "merit-vault-backup";
+/** The backup file's own version (the vault inside has its own, see vaultCrypto). */
+export declare const BACKUP_FILE_VERSION = 1;
+/** Bounds on the key-derivation work a backup file may ask for: a hostile file must not be able to stall the page with billions of rounds. */
+export declare const MIN_BACKUP_ITERATIONS = 1;
+export declare const MAX_BACKUP_ITERATIONS = 5000000;
+/** Read a backup file and check its shape BEFORE any key is derived. Throws invalid_backup (not a backup, damaged, or from a newer version). Nothing here decrypts: a wrong password and a tampered ciphertext both fail later as wrong_credential. */
+export declare function parseBackupFile(file: string): EncryptedVault;
 export interface LocalVaultOptions extends VaultSessionOptions {
     label?: string;
 }

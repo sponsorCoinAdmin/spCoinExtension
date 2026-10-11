@@ -22,3 +22,6 @@
 [submodule "node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels"]
 	path = node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels
 	url = https://github.com/sponsorCoinAdmin/spcoin-panels.git
+[submodule "node_source/spCoinData/packages/@sponsorcoin/spcoin-data"]
+	path = node_source/spCoinData/packages/@sponsorcoin/spcoin-data
+	url = https://github.com/sponsorCoinAdmin/spcoin-data.git

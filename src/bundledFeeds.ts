@@ -1,12 +1,14 @@
 // File: src/bundledFeeds.ts
 //
-// 2026-10-08 (docs/meritWalletNpmDesignToDo.txt, table row 17, E5) -- registers the snapshot made by scripts/bundleFeeds.mjs with the feeds
+// 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 28, owner: independence is 100 percent): the snapshot now comes from the shared data package (@sponsorcoin/spcoin-data, the git submodule at node_source/spCoinData),
+// which the web app (the data owner) rebuilds with its own script; this extension never reads the web app's source or files.
+// 2026-10-08 (docs/meritWalletNpmDesignToDo.txt, table row 17, E5) -- registers the snapshot (bundledFeedData.json) with the feeds
 // package, so the network info, token lists, role account lists and spCoin ABIs are still available when the hosted app cannot be reached
 // (the feeds ask the network first; fresh data wins). Import this file once at startup, before any feed is read.
 import { registerBundledFeeds, setFeedNetworkPolicy } from '@sponsorcoin/spcoin-feeds/shared';
 import { registerBundledFeeds as registerEngineBundledFeeds, registerNetworkData } from '@sponsorcoin/spcoin-exchange-engine';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
-import snapshot from './bundledFeedData.json';
+import snapshot from '../node_source/spCoinData/packages/@sponsorcoin/spcoin-data/bundledFeedData.json';
 
 registerBundledFeeds(snapshot as Record<string, unknown>);
 // 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 25, owner: "I do not want any dependency on the web app"): the extension answers from its own bundle and never asks the hosted app: a bundled path is served without any request, anything else fails at once.

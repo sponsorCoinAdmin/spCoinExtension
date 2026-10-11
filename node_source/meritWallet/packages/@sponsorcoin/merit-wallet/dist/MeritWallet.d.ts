@@ -16,7 +16,7 @@ import { type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-
 import type { MeritWalletNetworkRow } from './panels';
 import type { AuthenticationType } from './auth/authenticationType';
 import { type SwapTradeButtonHost } from './swap/SwapTradeButton';
-type ActiveListMode = 'sellToken' | 'buyToken' | 'sendToken' | 'sendRecipient' | 'sponsorPayToken' | 'sponsorRecipient' | 'account' | 'network' | null;
+type ActiveListMode = 'sellToken' | 'buyToken' | 'sendToken' | 'sendRecipient' | 'account' | 'network' | null;
 export type { MeritWalletNetworkRow };
 export interface MeritWalletProps {
     /**
@@ -73,21 +73,11 @@ export interface MeritWalletProps {
     accountGroups?: AccountListGroup[];
     tokenRows?: AssetListEntry[];
     recipientRows?: AssetListEntry[];
-    /** (Kept for hosts that still pass it; the staked line now reads fetchStakedAmount below.) 2026-10-07 — the active spCoin token's address. The line was the
-     *  active account's balance of this token (read through fetchBalance), as in the web app. Omit and that
-     *  line keeps its static "…: 0". */
-    activeSpCoinAddress?: string;
-    /**
-     * 2026-10-09 -- how much the active account has staked with one recipient (the web app's getStakedAmountForRecipient: the sum of stakedSPCoins over the pair's
-     * rate keys), in base units of the spCoin. The SPONSOR tab's "Sponsor Staked spCoins" line is this number, NOT the account's balance of the spCoin token.
-     * Omit and the line stays "…: 0".
-     */
-    fetchStakedAmount?: (sponsorAddress: string, recipientAddress: string) => Promise<bigint>;
     /** 2026-10-09 -- turns the Rewards tab live (Trading / Staked / Pending with estimate and claim, Auto Refresh), the same card and data hook the web app runs. Omit for the static table. */
     rewardsHost?: RewardsHost;
     /**
      * 2026-10-09 -- turns the Sponsored Recipient Accounts list (opened from Rewards > Unstake) live, with Un-Stake: the web app's card and confirm popup over the host's
-     * chain reads and one send-an-unstake-transaction function. Also supplies the Sponsor tab's staked line when fetchStakedAmount is not given.
+     * chain reads and one send-an-unstake-transaction function.
      */
     stakingHost?: SponsorStakingHost;
     /** The host's real active account. When provided (even as ''), it alone decides which row is active: '' means none, so the header reads "Select Account". Omit to keep each row's own isActive flag (the extension's own feed). */
@@ -164,19 +154,6 @@ export interface MeritWalletProps {
     sponsorPanel?: React.ReactNode;
     /** 2026-10-11 (plan row 13): the host's list overlay (spcoin-panels' ActiveListPanelHost) for the lists the shared panels open through the panel tree; shown in place of the tab body while a panel-tree list is open. */
     listHost?: React.ReactNode;
-    sponsorStakeSubmitBusy?: boolean;
-    onSponsorStakeSubmit?: (params: {
-        recipientAddress?: string;
-        agentAddress?: string;
-        amount: bigint;
-        recipientRateKey: number;
-        agentRateKey: number;
-    }) => void | Promise<HostTransactionResult | void>;
-    /** 2026-09-26, Phase 4 finish — real stake amount input for the SPONSOR
-     *  tab. Mirrors sendAmount/onSendAmountChange on the SEND tab. */
-    sponsorAmount?: string;
-    onSponsorAmountChange?: (value: string) => void;
-    sponsorAmountBusy?: boolean;
     manageRadioPanels?: boolean;
     overlayHost?: React.ReactNode;
     agentSelectSlot?: React.ReactNode;
@@ -252,4 +229,4 @@ export interface MeritWalletProps {
     /** The Config tab's Delete Wallet button (below Reset Password); the host asks for the password and wipes. */
     onConfigDeleteWallet?: () => void;
 }
-export default function MeritWallet({ resolveAssetAddress, docked, fullWidth, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, activeSpCoinAddress, fetchStakedAmount: fetchStakedAmountProp, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorStakeSubmitBusy, onSponsorStakeSubmit, sponsorPanel, listHost, sponsorAmount, onSponsorAmountChange, sponsorAmountBusy, manageRadioPanels, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode, passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }: MeritWalletProps): React.JSX.Element;
+export default function MeritWallet({ resolveAssetAddress, docked, fullWidth, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorPanel, listHost, manageRadioPanels, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode, passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }: MeritWalletProps): React.JSX.Element;

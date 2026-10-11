@@ -34,7 +34,7 @@ export type HostUiState = Pick<
 export type HostData = Pick<
   MeritWalletProps,
   | 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage'
-  | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'activeSpCoinAddress' | 'fetchStakedAmount' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'
+  | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'
 >;
 
 /** What the host does when the user picks or inspects a row. */
@@ -48,7 +48,7 @@ export type HostSelection = Pick<
 export type HostActions = Pick<
   MeritWalletProps,
   | 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit'
-  | 'sponsorStakeSubmitBusy' | 'onSponsorStakeSubmit' | 'sponsorAmount' | 'onSponsorAmountChange' | 'sponsorAmountBusy' | 'sponsorPanel' | 'listHost'
+  | 'sponsorPanel' | 'listHost'
 >;
 
 /** The body: who owns the radio groups, the overlay host, and the slots a host fills with its own panels. */

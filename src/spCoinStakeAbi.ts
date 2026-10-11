@@ -1,5 +1,5 @@
 // File: src/spCoinStakeAbi.ts
-// Split out of executeStakeTransaction.ts (2026-10-08) so runSpCoinReadStep.ts can use it without an import cycle.
+// Split out of the old executeStakeTransaction.ts (2026-10-08; deleted 2026-10-11, the shared Sponsor panel stakes through the engine now).
 //
 // 2026-10-09: corrected to the deployed contracts' real signatures (public/assets/ABIs/spCoin/V_0.json and V_99.json in the web repo). The stake methods take
 // address / uint256 arguments; this slice had declared them as strings, so a stake against the real chain called a function that does not exist. The slice also

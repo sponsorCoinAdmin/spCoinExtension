@@ -34,11 +34,11 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { walletColors } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { formatUnits, getAddress } from 'viem';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getAddress } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION } from '@sponsorcoin/spcoin-common/context';
-import { usePanelTree, usePanelVisible, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useEnforceRadioPanelContainers, useAgentAccount, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, sponsorRateConfigStore, deriveSponsorRatePercentages, useSponsorMode, } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelTree, usePanelVisible, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useEnforceRadioPanelContainers, useAgentAccount, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, } from '@sponsorcoin/spcoin-exchange-engine';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
 import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
 import { ConfigSlippagePanel } from '@sponsorcoin/spcoin-panels';
@@ -58,16 +58,14 @@ import ConnectedRewardsPanel from './rewards/ConnectedRewardsPanel';
 import AccountProfileEditor from './account/AccountProfileEditor';
 import AddAccountFlow from './account/AddAccountFlow';
 import ConnectedSponsorStakingList from './sponsor/ConnectedSponsorStakingList';
-import { getStakedRawForPair } from './sponsor/sponsorReads';
-import { buildSendReceipt, buildStakeReceipt } from './receipt/transactionReceipts';
-import { isNativePlaceholder, parseDecimalToWei } from './send/sendTransfer';
+import { buildSendReceipt } from './receipt/transactionReceipts';
+import { isNativePlaceholder } from './send/sendTransfer';
 import { useTransactionReceipt } from './receipt/useTransactionReceipt';
 import { ActiveAccountProfileContext } from './swap/activeAccountProfile';
 import { MenuTabHeaderBar } from './panels';
 import { WalletRadioPanels } from './panels';
 import { TradingStationPanel } from './panels';
 import { SendTabPanel } from './panels';
-import { SponsorshipPanel, StakingControllerPanel, ConfigSponsorshipPanel } from '@sponsorcoin/spcoin-panels';
 import { ManageSponsorshipsPanel } from '@sponsorcoin/spcoin-panels';
 import { AgentHeaderPanel } from '@sponsorcoin/spcoin-panels';
 import ConnectedAgentSelectDropDown from './AgentSelectDropDown';
@@ -81,7 +79,7 @@ import { AssetListSelectPanel } from '@sponsorcoin/spcoin-panels';
 import { AddressPanel } from './panels';
 import { PanelTreePanel } from '@sponsorcoin/spcoin-panels';
 import { WalletBalanceContext, useFetchedBalance, fetchedBalanceText } from '@sponsorcoin/spcoin-panels';
-import { balancesChangedStore, classifyAddressText, useNativeToken } from '@sponsorcoin/spcoin-exchange-engine';
+import { classifyAddressText, useNativeToken } from '@sponsorcoin/spcoin-exchange-engine';
 import { AccountDetailPanel } from './panels';
 import { TokenDetailPanel } from './panels';
 import { NetworkDetailPanel } from './panels';
@@ -184,9 +182,7 @@ const LIST_PANEL_ID_FOR_MODE = {
     sellToken: SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
     buyToken: SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
     sendToken: SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
-    sponsorPayToken: SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
     sendRecipient: SP_COIN_DISPLAY.MERIT_WALLET_SEND_RECIPIENT_LIST_OVERLAY,
-    sponsorRecipient: SP_COIN_DISPLAY.MERIT_WALLET_SPONSOR_RECIPIENT_LIST_OVERLAY,
     account: SP_COIN_DISPLAY.MERIT_WALLET_ACCOUNT_LIST_OVERLAY,
     network: SP_COIN_DISPLAY.MERIT_WALLET_NETWORK_LIST_OVERLAY,
 };
@@ -210,7 +206,6 @@ const LIST_PANEL_ID_FOR_MODE = {
 const ALL_LIST_PANEL_IDS = [
     SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
     SP_COIN_DISPLAY.MERIT_WALLET_SEND_RECIPIENT_LIST_OVERLAY,
-    SP_COIN_DISPLAY.MERIT_WALLET_SPONSOR_RECIPIENT_LIST_OVERLAY,
     SP_COIN_DISPLAY.MERIT_WALLET_ACCOUNT_LIST_OVERLAY,
     SP_COIN_DISPLAY.MERIT_WALLET_NETWORK_LIST_OVERLAY,
 ];
@@ -261,17 +256,7 @@ const SAMPLE_NETWORK_ROWS = [
 // the header account list now renders AccountListCard directly, which takes
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
-// 2026-10-09 -- the Sponsor tab's settings cog (the web app uses a cog image asset; an inline SVG needs no asset in either host).
-const SPONSOR_CONFIG_COG = React.createElement('svg', { width: 15, height: 15, viewBox: '0 0 24 24', fill: 'none', stroke: '#94a3b8', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }, React.createElement('circle', { cx: 12, cy: 12, r: 3 }), React.createElement('path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z' }));
-/** The rate keys a stake uses, from the same store the rate sliders write (the web's doStake reads it the same way; ranges default to 0-100). */
-function currentSponsorRateKeys() {
-    const config = sponsorRateConfigStore.get();
-    const range = [0, 100];
-    const clamp = (v) => Math.min(Math.max(v, range[0]), range[1]);
-    const { sponsorPct, recipientPct, agentPct } = deriveSponsorRatePercentages(config, range, range);
-    return { recipient: clamp(config.sponsorStep), agent: clamp(config.agentStep), sponsorPct, recipientPct, agentPct };
-}
-export default function MeritWallet({ resolveAssetAddress, docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, activeSpCoinAddress, fetchStakedAmount: fetchStakedAmountProp, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorStakeSubmitBusy, onSponsorStakeSubmit, sponsorPanel, listHost, sponsorAmount, onSponsorAmountChange, sponsorAmountBusy, manageRadioPanels = true, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode = 'unlock', passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }) {
+export default function MeritWallet({ resolveAssetAddress, docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorPanel, listHost, manageRadioPanels = true, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode = 'unlock', passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }) {
     const [menuOpen, setMenuOpen] = useState(initialMenuOpen ?? true);
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
@@ -619,15 +604,8 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
         };
     }, [resolvedTokenRows, resolvedNetworkRows, nativeMeta]);
     const sendTokenEntry = selections.sendToken ?? nativeSendEntry;
-    // 2026-10-09 -- the Sponsor tab stakes spCoins, so (as the web app does in STAKE mode) the pay token is the active spCoin until another is picked, and only the spCoin can
-    // be staked: another pay token means "swap, then stake", which is not available here yet (it is not wired in the web app either), and the button says so.
-    const spCoinPayEntry = useMemo(() => (activeSpCoinAddress ? { symbol: 'SPCOIN', name: 'Sponsor Coin', address: activeSpCoinAddress, decimals: 18 } : undefined), [activeSpCoinAddress]);
-    // Pinned to the spCoin only in STAKE mode (arriving from Rewards > Stake), as the web app does; the default Sponsor tab starts on "Select Token" in both apps.
-    const { mode: sponsorMode } = useSponsorMode();
     // 2026-10-11 (row 13): a list the shared panels opened through the panel tree (pay token, recipient, agent); the host's listHost renders it.
     const panelTreeListOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL);
-    const sponsorPayEntry = selections.sponsorPayToken ?? (sponsorMode === 'STAKE' ? spCoinPayEntry : undefined);
-    const sponsorPayIsSpCoin = !!sponsorPayEntry && (!activeSpCoinAddress || String(sponsorPayEntry.address ?? '').toLowerCase() === activeSpCoinAddress.toLowerCase());
     // 2026-10-03 — token balances (see fetchBalance's doc comment). The active
     // account is read straight off the resolved groups here because the tab bodies
     // below are built before activeAccountEntry is derived.
@@ -642,41 +620,8 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
     const recipientSendBalance = useFetchedBalance(fetchBalance, sendTokenEntry.address, selections.sendRecipient?.address, refreshToken);
     const sellBalance = useFetchedBalance(fetchBalance, sellTokenContract?.address, activeBalanceAccount, refreshToken);
     const buyBalance = useFetchedBalance(fetchBalance, buyTokenContract?.address, activeBalanceAccount, refreshToken);
-    const payBalance = useFetchedBalance(fetchBalance, sponsorPayEntry?.address, activeBalanceAccount, refreshToken);
     const fetchedSellBalanceText = fetchedBalanceText(fetchBalance, sellBalance, sellTokenContract?.decimals ?? 18);
     const fetchedBuyBalanceText = fetchedBalanceText(fetchBalance, buyBalance, buyTokenContract?.decimals ?? 18);
-    const fetchedPayBalanceText = fetchedBalanceText(fetchBalance, payBalance, sponsorPayEntry?.decimals ?? 18);
-    // "Sponsor Staked spCoins" = what the active account has staked with the picked recipient (as in the web app), read through the host's fetchStakedAmount.
-    const fetchStakedAmount = useMemo(() => fetchStakedAmountProp ?? (stakingHost ? (sponsor, recipient) => getStakedRawForPair(sponsor, recipient, stakingHost.read) : undefined), [fetchStakedAmountProp, stakingHost]);
-    // As the web's doStake: an agent takes part only when one is selected and the agent share of the split is above zero.
-    const stakeAgentAddress = () => {
-        const address = String(agentAccount?.address ?? '').trim();
-        return address && currentSponsorRateKeys().agentPct > 0 ? address : undefined;
-    };
-    const stakedRecipientAddress = selections.sponsorRecipient?.address;
-    // Read at the moment of use through a getter object so the click handlers always see the sliders' latest values.
-    const sponsorRateKeys = { get recipient() { return currentSponsorRateKeys().recipient; }, get agent() { return currentSponsorRateKeys().agent; }, get sponsorPct() { return currentSponsorRateKeys().sponsorPct; }, get recipientPct() { return currentSponsorRateKeys().recipientPct; } };
-    const [pairStaked, setPairStaked] = useState(undefined);
-    // 2026-10-10: a confirmed write (stake, send, swap) bumps balancesChangedStore, so the staked amount is re-read at once, as the balance rows are.
-    const balancesTick = useSyncExternalStore(balancesChangedStore.subscribe, balancesChangedStore.getSnapshot, balancesChangedStore.getServerSnapshot);
-    const pairBase = `${activeBalanceAccount ?? ''}|${stakedRecipientAddress ?? ''}`;
-    const pairKey = `${pairBase}|${refreshToken ?? 0}|${balancesTick}`;
-    useEffect(() => {
-        if (!fetchStakedAmount || !activeBalanceAccount || !stakedRecipientAddress) {
-            setPairStaked(undefined);
-            return;
-        }
-        let cancelled = false;
-        fetchStakedAmount(activeBalanceAccount, stakedRecipientAddress)
-            .then((amount) => !cancelled && setPairStaked({ key: pairKey, base: pairBase, amount }))
-            .catch(() => !cancelled && setPairStaked({ key: pairKey, base: pairBase, amount: undefined }));
-        return () => {
-            cancelled = true;
-        };
-    }, [fetchStakedAmount, activeBalanceAccount, stakedRecipientAddress, pairKey, pairBase]);
-    const stakedBalanceText = fetchStakedAmount && stakedRecipientAddress
-        ? `Sponsor Staked spCoins: ${pairStaked?.base !== pairBase ? '…' : pairStaked.amount != null ? formatUnits(pairStaked.amount, 18) : '—'}`
-        : undefined;
     // The Send button's text and readiness are the shared computeSendButton (spcoin-panels), the same rules and the same button the web app's Send tab uses.
     const sendDecimals = sendTokenEntry.decimals ?? 18;
     const sendHasRecipient = Boolean(selections.sendRecipient?.address);
@@ -1109,155 +1054,62 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
                     }
                     : undefined,
             })
-            : activeTab === 'SPONSOR' && sponsorPanel
-                ? sponsorPanel
-                : activeTab === 'SPONSOR'
-                    ? React.createElement(SponsorshipPanel, {
-                        onPayTokenClick: () => setActiveList('sponsorPayToken'),
-                        onRecipientClick: () => setActiveList('sponsorRecipient'),
-                        // 2026-10-09 -- the web app's header ("You are Sponsoring <recipient>" with the settings cog) and its rate sliders (ConfigSponsorshipPanel), the same
-                        // shared components, so the rates the stake uses are the ones the user sets (the web default is 50 / 50, not the 0 / 0 the extension used to send).
-                        recipientSelectPanel: React.createElement(StakingControllerPanel, {
-                            sponsorMode: 'STAKE',
-                            configCog: SPONSOR_CONFIG_COG,
-                            recipientContent: React.createElement('div', { onClick: () => setActiveList('sponsorRecipient'), style: { cursor: 'pointer', fontSize: 15, fontWeight: 700, color: '#ffffff', textAlign: 'center' } }, selections.sponsorRecipient?.symbol && selections.sponsorRecipient?.name
-                                ? `${selections.sponsorRecipient.symbol}: ${selections.sponsorRecipient.name}`
-                                : selections.sponsorRecipient?.name ?? selections.sponsorRecipient?.symbol ?? 'Recipient Name not Specified'),
-                        }),
-                        configSponsorshipPanel: React.createElement(ConfigSponsorshipPanel, {}),
-                        // "You are Sponsoring <name>" is a single descriptive line,
-                        // not a compact pill — "SYMBOL: Name" matches this
-                        // component's own placeholder format (e.g. "FREE: Born Free
-                        // USA"), not just the bare symbol a trade pill would show.
-                        recipientName: selections.sponsorRecipient?.symbol && selections.sponsorRecipient?.name
-                            ? `${selections.sponsorRecipient.symbol}: ${selections.sponsorRecipient.name}`
-                            : selections.sponsorRecipient?.name ?? selections.sponsorRecipient?.symbol,
-                        payTokenSymbol: sponsorPayEntry?.symbol,
-                        payTokenAddress: sponsorPayEntry?.address,
-                        payBalanceText: fetchedPayBalanceText,
-                        stakedBalanceText,
-                        payTokenIcon: iconFromSrc(sponsorPayEntry?.iconSrc),
-                        // 2026-09-16, on live report ("recipientSelectDropDown does
-                        // not work as nothing is returned... New Recipient Staked
-                        // spCoins") — this pill's own onTokenPillClick is already
-                        // wired to the SAME onRecipientClick as "You are Sponsoring"
-                        // above (see that prop's own doc comment, corrected earlier
-                        // the same day), but its DISPLAY was never fed the result —
-                        // recipientName got selections.sponsorRecipient, this pill's
-                        // own stakedToken* props didn't. Same picked recipient, same
-                        // source, just the compact-pill format instead of the
-                        // descriptive-line one.
-                        stakedTokenSymbol: selections.sponsorRecipient?.symbol,
-                        stakedTokenAddress: selections.sponsorRecipient?.address,
-                        stakedTokenIcon: iconFromSrc(selections.sponsorRecipient?.iconSrc),
-                        // 2026-09-16, on correction ("that was not where the account
-                        // panel should be opened... it should have been opened...
-                        // in 'New Recipient Staked spCoins'... when the avatar.png
-                        // was clicked") — reverted the earlier (wrong) attempt that
-                        // wired this onto the LIST rows you pick FROM; the real ask
-                        // is this TRIGGER pill's own icon, for whichever recipient
-                        // is already picked — same setAccountDetailAddress/
-                        // onAccountIconClick mechanism as every other detail-open
-                        // callback here.
-                        onStakedRecipientIconClick: selections.sponsorRecipient?.address
-                            ? () => {
-                                openAccountDetail(selections.sponsorRecipient.address);
-                                onAccountIconClick?.(selections.sponsorRecipient.address);
-                            }
-                            : undefined,
-                        // 2026-09-26, Phase 4 finish — real amount/rate wiring for SPONSOR
-                        // tab. Amount comes from sponsorAmount (user-entered decimal);
-                        // parsed to raw 18-decimal units at submit (mirrors the web app's
-                        // doStake parsing in swap.tsx). Rate keys stay 0 — full rate
-                        // selection UI is Phase C.
-                        submitLabel: sponsorStakeSubmitBusy ? 'Staking…' : sponsorPayIsSpCoin ? 'Add New Sponsorship' : 'Pay with spCoin to stake',
-                        onSubmit: onSponsorStakeSubmit && sponsorPayIsSpCoin
-                            ? () => {
-                                const amountRaw = parseDecimalToWei(sponsorAmount ?? '', 18) ?? 0n;
-                                void Promise.resolve(onSponsorStakeSubmit({
-                                    recipientAddress: selections.sponsorRecipient?.address,
-                                    agentAddress: stakeAgentAddress(),
-                                    amount: amountRaw,
-                                    recipientRateKey: sponsorRateKeys.recipient,
-                                    agentRateKey: sponsorRateKeys.agent,
-                                })).then((result) => {
-                                    if (!result)
-                                        return;
-                                    showReceipt(buildStakeReceipt({
-                                        result,
-                                        amount: sponsorAmount ?? '',
-                                        stakeSymbol: sponsorPayEntry?.symbol ?? '',
-                                        sponsor: activeProfileRef.current,
-                                        recipient: { address: selections.sponsorRecipient?.address, name: selections.sponsorRecipient?.name, symbol: selections.sponsorRecipient?.symbol, logoURL: selections.sponsorRecipient?.iconSrc },
-                                        agent: stakeAgentAddress() ? { address: String(agentAccount?.address ?? ''), name: agentAccount?.name, symbol: agentAccount?.symbol, logoURL: agentAccount?.logoURL } : undefined,
-                                        sponsorRatePct: sponsorRateKeys.sponsorPct,
-                                        recipientRatePct: sponsorRateKeys.recipientPct,
-                                        agentRatePct: stakeAgentAddress() ? currentSponsorRateKeys().agentPct : undefined,
-                                    }), 'MeritWallet:stake');
-                                    // A confirmed stake clears the amount; a failed one leaves everything as it was.
-                                    if (result.ok)
-                                        onSponsorAmountChange?.('');
-                                });
-                            }
-                            : undefined,
-                        sponsorAmount,
-                        onSponsorAmountChange,
-                        sponsorAmountBusy,
-                    })
-                    : activeTab === 'REWARDS' && rewardsHost
-                        ? React.createElement(ConnectedRewardsPanel, { host: rewardsHost })
-                        : activeTab === 'REWARDS'
-                            ? React.createElement(ManageSponsorshipsPanel, {
-                                // 2026-09-24, SPONSOR_STAKING_LIST EXT wiring (minimal bar) —
-                                // mirrors the real web app's own ManageSponsorshipsPanel.tsx
-                                // unstakeAllSponsorships callback exactly: opens
-                                // SPONSOR_STAKING_LIST via the real, shared engine's openPanel.
-                                // SponsorStakingListPanel itself self-gates on that same id
-                                // (see its own `panelId` default) and is mounted unconditionally
-                                // below, so no separate usePanelVisible check is needed here.
-                                onUnstake: () => openPanel(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST, 'MeritWallet:unstakeAllSponsorships'),
-                            })
-                            : React.createElement(WalletConfigPanel, {
-                                onOpenPanelTree: () => openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'),
-                                openTarget,
-                                onOpenTargetChange: handleOpenTargetChange,
-                                // 2026-09-30 — see configPasswordMode's own doc comment on
-                                // MeritWalletProps for why every prop below is forwarded
-                                // as-is (real logic lives in the caller, via
-                                // useMeritWalletConfig() — this component only renders it).
-                                passwordMode: configPasswordMode,
-                                onPasswordModeChange: onConfigPasswordModeChange,
-                                persistedTimeoutContent: configPersistedTimeoutContent,
-                                passwordDescription: configPasswordDescription,
-                                mandatorySecurity: configMandatorySecurity,
-                                onMandatorySecurityChange: onConfigMandatorySecurityChange,
-                                mandatoryApproval: configMandatoryApproval,
-                                onMandatoryApprovalChange: onConfigMandatoryApprovalChange,
-                                passwordResetPanelContent: configPasswordResetPanelContent,
-                                syncMode: configSyncMode,
-                                onSyncModeChange: onConfigSyncModeChange,
-                                syncDescription: configSyncDescription,
-                                location: configLocation,
-                                onLocationChange: onConfigLocationChange,
-                                showBackgroundPage: configShowBackgroundPage,
-                                onShowBackgroundPageChange: onConfigShowBackgroundPageChange,
-                                modalMode: configModalMode,
-                                onModalModeChange: onConfigModalModeChange,
-                                securityPanelContent: configSecurityPanelContent,
-                                testAccountsContent: configTestAccountsContent,
-                                uniSelectVisible: configUniSelectVisible,
-                                onUniswapEngineChange: onConfigUniswapEngineChange,
-                                zeroXEngineVisible: configZeroXEngineVisible,
-                                on0xEngineChange: onConfig0xEngineChange,
-                                resetPanelsContent: configResetPanelsContent,
-                                extensionChannel: configExtensionChannel,
-                                onExtensionChannelChange: onConfigExtensionChannelChange,
-                                extensionDownloadPath: configExtensionDownloadPath,
-                                onLogoff: onConfigLogoff,
-                                onResetPassword: onConfigResetPassword,
-                                onDeleteAccount: onConfigDeleteAccount,
-                                onDeleteWallet: onConfigDeleteWallet,
-                            });
+            : activeTab === 'SPONSOR'
+                ? (sponsorPanel ?? null)
+                : activeTab === 'REWARDS' && rewardsHost
+                    ? React.createElement(ConnectedRewardsPanel, { host: rewardsHost })
+                    : activeTab === 'REWARDS'
+                        ? React.createElement(ManageSponsorshipsPanel, {
+                            // 2026-09-24, SPONSOR_STAKING_LIST EXT wiring (minimal bar) —
+                            // mirrors the real web app's own ManageSponsorshipsPanel.tsx
+                            // unstakeAllSponsorships callback exactly: opens
+                            // SPONSOR_STAKING_LIST via the real, shared engine's openPanel.
+                            // SponsorStakingListPanel itself self-gates on that same id
+                            // (see its own `panelId` default) and is mounted unconditionally
+                            // below, so no separate usePanelVisible check is needed here.
+                            onUnstake: () => openPanel(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST, 'MeritWallet:unstakeAllSponsorships'),
+                        })
+                        : React.createElement(WalletConfigPanel, {
+                            onOpenPanelTree: () => openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'),
+                            openTarget,
+                            onOpenTargetChange: handleOpenTargetChange,
+                            // 2026-09-30 — see configPasswordMode's own doc comment on
+                            // MeritWalletProps for why every prop below is forwarded
+                            // as-is (real logic lives in the caller, via
+                            // useMeritWalletConfig() — this component only renders it).
+                            passwordMode: configPasswordMode,
+                            onPasswordModeChange: onConfigPasswordModeChange,
+                            persistedTimeoutContent: configPersistedTimeoutContent,
+                            passwordDescription: configPasswordDescription,
+                            mandatorySecurity: configMandatorySecurity,
+                            onMandatorySecurityChange: onConfigMandatorySecurityChange,
+                            mandatoryApproval: configMandatoryApproval,
+                            onMandatoryApprovalChange: onConfigMandatoryApprovalChange,
+                            passwordResetPanelContent: configPasswordResetPanelContent,
+                            syncMode: configSyncMode,
+                            onSyncModeChange: onConfigSyncModeChange,
+                            syncDescription: configSyncDescription,
+                            location: configLocation,
+                            onLocationChange: onConfigLocationChange,
+                            showBackgroundPage: configShowBackgroundPage,
+                            onShowBackgroundPageChange: onConfigShowBackgroundPageChange,
+                            modalMode: configModalMode,
+                            onModalModeChange: onConfigModalModeChange,
+                            securityPanelContent: configSecurityPanelContent,
+                            testAccountsContent: configTestAccountsContent,
+                            uniSelectVisible: configUniSelectVisible,
+                            onUniswapEngineChange: onConfigUniswapEngineChange,
+                            zeroXEngineVisible: configZeroXEngineVisible,
+                            on0xEngineChange: onConfig0xEngineChange,
+                            resetPanelsContent: configResetPanelsContent,
+                            extensionChannel: configExtensionChannel,
+                            onExtensionChannelChange: onConfigExtensionChannelChange,
+                            extensionDownloadPath: configExtensionDownloadPath,
+                            onLogoff: onConfigLogoff,
+                            onResetPassword: onConfigResetPassword,
+                            onDeleteAccount: onConfigDeleteAccount,
+                            onDeleteWallet: onConfigDeleteWallet,
+                        });
     // Real data (networkRows/accountGroups) vs. this component's own
     // placeholder samples — see MeritWalletProps' own doc comment on why this
     // component never fetches either itself.
@@ -1388,7 +1240,7 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
         resolvedRecipientRows ??
         flatAccountRows;
     addressRowsRef.current =
-        activeListMode === 'sendRecipient' || activeListMode === 'sponsorRecipient' ? recipientListRows : effectiveTokenRows;
+        activeListMode === 'sendRecipient' ? recipientListRows : effectiveTokenRows;
     // Resolve a full address that isn't in the loaded rows (host-supplied; see resolveAssetAddress).
     // The rows ref is read, not depended on, so a list refresh doesn't re-run the lookup.
     useEffect(() => {
@@ -1403,7 +1255,7 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
         }
         let cancelled = false;
         setEntryResolution({ address: typed, result: null });
-        const kind = activeListMode === 'sendRecipient' || activeListMode === 'sponsorRecipient' ? 'account' : 'token';
+        const kind = activeListMode === 'sendRecipient' ? 'account' : 'token';
         const peer = activeListMode === 'sellToken'
             ? buyTokenContract?.address
             : activeListMode === 'buyToken'
@@ -1428,8 +1280,7 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
     }, [addressInput, activeListMode, resolveAssetAddress]);
     const listOverlay = activeListMode === 'sellToken' ||
         activeListMode === 'buyToken' ||
-        activeListMode === 'sendToken' ||
-        activeListMode === 'sponsorPayToken'
+        activeListMode === 'sendToken'
         ? React.createElement(AssetListSelectPanel, {
             containerType: LIST_PANEL_ID_FOR_MODE[activeListMode],
             feedType: FEED_TYPE.REMOTE_TOKEN_LIST,
@@ -1452,14 +1303,11 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
                 metaLabel: 'Token Meta',
             }),
         })
-        : activeListMode === 'sendRecipient' || activeListMode === 'sponsorRecipient'
+        : activeListMode === 'sendRecipient'
             ? React.createElement(AssetListSelectPanel, {
                 containerType: LIST_PANEL_ID_FOR_MODE[activeListMode],
-                // sendRecipient's own real id (REMOTE_ACCOUNT_SEND_LIST) has a
-                // matching FEED_TYPE member exactly; sponsorRecipient's real id
-                // (REMOTE_ACCOUNT_RECIPIENT_LIST) maps to REMOTE_RECIPIENT_ACCOUNTS
-                // per the web app's own deriveFeedTypeFromDisplay.ts.
-                feedType: activeListMode === 'sendRecipient' ? FEED_TYPE.REMOTE_ACCOUNT_SEND_LIST : FEED_TYPE.REMOTE_RECIPIENT_ACCOUNTS,
+                // sendRecipient's own real id (REMOTE_ACCOUNT_SEND_LIST) has a matching FEED_TYPE member exactly.
+                feedType: FEED_TYPE.REMOTE_ACCOUNT_SEND_LIST,
                 addressBar: buildAddressBar(recipientListRows, 'account', (address) => {
                     openAccountDetail(address);
                     onAccountIconClick?.(address);
@@ -1472,8 +1320,7 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
                     // recipient feed of its own yet, same "placeholder until a
                     // real feed exists" treatment every other fallback in this
                     // file already has.
-                    // Send lists every known account (the web's REMOTE_ACCOUNT_SEND_LIST);
-                    // Sponsor keeps the chain's recipient directory.
+                    // Send lists every known account (the web's REMOTE_ACCOUNT_SEND_LIST).
                     rows: recipientListRows.map((row) => ({
                         ...row,
                         onSelect: () => commitSelection(row),
@@ -1726,10 +1573,9 @@ export default function MeritWallet({ resolveAssetAddress, docked = false, fullW
                         ? 'Network Details'
                         : activeListMode === 'sellToken' ||
                             activeListMode === 'buyToken' ||
-                            activeListMode === 'sendToken' ||
-                            activeListMode === 'sponsorPayToken'
+                            activeListMode === 'sendToken'
                             ? 'Select a Token'
-                            : activeListMode === 'sendRecipient' || activeListMode === 'sponsorRecipient'
+                            : activeListMode === 'sendRecipient'
                                 ? 'Select Recipient'
                                 : activeListMode === 'account'
                                     ? 'Active Account Selection'

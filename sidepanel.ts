@@ -86,7 +86,7 @@ import { rpcUrlForChain } from './src/chainRpc';
 import { makeResolveAssetAddress } from './src/resolveAssetAddress';
 import { getAccountRecord } from './src/getAccountRecord';
 import { estimateOffChainRewards } from './src/estimateOffChainRewards';
-import { executeStakeTransaction, SPOIN_STAKE_ABI } from './src/executeStakeTransaction';
+import { SPOIN_STAKE_ABI } from './src/spCoinStakeAbi';
 import { executeClaimTransaction, SPOIN_CLAIM_ABI } from './src/executeClaimTransaction';
 import { executeUniswapV3Swap } from './src/executeUniswapV3Swap';
 import { parseAbi } from 'viem';
@@ -714,9 +714,6 @@ async function renderWallet() {
   // session) and busy flag while a real send is in flight.
   let sendAmount = '';
    let sendBusy = false;
-   // 2026-09-26, Phase 4 — SPONSOR tab stake execution busy flag + amount state.
-    let sponsorStakeBusy = false;
-    let sponsorStakeAmount = '';
     let sponsorSwapBusy = false;
     // 2026-09-28, TRADING_STATION_PANEL migration — SWAP tab amount + busy state.
     let swapAmount = '';
@@ -1051,7 +1048,6 @@ async function renderWallet() {
                 storage: chromeIconCacheStorage,
                 fetchBalance: fetchBalanceFor(activeChainId),
                 resolveAssetAddress,
-                activeSpCoinAddress: spCoinAddress(),
                 rewardsHost,
                 stakingHost,
               },
@@ -1085,22 +1081,6 @@ async function renderWallet() {
                 // 2026-10-11 (row 13): the Sponsor tab is the shared panel, driven by the exchange context.
                 sponsorPanel: createExtensionSponsorPanel(),
                 listHost: createExtensionListHost(),
-                // 2026-09-26, Phase 4 — SPONSOR tab stake execution wiring.
-                sponsorStakeSubmitBusy: sponsorStakeBusy,
-                onSponsorStakeSubmit: (params: {
-                  recipientAddress?: string;
-                  agentAddress?: string;
-                  amount: bigint;
-                  recipientRateKey: number;
-                  agentRateKey: number;
-                }) => handleSponsorStakeSubmit(params),
-                // 2026-09-26, Phase 4 finish — real amount input for SPONSOR tab.
-                sponsorAmount: sponsorStakeAmount,
-                onSponsorAmountChange: (value: string) => {
-                  sponsorStakeAmount = value;
-                  render();
-                },
-                sponsorAmountBusy: sponsorStakeBusy,
               },
               slots: {
                 configSecurityPanelContent: React.createElement(WalletSecuritySection, { api: walletSecurityApi }),
@@ -1436,61 +1416,6 @@ async function renderWallet() {
     if (result.ok) void walletRefresh.run();
     return result.ok ? { ok: true, hash: result.hash, receipt: result.receipt as never } : { ok: false, message: result.message };
   }
-
-  // 2026-09-26, Phase 4 — SPONSOR tab stake execution wiring.
-  // Uses the portable executeStakeTransaction (from @sponsorcoin/spcoin-onchain
-  // via @sponsorcoin/spcoin-exchange-engine) wrapped by the extension's own
-  // executeStakeTransaction.ts adapter, which bridges to the Merit signing
-  // pipeline via tradeExecutorMerit.ts.
-  // NOTE: recipientKey/agentKey/rate-key resolution still need real wiring —
-  // the current MeritWallet inert-fallback passes placeholder values (amount 0n,
-  // rate keys 0). This handler wires the full path so it's ready for when real
-  // inputs are threaded through.
-  async function handleSponsorStakeSubmit(params: {
-    recipientAddress?: string;
-    agentAddress?: string;
-    amount: bigint;
-    recipientRateKey: number;
-    agentRateKey: number;
-  }): Promise<HostTransactionResult> {
-    const from = walletSource.address;
-    if (!from) return { ok: false, message: 'Select and activate an account first.' };
-
-    sponsorStakeBusy = true;
-    render();
-
-    try {
-      const recipientKey = params.recipientAddress ?? '';
-      const agentKey = params.agentAddress ?? '';
-
-      const result = await executeStakeTransaction({
-        baseUrl,
-        rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-        recipientKey,
-        agentKey,
-        amountRaw: params.amount,
-        desiredRecipientRateKey: params.recipientRateKey,
-        desiredAgentRateKey: params.agentRateKey,
-        recipientRateRange: [0, 100],
-        agentRateRange: [0, 100],
-        abi: SPOIN_STAKE_ABI,
-        contractAddress: spCoinAddress(),
-        chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-        fromAddress: from,
-      });
-
-      void walletRefresh.run();
-      return result.transactionHash
-        ? { ok: true, hash: result.transactionHash, receipt: result.receipt as never, methodName: (result as { methodName?: string }).methodName }
-        : { ok: false, message: 'Stake completed with no transaction hash.' };
-    } catch (error) {
-      return { ok: false, message: error instanceof Error ? error.message : String(error) };
-    } finally {
-      sponsorStakeBusy = false;
-      sponsorStakeAmount = '';
-      render();
-     }
-   }
 
    // 2026-09-27, Phase C — parse accountRecord + rewardEstimate into the display
    // strings + per-role rows that ManageSponsorshipsPanel expects. Uses the

@@ -6,11 +6,11 @@ export type HostLayout = Pick<MeritWalletProps, 'docked' | 'fullWidth' | 'onClos
 /** UI state the host remembers across loads (its own storage). */
 export type HostUiState = Pick<MeritWalletProps, 'initialActiveTab' | 'onActiveTabChange' | 'initialMenuOpen' | 'onMenuOpenChange' | 'initialOpenTarget' | 'onOpenTargetChange'>;
 /** Data the host supplies or lets the component fetch itself (chainId + baseUrl + storage turn the self-fetch on). */
-export type HostData = Pick<MeritWalletProps, 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'activeSpCoinAddress' | 'fetchStakedAmount' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'>;
+export type HostData = Pick<MeritWalletProps, 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'>;
 /** What the host does when the user picks or inspects a row. */
 export type HostSelection = Pick<MeritWalletProps, 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'swapHost' | 'accountDetail' | 'accountProfileHost' | 'addAccountHost' | 'onTokenIconClick' | 'tokenDetail' | 'onNetworkIconClick'>;
 /** Transactions the user starts from the Send and Sponsor tabs, and the input state around them. */
-export type HostActions = Pick<MeritWalletProps, 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit' | 'sponsorStakeSubmitBusy' | 'onSponsorStakeSubmit' | 'sponsorAmount' | 'onSponsorAmountChange' | 'sponsorAmountBusy' | 'sponsorPanel' | 'listHost'>;
+export type HostActions = Pick<MeritWalletProps, 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit' | 'sponsorPanel' | 'listHost'>;
 /** The body: who owns the radio groups, the overlay host, and the slots a host fills with its own panels. */
 export type HostSlots = Pick<MeritWalletProps, 'manageRadioPanels' | 'overlayHost' | 'agentSelectSlot' | 'listPanelIdOverrides' | 'zeroXTradeButtonContent' | 'uniSelectContent' | 'configPersistedTimeoutContent' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configTestAccountsContent' | 'configResetPanelsContent'>;
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */

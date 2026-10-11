@@ -25,8 +25,8 @@ export interface WalletLockStore {
   subscribe(listener: () => void): () => void;
   /** Re-reads the primary vault's state (called on every wallet change; also callable by a host). */
   refresh(): Promise<void>;
-  /** Unlock with the wallet password. Never throws: a failure becomes `error` in the state. */
-  submit(password: string): Promise<boolean>;
+  /** Unlock with the wallet password, or (no password given) with the device biometric when the vault is a phone's. Never throws: a failure becomes `error` in the state. */
+  submit(password?: string): Promise<boolean>;
   /** Lock the primary vault. */
   lock(): Promise<void>;
   /** Stop listening to the wallet. */
@@ -84,7 +84,7 @@ export function createWalletLockStore(wallet: Wallet): WalletLockStore {
       return () => listeners.delete(listener);
     },
     refresh,
-    async submit(password) {
+    async submit(password?: string) {
       if (state.submitting) return false;
       const primary = await wallet.primaryVault();
       if (!primary) {
@@ -93,7 +93,8 @@ export function createWalletLockStore(wallet: Wallet): WalletLockStore {
       }
       set({ submitting: true, error: undefined });
       try {
-        await primary.vault.unlock({ kind: 'password', value: password });
+        const credential = (password === undefined || password === '') && primary.vault.capabilities.biometric ? { kind: 'biometric' as const, value: '' } : { kind: 'password' as const, value: password ?? '' };
+        await primary.vault.unlock(credential);
         set({ submitting: false, error: undefined, phase: 'unlocked', where: primary.vault.label, backendId: primary.authenticator.id });
         return true;
       } catch (error) {

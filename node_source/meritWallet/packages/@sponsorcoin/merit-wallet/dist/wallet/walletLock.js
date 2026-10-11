@@ -68,7 +68,8 @@ export function createWalletLockStore(wallet) {
             }
             set({ submitting: true, error: undefined });
             try {
-                await primary.vault.unlock({ kind: 'password', value: password });
+                const credential = (password === undefined || password === '') && primary.vault.capabilities.biometric ? { kind: 'biometric', value: '' } : { kind: 'password', value: password ?? '' };
+                await primary.vault.unlock(credential);
                 set({ submitting: false, error: undefined, phase: 'unlocked', where: primary.vault.label, backendId: primary.authenticator.id });
                 return true;
             }

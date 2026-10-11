@@ -15,8 +15,8 @@ export interface WalletLockStore {
     subscribe(listener: () => void): () => void;
     /** Re-reads the primary vault's state (called on every wallet change; also callable by a host). */
     refresh(): Promise<void>;
-    /** Unlock with the wallet password. Never throws: a failure becomes `error` in the state. */
-    submit(password: string): Promise<boolean>;
+    /** Unlock with the wallet password, or (no password given) with the device biometric when the vault is a phone's. Never throws: a failure becomes `error` in the state. */
+    submit(password?: string): Promise<boolean>;
     /** Lock the primary vault. */
     lock(): Promise<void>;
     /** Stop listening to the wallet. */

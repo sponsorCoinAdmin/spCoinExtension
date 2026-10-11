@@ -27,6 +27,7 @@ export { createLocalVaultParts, type LocalVaultParts } from './vault/vaultCapabi
 export { createIndexedDbVaultStorage, createWebSessionStore, type IndexedDbVaultStorageOptions } from './vault/browserStorage';
 export { createVaultAuthenticator, type VaultAuthenticatorOptions } from './vault/vaultAuthenticator';
 export { createWorkerVault, workerError, type WorkerVault, type WorkerVaultTransport, type WorkerReply } from './vault/workerVault';
+export { createPhoneVault, createPhoneAuthenticator, PhoneAuthError, type PhoneKeyManager, type PhoneAccount, type PhoneAuthErrorCode, type PhoneAuthenticatorOptions } from './vault/phoneVault';
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT, type VaultCapability, type VaultCapabilities, type VaultCredential, type VaultCredentialKind, type VaultAccount, type VaultErrorCode, type LocalVaultOptions } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export type { PreparedTransaction, PrepareResult, TransferParams, SendRequest, SendOutcome, SendTransport, ExecuteSendParams, SendResult } from './send/sendTransfer';

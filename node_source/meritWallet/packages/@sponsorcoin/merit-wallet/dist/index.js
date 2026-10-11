@@ -23,6 +23,8 @@ export { createIndexedDbVaultStorage, createWebSessionStore } from './vault/brow
 export { createVaultAuthenticator } from './vault/vaultAuthenticator';
 // 2026-10-11 (section 15.7, item W1c): the vault capability over a message transport (the extension's background worker, later a phone's native key manager).
 export { createWorkerVault, workerError } from './vault/workerVault';
+// 2026-10-11 (section 14.10.1, items V12 / W1e): the phone backend: PhoneKeyManager is what native code implements; the adapters make it a VaultCapability and an Authenticator.
+export { createPhoneVault, createPhoneAuthenticator, PhoneAuthError } from './vault/phoneVault';
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';

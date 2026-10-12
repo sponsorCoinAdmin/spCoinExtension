@@ -301,9 +301,7 @@ const SAMPLE_ACCOUNT_GROUPS: AccountListGroup[] = [
 
 // Sample rows for NetworkListTable.tsx (NETWORK_LIST) — one active mainnet
 // (Ethereum) plus two more, matching networks.tsx's own "active pinned
-// first" convention. Real per-chain auth-source state (merit/metamask)
-// lives in this component's own useState below, keyed by row id, exactly
-// how networks.tsx keys NetworkAuthToggle per chainId.
+// first" convention.
 const SAMPLE_NETWORK_ROWS: NetworkListEntry[] = [
   { id: 'eth-mainnet', symbol: 'ETH', name: 'Ethereum', address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', isActive: true },
   { id: 'polygon', symbol: 'MATIC', name: 'Polygon', address: '0x00000000000000000000000000000000001010' },

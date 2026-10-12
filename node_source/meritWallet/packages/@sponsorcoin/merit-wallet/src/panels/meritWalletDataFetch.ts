@@ -44,7 +44,6 @@ import {
 } from '@sponsorcoin/spcoin-feeds/shared';
 import { fetchAndBuildDataList, isSpCoin } from '@sponsorcoin/spcoin-exchange-engine';
 import { FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
-import type { NetworkAuthSource } from '@sponsorcoin/spcoin-panels';
 import type { AssetListEntry } from '@sponsorcoin/spcoin-panels';
 
 const TOKEN_LIST_PAGE_SIZE = 200;
@@ -54,15 +53,12 @@ const NATIVE_TOKEN_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 /** Plain data shape for one NETWORK_LIST row — a consumer with a real feed
  *  (e.g. @sponsorcoin/spcoin-feeds/networks' toNetworkListEntries) passes
  *  these via the networkRows prop below instead of this component's own
- *  SAMPLE_NETWORK_ROWS. defaultAuthSource seeds this row's Merit/MetaMask
- *  toggle before the user ever touches it — omit to fall back to 'merit',
- *  matching this component's own prior (now-corrected) hardcoded default. */
+ *  SAMPLE_NETWORK_ROWS. */
 export interface MeritWalletNetworkRow {
   id: string;
   symbol?: string;
   name?: string;
   isActive?: boolean;
-  defaultAuthSource?: NetworkAuthSource;
   /** Drives the Show Test Nets filter below when networkRows is supplied —
    *  replaces this component's own prior hardcoded `row.id !== 'hardhat'`
    *  check, which only worked for SAMPLE_NETWORK_ROWS' own made-up ids. */
@@ -113,7 +109,6 @@ export async function buildNetworkRows(
     symbol: network.symbol,
     name: network.name,
     isActive: network.chainId === chainId,
-    defaultAuthSource: network.defaultAuthSource,
     isTestnet: network.isTestnet,
     iconSrc: iconUrls[i],
   }));

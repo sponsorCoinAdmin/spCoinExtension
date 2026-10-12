@@ -50,7 +50,6 @@ export async function buildNetworkRows(chainId, baseUrl, caches, forceRefresh = 
         symbol: network.symbol,
         name: network.name,
         isActive: network.chainId === chainId,
-        defaultAuthSource: network.defaultAuthSource,
         isTestnet: network.isTestnet,
         iconSrc: iconUrls[i],
     }));

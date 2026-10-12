@@ -108,3 +108,4 @@ export { default as AccountSigningSection } from './wallet/AccountSigningSection
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, withApprovalNotice, type ApprovalWaiting, type ApprovalWaitingStore, type ApprovalAction } from './auth/approvalWaiting';
 export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
+export { readAddTargets, addEntryReasons, type AddTarget, type AddTargets, type AddKeyEntry } from './wallet/addTarget';

@@ -825,6 +825,7 @@ function MeritWalletInner({
   accountGroups,
   accountListNotice,
   activeWalletName,
+  wallet,
   tokenRows,
   recipientRows,
   rewardsHost,
@@ -2203,7 +2204,7 @@ function MeritWalletInner({
   const profileLoaded = !!accountDetail && !!accountDetailAddress && accountDetail.address === accountDetailAddress;
   const profileEditable = !!accountProfileHost && !!accountDetailAddress && profileLoaded && accountProfileHost.canEdit(accountDetailAddress);
   // 2026-10-10: the shared Add a Wallet/Account flow (the host's addAccountHost), shown over the wallet like the profile editor.
-  const addAccountOverlay = addingAccount && addAccountHost ? React.createElement(AddAccountFlow, { host: addAccountHost, onDone: () => setAddingAccount(false) }) : null;
+  const addAccountOverlay = addingAccount && addAccountHost ? React.createElement(AddAccountFlow, { host: addAccountHost, wallet, activeAddress: activeAccountAddress, onDone: () => setAddingAccount(false) }) : null;
   const accountDetailOverlay =
     accountDetailAddress && accountProfileHost && editingProfile && profileLoaded
       ? React.createElement(AccountProfileEditor, {

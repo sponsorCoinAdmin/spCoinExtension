@@ -23,7 +23,8 @@ import {
   type SignAndSendMeritTransactionParams,
 } from './meritSign';
 import type { PendingSignRequestAccountEntry, PendingSignRequestTokenEntry } from './pendingSignRequestStore';
-import { ethCall, isLegacySigningAllowed, isVaultAccount, signWithVault, vaultUnavailableMessage, waitForReceipt } from './localSigning';
+import { ethCall, isLegacySigningAllowed, isVaultAccount, vaultUnavailableMessage, waitForReceipt } from './localSigning';
+import { localVaultAuthenticator } from './localVaultAuthenticator';
 
 export interface MeritTradeExecutorParams {
   /** Base URL for the Merit Wallet API (e.g. chrome-extension://xxx or https://spcoin.app). */
@@ -59,19 +60,22 @@ export function createMeritTradeExecutor(params: MeritTradeExecutorParams): Trad
       const amountEntry = display?.amount;
       // LOCAL: an account of the unlocked vault signs in the background worker, behind the same confirmation screen.
       if (params.from && (await isVaultAccount(params.from))) {
-        const { hash } = await signWithVault(
-          { from: params.from, to, data, value: value !== undefined ? BigInt(value).toString() : undefined, chainId },
-          {
+        // the vault is an authenticator like any other (src/localVaultAuthenticator.ts): the request, and what its confirmation screen shows, go to it
+        const { hash } = await localVaultAuthenticator.sendTransaction({
+          from: params.from,
+          to,
+          data,
+          value: value !== undefined ? BigInt(value) : undefined,
+          chainId,
+          display: {
             title: display?.title ?? display?.label ?? 'Transaction',
             message: display?.label,
-            signerAddress: params.from,
-            chainId,
             contractAddress: display?.contractAddress,
             accounts: display?.accounts as PendingSignRequestAccountEntry[] | undefined,
             tokens: display?.tokens as PendingSignRequestTokenEntry[] | undefined,
             amount: amountEntry ? { label: amountEntry.label, value: amountEntry.value } : undefined,
           },
-        );
+        });
         // Wait for the block so the caller can say "confirmed" (the web app's signer does the same) and show block / gas.
         const receipt = await waitForReceipt(rpcUrl || params.rpcUrl, hash);
         return { transactionHash: hash, receipt };

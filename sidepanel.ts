@@ -2,7 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './src/tailwind.css';
 import { bundledFeedData } from './src/bundledFeeds';
-import { extensionAuthenticatorRegistry, extensionWallet } from './src/localVaultAuthenticator';
+import { extensionAuthenticatorRegistry, extensionWallet, localVaultAuthenticator } from './src/localVaultAuthenticator';
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
 import { vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
@@ -486,12 +486,11 @@ async function renderWallet() {
   const accountProfileHost: AccountProfileHost = {
     baseUrl,
     canEdit: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),
+    // the vault is an authenticator like any other: the profile save asks it to sign, with its own words on the confirmation screen
     signMessage: (address, message) =>
-      signMessageWithVault(address, message, {
+      localVaultAuthenticator.signMessage(address, message, {
         title: 'Save account profile',
         message: 'Sign in to the hosted app to save this account profile. This does not send a transaction.',
-        signerAddress: address,
-        chainId: activeChainId,
       }),
     onSaved: (address, saved, avatarChanged) => {
       void (async () => {

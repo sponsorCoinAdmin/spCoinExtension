@@ -8,7 +8,8 @@
 // (The hand-rolled ERC20 encoder and decimal parser that lived here are gone: the package owns them.)
 import { executeSend, type SendOutcome, type SendRequest, type SendResult } from '@sponsorcoin/merit-wallet';
 import { signAndSendMeritTransaction } from './meritSign';
-import { isLegacySigningAllowed, signWithVault, vaultUnavailableMessage, waitForReceipt } from './localSigning';
+import { isLegacySigningAllowed, vaultUnavailableMessage, waitForReceipt } from './localSigning';
+import { localVaultAuthenticator } from './localVaultAuthenticator';
 import { rpcUrlForChain } from './chainRpc';
 
 export interface SendNativeParams {
@@ -40,10 +41,15 @@ function confirmCopy(request: SendRequest) {
 
 /** LOCAL transport: the worker queues, the side panel confirms (src/localSigning.ts). */
 const localTransport = async (request: SendRequest): Promise<SendOutcome> => {
-  const { hash } = await signWithVault(
-    { from: request.from, to: request.tx.to, data: request.tx.data, value: request.tx.value === undefined ? undefined : request.tx.value.toString(), chainId: request.chainId },
-    confirmCopy(request),
-  );
+  const copy = confirmCopy(request);
+  const { hash } = await localVaultAuthenticator.sendTransaction({
+    from: request.from,
+    to: request.tx.to,
+    data: request.tx.data,
+    value: request.tx.value === undefined ? undefined : BigInt(request.tx.value),
+    chainId: request.chainId,
+    display: { title: copy.title, contractAddress: copy.contractAddress, accounts: copy.accounts, tokens: copy.tokens, amount: copy.amount },
+  });
   // Wait for the block so the result card can say "confirmed" with block / gas, as the web app's send does.
   const rpcUrl = rpcUrlForChain(request.chainId);
   const receipt = rpcUrl ? await waitForReceipt(rpcUrl, hash) : null;

@@ -50,16 +50,20 @@ export const localVaultAuthenticator: Authenticator = {
     const reply = await worker({ type: 'merit/accounts/list' }).catch(() => undefined);
     return reply?.ok && Array.isArray(reply.accounts) ? reply.accounts.map((a) => ({ address: a.address, name: a.name, source: a.devOrigin ? 'hardhatTestAccounts' : 'vault' })) : [];
   },
-  async signMessage(address, message) {
+  async signMessage(address, message, display) {
     try {
-      return await signMessageWithVault(address, message, confirmCopy('Sign message', address, 0, message));
+      return await signMessageWithVault(address, message, confirmCopy(display?.title ?? 'Sign message', address, 0, display?.message ?? message));
     } catch (error) {
       throw translate(error);
     }
   },
   async sendTransaction(tx: AuthenticatorTransaction) {
     try {
-      return await signWithVault({ from: tx.from, to: tx.to ?? '', data: tx.data, value: tx.value === undefined ? undefined : tx.value.toString(), chainId: tx.chainId }, confirmCopy('Approve transaction', tx.from, tx.chainId));
+      const d = tx.display;
+      return await signWithVault(
+        { from: tx.from, to: tx.to ?? '', data: tx.data, value: tx.value === undefined ? undefined : tx.value.toString(), chainId: tx.chainId },
+        { ...confirmCopy(d?.title ?? 'Approve transaction', tx.from, tx.chainId, d?.message), contractAddress: d?.contractAddress, accounts: d?.accounts, tokens: d?.tokens, amount: d?.amount },
+      );
     } catch (error) {
       throw translate(error);
     }

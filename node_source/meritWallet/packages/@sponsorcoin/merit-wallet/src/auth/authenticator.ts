@@ -32,12 +32,24 @@ export interface AuthenticatorStatus {
   unlocked: boolean;
 }
 
+/** 2026-10-12 (docs/authenticationDesign.txt row 6): what the person is told about a request on the authenticator's own confirmation screen. Optional: an authenticator that has no screen of its own (an injected wallet shows its own) ignores it. */
+export interface AuthenticatorDisplay {
+  title?: string;
+  message?: string;
+  contractAddress?: string;
+  accounts?: Array<{ role: string; address: string; symbol?: string; name?: string; logoURL?: string }>;
+  tokens?: Array<{ label: string; symbol?: string; name?: string; address?: string; logoURL?: string }>;
+  amount?: { label: string; value: string };
+}
+
 export interface AuthenticatorTransaction {
   from: string;
   to?: string;
   value?: bigint;
   data?: string;
   chainId: number;
+  /** What the confirmation screen shows; see AuthenticatorDisplay. */
+  display?: AuthenticatorDisplay;
 }
 
 export type AuthenticatorChange = 'lock' | 'unlock' | 'accountsChanged' | 'chainChanged' | 'availability';
@@ -74,7 +86,8 @@ export interface Authenticator {
   /** Optional: give up whatever permission connect() was granted (MetaMask: revoke the page's access). Never touches keys or the wallet's account list. */
   disconnect?(): Promise<void>;
   /** Always behind this authenticator's own approval. */
-  signMessage(address: string, message: string): Promise<string>;
+  /** `display` is what the authenticator's own confirmation screen tells the person (optional; a wallet with its own screen ignores it). */
+  signMessage(address: string, message: string, display?: AuthenticatorDisplay): Promise<string>;
   signTypedData?(address: string, typedData: unknown): Promise<string>;
   sendTransaction(tx: AuthenticatorTransaction): Promise<{ hash: string }>;
   /** Lock / unlock / accountsChanged / chainChanged / availability. Returns the unsubscribe function. */

@@ -388,6 +388,8 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
     const [selfFetchedNetworkRows, setSelfFetchedNetworkRows] = useState(undefined);
     const [selfFetchedAccountGroups, setSelfFetchedAccountGroups] = useState(undefined);
     const [selfFetchedTokenRows, setSelfFetchedTokenRows] = useState(undefined);
+    // false until the token self-fetch has finished (rows or failure): until then the pickers must not show the placeholder rows as if they were the real list.
+    const [tokenFetchSettled, setTokenFetchSettled] = useState(false);
     const [selfFetchedRecipientRows, setSelfFetchedRecipientRows] = useState(undefined);
     // 2026-10-03 — Send's recipient picker lists every known account, not the
     // chain's recipient directory (see buildAllAccountRows' doc comment).
@@ -407,6 +409,7 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
     // per-domain isolation meritWalletDataFetch.ts's own functions already
     // guarantee.
     const hasFetchedOnceRef = useRef(false);
+    const tokenRowsChainRef = useRef(undefined);
     useEffect(() => {
         if (chainId == null)
             return;
@@ -428,10 +431,18 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
                 .catch((error) => console.error('MeritWallet: failed to self-fetch account groups:', error));
         }
         if (tokenRows === undefined) {
+            setTokenFetchSettled(false);
+            // another chain's rows must not stay up while this chain's list loads
+            if (tokenRowsChainRef.current !== undefined && tokenRowsChainRef.current !== chainId)
+                setSelfFetchedTokenRows(undefined);
+            tokenRowsChainRef.current = chainId;
             void selfFetchTokenRows(chainId, resolvedBaseUrl, caches, forceRefresh)
-                .then((rows) => { if (!cancelled)
-                setSelfFetchedTokenRows(rows); })
-                .catch((error) => console.error('MeritWallet: failed to self-fetch token rows:', error));
+                .then((rows) => { if (!cancelled) {
+                setSelfFetchedTokenRows(rows);
+                setTokenFetchSettled(true);
+            } })
+                .catch((error) => { console.error('MeritWallet: failed to self-fetch token rows:', error); if (!cancelled)
+                setTokenFetchSettled(true); });
         }
         if (recipientRows === undefined) {
             void selfFetchRecipientRows(chainId, resolvedBaseUrl, caches, forceRefresh)
@@ -1154,7 +1165,10 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
     const flatAccountRows = effectiveAccountGroups.flatMap((group) => group.accounts);
     const activeAccountEntry = flatAccountRows.find((account) => account.isActive);
     activeProfileRef.current = activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined;
-    const effectiveTokenRows = resolvedTokenRows ?? SAMPLE_TOKEN_ROWS;
+    // While the first self-fetch is still running (and no rows were passed in), the picker lists nothing and says it is loading, instead of showing the three placeholder rows and then
+    // swapping in the real list (and its logos) the next time it is opened. The placeholders only appear after a fetch that failed.
+    const tokenRowsLoading = tokenRows === undefined && resolvedTokenRows === undefined && !tokenFetchSettled;
+    const effectiveTokenRows = resolvedTokenRows ?? (tokenRowsLoading ? [] : SAMPLE_TOKEN_ROWS);
     // 2026-09-24, ASSET_LIST_SELECT_PANEL real container (on request, after
     // discussion) — this whole block used to jump straight from
     // `activeListMode` to AssetListTable/AccountListRewardsPanel/
@@ -1301,7 +1315,7 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
                         }
                         : undefined,
                 })),
-                metaLabel: 'Token Meta',
+                metaLabel: tokenRowsLoading ? 'Token Meta (loading...)' : 'Token Meta',
             }),
         })
         : activeListMode === 'sendRecipient'

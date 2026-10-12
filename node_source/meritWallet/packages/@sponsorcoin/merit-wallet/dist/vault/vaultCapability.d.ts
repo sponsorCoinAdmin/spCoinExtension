@@ -1,4 +1,5 @@
 import { type EncryptedVault } from './vaultCrypto';
+import type { WalletPlatform } from '../auth/authenticator';
 import { VaultSession, type VaultSessionOptions } from './vaultSession';
 import { WalletAccounts, type WalletVaultContents } from './walletAccounts';
 export type VaultCredentialKind = 'password' | 'pin' | 'biometric';
@@ -34,6 +35,8 @@ export interface VaultAccount {
 export interface VaultCapability {
     /** The words the panels use for "where the keys are kept": 'this device', 'this browser', 'the dev server'. */
     readonly label: string;
+    /** Where this wallet runs (docs/createWalletAccountDesign.txt 3.2): decides the bracket of its name. Optional: a vault that does not say is named from its authenticator's id. */
+    readonly platform?: WalletPlatform;
     readonly capabilities: VaultCapabilities;
     hasWallet(): Promise<boolean>;
     isUnlocked(): boolean;
@@ -78,6 +81,8 @@ export declare const MAX_BACKUP_ITERATIONS = 5000000;
 export declare function parseBackupFile(file: string): EncryptedVault;
 export interface LocalVaultOptions extends VaultSessionOptions {
     label?: string;
+    /** Where this wallet runs ('web' for the browser vault); decides the bracket of its name. */
+    platform?: WalletPlatform;
 }
 /** The pieces behind a local vault, for a host that also needs to SIGN with it (the session and the accounts stay inside that host; a UI page only ever gets the capability). */
 export interface LocalVaultParts {

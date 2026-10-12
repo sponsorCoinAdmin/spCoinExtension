@@ -8,6 +8,7 @@
 // The credential is not assumed to be a password: { kind: 'password' | 'pin' | 'biometric', value }. A local vault opens with a password or a PIN (the value is the secret); 'biometric' is for a host that
 // supplies its own unlock (a phone) and is refused here with 'unsupported'.
 import { WrongPasswordError, type EncryptedVault } from './vaultCrypto';
+import type { WalletPlatform } from '../auth/authenticator';
 import { TooManyAttemptsError, VaultLockedError, VaultSession, type VaultSessionOptions } from './vaultSession';
 import { WalletAccountError, WalletAccounts, createWallet, type WalletAccountRecord, type WalletVaultContents } from './walletAccounts';
 
@@ -67,6 +68,8 @@ export interface VaultAccount {
 export interface VaultCapability {
   /** The words the panels use for "where the keys are kept": 'this device', 'this browser', 'the dev server'. */
   readonly label: string;
+  /** Where this wallet runs (docs/createWalletAccountDesign.txt 3.2): decides the bracket of its name. Optional: a vault that does not say is named from its authenticator's id. */
+  readonly platform?: WalletPlatform;
   readonly capabilities: VaultCapabilities;
   hasWallet(): Promise<boolean>;
   isUnlocked(): boolean;
@@ -131,6 +134,8 @@ export function parseBackupFile(file: string): EncryptedVault {
 
 export interface LocalVaultOptions extends VaultSessionOptions {
   label?: string;
+  /** Where this wallet runs ('web' for the browser vault); decides the bracket of its name. */
+  platform?: WalletPlatform;
 }
 
 function secretOf(credential: VaultCredential, forNew: boolean): string {
@@ -190,6 +195,7 @@ export function createLocalVaultParts(options: LocalVaultOptions): LocalVaultPar
 
   const vault: VaultCapability = {
     label: options.label ?? 'this device',
+    platform: options.platform,
     capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
     hasWallet: () => session.isInitialized(),
     isUnlocked: () => session.isUnlocked(),

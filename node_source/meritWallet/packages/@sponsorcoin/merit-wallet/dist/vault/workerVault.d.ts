@@ -1,4 +1,5 @@
 import { VaultError, type VaultCapability } from './vaultCapability';
+import type { WalletPlatform } from '../auth/authenticator';
 import type { EncryptedVault } from './vaultCrypto';
 /** A reply of the worker (the fields this adapter reads). */
 export interface WorkerReply {
@@ -42,4 +43,5 @@ export interface WorkerVault extends VaultCapability {
 export declare function workerError(reply: WorkerReply): VaultError;
 export declare function createWorkerVault(transport: WorkerVaultTransport, options?: {
     label?: string;
+    platform?: WalletPlatform;
 }): WorkerVault;

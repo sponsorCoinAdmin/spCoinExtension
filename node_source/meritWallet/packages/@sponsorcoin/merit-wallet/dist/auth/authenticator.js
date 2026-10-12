@@ -12,6 +12,31 @@ export class AuthenticatorError extends Error {
         this.authenticatorId = authenticatorId;
     }
 }
+const PLATFORM_WORDS = { web: 'Web', extension: 'Extension', android: 'Android', iphone: 'I-Phone' };
+/**
+ * 2026-10-12 (docs/createWalletAccountDesign.txt section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit Wallet (Extension)" the extension's vault (the
+ * web page that connects to the extension sees the same wallet, so it has the same name), "Merit Wallet (Android)" / "(I-Phone)" the phone apps, "Merit Wallet (Web Dev Server)" the development keystore of the developer pages, "MetaMask", and a hardware
+ * wallet by its own name. A vault's own platform (when it reports one) decides the bracket for the Merit wallets that run in more than one place. Group headers show it in capitals (the header style does that), sentences show it as written here.
+ */
+export function walletName(id, platform) {
+    if (id === 'serverKeystore')
+        return 'Merit Wallet (Web Dev Server)';
+    if (id === 'browserVault')
+        return 'Merit Wallet (Web)';
+    if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit')
+        return 'Merit Wallet (Extension)';
+    if (id === 'deviceVault')
+        return platform ? `Merit Wallet (${PLATFORM_WORDS[platform]})` : 'Merit Wallet (Phone)';
+    if (id === 'injected:io.metamask')
+        return 'MetaMask';
+    if (id.startsWith('hardware:')) {
+        const kind = id.slice('hardware:'.length);
+        return `${kind.charAt(0).toUpperCase()}${kind.slice(1)} (Hardware)`;
+    }
+    if (id.startsWith('injected:'))
+        return id.slice('injected:'.length);
+    return id;
+}
 /** Short names for the badge next to an account (Merit Wallet, Extension, MetaMask, Hardware). */
 export function authenticatorBadge(id) {
     if (id === 'serverKeystore')

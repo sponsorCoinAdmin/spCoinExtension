@@ -14,7 +14,7 @@
 //
 // MORE THAN ONE BACKEND AT ONCE IS NORMAL (owner decision 2026-10-11): vault accounts and MetaMask accounts live in one list and each signs through its own backend. No browser globals here: the host passes
 // its storage in as the `store`.
-import { authenticatorBadge, } from '../auth/authenticator';
+import { authenticatorBadge, walletName, } from '../auth/authenticator';
 import { createAuthenticatorRegistry, resolveAuthenticator } from '../auth/resolve';
 export function createMemoryActiveAuthenticatorStore(initial = {}) {
     const map = new Map(Object.entries(initial).map(([k, v]) => [k.toLowerCase(), v]));
@@ -56,6 +56,7 @@ function infoOf(authenticator) {
         id: authenticator.id,
         label: authenticator.label,
         badge: authenticatorBadge(authenticator.id),
+        name: walletName(authenticator.id, authenticator.vault?.platform),
         keepsKeys: !!authenticator.vault,
         where: authenticator.vault?.label ?? '',
         features: featuresOf(authenticator),

@@ -24,7 +24,7 @@ export interface ApproverHost extends Pick<ConnectHost, 'setActiveAccount' | 'cl
   openInstall?: (url: string) => void;
   /** The words for a row's name, symbol and avatar when the host knows more than the approver does (the account profiles). */
   describeAccount?: (address: string) => { symbol?: string; name?: string; iconSrc?: string } | undefined;
-  /** The title of an approver's group when the host words it differently from the approver's own label ('Merit Wallet' for the extension's vault). */
+  /** The title of an approver's group when the host words it differently from the wallet's own name (walletName). Normally omitted: every host shows the same name for the same wallet. */
   groupLabel?: (backend: WalletBackendInfo) => string | undefined;
 }
 
@@ -65,7 +65,7 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
     });
     const group: AccountListGroup = {
       id: backend.id,
-      label: host.groupLabel?.(backend) || backend.label,
+      label: host.groupLabel?.(backend) || backend.name,
       isActiveSource,
       initiallyCollapsed: !isActiveSource,
       accounts,

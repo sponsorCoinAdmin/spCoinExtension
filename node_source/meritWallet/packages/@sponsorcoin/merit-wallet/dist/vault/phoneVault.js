@@ -24,13 +24,14 @@ function authToVaultError(error) {
     throw error instanceof Error ? error : new Error(String(error));
 }
 /** The phone's key manager as a VaultCapability. The credential is always a biometric / device unlock: the manager shows the prompt, so the credential's value is ignored. */
-export function createPhoneVault(manager) {
+export function createPhoneVault(manager, options = {}) {
     const biometric = (credential) => {
         if (credential.kind !== 'biometric')
             throw new VaultError('unsupported', 'A phone wallet opens with Face ID, a fingerprint or the device passcode.');
     };
     return {
         label: 'this phone',
+        platform: options.platform,
         capabilities: { create: true, importPhrase: false, importKey: false, backup: false, changeCredential: false, delete: true, revealKey: false, revealPhrase: false, biometric: true },
         hasWallet: () => manager.isSetUp(),
         isUnlocked: () => manager.isUnlocked(),

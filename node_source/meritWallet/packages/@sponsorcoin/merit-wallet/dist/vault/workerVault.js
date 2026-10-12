@@ -91,6 +91,7 @@ export function createWorkerVault(transport, options = {}) {
     });
     const vault = {
         label: options.label ?? 'this device',
+        platform: options.platform ?? 'extension',
         capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
         ready,
         refresh,

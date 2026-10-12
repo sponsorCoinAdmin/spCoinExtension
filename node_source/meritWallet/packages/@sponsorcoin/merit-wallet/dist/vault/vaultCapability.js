@@ -113,6 +113,7 @@ export function createLocalVaultParts(options) {
     const list = () => wallet.list().map(toAccount);
     const vault = {
         label: options.label ?? 'this device',
+        platform: options.platform,
         capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
         hasWallet: () => session.isInitialized(),
         isUnlocked: () => session.isUnlocked(),

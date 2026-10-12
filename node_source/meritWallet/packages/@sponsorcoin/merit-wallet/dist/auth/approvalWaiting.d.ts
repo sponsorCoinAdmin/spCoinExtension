@@ -1,4 +1,4 @@
-import type { Authenticator } from './authenticator';
+import { type Authenticator } from './authenticator';
 export type ApprovalAction = 'connect' | 'sign a message' | 'sign typed data' | 'send a transaction';
 export interface ApprovalWaiting {
     id: number;

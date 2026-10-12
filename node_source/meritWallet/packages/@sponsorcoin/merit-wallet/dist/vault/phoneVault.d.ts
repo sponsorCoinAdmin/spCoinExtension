@@ -41,7 +41,9 @@ export interface PhoneKeyManager {
     onChange(listener: () => void): () => void;
 }
 /** The phone's key manager as a VaultCapability. The credential is always a biometric / device unlock: the manager shows the prompt, so the credential's value is ignored. */
-export declare function createPhoneVault(manager: PhoneKeyManager): VaultCapability;
+export declare function createPhoneVault(manager: PhoneKeyManager, options?: {
+    platform?: 'android' | 'iphone';
+}): VaultCapability;
 export interface PhoneAuthenticatorOptions {
     /** Sends a raw signed transaction to the chain and returns its hash (the app's own RPC call; the key manager never talks to the network). */
     broadcast(rawTransaction: string, chainId: number): Promise<string>;

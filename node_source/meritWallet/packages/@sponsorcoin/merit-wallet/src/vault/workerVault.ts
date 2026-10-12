@@ -8,6 +8,7 @@
 // The interface asks a few things synchronously (isUnlocked, accounts, activeAddress), so the adapter keeps the last state the worker reported (every reply carries `unlocked`; the worker also broadcasts
 // `merit/vault/changed`). `ready` resolves after the first read; `refresh()` re-reads on demand. Only the password credential exists in the worker today (PIN and biometric are 'unsupported').
 import { BACKUP_FORMAT, VaultError, parseBackupFile, type VaultAccount, type VaultCapability, type VaultCredential, type VaultErrorCode } from './vaultCapability';
+import type { WalletPlatform } from '../auth/authenticator';
 import type { EncryptedVault } from './vaultCrypto';
 
 /** A reply of the worker (the fields this adapter reads). */
@@ -68,7 +69,7 @@ const toAccount = (a: { address: string; name?: string; source?: string; devOrig
   devOrigin: !!a.devOrigin,
 });
 
-export function createWorkerVault(transport: WorkerVaultTransport, options: { label?: string } = {}): WorkerVault {
+export function createWorkerVault(transport: WorkerVaultTransport, options: { label?: string; platform?: WalletPlatform } = {}): WorkerVault {
   let initialized = false;
   let unlocked = false;
   let accountList: VaultAccount[] = [];
@@ -115,6 +116,7 @@ export function createWorkerVault(transport: WorkerVaultTransport, options: { la
 
   const vault: WorkerVault = {
     label: options.label ?? 'this device',
+    platform: options.platform ?? 'extension',
     capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
     ready,
     refresh,

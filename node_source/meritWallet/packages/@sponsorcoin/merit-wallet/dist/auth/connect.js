@@ -9,7 +9,7 @@
 //   - the chosen account must be one the approver really answered with (no connecting an address the approver did not offer);
 //   - an approver that is not registered or not reachable fails with the authenticator error (and the host's notify, i.e. the MESSAGE_PANEL, hears about it) and again changes nothing (Q3);
 //   - disconnect clears the active account, and revokes the approver's permission only when it supports that, best effort: a failed revoke is reported, the account is still cleared (Q1).
-import { AuthenticatorError } from './authenticator';
+import { AuthenticatorError, walletName } from './authenticator';
 /** Several accounts were offered and none was chosen: show them and let the user pick. */
 export class ConnectChoiceRequired extends Error {
     constructor(approverId, accounts) {
@@ -19,6 +19,8 @@ export class ConnectChoiceRequired extends Error {
         this.accounts = accounts;
     }
 }
+/** The wallet's one name (docs/createWalletAccountDesign.txt 3): every message about it says the same words as the lists do. */
+const nameOf = (authenticator) => walletName(authenticator.id, authenticator.vault?.platform);
 const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 async function reach(registry, approverId, host) {
     const authenticator = registry.get(approverId);
@@ -29,7 +31,7 @@ async function reach(registry, approverId, host) {
     }
     const status = await authenticator.status();
     if (!status.available) {
-        const error = new AuthenticatorError('unreachable', `${authenticator.label} is not reachable (not installed, locked out or unplugged).`, approverId);
+        const error = new AuthenticatorError('unreachable', `${nameOf(authenticator)} is not reachable (not installed, locked out or unplugged).`, approverId);
         host.notify?.('error', error.message);
         throw error;
     }
@@ -45,14 +47,14 @@ export async function connectAccount({ registry, approverId, address, host }) {
             offered = await authenticator.connect();
         }
         catch (error) {
-            host.notify?.('error', error instanceof Error ? error.message : `${authenticator.label} did not connect.`);
+            host.notify?.('error', error instanceof Error ? error.message : `${nameOf(authenticator)} did not connect.`);
             throw error;
         }
     }
     let chosen = address;
     if (!chosen) {
         if (offered.length === 0) {
-            const error = new AuthenticatorError('unauthorized', `${authenticator.label} offered no account.`, approverId);
+            const error = new AuthenticatorError('unauthorized', `${nameOf(authenticator)} offered no account.`, approverId);
             host.notify?.('error', error.message);
             throw error;
         }
@@ -61,7 +63,7 @@ export async function connectAccount({ registry, approverId, address, host }) {
         chosen = offered[0].address;
     }
     if (!offered.some((a) => same(a.address, chosen))) {
-        const error = new AuthenticatorError('unauthorized', `${authenticator.label} does not hold ${chosen}.`, approverId);
+        const error = new AuthenticatorError('unauthorized', `${nameOf(authenticator)} does not hold ${chosen}.`, approverId);
         host.notify?.('error', error.message);
         throw error;
     }
@@ -78,7 +80,7 @@ export async function disconnectAccount({ registry, approverId, host }) {
             await authenticator.disconnect();
         }
         catch (error) {
-            host.notify?.('warning', error instanceof Error ? `${authenticator.label}: ${error.message}` : `${authenticator.label} could not revoke its permission.`);
+            host.notify?.('warning', error instanceof Error ? `${nameOf(authenticator)}: ${error.message}` : `${nameOf(authenticator)} could not revoke its permission.`);
         }
     }
     await host.clearActiveAccount();

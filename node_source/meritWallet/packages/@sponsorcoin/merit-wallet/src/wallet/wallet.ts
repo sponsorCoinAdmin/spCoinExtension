@@ -16,6 +16,7 @@
 // its storage in as the `store`.
 import {
   authenticatorBadge,
+  walletName,
   type AccountAuthenticatorRef,
   type Authenticator,
   type AuthenticatorAccount,
@@ -88,6 +89,8 @@ export interface WalletBackendInfo {
   label: string;
   /** The short name for the badge next to an account. */
   badge: string;
+  /** The wallet's one name, the same everywhere (walletName: "Merit Wallet (Extension)", "MetaMask"). */
+  name: string;
   /** True when this backend keeps the keys itself (it has the vault capability). */
   keepsKeys: boolean;
   /** The words the panels use for where its keys live ('this device', 'this browser', 'the dev server'); empty for a signing-only backend. */
@@ -140,6 +143,7 @@ function infoOf(authenticator: Authenticator): WalletBackendInfo {
     id: authenticator.id,
     label: authenticator.label,
     badge: authenticatorBadge(authenticator.id),
+    name: walletName(authenticator.id, authenticator.vault?.platform),
     keepsKeys: !!authenticator.vault,
     where: authenticator.vault?.label ?? '',
     features: featuresOf(authenticator),

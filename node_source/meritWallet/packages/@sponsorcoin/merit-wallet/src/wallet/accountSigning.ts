@@ -63,7 +63,7 @@ export async function readSigningChoices(wallet: Wallet, address: string): Promi
     } catch {
       status = undefined;
     }
-    holders.push({ id, label: info?.label ?? id, where: info?.where ?? '', state: stateOf(status, !!info?.features.lock), isActive: id === activeId });
+    holders.push({ id, label: info?.name ?? id, where: info?.where ?? '', state: stateOf(status, !!info?.features.lock), isActive: id === activeId });
   }
   const active = holders.find((h) => h.isActive);
   return { address, holders, activeId, savedId, canSwitch: holders.length > 1, warning: signingWarning(active, holders.length - 1) };

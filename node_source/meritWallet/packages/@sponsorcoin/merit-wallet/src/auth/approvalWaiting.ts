@@ -3,7 +3,7 @@
 // 2026-10-12 (docs/authenticationDesign.txt row 11 / 6A, the "seamless" requirement): while another wallet (MetaMask, the Merit extension, a hardware device) is deciding on a request, the page says so in one neutral sentence instead of
 // looking frozen: "Waiting for MetaMask to approve ...". The approval itself is the other wallet's own screen, shown once (5.3); this only tells the person where to look. A store holds what is pending; withApprovalNotice wraps an
 // authenticator so every request that needs the person's decision is registered for as long as it is open, success or failure, and nothing else about the authenticator changes.
-import type { Authenticator, AuthenticatorTransaction } from './authenticator';
+import { walletName, type Authenticator, type AuthenticatorTransaction } from './authenticator';
 
 export type ApprovalAction = 'connect' | 'sign a message' | 'sign typed data' | 'send a transaction';
 
@@ -71,7 +71,7 @@ export function approvalWaitingText(pending: readonly ApprovalWaiting[]): string
 /** The same authenticator, with each request that needs the person's decision registered in the store while it is open. Everything else (id, label, capabilities, status, accounts, events) is the authenticator's own. */
 export function withApprovalNotice(authenticator: Authenticator, store: ApprovalWaitingStore = approvalWaiting): Authenticator {
   const track = async <T>(action: ApprovalAction, run: () => Promise<T>): Promise<T> => {
-    const end = store.begin({ authenticatorId: authenticator.id, label: authenticator.label, action });
+    const end = store.begin({ authenticatorId: authenticator.id, label: walletName(authenticator.id, authenticator.vault?.platform), action });
     try {
       return await run();
     } finally {

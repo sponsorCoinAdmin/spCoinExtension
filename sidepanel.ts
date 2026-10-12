@@ -1028,7 +1028,6 @@ async function renderWallet() {
                     render();
                   },
                   describeAccount: (address: string) => vaultMeta.get(address.toLowerCase()),
-                  groupLabel: (backend) => (backend.id === 'localVault' ? 'Merit Wallet' : undefined),
                 },
                 // 2026-09-29, stage 8 — tokenRows/recipientRows no longer passed
                 // explicitly; MeritWallet self-fetches them via these 4 props

@@ -6,7 +6,7 @@
 //
 // Pure TypeScript with no storage: pending requests live in memory (as in MetaMask, a host restart drops them and their callers see a rejection).
 
-export type ApprovalKind = 'sign' | 'transaction' | 'connect';
+export type ApprovalKind = 'sign' | 'transaction' | 'connect' | 'transfer';
 
 export interface ApprovalRequestInfo {
   id: string;
@@ -29,7 +29,7 @@ export class ApprovalRejectedError extends Error {
 
 interface Pending<T> {
   info: ApprovalRequestInfo;
-  run: () => Promise<T>;
+  run: (input?: unknown) => Promise<T>;
   resolve: (value: T) => void;
   reject: (error: unknown) => void;
 }
@@ -45,7 +45,7 @@ export class ApprovalController {
    * Queue a request. The returned promise settles only after the user decides: approve runs `run` (the signing or sending) and resolves with its
    * result, or rejects with its error; reject rejects with ApprovalRejectedError. `run` is not called before approval.
    */
-  request<T>(info: Omit<ApprovalRequestInfo, 'id' | 'createdAt'>, run: () => Promise<T>): Promise<T> {
+  request<T>(info: Omit<ApprovalRequestInfo, 'id' | 'createdAt'>, run: (input?: unknown) => Promise<T>): Promise<T> {
     const id = `approval-${++this.counter}-${Math.random().toString(36).slice(2, 10)}`;
     return new Promise<T>((resolve, reject) => {
       this.pending.set(id, { info: { ...info, id, createdAt: this.now() }, run, resolve: resolve as (v: unknown) => void, reject });
@@ -57,11 +57,14 @@ export class ApprovalController {
     return Array.from(this.pending.values()).map((p) => p.info);
   }
 
-  /** Approve: run the work. Returns once the work has finished (success or failure is also delivered to the original caller). */
-  async approve(id: string): Promise<void> {
+  /**
+   * Approve: run the work. Returns once the work has finished (success or failure is also delivered to the original caller). `input` is what the person typed on the approval screen when it asks for more than a click
+   * (the wallet password for handing an account to a web page); the work receives it and it is never stored here.
+   */
+  async approve(id: string, input?: unknown): Promise<void> {
     const p = this.take(id);
     try {
-      p.resolve(await p.run());
+      p.resolve(await p.run(input));
     } catch (error) {
       p.reject(error);
     }

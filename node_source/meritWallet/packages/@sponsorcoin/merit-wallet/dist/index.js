@@ -88,3 +88,4 @@ export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/Walle
 export { readAddTargets, addEntryReasons } from './wallet/addTarget';
 export { createHardwareAuthenticator, HardwareError } from './auth/hardwareAuthenticator';
 export { watchSecret, useSecretClearing, SECRET_SHOWN_MAX_MS, NEW_PHRASE_SHOWN_MAX_MS } from './security/secretClearing';
+export { createTransferRequest, sealForTransfer, requestAccountFromProvider } from './vault/accountTransfer';

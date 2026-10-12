@@ -1,4 +1,4 @@
-export type ApprovalKind = 'sign' | 'transaction' | 'connect';
+export type ApprovalKind = 'sign' | 'transaction' | 'connect' | 'transfer';
 export interface ApprovalRequestInfo {
     id: string;
     kind: ApprovalKind;
@@ -23,10 +23,13 @@ export declare class ApprovalController {
      * Queue a request. The returned promise settles only after the user decides: approve runs `run` (the signing or sending) and resolves with its
      * result, or rejects with its error; reject rejects with ApprovalRejectedError. `run` is not called before approval.
      */
-    request<T>(info: Omit<ApprovalRequestInfo, 'id' | 'createdAt'>, run: () => Promise<T>): Promise<T>;
+    request<T>(info: Omit<ApprovalRequestInfo, 'id' | 'createdAt'>, run: (input?: unknown) => Promise<T>): Promise<T>;
     list(): ApprovalRequestInfo[];
-    /** Approve: run the work. Returns once the work has finished (success or failure is also delivered to the original caller). */
-    approve(id: string): Promise<void>;
+    /**
+     * Approve: run the work. Returns once the work has finished (success or failure is also delivered to the original caller). `input` is what the person typed on the approval screen when it asks for more than a click
+     * (the wallet password for handing an account to a web page); the work receives it and it is never stored here.
+     */
+    approve(id: string, input?: unknown): Promise<void>;
     reject(id: string, reason?: string): void;
     /** Reject everything pending (the wallet locked, or the host is shutting down). */
     rejectAll(reason?: string): void;

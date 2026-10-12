@@ -6,10 +6,11 @@
 // answers here. Requests wait while the wallet is locked and are shown right after it is unlocked.
 import { requestSignApproval, type PendingSignRequest } from './pendingSignRequestStore';
 import { clearPendingSignRequest } from './meritSign';
+import { requestTransferApproval } from './transferApprovalStore';
 
 interface PendingItem {
   id: string;
-  kind: 'sign' | 'transaction' | 'connect';
+  kind: 'sign' | 'transaction' | 'connect' | 'transfer';
   origin: string;
   summary: string;
   details?: Record<string, unknown>;
@@ -58,6 +59,12 @@ export function startDappApprovals(): void {
         const next = list.find((p) => p.origin !== 'wallet' && !handled.has(p.id));
         if (!next) return;
         handled.add(next.id);
+        // V11: a site asking for a COPY of an account key has its own screen (a warning and the wallet password), not the signing confirmation; closing it says no
+        if (next.kind === 'transfer') {
+          const password = await requestTransferApproval({ origin: next.origin, address: String(next.details?.address ?? '') });
+          await worker(password ? { type: 'merit/signing/approve', id: next.id, input: { password } } : { type: 'merit/signing/reject', id: next.id }).catch(() => undefined);
+          continue;
+        }
         const chainId = (await worker({ type: 'merit/network/get' }).catch(() => undefined))?.chainId ?? 31337;
         const active = (await worker({ type: 'merit/accounts/list' }).catch(() => undefined))?.active ?? '';
         let approved = false;

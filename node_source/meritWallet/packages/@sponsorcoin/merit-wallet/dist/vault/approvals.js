@@ -32,11 +32,14 @@ export class ApprovalController {
     list() {
         return Array.from(this.pending.values()).map((p) => p.info);
     }
-    /** Approve: run the work. Returns once the work has finished (success or failure is also delivered to the original caller). */
-    async approve(id) {
+    /**
+     * Approve: run the work. Returns once the work has finished (success or failure is also delivered to the original caller). `input` is what the person typed on the approval screen when it asks for more than a click
+     * (the wallet password for handing an account to a web page); the work receives it and it is never stored here.
+     */
+    async approve(id, input) {
         const p = this.take(id);
         try {
-            p.resolve(await p.run());
+            p.resolve(await p.run(input));
         }
         catch (error) {
             p.reject(error);

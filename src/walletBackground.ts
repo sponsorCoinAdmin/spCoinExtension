@@ -80,7 +80,7 @@ export type VaultRequest =
   | { type: 'merit/signing/signMessage'; address: string; message: string; origin?: string }
   | { type: 'merit/signing/sendTransaction'; from: string; to?: string; value?: string; data?: string; chainId: number; origin?: string }
   | { type: 'merit/signing/pending' }
-  | { type: 'merit/signing/approve'; id: string }
+  | { type: 'merit/signing/approve'; id: string; input?: unknown }
   | { type: 'merit/signing/reject'; id: string }
   | { type: 'merit/network/get' }
   | { type: 'merit/network/set'; chainId: number };
@@ -214,7 +214,7 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
       case 'merit/signing/pending':
         return snapshot({ pending: approvals.list() });
       case 'merit/signing/approve':
-        await approvals.approve(request.id);
+        await approvals.approve(request.id, request.input);
         return snapshot({ pending: approvals.list() });
       case 'merit/signing/reject':
         approvals.reject(request.id);

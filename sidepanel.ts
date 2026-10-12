@@ -76,6 +76,7 @@ import { chromeIconCacheStorage } from './src/chromeIconCacheStorage';
 import { ActiveAccountHydrator } from './src/hydrateActiveAccount';
 import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
 import { TransactionConfirmOrchestrator } from './src/TransactionConfirmOrchestrator';
+import { TransferApprovalHost } from './src/TransferApprovalHost';
 import { sendNativeMerit } from './src/sendNative';
 import { allowLegacySigning, signMessageWithVault } from './src/localSigning';
 import { encodeFunctionData } from 'viem';
@@ -888,6 +889,7 @@ async function renderWallet() {
         // MeritWallet/PasswordPanel below, not nested under either, since
         // it needs to overlay regardless of which of those two is showing.
         React.createElement(TransactionConfirmOrchestrator),
+        React.createElement(TransferApprovalHost),
         deleteWalletDialogOpen
           ? React.createElement(DeleteWalletDialog, {
               confirmDelete: async (password: string) => {

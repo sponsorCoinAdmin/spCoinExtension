@@ -9,6 +9,7 @@
 // an RPC fetcher), so the extension worker supplies chrome.storage and fetch, and the tests supply memory. No key leaves this module.
 import { hexToBigInt } from 'viem';
 import { ApprovalRejectedError } from './approvals';
+import { sealForTransfer } from './accountTransfer';
 import { DevAccountOnRealChainError } from './localSigner';
 import { WalletAccountError } from './walletAccounts';
 /** EIP-1193 error codes. */
@@ -175,6 +176,22 @@ export class ProviderController {
                     throw new ProviderRpcError(PROVIDER_ERROR.unrecognizedChain, 'Unrecognized chain ID. Try adding the chain first.');
                 await this.setChain(id);
                 return null;
+            }
+            case 'merit_transferAccount': {
+                // V11: hand ONE account to this page as an encrypted blob only this page can open. The page must already be connected to that account; the person approves in the wallet's own screen and types the wallet password again;
+                // what leaves the wallet is ciphertext sealed for the page's one-time public key. The approval's details never carry a key.
+                const [arg] = params;
+                const address = await this.requireAccount(origin, arg?.address);
+                const publicKey = arg?.publicKey;
+                if (typeof publicKey !== 'string' || !/^[A-Za-z0-9+/]{87}=$/.test(publicKey))
+                    throw new ProviderRpcError(PROVIDER_ERROR.invalidParams, 'A one-time public key (P-256, base64) is required.');
+                return this.o.approvals.request({ kind: 'transfer', origin, summary: `${origin} wants a COPY of the private key of ${address}`, details: { origin, address } }, async (input) => {
+                    const password = input?.password;
+                    if (typeof password !== 'string' || !password)
+                        throw new ProviderRpcError(PROVIDER_ERROR.unauthorized, 'The wallet password is required to hand an account to a site.');
+                    const privateKey = await this.o.accounts.revealPrivateKey(password, address);
+                    return sealForTransfer(privateKey, address, publicKey);
+                });
             }
             case 'wallet_addEthereumChain':
                 throw new ProviderRpcError(PROVIDER_ERROR.unsupportedMethod, 'Adding networks is not supported yet.');

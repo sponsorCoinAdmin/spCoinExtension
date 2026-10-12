@@ -41,6 +41,8 @@ import {
   reportFeedError,
   type IconCacheStorage,
 } from '@sponsorcoin/spcoin-feeds/shared';
+import { fetchAndBuildDataList } from '@sponsorcoin/spcoin-exchange-engine';
+import { FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import type { NetworkAuthSource } from '@sponsorcoin/spcoin-panels';
 import type { AssetListEntry } from '@sponsorcoin/spcoin-panels';
 
@@ -258,7 +260,18 @@ export async function buildTokenRows(
   forceRefresh = false,
 ): Promise<AssetListEntry[] | undefined> {
   try {
-    const { items } = await fetchTokenList(chainId, { pageSize: TOKEN_LIST_PAGE_SIZE }, { baseUrl });
+    let items: Array<{ address: string; symbol?: string; name?: string; decimals?: number }>;
+    try {
+      ({ items } = await fetchTokenList(chainId, { pageSize: TOKEN_LIST_PAGE_SIZE }, { baseUrl }));
+    } catch (hostedError) {
+      // A host with no hosted app (the extension) has no paged token endpoint: use the same list the shared pickers show (the engine's REMOTE_TOKEN_LIST feed, which reads the bundled
+      // lists and treats the Hardhat chain as a Base fork), so the Swap pickers match the web app's instead of the three sample rows.
+      const feed = await fetchAndBuildDataList(FEED_TYPE.REMOTE_TOKEN_LIST, chainId);
+      const tokens = ((feed as { tokens?: Array<{ address?: string; symbol?: string; name?: string; decimals?: number; __invalid?: boolean }> }).tokens ?? [])
+        .filter((t) => typeof t.address === 'string' && !t.__invalid);
+      if (tokens.length === 0) throw hostedError;
+      items = tokens.map((t) => ({ address: t.address as string, symbol: t.symbol, name: t.name, decimals: t.decimals }));
+    }
     return await withAssetIcons(
       items,
       baseUrl,

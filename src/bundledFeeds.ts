@@ -11,8 +11,9 @@ import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import snapshot from '../node_source/spCoinData/packages/@sponsorcoin/spcoin-data/bundledFeedData.json';
 
 registerBundledFeeds(snapshot as Record<string, unknown>);
+// localAssets (2026-10-12): the token and network logos ship inside the extension (the data package's assets/blockchains, copied by vite.config.ts), so those paths are read from its own files.
 // 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 25, owner: "I do not want any dependency on the web app"): the extension answers from its own bundle and never asks the hosted app: a bundled path is served without any request, anything else fails at once.
-setFeedNetworkPolicy({ bundledFirst: true, hostedAllowed: false });
+setFeedNetworkPolicy({ bundledFirst: true, hostedAllowed: false, localAssets: true });
 
 // 2026-10-11 (plan row 13): the engine's list builder (the shared pickers) keeps its own bundled-feed registry: the role account lists and the per-chain token lists, taken from the same snapshot.
 const data = snapshot as Record<string, unknown>;

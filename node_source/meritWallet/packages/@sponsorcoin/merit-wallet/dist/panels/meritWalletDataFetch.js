@@ -21,6 +21,8 @@ import { listConfiguredNetworks, fetchNetworkIconBlob, } from '@sponsorcoin/spco
 import { fetchAccountListGroups, fetchAccountRoleList, fetchAccountAvatarBlob, getAccountAvatarURL, } from '@sponsorcoin/spcoin-feeds/accounts';
 import { fetchTokenList, getTokenLogoURL, fetchTokenIconBlob, } from '@sponsorcoin/spcoin-feeds/tokens';
 import { createIconCache, createInMemoryIconCacheStorage, FeedFetchError, reportFeedError, } from '@sponsorcoin/spcoin-feeds/shared';
+import { fetchAndBuildDataList } from '@sponsorcoin/spcoin-exchange-engine';
+import { FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 const TOKEN_LIST_PAGE_SIZE = 200;
 /**
  * One real set of icon caches, built from whatever storage the caller
@@ -151,7 +153,20 @@ export async function buildAllAccountRows(baseUrl, caches, forceRefresh = false)
 // still gets a real attempt at its real icon.
 export async function buildTokenRows(chainId, baseUrl, caches, forceRefresh = false) {
     try {
-        const { items } = await fetchTokenList(chainId, { pageSize: TOKEN_LIST_PAGE_SIZE }, { baseUrl });
+        let items;
+        try {
+            ({ items } = await fetchTokenList(chainId, { pageSize: TOKEN_LIST_PAGE_SIZE }, { baseUrl }));
+        }
+        catch (hostedError) {
+            // A host with no hosted app (the extension) has no paged token endpoint: use the same list the shared pickers show (the engine's REMOTE_TOKEN_LIST feed, which reads the bundled
+            // lists and treats the Hardhat chain as a Base fork), so the Swap pickers match the web app's instead of the three sample rows.
+            const feed = await fetchAndBuildDataList(FEED_TYPE.REMOTE_TOKEN_LIST, chainId);
+            const tokens = (feed.tokens ?? [])
+                .filter((t) => typeof t.address === 'string' && !t.__invalid);
+            if (tokens.length === 0)
+                throw hostedError;
+            items = tokens.map((t) => ({ address: t.address, symbol: t.symbol, name: t.name, decimals: t.decimals }));
+        }
         return await withAssetIcons(items, baseUrl, forceRefresh, (t) => getTokenLogoURL(chainId, t.address), caches.getCachedTokenIconDataUrl, (t, iconSrc) => ({ id: t.address, symbol: t.symbol, name: t.name, address: t.address, decimals: t.decimals, iconSrc }));
     }
     catch (error) {

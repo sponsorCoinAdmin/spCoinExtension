@@ -2,9 +2,35 @@ import { defineConfig } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import manifest from './manifest.json' with { type: 'json' };
+import fs from 'node:fs';
+import path from 'node:path';
+
+// The token and network logos of the shared data package (@sponsorcoin/spcoin-data, assets/blockchains/<chainId>/...), copied into the build output under assets/blockchains/ so the
+// side panel finds the same /assets/blockchains/... paths the feeds ask for, with no request to any app (the extension does not depend on the web app).
+const DATA_ASSETS = path.resolve('node_source/spCoinData/packages/@sponsorcoin/spcoin-data/assets/blockchains');
+function copyDataLogos() {
+  const copy = (from: string, to: string) => {
+    for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+      const src = path.join(from, entry.name);
+      const dst = path.join(to, entry.name);
+      if (entry.isDirectory()) copy(src, dst);
+      else {
+        fs.mkdirSync(path.dirname(dst), { recursive: true });
+        fs.copyFileSync(src, dst);
+      }
+    }
+  };
+  return {
+    name: 'copy-data-logos',
+    apply: 'build' as const,
+    closeBundle() {
+      if (fs.existsSync(DATA_ASSETS)) copy(DATA_ASSETS, path.resolve('deploy/assets/blockchains'));
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [tailwindcss(), crx({ manifest })],
+  plugins: [tailwindcss(), crx({ manifest }), copyDataLogos()],
   // 2026-09-18, real bug found live ("Cannot read properties of null
   // (reading 'useState')") — @sponsorcoin/spcoin-exchange-engine (and, by
   // the same mechanism, spcoin-panels/spcoin-common/spcoin-feeds) are

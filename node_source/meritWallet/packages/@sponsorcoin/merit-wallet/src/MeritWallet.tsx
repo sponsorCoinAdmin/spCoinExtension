@@ -112,7 +112,6 @@ import { AccountDetailPanel } from './panels';
 import { TokenDetailPanel } from './panels';
 import { NetworkDetailPanel } from './panels';
 import { NetworkListTable, type NetworkListEntry } from '@sponsorcoin/spcoin-panels';
-import { type NetworkAuthSource } from '@sponsorcoin/spcoin-panels';
 import type { MeritWalletNetworkRow } from './panels';
 
 // 2026-09-30, Stage B (real trade wiring) — a minimal, dependency-free
@@ -1424,13 +1423,6 @@ function MeritWalletInner({
       openPanel(TAB_PANEL_IDS[activeTab], 'MeritWallet:closeDetail:restoreTab');
     }
   };
-  // Per-row Merit/MetaMask auth-source selection for NETWORK_LIST — keyed
-  // by row id, same "own live state, not a real per-chain RPC setting yet"
-  // treatment as everything else in this file (see networks.tsx's own
-  // NetworkAuthToggle for the real, per-chainId-persisted version this
-  // stands in for). Defaults every row to 'merit', matching that hook's
-  // own default when nothing's been set for a chain yet.
-  const [networkAuthSources, setNetworkAuthSources] = useState<Record<string, NetworkAuthSource>>({});
   const [showTestNets, setShowTestNets] = useState(false);
 
   // 2026-09-21, Path A — openPanel(TAB_PANEL_IDS[tab]) now does the tab
@@ -2163,9 +2155,6 @@ function MeritWalletInner({
                   // already falls the click through to onRowClick when
                   // onIconClick is omitted. Simply not overriding it here
                   // makes network rows consistent with every other list.
-                  authSource: networkAuthSources[row.id] ?? row.defaultAuthSource ?? 'merit',
-                  onAuthSourceChange: (source: NetworkAuthSource) =>
-                    setNetworkAuthSources((prev) => ({ ...prev, [row.id]: source })),
                 })),
                   showTestNets,
                   onToggleShowTestNets: () => setShowTestNets((prev) => !prev),

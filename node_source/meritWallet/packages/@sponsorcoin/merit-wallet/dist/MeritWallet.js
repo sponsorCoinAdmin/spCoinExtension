@@ -748,13 +748,6 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
             openPanel(TAB_PANEL_IDS[activeTab], 'MeritWallet:closeDetail:restoreTab');
         }
     };
-    // Per-row Merit/MetaMask auth-source selection for NETWORK_LIST — keyed
-    // by row id, same "own live state, not a real per-chain RPC setting yet"
-    // treatment as everything else in this file (see networks.tsx's own
-    // NetworkAuthToggle for the real, per-chainId-persisted version this
-    // stands in for). Defaults every row to 'merit', matching that hook's
-    // own default when nothing's been set for a chain yet.
-    const [networkAuthSources, setNetworkAuthSources] = useState({});
     const [showTestNets, setShowTestNets] = useState(false);
     // 2026-09-21, Path A — openPanel(TAB_PANEL_IDS[tab]) now does the tab
     // switch itself (useEnforceRadioPanelGroups above closes every other
@@ -1463,8 +1456,6 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
                                 // already falls the click through to onRowClick when
                                 // onIconClick is omitted. Simply not overriding it here
                                 // makes network rows consistent with every other list.
-                                authSource: networkAuthSources[row.id] ?? row.defaultAuthSource ?? 'merit',
-                                onAuthSourceChange: (source) => setNetworkAuthSources((prev) => ({ ...prev, [row.id]: source })),
                             })),
                             showTestNets,
                             onToggleShowTestNets: () => setShowTestNets((prev) => !prev),

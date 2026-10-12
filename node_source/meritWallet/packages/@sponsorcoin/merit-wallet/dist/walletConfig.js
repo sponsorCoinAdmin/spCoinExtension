@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export const DEFAULT_WALLET_CONFIG = {
     passwordMode: 'appRequired',
     mandatorySecurity: false,
-    mandatoryApproval: false,
+    mandatoryApproval: true,
     syncMode: 'enable',
     location: 'FIXED',
     showBackgroundPage: true,

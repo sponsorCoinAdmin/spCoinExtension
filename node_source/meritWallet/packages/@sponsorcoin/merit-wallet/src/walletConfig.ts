@@ -35,7 +35,7 @@ export interface MeritWalletConfigState {
 export const DEFAULT_WALLET_CONFIG: MeritWalletConfigState = {
   passwordMode: 'appRequired',
   mandatorySecurity: false,
-  mandatoryApproval: false,
+  mandatoryApproval: true,
   syncMode: 'enable',
   location: 'FIXED',
   showBackgroundPage: true,

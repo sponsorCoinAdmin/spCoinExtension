@@ -9,16 +9,31 @@ import React, { useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
 import { AddWalletMenu, ImportAccountForm } from '@sponsorcoin/spcoin-panels';
 
-export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectHardware';
+export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
+
+/** The entries that connect an account an approver already holds (rather than adding keys here). */
+export type ConnectApproverEntry = 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
 
 export interface AddAccountHost {
   /** Create a new account under this host's approver (the extension: derive the next account from its recovery phrase). Throw a readable message on failure. */
   createAccount(): Promise<void>;
   /** Import one account from a private key into this host's approver. Throw a readable message on failure (wrong format is checked here first). */
   importAccount(privateKey: string): Promise<void>;
+  /**
+   * 2026-10-12 (docs/connectionDesign.txt items 4 / 7 / 8, authenticationDesign row 9): connect an account that another approver holds (MetaMask, the Merit extension, a hardware wallet): ask the approver, make the account active.
+   * Throw a readable message on failure. A host that omits it shows those rows disabled with the reason below (the same entries and words in every host).
+   */
+  connectApprover?(entry: ConnectApproverEntry): Promise<void>;
   /** Entries this host cannot offer, each with the reason shown on the disabled row. */
   unavailable?: Partial<Record<AddAccountEntry, string>>;
 }
+
+/** What a disabled connect row says when the host gave no reason of its own. */
+export const DEFAULT_CONNECT_UNAVAILABLE: Record<ConnectApproverEntry, string> = {
+  connectMetaMask: 'Available in the web app',
+  connectMeritExtension: 'Available in the web app',
+  connectHardware: 'Using USB or a QR Code — Coming Soon',
+};
 
 type Screen = 'menu' | 'importAccount' | 'createAccount';
 
@@ -62,7 +77,15 @@ export default function AddAccountFlow({ host, onDone }: { host: AddAccountHost;
       setBusy(false);
     }
   };
-  const unavailable = host.unavailable ?? {};
+  const unavailable: Partial<Record<AddAccountEntry, string>> = { ...(host.unavailable ?? {}) };
+  if (!host.connectApprover) {
+    for (const entry of Object.keys(DEFAULT_CONNECT_UNAVAILABLE) as ConnectApproverEntry[]) unavailable[entry] ??= DEFAULT_CONNECT_UNAVAILABLE[entry];
+  }
+  // a connect entry: ask the approver, then the flow is done (the account is the active one now)
+  const connect = (entry: ConnectApproverEntry) => () => {
+    if (unavailable[entry] || !host.connectApprover) return;
+    void run(() => host.connectApprover!(entry));
+  };
   const open = (entry: AddAccountEntry, next: Screen) => () => {
     if (unavailable[entry]) return;
     setError('');
@@ -79,8 +102,9 @@ export default function AddAccountFlow({ host, onDone }: { host: AddAccountHost;
           onImportWallet={() => undefined}
           onImportAccount={open('importAccount', 'importAccount')}
           onCreateAccount={open('createAccount', 'createAccount')}
-          onConnectMetaMask={() => undefined}
-          onConnectHardware={() => undefined}
+          onConnectMetaMask={connect('connectMetaMask')}
+          onConnectMeritExtension={host.connectApprover ? connect('connectMeritExtension') : undefined}
+          onConnectHardware={connect('connectHardware')}
           unavailable={unavailable}
           error={error}
         />

@@ -14,7 +14,7 @@
 // useHostEffects: a hook the host wants called LAST, after the three enforcement hooks (the web app passes useTradeTokenTabSync, whose
 // effect must run after them). It is a hook prop and must be a stable module-level function, not an inline one.
 'use client';
-import { Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { PanelGate, PanelTreePanel } from '@sponsorcoin/spcoin-panels';
 import { MeritInfoPanelReal } from './panels';

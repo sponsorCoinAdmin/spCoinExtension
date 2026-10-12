@@ -40,7 +40,8 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION } from '@sponsorcoin/spcoin-common/context';
 import { usePanelTree, usePanelVisible, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useEnforceRadioPanelContainers, useAgentAccount, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, } from '@sponsorcoin/spcoin-exchange-engine';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
-import { mergeWalletProps, useWalletDerivedProps } from './wallet/walletProps';
+import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps } from './wallet/walletProps';
+import { useApproverAccounts } from './wallet/approverAccountsReact';
 import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
 import { ConfigSlippagePanel } from '@sponsorcoin/spcoin-panels';
 import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildRecipientRows as selfFetchRecipientRows, buildAllAccountRows as selfFetchAllAccountRows, buildTokenRows as selfFetchTokenRows } from './panels';
@@ -257,7 +258,7 @@ const SAMPLE_NETWORK_ROWS = [
 // the header account list now renders AccountListCard directly, which takes
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
-function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, tokenRows, recipientRows, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorPanel, listHost, manageRadioPanels = true, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode = 'unlock', passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }) {
+function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, tokenRows, recipientRows, rewardsHost, stakingHost, accountProfileHost, addAccountHost, activeAccountAddress, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, swapHost, accountDetail, onTokenIconClick, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, sponsorPanel, listHost, manageRadioPanels = true, overlayHost, agentSelectSlot, fetchBalance, listPanelIdOverrides, passwordMode = 'unlock', passwordIcon, walletLocked, onResetWallet, passwordErrorText, onPasswordSubmit, passwordSubmitting, sellBalanceText, buyBalanceText, zeroXTradeButtonContent, uniSelectContent, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutContent, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configTestAccountsContent, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, }) {
     const [menuOpen, setMenuOpen] = useState(initialMenuOpen ?? true);
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
@@ -1381,8 +1382,15 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
                                 accounts: group.accounts.map((account) => ({
                                     ...account,
                                     onSelect: () => {
-                                        closeListOverlay();
-                                        onAccountRowSelect?.(account.id);
+                                        // a connect that fails keeps the list open so its banner (accountListNotice) is seen; anything else closes it as before
+                                        const result = onAccountRowSelect?.(account.id, group.id);
+                                        if (result instanceof Promise)
+                                            void result.then((ok) => { if (ok !== false)
+                                                closeListOverlay(); });
+                                        else if (result === false)
+                                            return;
+                                        else
+                                            closeListOverlay();
                                     },
                                     onInfoClick: account.address
                                         ? () => {
@@ -1393,6 +1401,7 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
                                 })),
                             })),
                             infoIconSrc,
+                            errorMessage: accountListNotice,
                             onAddWalletAccount: addAccountHost ? () => { closeListOverlay(); setAddingAccount(true); } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
                         }),
                     });
@@ -1695,6 +1704,21 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
  */
 export default function MeritWallet(props) {
     const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress, props.walletDerives);
-    const merged = props.wallet ? mergeWalletProps(props, derived, props.wallet, props.activeAccountAddress) : props;
+    const wantsAccounts = !!props.approverHost && (props.walletDerives ?? ALL_WALLET_DERIVATIONS).includes('accounts');
+    const approvers = useApproverAccounts(wantsAccounts ? props.wallet : undefined, props.approverHost, props.activeAccountAddress);
+    const accountDerived = approvers.groups
+        ? {
+            accountGroups: approvers.groups,
+            accountListNotice: approvers.notice || undefined,
+            onAccountRowSelect: async (accountId, groupId) => {
+                const approverId = (groupId ?? (props.wallet ? props.wallet.backendIdFor(accountId) : undefined));
+                if (!approverId || !approvers.controller)
+                    return false;
+                return approvers.controller.connect(approverId, accountId);
+            },
+        }
+        : {};
+    // A host that passes `approverHost` has asked for the derived account list: it replaces the host's own accountGroups / onAccountRowSelect (which stay as the fallback until the list has loaded).
+    const merged = props.wallet ? { ...mergeWalletProps(props, derived, props.wallet, props.activeAccountAddress), ...accountDerived } : props;
     return React.createElement(MeritWalletInner, merged);
 }

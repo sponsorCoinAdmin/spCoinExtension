@@ -3,6 +3,7 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import type { Wallet } from './wallet/wallet';
 import { type WalletDerivation } from './wallet/walletProps';
+import type { ApproverHost } from './wallet/approverAccounts';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
 import { type RewardsHost } from './rewards/ConnectedRewardsPanel';
 import { type AccountProfileHost } from './account/AccountProfileEditor';
@@ -88,7 +89,8 @@ export interface MeritWalletProps {
     baseUrl?: string;
     storage?: IconCacheStorage;
     refreshToken?: number;
-    onAccountRowSelect?: (accountId: string) => void;
+    /** A row of the account list was chosen. `groupId` is the approver's group the row sits in (the wallet's backend id) when the list is the per-approver list. */
+    onAccountRowSelect?: (accountId: string, groupId?: string) => void | boolean | Promise<boolean | void>;
     onNetworkRowSelect?: (networkId: string) => void;
     onAccountIconClick?: (address: string) => void;
     /** 2026-10-08 (table row 21): the "Add a Wallet/Account" button at the foot of the account list. Omit it and the list shows the button inert, as before. */
@@ -158,6 +160,14 @@ export interface MeritWalletProps {
      * still wins over the derived one, so a host can move over one prop at a time.
      */
     wallet?: Wallet;
+    /**
+     * 2026-10-12 (docs/connectionDesign.txt items 6 / 7): with `wallet` AND this, the account list is the per-approver list derived from the wallet (one group per backend, badges ACTIVE / Install / Unlock / Connect /
+     * INACTIVE), choosing a row connects it through the one connect operation, and a failed connect is shown in the list's banner. The host supplies what it owns: setting / clearing its active account, where an approver is
+     * installed from, how an approver is unlocked. Passing it asks for the derived list: it replaces the host's own accountGroups / onAccountRowSelect once the list has loaded (they stay as the fallback until then).
+     */
+    approverHost?: ApproverHost;
+    /** The banner above the account list (a failed connect). Derived when `approverHost` is given; a host may also set it. */
+    accountListNotice?: string;
     /** What the component may derive from `wallet` (default: everything). A host that has its own lock gate (the web app) leaves out 'lock' and 'logoff'. */
     walletDerives?: readonly WalletDerivation[];
     /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */

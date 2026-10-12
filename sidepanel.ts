@@ -479,6 +479,7 @@ async function renderWallet() {
     unavailable: {
       importWallet: 'This wallet holds one recovery phrase; importing a second wallet is not supported yet.',
       connectMetaMask: 'Connecting MetaMask from the extension is not available yet.',
+      connectMeritExtension: 'You are already in the Merit extension.',
       connectHardware: 'Using USB or a QR Code — Coming Soon',
     },
   };
@@ -1013,23 +1014,21 @@ async function renderWallet() {
                 activeAccountAddress: walletSource.address ?? '',
                 // 2026-10-11 (authenticationDesign.txt section 15.7, W1): the wallet (its backends behind one object); the lock screen, the lock button, the authentication type and the Wallet Security section come from it.
                 wallet: extensionWallet,
-                accountGroups: vaultRows
-                  ? [
-                      {
-                        id: 'merit-wallet',
-                        label: 'Merit Wallet',
-                        isActiveSource: true,
-                        accounts: vaultRows.map((a) => ({
-                          id: a.address,
-                          symbol: vaultMeta.get(a.address.toLowerCase())?.symbol || a.name,
-                          name: vaultMeta.get(a.address.toLowerCase())?.name || a.name,
-                          iconSrc: vaultMeta.get(a.address.toLowerCase())?.iconSrc,
-                          address: a.address,
-                          isActive: a.address.toLowerCase() === (walletSource.address ?? '').toLowerCase(),
-                        })),
-                      },
-                    ]
-                  : undefined,
+                // 2026-10-12 (docs/connectionDesign.txt items 6 / 7): the account list is derived from the wallet, one group per approver (here the vault), with the same badges and the same connect operation as every host; the host only
+                // says how its active account is set and cleared and what it knows about each account (the saved profile: symbol, name, avatar).
+                approverHost: {
+                  setActiveAccount: async (address: string) => {
+                    await vaultAccountsApi.setActive(address);
+                    vaultActive = address;
+                    activateAccount(address);
+                  },
+                  clearActiveAccount: () => {
+                    walletSource = { ...walletSource, address: undefined, isConnected: false };
+                    render();
+                  },
+                  describeAccount: (address: string) => vaultMeta.get(address.toLowerCase()),
+                  groupLabel: (backend) => (backend.id === 'localVault' ? 'Merit Wallet' : undefined),
+                },
                 // 2026-09-29, stage 8 — tokenRows/recipientRows no longer passed
                 // explicitly; MeritWallet self-fetches them via these 4 props
                 // instead (same underlying spcoin-feeds calls this file used to
@@ -1046,7 +1045,8 @@ async function renderWallet() {
               selection: {
                 onAddAccount: openVaultScreen,
                 swapHost,
-                onAccountRowSelect: handleAccountRowSelect,
+                // the vault's rows are chosen through the derived list's connect; the old handler stays only for the (unlocked-keystore) fallback list
+                onAccountRowSelect: vaultRows ? undefined : handleAccountRowSelect,
                 onNetworkRowSelect: handleNetworkRowSelect,
                 onAccountIconClick: (address: string) => void handleAccountIconClick(address),
                 accountDetail,

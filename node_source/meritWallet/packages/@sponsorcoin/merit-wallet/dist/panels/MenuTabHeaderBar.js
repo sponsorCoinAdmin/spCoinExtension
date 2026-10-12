@@ -98,5 +98,12 @@ export function TabRow({ open = true, activeTab = 'SWAP', onTabClick, disabled =
                 }, children: [TABS.map((tab) => (_jsx(TabButton, { label: tab.label, active: activeTab === tab.key, onClick: handleClick(tab.key), disabled: disabled, title: disabled ? disabledTitle : undefined }, tab.key))), _jsx(TabButton, { label: "Config", active: activeTab === 'CONFIG', onClick: handleClick('CONFIG'), disabled: disabled, title: disabled ? disabledTitle : undefined })] })] }));
 }
 export default function MenuTabHeaderBar({ open = true, activeTab = 'SWAP', onTabClick, disabled, disabledTitle, children, }) {
-    return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1, overflow: 'hidden' }, children: [_jsx(TabRow, { open: open, activeTab: activeTab, onTabClick: onTabClick, disabled: disabled, disabledTitle: disabledTitle }), children && (_jsx("div", { className: "spcoinMenuTabBodyScroll", style: { flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }, children: children }))] }));
+    return (
+    // 2026-09-12 — this outer element is now the flex column that owns
+    // the fixed-tab-row/scrollable-body split; it needs to actually be
+    // GIVEN the remaining vertical space by its own parent (flex:1 or an
+    // explicit height) to have anything to distribute — a plain block
+    // parent leaves this shrunk to content height, and the inner
+    // scrollable div below never gets a bounded height to scroll within.
+    _jsxs("div", { style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1, overflow: 'hidden' }, children: [_jsx(TabRow, { open: open, activeTab: activeTab, onTabClick: onTabClick, disabled: disabled, disabledTitle: disabledTitle }), children && (_jsx("div", { className: "spcoinMenuTabBodyScroll", style: { flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }, children: children }))] }));
 }

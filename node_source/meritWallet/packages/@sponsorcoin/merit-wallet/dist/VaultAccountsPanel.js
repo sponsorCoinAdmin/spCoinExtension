@@ -9,7 +9,7 @@
 // Screens: the account list (select the active account, add), Add (create the next account from the Secret Recovery Phrase, or import a private key),
 // and an account's details (rename, copy the address, show its private key, remove an imported account), plus "Show Secret Recovery Phrase".
 'use client';
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
 import { useCallback, useEffect, useState } from 'react';
 import { privateKeyToAccount } from 'viem/accounts';
 import { AddWalletAccountButton, ImportAccountForm } from '@sponsorcoin/spcoin-panels';

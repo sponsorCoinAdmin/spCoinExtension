@@ -20,7 +20,7 @@
 // one piece requiring the real openActiveListPanel/onCommit/peerAddress
 // wiring TokenSelectDropDown's own web-app wrapper already owns.
 'use client';
-import { Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState } from 'react';
 import { Copy, Check, ChevronDown } from 'lucide-react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';

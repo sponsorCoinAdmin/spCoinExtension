@@ -102,5 +102,19 @@ export default function SendComponent() {
         setErrorMessage,
         openPanel,
     ]);
-    return (_jsxs("div", { className: "relative flex flex-1 flex-col", style: { gap: PANEL_GAP }, children: [_jsx(ComponentMarker, { path: "components/views/RadioOverlayPanels/SendComponent.tsx" }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_SELECT_PANEL, children: _jsx(SendLayoutContainer, { amount: amount, onAmountChange: setAmount }) }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_BUTTON, children: _jsx(SendButton, { amount: amount, decimals: tokenDecimals, balanceRaw: balanceRaw, hasRecipient: toAddress.length > 0, symbol: tokenSymbol, isPending: isPending, approvalPending: approvalPending, onSend: handleSend }) })] }));
+    return (
+    // 2026-09-22 — `gap-1` was an independently-hardcoded copy of the same
+    // rhythm TSP_TW.gap/PANEL_GAP already governs elsewhere (Swap's own
+    // TRADING_STATION_PANEL wrapper), never wired to the shared constant —
+    // same bug class as UniSelectPanel.tsx's submit-button wrapper and
+    // TradingStationPanel/index.tsx's buy-slot padding
+    // (docs/npmPanelDisplayIssue.md). This is the Send tab's own real
+    // outer wrapper (SendLayoutContainer's two TradeAmountRows + SendButton
+    // are all direct flex children here, so this one gap value controls
+    // both the row-to-row spacing and the row-to-button spacing). Set via
+    // inline style, not a dynamic Tailwind class — the `gap-[${PANEL_GAP}px]`
+    // approach tried first was confirmed broken (the safelist pattern
+    // meant to support it never actually worked; see twSettingConfig.ts's
+    // own header comment for the full trace).
+    _jsxs("div", { className: "relative flex flex-1 flex-col", style: { gap: PANEL_GAP }, children: [_jsx(ComponentMarker, { path: "components/views/RadioOverlayPanels/SendComponent.tsx" }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_SELECT_PANEL, children: _jsx(SendLayoutContainer, { amount: amount, onAmountChange: setAmount }) }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_BUTTON, children: _jsx(SendButton, { amount: amount, decimals: tokenDecimals, balanceRaw: balanceRaw, hasRecipient: toAddress.length > 0, symbol: tokenSymbol, isPending: isPending, approvalPending: approvalPending, onSend: handleSend }) })] }));
 }

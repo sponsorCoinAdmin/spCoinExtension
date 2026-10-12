@@ -5,7 +5,7 @@
 // screen: every reveal asks for the wallet password, a revealed key stays hidden until the user chooses Show, and Copy puts it on the clipboard. Two rows:
 // the active account's private key, and (as in MetaMask) the Secret Recovery Phrase. No host imports: the host passes the two reveal calls.
 'use client';
-import { Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState } from 'react';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from './PasswordPromptDialog';

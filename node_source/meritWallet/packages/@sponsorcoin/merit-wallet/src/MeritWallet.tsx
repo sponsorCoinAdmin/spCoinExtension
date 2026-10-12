@@ -57,7 +57,10 @@ import {
 } from '@sponsorcoin/spcoin-exchange-engine';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
-import { mergeWalletProps, useWalletDerivedProps, type WalletDerivation } from './wallet/walletProps';
+import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps, type WalletDerivation } from './wallet/walletProps';
+import { useApproverAccounts } from './wallet/approverAccountsReact';
+import type { ApproverHost } from './wallet/approverAccounts';
+import type { AuthenticatorId } from './auth/authenticator';
 import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
 import { ConfigSlippagePanel } from '@sponsorcoin/spcoin-panels';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
@@ -474,7 +477,8 @@ export interface MeritWalletProps {
   // its own AssetSelectDropDown/ActiveListPanel wiring goes straight
   // through ExchangeContext, not through this package at all. Omit either
   // to keep today's inert (close-only) behavior.
-  onAccountRowSelect?: (accountId: string) => void;
+  /** A row of the account list was chosen. `groupId` is the approver's group the row sits in (the wallet's backend id) when the list is the per-approver list. */
+  onAccountRowSelect?: (accountId: string, groupId?: string) => void | boolean | Promise<boolean | void>;
   onNetworkRowSelect?: (networkId: string) => void;
   // 2026-09-16, on request ("when the avatar.png is selected we should get
   // ACCOUNT_PANEL with the address sent as a parameter to open the
@@ -581,6 +585,14 @@ export interface MeritWalletProps {
    * still wins over the derived one, so a host can move over one prop at a time.
    */
   wallet?: Wallet;
+  /**
+   * 2026-10-12 (docs/connectionDesign.txt items 6 / 7): with `wallet` AND this, the account list is the per-approver list derived from the wallet (one group per backend, badges ACTIVE / Install / Unlock / Connect /
+   * INACTIVE), choosing a row connects it through the one connect operation, and a failed connect is shown in the list's banner. The host supplies what it owns: setting / clearing its active account, where an approver is
+   * installed from, how an approver is unlocked. Passing it asks for the derived list: it replaces the host's own accountGroups / onAccountRowSelect once the list has loaded (they stay as the fallback until then).
+   */
+  approverHost?: ApproverHost;
+  /** The banner above the account list (a failed connect). Derived when `approverHost` is given; a host may also set it. */
+  accountListNotice?: string;
   /** What the component may derive from `wallet` (default: everything). A host that has its own lock gate (the web app) leaves out 'lock' and 'logoff'. */
   walletDerives?: readonly WalletDerivation[];
   /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */
@@ -804,6 +816,7 @@ function MeritWalletInner({
   onOpenTargetChange,
   networkRows,
   accountGroups,
+  accountListNotice,
   tokenRows,
   recipientRows,
   rewardsHost,
@@ -2063,8 +2076,11 @@ function MeritWalletInner({
                     accounts: group.accounts.map((account) => ({
                       ...account,
                       onSelect: () => {
-                        closeListOverlay();
-                        onAccountRowSelect?.(account.id);
+                        // a connect that fails keeps the list open so its banner (accountListNotice) is seen; anything else closes it as before
+                        const result = onAccountRowSelect?.(account.id, group.id);
+                        if (result instanceof Promise) void result.then((ok) => { if (ok !== false) closeListOverlay(); });
+                        else if (result === false) return;
+                        else closeListOverlay();
                       },
                       onInfoClick: account.address
                         ? () => {
@@ -2075,6 +2091,7 @@ function MeritWalletInner({
                     })),
                   })),
                   infoIconSrc,
+                  errorMessage: accountListNotice,
                   onAddWalletAccount: addAccountHost ? () => { closeListOverlay(); setAddingAccount(true); } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
                 }),
               });
@@ -2618,6 +2635,20 @@ function MeritWalletInner({
  */
 export default function MeritWallet(props: MeritWalletProps) {
   const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress, props.walletDerives);
-  const merged = props.wallet ? mergeWalletProps(props, derived, props.wallet, props.activeAccountAddress) : props;
+  const wantsAccounts = !!props.approverHost && (props.walletDerives ?? ALL_WALLET_DERIVATIONS).includes('accounts');
+  const approvers = useApproverAccounts(wantsAccounts ? props.wallet : undefined, props.approverHost, props.activeAccountAddress);
+  const accountDerived: Partial<MeritWalletProps> = approvers.groups
+    ? {
+        accountGroups: approvers.groups,
+        accountListNotice: approvers.notice || undefined,
+        onAccountRowSelect: async (accountId: string, groupId?: string) => {
+          const approverId = (groupId ?? (props.wallet ? props.wallet.backendIdFor(accountId) : undefined)) as AuthenticatorId | undefined;
+          if (!approverId || !approvers.controller) return false;
+          return approvers.controller.connect(approverId, accountId);
+        },
+      }
+    : {};
+  // A host that passes `approverHost` has asked for the derived account list: it replaces the host's own accountGroups / onAccountRowSelect (which stay as the fallback until the list has loaded).
+  const merged = props.wallet ? { ...mergeWalletProps(props, derived, props.wallet, props.activeAccountAddress), ...accountDerived } : props;
   return React.createElement(MeritWalletInner, merged);
 }

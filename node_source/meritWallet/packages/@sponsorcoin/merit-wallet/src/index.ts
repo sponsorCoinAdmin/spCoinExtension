@@ -131,7 +131,8 @@ export { default as AccountFormPanel } from './account/form/AccountFormPanel';
 export { default as AccountAvatarPanel } from './account/form/AccountAvatarPanel';
 export { default as DisconnectedControl } from './account/form/DisconnectedControl';
 export { default as AddAccountFlow } from './account/AddAccountFlow';
-export type { AddAccountHost, AddAccountEntry } from './account/AddAccountFlow';
+export { DEFAULT_CONNECT_UNAVAILABLE } from './account/AddAccountFlow';
+export type { AddAccountHost, AddAccountEntry, ConnectApproverEntry } from './account/AddAccountFlow';
 export { default as SendComponent } from './send/SendComponent';
 export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownWithAvatar';
 export { connectAccount, disconnectAccount, ConnectChoiceRequired, type ConnectHost, type ConnectParams, type DisconnectParams } from './auth/connect';
@@ -145,3 +146,5 @@ export {
   clearSettledMeritApproval,
 } from './approval/meritApproval';
 export type { MeritApprovalRequest, MeritApprovalPhase } from './approval/meritApproval';
+export { buildApproverGroups, createApproverController, connectNoticeText, type ApproverHost, type ApproverGroupsInput, type ApproverController } from './wallet/approverAccounts';
+export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAccountsReact';

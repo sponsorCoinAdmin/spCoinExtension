@@ -4,7 +4,7 @@
 // choose a password and either create a new wallet (the Secret Recovery Phrase is shown ONCE, and the user must confirm they saved it before
 // continuing) or import an existing phrase. Host-independent: the host supplies two async calls and gets told when setup is finished.
 'use client';
-import { Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from './vault/walletAccounts';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';

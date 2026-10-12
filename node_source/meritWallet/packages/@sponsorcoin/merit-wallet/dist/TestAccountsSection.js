@@ -5,7 +5,7 @@
 // longer adds them. Host-independent: the host supplies status / load / unload. When the store needs the password to add keys (the web keystore
 // encrypts them under the master key), the section asks for it in a small popup first.
 'use client';
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
 import { useCallback, useEffect, useState } from 'react';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
 import { authenticationTypeLabel } from './auth/authenticationType';

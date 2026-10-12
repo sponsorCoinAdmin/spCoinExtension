@@ -3,7 +3,7 @@
 // 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 18) -- the account editor's form table (address, name, symbol, email, website, description, Save / Revert), moved from the web app's CreateAccountFormPanel so the web app and
 // the extension show one editor. What only the web app has comes in through slots: the role chips, the Private Key row (one-time key or click-to-reveal with a password step-up), the Connect button and the modal that row opens.
 'use client';
-import { Fragment as _Fragment, jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import { msTableTw } from '@sponsorcoin/spcoin-panels';

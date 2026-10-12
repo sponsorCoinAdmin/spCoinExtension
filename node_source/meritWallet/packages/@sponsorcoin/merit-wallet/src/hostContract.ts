@@ -34,7 +34,7 @@ export type HostUiState = Pick<
 export type HostData = Pick<
   MeritWalletProps,
   | 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage'
-  | 'wallet' | 'walletDerives' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'
+  | 'wallet' | 'walletDerives' | 'approverHost' | 'accountListNotice' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'
 >;
 
 /** What the host does when the user picks or inspects a row. */

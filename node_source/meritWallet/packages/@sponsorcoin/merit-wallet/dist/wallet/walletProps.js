@@ -8,7 +8,7 @@ import WalletSecuritySection from '../WalletSecuritySection';
 import { AuthenticationType } from '../auth/authenticationType';
 import { createWalletLockStore } from './walletLock';
 import { createWalletSecurityApi } from './walletSecurity';
-export const ALL_WALLET_DERIVATIONS = ['lock', 'logoff', 'authType', 'security'];
+export const ALL_WALLET_DERIVATIONS = ['lock', 'logoff', 'authType', 'security', 'accounts'];
 export function authenticationTypeOf(backendId) {
     if (!backendId)
         return undefined;

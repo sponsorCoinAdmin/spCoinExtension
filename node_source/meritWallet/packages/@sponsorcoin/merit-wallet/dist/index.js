@@ -86,3 +86,4 @@ export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, withA
 export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons } from './wallet/addTarget';
+export { createHardwareAuthenticator, HardwareError } from './auth/hardwareAuthenticator';

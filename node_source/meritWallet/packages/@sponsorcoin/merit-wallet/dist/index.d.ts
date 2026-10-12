@@ -97,3 +97,5 @@ export { default as SendComponent } from './send/SendComponent';
 export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownWithAvatar';
 export { connectAccount, disconnectAccount, ConnectChoiceRequired, type ConnectHost, type ConnectParams, type DisconnectParams } from './auth/connect';
 export { createInjectedAuthenticator, translateProviderError, type InjectedProvider, type InjectedAuthenticatorOptions } from './auth/injectedAuthenticator';
+export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritApproval, resolveMeritApproval, requestReauthentication, clearSettledMeritApproval, } from './approval/meritApproval';
+export type { MeritApprovalRequest, MeritApprovalPhase } from './approval/meritApproval';

@@ -38,15 +38,18 @@ import {
   createIconCache,
   createInMemoryIconCacheStorage,
   FeedFetchError,
+  fetchJson,
   reportFeedError,
   type IconCacheStorage,
 } from '@sponsorcoin/spcoin-feeds/shared';
-import { fetchAndBuildDataList } from '@sponsorcoin/spcoin-exchange-engine';
+import { fetchAndBuildDataList, isSpCoin } from '@sponsorcoin/spcoin-exchange-engine';
 import { FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import type { NetworkAuthSource } from '@sponsorcoin/spcoin-panels';
 import type { AssetListEntry } from '@sponsorcoin/spcoin-panels';
 
 const TOKEN_LIST_PAGE_SIZE = 200;
+/** The placeholder address every chain's native token is listed under. */
+const NATIVE_TOKEN_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
 /** Plain data shape for one NETWORK_LIST row — a consumer with a real feed
  *  (e.g. @sponsorcoin/spcoin-feeds/networks' toNetworkListEntries) passes
@@ -221,12 +224,10 @@ export async function buildAllAccountRows(
   forceRefresh = false,
 ): Promise<AssetListEntry[] | undefined> {
   try {
-    const url = `${baseUrl}/api/spCoin/accounts?allData=true&page=1&pageSize=200`;
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) throw new FeedFetchError(`/api/spCoin/accounts failed with ${response.status}.`, response.status, url);
-    const json = (await response.json()) as {
+    // through the feeds' own fetch so a host with no hosted app makes no request (it fails at once and the recipient list is used instead)
+    const json = await fetchJson<{
       items?: Array<{ address?: string; data?: { name?: string; symbol?: string } }>;
-    };
+    }>('/api/spCoin/accounts?allData=true&page=1&pageSize=200', { baseUrl }, { cache: 'no-store' });
     const rows = (json.items ?? []).filter((item) => typeof item.address === 'string');
     return await withAssetIcons(
       rows,
@@ -267,8 +268,12 @@ export async function buildTokenRows(
       // A host with no hosted app (the extension) has no paged token endpoint: use the same list the shared pickers show (the engine's REMOTE_TOKEN_LIST feed, which reads the bundled
       // lists and treats the Hardhat chain as a Base fork), so the Swap pickers match the web app's instead of the three sample rows.
       const feed = await fetchAndBuildDataList(FEED_TYPE.REMOTE_TOKEN_LIST, chainId);
+      // Same rows, same order as the hosted list: the hosted tokens API drops a token that has no details record and sorts the rest by address; the web picker then lists the native token first,
+      // then the spCoins, then the rest in that order.
+      const rank = (t: { address: string }) => (t.address.toLowerCase() === NATIVE_TOKEN_SENTINEL ? 0 : isSpCoin({ address: t.address, chainId } as never) ? 1 : 2);
       const tokens = ((feed as { tokens?: Array<{ address?: string; symbol?: string; name?: string; decimals?: number; __invalid?: boolean }> }).tokens ?? [])
-        .filter((t) => typeof t.address === 'string' && !t.__invalid);
+        .filter((t) => typeof t.address === 'string' && !t.__invalid && Boolean(t.symbol) && t.symbol !== 'N/A')
+        .sort((a, b) => rank(a as { address: string }) - rank(b as { address: string }) || String(a.address).toLowerCase().localeCompare(String(b.address).toLowerCase()));
       if (tokens.length === 0) throw hostedError;
       items = tokens.map((t) => ({ address: t.address as string, symbol: t.symbol, name: t.name, decimals: t.decimals }));
     }

@@ -5,9 +5,9 @@ import manifest from './manifest.json' with { type: 'json' };
 import fs from 'node:fs';
 import path from 'node:path';
 
-// The token and network logos of the shared data package (@sponsorcoin/spcoin-data, assets/blockchains/<chainId>/...), copied into the build output under assets/blockchains/ so the
-// side panel finds the same /assets/blockchains/... paths the feeds ask for, with no request to any app (the extension does not depend on the web app).
-const DATA_ASSETS = path.resolve('node_source/spCoinData/packages/@sponsorcoin/spcoin-data/assets/blockchains');
+// The images of the shared data package (@sponsorcoin/spcoin-data assets/: token and network logos under blockchains/, account avatars under accounts/), copied into the build output under assets/ so the
+// side panel finds the same /assets/... paths the feeds ask for, with no request to any app (the extension does not depend on the web app).
+const DATA_ASSETS = path.resolve('node_source/spCoinData/packages/@sponsorcoin/spcoin-data/assets');
 function copyDataLogos() {
   const copy = (from: string, to: string) => {
     for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
@@ -24,7 +24,7 @@ function copyDataLogos() {
     name: 'copy-data-logos',
     apply: 'build' as const,
     closeBundle() {
-      if (fs.existsSync(DATA_ASSETS)) copy(DATA_ASSETS, path.resolve('deploy/assets/blockchains'));
+      if (fs.existsSync(DATA_ASSETS)) copy(DATA_ASSETS, path.resolve('deploy/assets'));
     },
   };
 }

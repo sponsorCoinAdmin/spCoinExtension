@@ -20,10 +20,12 @@
 import { listConfiguredNetworks, fetchNetworkIconBlob, } from '@sponsorcoin/spcoin-feeds/networks';
 import { fetchAccountListGroups, fetchAccountRoleList, fetchAccountAvatarBlob, getAccountAvatarURL, } from '@sponsorcoin/spcoin-feeds/accounts';
 import { fetchTokenList, getTokenLogoURL, fetchTokenIconBlob, } from '@sponsorcoin/spcoin-feeds/tokens';
-import { createIconCache, createInMemoryIconCacheStorage, FeedFetchError, reportFeedError, } from '@sponsorcoin/spcoin-feeds/shared';
-import { fetchAndBuildDataList } from '@sponsorcoin/spcoin-exchange-engine';
+import { createIconCache, createInMemoryIconCacheStorage, FeedFetchError, fetchJson, reportFeedError, } from '@sponsorcoin/spcoin-feeds/shared';
+import { fetchAndBuildDataList, isSpCoin } from '@sponsorcoin/spcoin-exchange-engine';
 import { FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 const TOKEN_LIST_PAGE_SIZE = 200;
+/** The placeholder address every chain's native token is listed under. */
+const NATIVE_TOKEN_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 /**
  * One real set of icon caches, built from whatever storage the caller
  * supplies (defaults to a safe in-memory-only fallback). Callers of the
@@ -127,11 +129,8 @@ export async function buildRecipientRows(chainId, baseUrl, caches, forceRefresh 
 // same as the web's own first request.
 export async function buildAllAccountRows(baseUrl, caches, forceRefresh = false) {
     try {
-        const url = `${baseUrl}/api/spCoin/accounts?allData=true&page=1&pageSize=200`;
-        const response = await fetch(url, { cache: 'no-store' });
-        if (!response.ok)
-            throw new FeedFetchError(`/api/spCoin/accounts failed with ${response.status}.`, response.status, url);
-        const json = (await response.json());
+        // through the feeds' own fetch so a host with no hosted app makes no request (it fails at once and the recipient list is used instead)
+        const json = await fetchJson('/api/spCoin/accounts?allData=true&page=1&pageSize=200', { baseUrl }, { cache: 'no-store' });
         const rows = (json.items ?? []).filter((item) => typeof item.address === 'string');
         return await withAssetIcons(rows, baseUrl, forceRefresh, (row) => getAccountAvatarURL(row.address), caches.getCachedAccountIconDataUrl, (row, iconSrc) => ({
             id: row.address,
@@ -161,8 +160,12 @@ export async function buildTokenRows(chainId, baseUrl, caches, forceRefresh = fa
             // A host with no hosted app (the extension) has no paged token endpoint: use the same list the shared pickers show (the engine's REMOTE_TOKEN_LIST feed, which reads the bundled
             // lists and treats the Hardhat chain as a Base fork), so the Swap pickers match the web app's instead of the three sample rows.
             const feed = await fetchAndBuildDataList(FEED_TYPE.REMOTE_TOKEN_LIST, chainId);
+            // Same rows, same order as the hosted list: the hosted tokens API drops a token that has no details record and sorts the rest by address; the web picker then lists the native token first,
+            // then the spCoins, then the rest in that order.
+            const rank = (t) => (t.address.toLowerCase() === NATIVE_TOKEN_SENTINEL ? 0 : isSpCoin({ address: t.address, chainId }) ? 1 : 2);
             const tokens = (feed.tokens ?? [])
-                .filter((t) => typeof t.address === 'string' && !t.__invalid);
+                .filter((t) => typeof t.address === 'string' && !t.__invalid && Boolean(t.symbol) && t.symbol !== 'N/A')
+                .sort((a, b) => rank(a) - rank(b) || String(a.address).toLowerCase().localeCompare(String(b.address).toLowerCase()));
             if (tokens.length === 0)
                 throw hostedError;
             items = tokens.map((t) => ({ address: t.address, symbol: t.symbol, name: t.name, decimals: t.decimals }));

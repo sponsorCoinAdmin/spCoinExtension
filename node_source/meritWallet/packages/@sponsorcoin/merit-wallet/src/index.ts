@@ -151,3 +151,5 @@ export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAcc
 export { signInForToken, signInWithWallet, type SignInParams } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning, type SigningChoices, type SigningHolder, type HolderState } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
+export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, withApprovalNotice, type ApprovalWaiting, type ApprovalWaitingStore, type ApprovalAction } from './auth/approvalWaiting';
+export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';

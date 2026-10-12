@@ -59,6 +59,7 @@ import { PanelGate } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps, type WalletDerivation } from './wallet/walletProps';
 import { useApproverAccounts } from './wallet/approverAccountsReact';
+import ApprovalWaitingNotice from './auth/ApprovalWaitingNotice';
 import type { ApproverHost } from './wallet/approverAccounts';
 import type { AuthenticatorId } from './auth/authenticator';
 import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
@@ -2531,6 +2532,8 @@ function MeritWalletInner({
               WalletRadioPanels.tsx there already wraps this same way. Real
               shared code now, not two independently-hand-synced copies —
               see docs/npmPanelDisplayIssue.md. */}
+          {/* 2026-10-12 (authenticationDesign row 11): while another wallet is deciding on a request, one neutral line says so (nothing shows when nothing is pending) */}
+          <ApprovalWaitingNotice />
           <WalletRadioPanels overlayHost={overlayHost}>{body}</WalletRadioPanels>
         </MenuTabHeaderBar>
       </div>

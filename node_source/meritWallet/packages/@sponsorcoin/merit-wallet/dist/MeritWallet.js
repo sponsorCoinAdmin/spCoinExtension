@@ -42,6 +42,7 @@ import { usePanelTree, usePanelVisible, useEnforceRadioPanelGroups, useEnforcePa
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
 import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps } from './wallet/walletProps';
 import { useApproverAccounts } from './wallet/approverAccountsReact';
+import ApprovalWaitingNotice from './auth/ApprovalWaitingNotice';
 import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
 import { ConfigSlippagePanel } from '@sponsorcoin/spcoin-panels';
 import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildRecipientRows as selfFetchRecipientRows, buildAllAccountRows as selfFetchAllAccountRows, buildTokenRows as selfFetchTokenRows } from './panels';
@@ -1689,7 +1690,7 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
                                                     }
                                                     : activeListMode
                                                         ? () => setActiveList(null)
-                                                        : () => closePanel('MeritWallet:back') }) }), _jsx(MenuTabHeaderBar, { open: menuOpen && menuTabHeaderVisible && !passwordPanelShowing, activeTab: activeTab, onTabClick: handleTabClick, children: _jsx(WalletRadioPanels, { overlayHost: overlayHost, children: body }) })] }), !overlayHost && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { style: {
+                                                        : () => closePanel('MeritWallet:back') }) }), _jsxs(MenuTabHeaderBar, { open: menuOpen && menuTabHeaderVisible && !passwordPanelShowing, activeTab: activeTab, onTabClick: handleTabClick, children: [_jsx(ApprovalWaitingNotice, {}), _jsx(WalletRadioPanels, { overlayHost: overlayHost, children: body })] })] }), !overlayHost && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { style: {
                                 position: 'absolute',
                                 bottom: 2,
                                 left: 6,

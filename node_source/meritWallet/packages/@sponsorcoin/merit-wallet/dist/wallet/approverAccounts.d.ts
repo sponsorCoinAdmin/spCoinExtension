@@ -16,8 +16,6 @@ export interface ApproverHost extends Pick<ConnectHost, 'setActiveAccount' | 'cl
         name?: string;
         iconSrc?: string;
     } | undefined;
-    /** The title of an approver's group when the host words it differently from the wallet's own name (walletName). Normally omitted: every host shows the same name for the same wallet. */
-    groupLabel?: (backend: WalletBackendInfo) => string | undefined;
 }
 export interface ApproverGroupsInput {
     backends: WalletBackendInfo[];
@@ -27,7 +25,7 @@ export interface ApproverGroupsInput {
     activeAddress?: string;
     /** The approver of the active account (wallet.backendIdFor(active)). */
     activeApproverId?: AuthenticatorId;
-    host: Pick<ApproverHost, 'installUrl' | 'onUnlock' | 'openInstall' | 'describeAccount' | 'groupLabel'>;
+    host: Pick<ApproverHost, 'installUrl' | 'onUnlock' | 'openInstall' | 'describeAccount'>;
     onConnect: (approverId: AuthenticatorId) => void;
     onDisconnect: (approverId: AuthenticatorId) => void;
     /** Whether a backend can connect an account by asking (remote approvers); keys kept here are chosen from the list instead. */

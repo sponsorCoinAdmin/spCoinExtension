@@ -26,7 +26,7 @@ export function buildApproverGroups(input) {
         });
         const group = {
             id: backend.id,
-            label: host.groupLabel?.(backend) || backend.name,
+            label: backend.name,
             isActiveSource,
             initiallyCollapsed: !isActiveSource,
             accounts,

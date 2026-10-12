@@ -5,10 +5,11 @@
 // time) and then removes the screens the account's backend cannot support (no delete-wallet or change-password button for a backend that has neither). Pure functions, tested without React; the hook is a thin wrapper.
 import React, { useEffect, useMemo, useSyncExternalStore } from 'react';
 import WalletSecuritySection from '../WalletSecuritySection';
+import AccountSigningSection from './AccountSigningSection';
 import { AuthenticationType } from '../auth/authenticationType';
 import { createWalletLockStore } from './walletLock';
 import { createWalletSecurityApi } from './walletSecurity';
-export const ALL_WALLET_DERIVATIONS = ['lock', 'logoff', 'authType', 'security', 'accounts'];
+export const ALL_WALLET_DERIVATIONS = ['lock', 'logoff', 'authType', 'security', 'accounts', 'signing'];
 export function authenticationTypeOf(backendId) {
     if (!backendId)
         return undefined;
@@ -37,6 +38,8 @@ export function deriveWalletProps(input) {
         if (security)
             out.configSecurityPanelContent = React.createElement(WalletSecuritySection, { api: security });
     }
+    if (derives.has('signing'))
+        out.configSigningPanelContent = React.createElement(AccountSigningSection, { wallet, address: activeAddress });
     return out;
 }
 /** The host's own (defined) props win over the derived ones; then the screens the account's backend cannot support are removed. */

@@ -55,7 +55,7 @@ export type HostActions = Pick<
 export type HostSlots = Pick<
   MeritWalletProps,
   | 'manageRadioPanels' | 'overlayHost' | 'agentSelectSlot' | 'listPanelIdOverrides' | 'zeroXTradeButtonContent' | 'uniSelectContent'
-  | 'configPersistedTimeoutContent' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configTestAccountsContent' | 'configResetPanelsContent'
+  | 'configPersistedTimeoutContent' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configSigningPanelContent' | 'configTestAccountsContent' | 'configResetPanelsContent'
 >;
 
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */

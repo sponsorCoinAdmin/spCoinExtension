@@ -226,6 +226,8 @@ export interface MeritWalletProps {
     configModalMode?: boolean;
     onConfigModalModeChange?: (modal: boolean) => void;
     configSecurityPanelContent?: React.ReactNode;
+    /** The Config tab's "Who signs" section (derived from `wallet`: which holder signs for the active account, and the switch). */
+    configSigningPanelContent?: React.ReactNode;
     /** 2026-10-08: the Config tab's Test Accounts section (TestAccountsSection); omit to hide it. */
     configTestAccountsContent?: React.ReactNode;
     /** 2026-10-08: how this wallet authenticates locally: KEYSTORE (web app, server keystore) or VAULT (extension). Set by the host. */

@@ -12,7 +12,7 @@ export type HostSelection = Pick<MeritWalletProps, 'onAccountRowSelect' | 'onNet
 /** Transactions the user starts from the Send and Sponsor tabs, and the input state around them. */
 export type HostActions = Pick<MeritWalletProps, 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit' | 'sponsorPanel' | 'listHost'>;
 /** The body: who owns the radio groups, the overlay host, and the slots a host fills with its own panels. */
-export type HostSlots = Pick<MeritWalletProps, 'manageRadioPanels' | 'overlayHost' | 'agentSelectSlot' | 'listPanelIdOverrides' | 'zeroXTradeButtonContent' | 'uniSelectContent' | 'configPersistedTimeoutContent' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configTestAccountsContent' | 'configResetPanelsContent'>;
+export type HostSlots = Pick<MeritWalletProps, 'manageRadioPanels' | 'overlayHost' | 'agentSelectSlot' | 'listPanelIdOverrides' | 'zeroXTradeButtonContent' | 'uniSelectContent' | 'configPersistedTimeoutContent' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configSigningPanelContent' | 'configTestAccountsContent' | 'configResetPanelsContent'>;
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */
 export type HostLock = Pick<MeritWalletProps, 'passwordMode' | 'walletLocked' | 'onResetWallet' | 'passwordIcon' | 'passwordErrorText' | 'onPasswordSubmit' | 'passwordSubmitting'>;
 /** The Config tab's values and handlers. */

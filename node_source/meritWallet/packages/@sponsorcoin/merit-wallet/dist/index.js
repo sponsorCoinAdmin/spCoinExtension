@@ -80,3 +80,5 @@ export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritAppro
 export { buildApproverGroups, createApproverController, connectNoticeText } from './wallet/approverAccounts';
 export { useApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet } from './account/signIn';
+export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accountSigning';
+export { default as AccountSigningSection } from './wallet/AccountSigningSection';

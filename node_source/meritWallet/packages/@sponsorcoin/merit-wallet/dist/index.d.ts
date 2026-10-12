@@ -103,3 +103,5 @@ export type { MeritApprovalRequest, MeritApprovalPhase } from './approval/meritA
 export { buildApproverGroups, createApproverController, connectNoticeText, type ApproverHost, type ApproverGroupsInput, type ApproverController } from './wallet/approverAccounts';
 export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet, type SignInParams } from './account/signIn';
+export { readSigningChoices, chooseSigner, signingWarning, type SigningChoices, type SigningHolder, type HolderState } from './wallet/accountSigning';
+export { default as AccountSigningSection } from './wallet/AccountSigningSection';

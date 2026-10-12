@@ -5,6 +5,7 @@
 // base URL of the hosted API for the sign-in. Loading and saving the record use the engine's account store; messages go to the shared message panel.
 'use client';
 
+import { signInForToken } from '../signIn';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -472,43 +473,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
       const normalizedTargetAddress = normalizeAddress(derived.publicKeyTrimmed);
       const { signerAddress, signMessage } = await host.signIn(normalizedTargetAddress, normalizedActiveAddress);
 
-      const nonceRes = await fetch(`${host.baseUrl ?? ''}/api/spCoin/auth/nonce`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: signerAddress }),
-      });
-      if (!nonceRes.ok) {
-        let serverError = '';
-        try {
-          const payload = (await nonceRes.json()) as { error?: string; details?: string };
-          serverError = String(payload?.error ?? payload?.details ?? '').trim();
-        } catch {
-          serverError = '';
-        }
-        const statusHint =
-          nonceRes.status === 429
-            ? 'Too many auth attempts. Please wait and try again.'
-            : nonceRes.status === 503
-            ? 'Server auth is not configured.'
-            : '';
-        const message = serverError || statusHint || `Nonce request failed (HTTP ${nonceRes.status})`;
-        throw new Error(message);
-      }
-      const noncePayload = (await nonceRes.json()) as {
-        nonce?: string;
-        message?: string;
-      };
-      const nonce = String(noncePayload?.nonce ?? '');
-      const message = String(noncePayload?.message ?? '');
-      if (!nonce || !message) {
-        throw new Error('Invalid nonce payload from server');
-      }
-
-      const signature = await signMessage(message);
-      if (!signature) {
-        throw new Error('Signature request rejected');
-      }
-
+      // the signer must be the target or a signer that may edit it: checked BEFORE anyone is asked to sign
       const normalizedSignerAddress = normalizeAddress(signerAddress || normalizedTargetAddress);
       const signerCanEditTarget = normalizedSignerAddress === normalizedTargetAddress || Boolean(host.canEdit?.(normalizedSignerAddress, normalizedTargetAddress));
       if (!signerCanEditTarget) {
@@ -518,30 +483,8 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         );
       }
 
-      const verifyRes = await fetch(`${host.baseUrl ?? ''}/api/spCoin/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          address: normalizedSignerAddress,
-          nonce,
-          signature,
-        }),
-      });
-      if (!verifyRes.ok) {
-        const failPayload = (await verifyRes.json().catch(() => ({}))) as {
-          error?: string;
-          details?: string;
-        };
-        throw new Error(
-          // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- an empty-string error/details field is as good as absent; fall through to the next one
-          failPayload?.error || failPayload?.details || 'Signature verification failed',
-        );
-      }
-      const verifyPayload = (await verifyRes.json()) as { token?: string };
-      const authToken = String(verifyPayload?.token ?? '');
-      if (!authToken) {
-        throw new Error('Missing auth token');
-      }
+      // the one shared sign-in (src/account/signIn.ts): the challenge, the signature, the token
+      const authToken = await signInForToken({ baseUrl: host.baseUrl ?? '', address: normalizedSignerAddress, signMessage });
 
       const shouldSaveAccount = derived.hasDataChanges || !accountExists;
       const shouldSaveLogo = Boolean(logoFile);

@@ -79,3 +79,4 @@ export { createInjectedAuthenticator, translateProviderError } from './auth/inje
 export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritApproval, resolveMeritApproval, requestReauthentication, clearSettledMeritApproval, } from './approval/meritApproval';
 export { buildApproverGroups, createApproverController, connectNoticeText } from './wallet/approverAccounts';
 export { useApproverAccounts } from './wallet/approverAccountsReact';
+export { signInForToken, signInWithWallet } from './account/signIn';

@@ -934,6 +934,7 @@ async function renderWallet() {
                 ? React.createElement(WalletOnboardingPanel, {
                     createWallet: vaultOnboarding.createWallet,
                     importWallet: vaultOnboarding.importWallet,
+                    restoreBackup: vaultOnboarding.restoreBackup,
                     onDone: () => {
                       void vaultSession.refresh().then(closeVaultScreen);
                     },
@@ -944,6 +945,7 @@ async function renderWallet() {
           ? React.createElement(WalletOnboardingPanel, {
               createWallet: vaultOnboarding.createWallet,
               importWallet: vaultOnboarding.importWallet,
+                    restoreBackup: vaultOnboarding.restoreBackup,
               // The panel stays up through the recovery-phrase step even though the vault already exists by then (phase is no longer 'setup').
               onDone: () => {
                 // Close only after the status says a vault exists, or render() would re-open setup from the stale phase.

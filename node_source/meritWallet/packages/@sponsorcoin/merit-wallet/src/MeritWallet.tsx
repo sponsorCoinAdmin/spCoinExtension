@@ -769,6 +769,8 @@ export interface MeritWalletProps {
   configSecurityPanelContent?: React.ReactNode;
   /** The Config tab's "Who signs" section (derived from `wallet`: which holder signs for the active account, and the switch). */
   configSigningPanelContent?: React.ReactNode;
+  /** The Config tab's "Backup file" section (derived from `wallet` when its key-keeping backend can make a backup file). */
+  configBackupPanelContent?: React.ReactNode;
   /** 2026-10-08: the Config tab's Test Accounts section (TestAccountsSection); omit to hide it. */
   configTestAccountsContent?: React.ReactNode;
   /** 2026-10-08: how this wallet authenticates locally: KEYSTORE (web app, server keystore) or VAULT (extension). Set by the host. */
@@ -882,6 +884,7 @@ function MeritWalletInner({
   onConfigModalModeChange,
   configSecurityPanelContent,
   configSigningPanelContent,
+  configBackupPanelContent,
   configTestAccountsContent,
   configUniSelectVisible,
   onConfigUniswapEngineChange,
@@ -1796,6 +1799,7 @@ function MeritWalletInner({
                 onModalModeChange: onConfigModalModeChange,
                 securityPanelContent: configSecurityPanelContent,
                 signingPanelContent: configSigningPanelContent,
+                backupPanelContent: configBackupPanelContent,
                 testAccountsContent: configTestAccountsContent,
                 uniSelectVisible: configUniSelectVisible,
                 onUniswapEngineChange: onConfigUniswapEngineChange,

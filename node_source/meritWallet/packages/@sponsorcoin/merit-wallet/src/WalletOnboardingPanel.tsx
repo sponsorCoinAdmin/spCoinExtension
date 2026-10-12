@@ -14,11 +14,13 @@ export interface WalletOnboardingPanelProps {
   createWallet(password: string): Promise<{ recoveryPhrase: string }>;
   /** Restore a wallet from an existing phrase under `password`. */
   importWallet(recoveryPhrase: string, password: string): Promise<void>;
+  /** 2026-10-12 (authenticationDesign V8): restore the wallet from an encrypted backup file (its text) and the password it was made with. Omitted: the option is not shown. */
+  restoreBackup?(file: string, password: string): Promise<void>;
   /** Setup is finished and the wallet is unlocked. */
   onDone(): void;
 }
 
-type Step = 'choose' | 'create' | 'phrase' | 'import';
+type Step = 'choose' | 'create' | 'phrase' | 'import' | 'restore';
 
 const BLUE = '#5981F3';
 const BORDER = '#334155';
@@ -29,11 +31,13 @@ const field: React.CSSProperties = { boxSizing: 'border-box', width: '100%', bor
 const muted: React.CSSProperties = { color: '#94a3b8', fontSize: 12, margin: 0 };
 const err: React.CSSProperties = { color: '#f87171', fontSize: 12, margin: 0 };
 
-export default function WalletOnboardingPanel({ createWallet, importWallet, onDone }: WalletOnboardingPanelProps) {
+export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }: WalletOnboardingPanelProps) {
   const [step, setStep] = useState<Step>('choose');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [phraseInput, setPhraseInput] = useState('');
+  const [backupText, setBackupText] = useState('');
+  const [backupName, setBackupName] = useState('');
   const [phrase, setPhrase] = useState('');
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -118,6 +122,47 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, onDo
     );
   }
 
+  if (step === 'restore' && restoreBackup) {
+    return (
+      <form
+        id="WALLET_ONBOARDING_RESTORE"
+        style={box}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!backupText) return setError('Choose a backup file first.');
+          setBusy(true);
+          setError('');
+          restoreBackup(backupText, password)
+            .then(() => {
+              setPassword('');
+              setBackupText('');
+              onDone();
+            })
+            .catch((e2: unknown) => setError(e2 instanceof Error ? e2.message : 'The backup could not be restored.'))
+            .finally(() => setBusy(false));
+        }}
+      >
+        <p style={muted}>Choose the backup file and enter the password it was made with.</p>
+        <input
+          type="file"
+          accept=".json,application/json"
+          style={field}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            setBackupName(file.name);
+            void file.text().then(setBackupText);
+          }}
+        />
+        {backupName && <p style={muted}>{backupName}</p>}
+        <input type="password" autoComplete="current-password" placeholder="Backup password" value={password} onChange={(e) => setPassword(e.target.value)} style={field} />
+        {error && <p style={err}>{error}</p>}
+        <button type="submit" disabled={busy || !backupText || !password} style={{ ...primary, opacity: busy || !backupText || !password ? 0.6 : 1 }}>{busy ? 'Restoring…' : 'Restore wallet'}</button>
+        <button type="button" style={ghost} onClick={() => { setError(''); setStep('choose'); }}>Back</button>
+      </form>
+    );
+  }
+
   if (step === 'import') {
     const normalized = normalizeMnemonic(phraseInput);
     return (
@@ -162,6 +207,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, onDo
       <p style={muted}>This wallet keeps your keys on this device, encrypted with your password.</p>
       <button type="button" style={primary} onClick={() => { setError(''); setStep('create'); }}>Create a new wallet</button>
       <button type="button" style={ghost} onClick={() => { setError(''); setStep('import'); }}>I already have a Secret Recovery Phrase</button>
+      {restoreBackup ? <button type="button" style={ghost} onClick={() => { setError(''); setStep('restore'); }}>Restore from a backup file</button> : null}
     </div>
   );
 }

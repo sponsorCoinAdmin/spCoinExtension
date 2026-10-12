@@ -84,3 +84,4 @@ export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accou
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, withApprovalNotice } from './auth/approvalWaiting';
 export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
+export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';

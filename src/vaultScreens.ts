@@ -3,6 +3,7 @@
 // 2026-10-08 (docs/meritWalletNpmDesignToDo.txt, table rows 21 and 23) -- the extension's connections between the package's wallet screens
 // (VaultAccountsPanel, WalletOnboardingPanel) and the vault in the background worker. Every call is a merit/* message to the worker; the worker
 // is the only place keys exist. A failed reply becomes an Error with the worker's message so the screens can show it.
+import { extensionVault } from './localVaultAuthenticator';
 import type { TestAccountsApi, VaultAccountsApi } from '@sponsorcoin/merit-wallet';
 
 type Reply = {
@@ -66,6 +67,10 @@ export const vaultOnboarding = {
   },
   async importWallet(recoveryPhrase: string, password: string): Promise<void> {
     await call({ type: 'merit/vault/create', password, mnemonic: recoveryPhrase });
+  },
+  // 2026-10-12 (docs/authenticationDesign.txt V8): the first screen restores an encrypted backup file through the vault capability (the same code and the same errors as everywhere)
+  async restoreBackup(file: string, password: string): Promise<void> {
+    await extensionVault.importBackup(file, { kind: 'password', value: password });
   },
 };
 

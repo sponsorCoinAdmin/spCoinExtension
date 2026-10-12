@@ -16,11 +16,13 @@ const ghost = { ...primary, background: 'transparent', border: `1px solid ${BORD
 const field = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#0E111B', padding: '8px 12px', color: '#fff', font: 'inherit', outline: 'none' };
 const muted = { color: '#94a3b8', fontSize: 12, margin: 0 };
 const err = { color: '#f87171', fontSize: 12, margin: 0 };
-export default function WalletOnboardingPanel({ createWallet, importWallet, onDone }) {
+export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }) {
     const [step, setStep] = useState('choose');
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
     const [phraseInput, setPhraseInput] = useState('');
+    const [backupText, setBackupText] = useState('');
+    const [backupName, setBackupName] = useState('');
     const [phrase, setPhrase] = useState('');
     const [saved, setSaved] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -56,6 +58,29 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, onDo
                                 });
                             }, style: { background: 'none', border: 0, padding: 2, cursor: 'pointer', color: copied ? '#4ade80' : '#94a3b8', display: 'flex' }, children: copied ? (_jsx("svg", { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("polyline", { points: "20 6 9 17 4 12" }) })) : (_jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("rect", { x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" }), _jsx("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })] })) })] }), _jsx("button", { type: "button", disabled: !saved, style: { ...primary, opacity: saved ? 1 : 0.5 }, onClick: () => { setPhrase(''); onDone(); }, children: "Continue" })] }));
     }
+    if (step === 'restore' && restoreBackup) {
+        return (_jsxs("form", { id: "WALLET_ONBOARDING_RESTORE", style: box, onSubmit: (e) => {
+                e.preventDefault();
+                if (!backupText)
+                    return setError('Choose a backup file first.');
+                setBusy(true);
+                setError('');
+                restoreBackup(backupText, password)
+                    .then(() => {
+                    setPassword('');
+                    setBackupText('');
+                    onDone();
+                })
+                    .catch((e2) => setError(e2 instanceof Error ? e2.message : 'The backup could not be restored.'))
+                    .finally(() => setBusy(false));
+            }, children: [_jsx("p", { style: muted, children: "Choose the backup file and enter the password it was made with." }), _jsx("input", { type: "file", accept: ".json,application/json", style: field, onChange: (event) => {
+                        const file = event.target.files?.[0];
+                        if (!file)
+                            return;
+                        setBackupName(file.name);
+                        void file.text().then(setBackupText);
+                    } }), backupName && _jsx("p", { style: muted, children: backupName }), _jsx("input", { type: "password", autoComplete: "current-password", placeholder: "Backup password", value: password, onChange: (e) => setPassword(e.target.value), style: field }), error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy || !backupText || !password, style: { ...primary, opacity: busy || !backupText || !password ? 0.6 : 1 }, children: busy ? 'Restoring…' : 'Restore wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
+    }
     if (step === 'import') {
         const normalized = normalizeMnemonic(phraseInput);
         return (_jsxs("form", { id: "WALLET_ONBOARDING_IMPORT", style: box, onSubmit: (e) => {
@@ -84,5 +109,5 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, onDo
                 })();
             }, children: [_jsx("p", { style: muted, children: "Enter your 12-word Secret Recovery Phrase, then choose a password for this device." }), _jsx("textarea", { rows: 3, placeholder: "Secret Recovery Phrase", value: phraseInput, onChange: (e) => setPhraseInput(e.target.value), style: { ...field, resize: 'none' } }), passwordFields, error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy || !phraseInput.trim(), style: { ...primary, opacity: busy || !phraseInput.trim() ? 0.6 : 1 }, children: busy ? 'Importing…' : 'Import wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
     }
-    return (_jsxs("div", { id: "WALLET_ONBOARDING", style: box, children: [_jsx("p", { style: { margin: 0, fontWeight: 600 }, children: "Set up your wallet" }), _jsx("p", { style: muted, children: "This wallet keeps your keys on this device, encrypted with your password." }), _jsx("button", { type: "button", style: primary, onClick: () => { setError(''); setStep('create'); }, children: "Create a new wallet" }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('import'); }, children: "I already have a Secret Recovery Phrase" })] }));
+    return (_jsxs("div", { id: "WALLET_ONBOARDING", style: box, children: [_jsx("p", { style: { margin: 0, fontWeight: 600 }, children: "Set up your wallet" }), _jsx("p", { style: muted, children: "This wallet keeps your keys on this device, encrypted with your password." }), _jsx("button", { type: "button", style: primary, onClick: () => { setError(''); setStep('create'); }, children: "Create a new wallet" }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('import'); }, children: "I already have a Secret Recovery Phrase" }), restoreBackup ? _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('restore'); }, children: "Restore from a backup file" }) : null] }));
 }

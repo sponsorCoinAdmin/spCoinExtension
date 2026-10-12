@@ -6,10 +6,11 @@
 import React, { useEffect, useMemo, useSyncExternalStore } from 'react';
 import WalletSecuritySection from '../WalletSecuritySection';
 import AccountSigningSection from './AccountSigningSection';
+import WalletBackupSection from './WalletBackupSection';
 import { AuthenticationType } from '../auth/authenticationType';
 import { createWalletLockStore } from './walletLock';
 import { createWalletSecurityApi } from './walletSecurity';
-export const ALL_WALLET_DERIVATIONS = ['lock', 'logoff', 'authType', 'security', 'accounts', 'signing'];
+export const ALL_WALLET_DERIVATIONS = ['lock', 'logoff', 'authType', 'security', 'accounts', 'signing', 'backup'];
 export function authenticationTypeOf(backendId) {
     if (!backendId)
         return undefined;
@@ -40,6 +41,8 @@ export function deriveWalletProps(input) {
     }
     if (derives.has('signing'))
         out.configSigningPanelContent = React.createElement(AccountSigningSection, { wallet, address: activeAddress });
+    if (derives.has('backup'))
+        out.configBackupPanelContent = React.createElement(WalletBackupSection, { wallet });
     return out;
 }
 /** The host's own (defined) props win over the derived ones; then the screens the account's backend cannot support are removed. */

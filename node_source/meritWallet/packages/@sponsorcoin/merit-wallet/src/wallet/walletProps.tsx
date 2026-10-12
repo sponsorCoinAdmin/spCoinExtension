@@ -6,6 +6,7 @@
 import React, { useEffect, useMemo, useSyncExternalStore } from 'react';
 import WalletSecuritySection from '../WalletSecuritySection';
 import AccountSigningSection from './AccountSigningSection';
+import WalletBackupSection from './WalletBackupSection';
 import { AuthenticationType } from '../auth/authenticationType';
 import type { MeritWalletProps } from '../MeritWallet';
 import { createWalletLockStore, type WalletLockState, type WalletLockStore } from './walletLock';
@@ -15,8 +16,8 @@ import type { Wallet } from './wallet';
 export type WalletDerivedProps = Partial<MeritWalletProps>;
 
 /** What a host lets the wallet derive. A host with its own gate (the web app's password panel) leaves 'lock' and 'logoff' out. The delete-wallet / change-password gating always applies. */
-export type WalletDerivation = 'lock' | 'logoff' | 'authType' | 'security' | 'accounts' | 'signing';
-export const ALL_WALLET_DERIVATIONS: readonly WalletDerivation[] = ['lock', 'logoff', 'authType', 'security', 'accounts', 'signing'];
+export type WalletDerivation = 'lock' | 'logoff' | 'authType' | 'security' | 'accounts' | 'signing' | 'backup';
+export const ALL_WALLET_DERIVATIONS: readonly WalletDerivation[] = ['lock', 'logoff', 'authType', 'security', 'accounts', 'signing', 'backup'];
 
 export function authenticationTypeOf(backendId: string | undefined): AuthenticationType | undefined {
   if (!backendId) return undefined;
@@ -50,6 +51,7 @@ export function deriveWalletProps(input: {
     if (security) out.configSecurityPanelContent = React.createElement(WalletSecuritySection, { api: security });
   }
   if (derives.has('signing')) out.configSigningPanelContent = React.createElement(AccountSigningSection, { wallet, address: activeAddress });
+  if (derives.has('backup')) out.configBackupPanelContent = React.createElement(WalletBackupSection, { wallet });
   return out;
 }
 

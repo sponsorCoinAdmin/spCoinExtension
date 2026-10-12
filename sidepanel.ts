@@ -6,7 +6,7 @@ import { extensionAuthenticatorRegistry, extensionWallet, localVaultAuthenticato
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
 import { vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, type AccountProfileHost, type AddAccountHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
+import { estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
 import { PasswordPanel, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
@@ -465,13 +465,20 @@ async function renderWallet() {
   // 2026-10-10 (docs/connectionDesign.txt item 2): the shared Add a Wallet/Account flow (the same menu the web app shows), over this vault. Create derives the next account
   // from the recovery phrase; Import takes a private key. Neither makes the new account the active one: the user picks it from the list (connectionDesign 2.6). The entries the
   // vault cannot offer are shown disabled with the reason.
+  // docs/createWalletAccountDesign.txt C6: the keys this panel can add are the extension vault's only; a call aimed at another wallet is refused in words.
+  const onlyOwnVault = (targetId?: string) => {
+    if (targetId && targetId !== 'localVault') throw new Error(`${walletName(targetId)} cannot be added to from the extension.`);
+  };
   const addAccountHost: AddAccountHost = {
-    createAccount: async () => {
+    targets: ['localVault'],
+    createAccount: async (targetId) => {
+      onlyOwnVault(targetId);
       await vaultAccountsApi.addDerived();
       vaultRowsStale = true;
       await loadVaultAccounts();
     },
-    importAccount: async (privateKey) => {
+    importAccount: async (privateKey, targetId) => {
+      onlyOwnVault(targetId);
       await vaultAccountsApi.importPrivateKey(privateKey);
       vaultRowsStale = true;
       await loadVaultAccounts();

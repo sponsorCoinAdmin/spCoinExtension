@@ -3,6 +3,11 @@ const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 /** The groups for the shared account list. Pure: the statuses and the entries are read by the caller. */
 export function buildApproverGroups(input) {
     const { backends, entries, statuses, activeAddress, activeApproverId, host } = input;
+    // docs/createWalletAccountDesign.txt 4.2: on an account that more than one wallet holds, the row says where else its key is, by the other wallets' own names
+    const alsoIn = (entry, here) => {
+        const others = entry.backends.filter((id) => id !== here).map((id) => backends.find((b) => b.id === id)?.name ?? id);
+        return others.length ? `Key also in ${others.join(', ')}` : undefined;
+    };
     return backends.map((backend) => {
         const status = statuses[backend.id];
         const isActiveSource = !!activeAddress && activeApproverId === backend.id;
@@ -16,6 +21,7 @@ export function buildApproverGroups(input) {
                 iconSrc: known?.iconSrc,
                 address: entry.address,
                 isActive: isActiveSource && same(entry.address, activeAddress),
+                note: alsoIn(entry, backend.id),
             };
         });
         const group = {

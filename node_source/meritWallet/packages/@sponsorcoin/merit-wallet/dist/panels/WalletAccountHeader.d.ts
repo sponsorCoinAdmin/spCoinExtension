@@ -36,6 +36,8 @@ export interface WalletAccountHeaderProps {
      *  already showing — same chevronUp convention NetworkSelectDropDown's
      *  own trigger mode uses. Defaults false (closed). */
     chevronUp?: boolean;
+    /** The wallet that signs for the account (docs/createWalletAccountDesign.txt 4.3), e.g. "Merit Wallet (Extension)": the header's tooltip, so the person can always see which wallet is about to approve. */
+    walletName?: string;
     /** Defaults to every role false/inert — matches "no account, no roles"
      *  rather than fabricating a role that isn't real. */
     roles?: WalletAccountHeaderRoles;
@@ -45,4 +47,4 @@ export interface WalletAccountHeaderProps {
      *  of `roles`. */
     onRoleClick?: (role: 'sponsor' | 'recipient' | 'agent') => void;
 }
-export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, chevronUp, }: WalletAccountHeaderProps): React.JSX.Element;
+export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, chevronUp, walletName, }: WalletAccountHeaderProps): React.JSX.Element;

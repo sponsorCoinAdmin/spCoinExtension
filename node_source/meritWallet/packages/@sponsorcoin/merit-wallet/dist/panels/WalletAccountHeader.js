@@ -72,12 +72,12 @@ function DefaultAccountPill({ icon, address, symbol, name, placeholderLabel, onS
 function DefaultRoleTable({ roles = DEFAULT_ROLES, onRoleClick, }) {
     return (_jsx("div", { style: { display: 'inline-block', border: '1.5px solid #1f2937' }, children: _jsx("table", { style: { borderCollapse: 'collapse', fontSize: 9, fontWeight: 700, color: walletColors.white }, children: _jsx("tbody", { children: _jsxs("tr", { children: [_jsx(RoleCell, { label: "S", active: roles.isSponsor, title: roles.isSponsor ? 'Sponsor Account — click to open Rewards' : 'Not a Sponsor Account', onClick: roles.isSponsor && onRoleClick ? () => onRoleClick('sponsor') : undefined, borderRight: true }), _jsx(RoleCell, { label: "R", active: roles.isRecipient, title: roles.isRecipient ? 'Recipient Account — click to open Rewards' : 'Not a Recipient Account', onClick: roles.isRecipient && onRoleClick ? () => onRoleClick('recipient') : undefined, borderRight: true }), _jsx(RoleCell, { label: "A", active: roles.isAgent, title: roles.isAgent ? 'Agent Account — click to open Rewards' : 'Not an Agent Account', onClick: roles.isAgent && onRoleClick ? () => onRoleClick('agent') : undefined, borderRight: false })] }) }) }) }));
 }
-export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, chevronUp, }) {
+export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, chevronUp, walletName, }) {
     const resolvedPill = pillSlot ?? (_jsx(DefaultAccountPill, { icon: icon, address: address, symbol: symbol, name: name, placeholderLabel: placeholderLabel, onSelectClick: onSelectClick, onIconClick: onIconClick, chevronUp: chevronUp }));
     // roleSlot === null is an explicit "render nothing" — distinct from
     // undefined ("caller didn't pass one, use the default").
     const resolvedRole = roleSlot === null ? null : roleSlot ?? _jsx(DefaultRoleTable, { roles: roles, onRoleClick: onRoleClick });
-    return (_jsxs("div", { style: {
+    return (_jsxs("div", { title: walletName ? `Signs with ${walletName}` : undefined, style: {
             flexShrink: 0,
             borderBottom: '1px solid rgba(51,65,85,0.5)',
             // 2026-09-22, on direct request — 6px (was 16px), matching

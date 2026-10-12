@@ -168,6 +168,8 @@ export interface MeritWalletProps {
     approverHost?: ApproverHost;
     /** The banner above the account list (a failed connect). Derived when `approverHost` is given; a host may also set it. */
     accountListNotice?: string;
+    /** The wallet that signs for the active account (derived from `wallet` when the host does not pass it), shown as the account header's tooltip. */
+    activeWalletName?: string;
     /** What the component may derive from `wallet` (default: everything). A host that has its own lock gate (the web app) leaves out 'lock' and 'logoff'. */
     walletDerives?: readonly WalletDerivation[];
     /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */

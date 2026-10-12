@@ -11,15 +11,16 @@ import { BACKUP_FORMAT, VaultError, parseBackupFile } from './vaultCapability';
 /** The worker's error codes mapped onto the one VaultError set. */
 export function workerError(reply) {
     const text = reply.message ?? '';
-    const code = reply.error === 'wrong-password' ? 'wrong_credential'
-        : reply.error === 'too-many-attempts' ? 'locked_out'
-            : reply.error === 'locked' ? 'locked'
-                : reply.error === 'forbidden' ? 'unsupported'
-                    : reply.error === 'invalid-request' && /at least \d+ characters/i.test(text) ? 'weak_credential'
-                        : reply.error === 'invalid-request' && /recovery phrase|mnemonic/i.test(text) ? 'invalid_phrase'
-                            : reply.error === 'invalid-request' && /private key/i.test(text) ? 'invalid_key'
-                                : reply.error === 'invalid-request' && /already/i.test(text) ? 'already_set_up'
-                                    : 'unsupported';
+    const code = /already exists|already set up/i.test(text) ? 'already_set_up'
+        : reply.error === 'wrong-password' ? 'wrong_credential'
+            : reply.error === 'too-many-attempts' ? 'locked_out'
+                : reply.error === 'locked' ? 'locked'
+                    : reply.error === 'forbidden' ? 'unsupported'
+                        : reply.error === 'invalid-request' && /at least \d+ characters/i.test(text) ? 'weak_credential'
+                            : reply.error === 'invalid-request' && /recovery phrase|mnemonic/i.test(text) ? 'invalid_phrase'
+                                : reply.error === 'invalid-request' && /private key/i.test(text) ? 'invalid_key'
+                                    : reply.error === 'invalid-request' && /already/i.test(text) ? 'already_set_up'
+                                        : 'unsupported';
     const seconds = /(\d+)\s*seconds?/i.exec(text);
     return new VaultError(code, text || (code === 'wrong_credential' ? 'Incorrect password.' : 'The wallet could not do that.'), code === 'locked_out' ? (seconds ? Number(seconds[1]) * 1000 : 30000) : undefined);
 }

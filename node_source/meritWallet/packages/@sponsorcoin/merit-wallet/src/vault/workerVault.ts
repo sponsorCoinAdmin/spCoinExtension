@@ -42,7 +42,8 @@ export interface WorkerVault extends VaultCapability {
 export function workerError(reply: WorkerReply): VaultError {
   const text = reply.message ?? '';
   const code: VaultErrorCode =
-    reply.error === 'wrong-password' ? 'wrong_credential'
+    /already exists|already set up/i.test(text) ? 'already_set_up'
+    : reply.error === 'wrong-password' ? 'wrong_credential'
     : reply.error === 'too-many-attempts' ? 'locked_out'
     : reply.error === 'locked' ? 'locked'
     : reply.error === 'forbidden' ? 'unsupported'

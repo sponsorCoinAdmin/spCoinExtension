@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from './PasswordPromptDialog';
 import { useActiveAccountProfile } from './swap/activeAccountProfile';
+import { SECRET_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';
 
 export interface WalletSecurityApi {
   /** Resolve with the account's private key; throw a readable message for a wrong password. */
@@ -56,6 +57,9 @@ function RevealRow({
     setSecret('');
     setVisible(false);
   };
+
+  // a revealed secret does not stay on the screen: it is cleared when the page is hidden or after a minute
+  useSecretClearing(!!secret, clear, SECRET_SHOWN_MAX_MS);
 
   const copy = () => {
     if (!secret) return;

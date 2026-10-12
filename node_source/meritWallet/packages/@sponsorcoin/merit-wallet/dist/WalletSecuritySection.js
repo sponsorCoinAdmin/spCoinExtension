@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from './PasswordPromptDialog';
 import { useActiveAccountProfile } from './swap/activeAccountProfile';
+import { SECRET_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';
 const labelStyle = { display: 'block', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 6 };
 const boxStyle = {
     boxSizing: 'border-box',
@@ -32,6 +33,8 @@ function RevealRow({ title, hint, dialogTitle, dialogMessage, disabled, reveal, 
         setSecret('');
         setVisible(false);
     };
+    // a revealed secret does not stay on the screen: it is cleared when the page is hidden or after a minute
+    useSecretClearing(!!secret, clear, SECRET_SHOWN_MAX_MS);
     const copy = () => {
         if (!secret)
             return;

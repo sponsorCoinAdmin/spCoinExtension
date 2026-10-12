@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from './vault/walletAccounts';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
+import { NEW_PHRASE_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';
 
 export interface WalletOnboardingPanelProps {
   /** Create a new wallet under `password`; resolves with the Secret Recovery Phrase to show once. */
@@ -39,6 +40,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
   const [backupText, setBackupText] = useState('');
   const [backupName, setBackupName] = useState('');
   const [phrase, setPhrase] = useState('');
+  const [phraseHidden, setPhraseHidden] = useState(false);
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
@@ -53,6 +55,9 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
       <input type="password" autoComplete="new-password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} style={field} />
     </>
   );
+
+  // the new phrase does not stay on the screen forever: hidden when the page is hidden or after five minutes (it can be shown again in Security, with the password)
+  useSecretClearing(!!phrase, () => { setPhrase(''); setPhraseHidden(true); }, NEW_PHRASE_SHOWN_MAX_MS);
 
   if (step === 'create') {
     return (
@@ -86,17 +91,18 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
   }
 
   if (step === 'phrase') {
-    const words = phrase.split(' ');
+    const words = phrase ? phrase.split(' ') : [];
     return (
       <div id="WALLET_ONBOARDING_PHRASE" style={box}>
         <p style={{ margin: 0, fontWeight: 600 }}>Your Secret Recovery Phrase</p>
         <p style={muted}>Write these words down in order and keep them somewhere safe. They are the only way to get your accounts back, and anyone who has them can take everything. This is the only time they are shown automatically.</p>
-        <ol style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, margin: 0, padding: 0, listStylePosition: 'inside', fontFamily: 'monospace', fontSize: 12 }}>
+        {phraseHidden && <p id="WALLET_ONBOARDING_PHRASE_HIDDEN" style={muted}>The phrase was hidden for your safety (the page was hidden or the screen was open for a while). Your wallet is created: show the phrase again in Security, with your password.</p>}
+        {!phraseHidden && <ol style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, margin: 0, padding: 0, listStylePosition: 'inside', fontFamily: 'monospace', fontSize: 12 }}>
           {words.map((w, i) => <li key={i} style={{ border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 6px' }}>{w}</li>)}
-        </ol>
+        </ol>}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
-            <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} /> I have saved my Secret Recovery Phrase
+            <input type="checkbox" checked={saved} disabled={phraseHidden} onChange={(e) => setSaved(e.target.checked)} /> I have saved my Secret Recovery Phrase
           </label>
           <button
             type="button"
@@ -117,7 +123,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
             )}
           </button>
         </div>
-        <button type="button" disabled={!saved} style={{ ...primary, opacity: saved ? 1 : 0.5 }} onClick={() => { setPhrase(''); onDone(); }}>Continue</button>
+        <button type="button" disabled={!saved && !phraseHidden} style={{ ...primary, opacity: saved || phraseHidden ? 1 : 0.5 }} onClick={() => { setPhrase(''); setPhraseHidden(false); onDone(); }}>Continue</button>
       </div>
     );
   }

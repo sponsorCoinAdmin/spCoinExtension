@@ -156,3 +156,4 @@ export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons, type AddTarget, type AddTargets, type AddKeyEntry } from './wallet/addTarget';
 export { createHardwareAuthenticator, HardwareError, type HardwareTransport, type HardwareErrorCode, type HardwareAuthenticatorOptions } from './auth/hardwareAuthenticator';
+export { watchSecret, useSecretClearing, SECRET_SHOWN_MAX_MS, NEW_PHRASE_SHOWN_MAX_MS, type SecretWatchEnv } from './security/secretClearing';

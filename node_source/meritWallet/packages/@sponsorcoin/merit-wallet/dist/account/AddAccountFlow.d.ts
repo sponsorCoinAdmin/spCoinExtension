@@ -9,6 +9,8 @@ export interface AddAccountHost {
     createAccount(targetId?: AuthenticatorId): Promise<void>;
     /** Import one account from a private key into this host's approver. Throw a readable message on failure (wrong format is checked here first). */
     importAccount(privateKey: string, targetId?: AuthenticatorId): Promise<void>;
+    /** Import a whole wallet (another Secret Recovery Phrase) into this host's approver; its first account is added. Throw a readable message on failure. A host that omits it shows the entry disabled. */
+    importWallet?(mnemonic: string, targetId?: AuthenticatorId): Promise<void>;
     /**
      * 2026-10-12 (docs/connectionDesign.txt items 4 / 7 / 8, authenticationDesign row 9): connect an account that another approver holds (MetaMask, the Merit extension, a hardware wallet): ask the approver, make the account active.
      * Throw a readable message on failure. A host that omits it shows those rows disabled with the reason below (the same entries and words in every host).

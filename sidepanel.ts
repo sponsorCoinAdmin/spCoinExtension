@@ -5,7 +5,7 @@ import { bundledFeedData } from './src/bundledFeeds';
 import { extensionAuthenticatorRegistry, extensionWallet, localVaultAuthenticator } from './src/localVaultAuthenticator';
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
-import { vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
+import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
 import { estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
 import { PasswordPanel, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
@@ -484,8 +484,14 @@ async function renderWallet() {
       vaultRowsStale = true;
       await loadVaultAccounts();
     },
+    // another Secret Recovery Phrase kept beside the first, like MetaMask's "Import a Secret Recovery Phrase" (the vault keeps several)
+    importWallet: async (mnemonic, targetId) => {
+      onlyOwnVault(targetId);
+      await importVaultWallet(mnemonic);
+      vaultRowsStale = true;
+      await loadVaultAccounts();
+    },
     unavailable: {
-      importWallet: 'This wallet holds one recovery phrase; importing a second wallet is not supported yet.',
       connectMetaMask: 'Connecting MetaMask from the extension is not available yet.',
       connectMeritExtension: 'You are already in the Merit extension.',
       connectHardware: 'Using USB or a QR Code — Coming Soon',

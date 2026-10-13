@@ -7,7 +7,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
-import { AddWalletMenu, ImportAccountForm } from '@sponsorcoin/spcoin-panels';
+import { AddWalletMenu, ImportAccountForm, ImportWalletForm } from '@sponsorcoin/spcoin-panels';
+import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
 import type { AuthenticatorId } from '../auth/authenticator';
 import type { Wallet } from '../wallet/wallet';
 import { addEntryReasons, readAddTargets, type AddTarget } from '../wallet/addTarget';
@@ -22,6 +23,8 @@ export interface AddAccountHost {
   createAccount(targetId?: AuthenticatorId): Promise<void>;
   /** Import one account from a private key into this host's approver. Throw a readable message on failure (wrong format is checked here first). */
   importAccount(privateKey: string, targetId?: AuthenticatorId): Promise<void>;
+  /** Import a whole wallet (another Secret Recovery Phrase) into this host's approver; its first account is added. Throw a readable message on failure. A host that omits it shows the entry disabled. */
+  importWallet?(mnemonic: string, targetId?: AuthenticatorId): Promise<void>;
   /**
    * 2026-10-12 (docs/connectionDesign.txt items 4 / 7 / 8, authenticationDesign row 9): connect an account that another approver holds (MetaMask, the Merit extension, a hardware wallet): ask the approver, make the account active.
    * Throw a readable message on failure. A host that omits it shows those rows disabled with the reason below (the same entries and words in every host).
@@ -40,7 +43,7 @@ export const DEFAULT_CONNECT_UNAVAILABLE: Record<ConnectApproverEntry, string> =
   connectHardware: 'Using USB or a QR Code — Coming Soon',
 };
 
-type Screen = 'menu' | 'importAccount' | 'createAccount';
+type Screen = 'menu' | 'importAccount' | 'createAccount' | 'importWallet';
 
 const buttonStyle: React.CSSProperties = { flex: 1, borderRadius: 8, border: 'none', padding: '9px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#243056', color: '#ffffff' };
 const primaryStyle: React.CSSProperties = { ...buttonStyle, background: '#5981F3' };
@@ -72,6 +75,26 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
   }, [wallet, activeAddress, hostTargets]);
   const target = targets.find((t) => t.id === (pickedTarget ?? defaultTarget));
   const [key, setKey] = useState('');
+  // Import a wallet: the phrase typed, whether it is a real BIP-39 phrase, and the first account it would give (checked here, nothing is imported yet)
+  const [phrase, setPhrase] = useState('');
+  const [phraseValid, setPhraseValid] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const words = normalizeMnemonic(phrase).split(' ').filter(Boolean);
+    if (words.length < 12) {
+      setPhraseValid(false);
+      return undefined;
+    }
+    void isValidMnemonic(phrase).then((ok) => {
+      if (alive) setPhraseValid(ok);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [phrase]);
+  const phraseWords = normalizeMnemonic(phrase).split(' ').filter(Boolean).length;
+  const phraseInvalid = phraseWords >= 12 && !phraseValid;
+  const phrasePreview = phraseValid ? firstAddressOfMnemonic(phrase) : '';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -89,6 +112,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
   const back = () => {
     setError('');
     setKey('');
+    setPhrase('');
     if (screen === 'menu') onDone();
     else setScreen('menu');
   };
@@ -105,6 +129,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
     }
   };
   const unavailable: Partial<Record<AddAccountEntry, string>> = { ...addEntryReasons(target), ...(host.unavailable ?? {}) };
+  if (!host.importWallet) unavailable.importWallet ??= 'Importing a wallet is not available here.';
   if (!host.connectApprover) {
     for (const entry of Object.keys(DEFAULT_CONNECT_UNAVAILABLE) as ConnectApproverEntry[]) unavailable[entry] ??= DEFAULT_CONNECT_UNAVAILABLE[entry];
   }
@@ -143,7 +168,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
       )}
       {screen === 'menu' && (
         <AddWalletMenu
-          onImportWallet={() => undefined}
+          onImportWallet={open('importWallet', 'importWallet')}
           onImportAccount={open('importAccount', 'importAccount')}
           onCreateAccount={open('createAccount', 'createAccount')}
           onConnectMetaMask={connect('connectMetaMask')}
@@ -162,6 +187,17 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
           error={error}
           isImporting={busy}
           onImport={() => void run(() => host.importAccount(trimmed, target?.id))}
+        />
+      )}
+      {screen === 'importWallet' && (
+        <ImportWalletForm
+          value={phrase}
+          onChange={setPhrase}
+          invalid={phraseInvalid}
+          previewAddress={phrasePreview}
+          error={error}
+          isImporting={busy}
+          onImport={() => void run(() => host.importWallet!(normalizeMnemonic(phrase), target?.id))}
         />
       )}
       {screen === 'createAccount' && (

@@ -15,6 +15,8 @@ export interface ImportedKey {
 export interface WalletVaultContents {
     version: 1;
     hd?: HdKeyring;
+    /** 2026-10-12 (docs/connectionDesign.txt item 2): further Secret Recovery Phrases added by importWallet, each with its own derived accounts (MetaMask keeps several phrases in one wallet). Absent in every vault made before. */
+    hdExtra?: HdKeyring[];
     imported: ImportedKey[];
     /** Display names, by lower-case address. */
     names: Record<string, string>;
@@ -28,6 +30,8 @@ export interface WalletAccountRecord {
     devOrigin: boolean;
     /** Derivation index for a generated account. */
     index?: number;
+    /** Which phrase a generated account comes from: absent for the wallet's first phrase, 1 and up for the phrases added by importWallet. */
+    wallet?: number;
 }
 export declare class WalletAccountError extends Error {
     constructor(message: string);
@@ -38,6 +42,8 @@ export declare function emptyWalletContents(): WalletVaultContents;
 export declare function normalizeMnemonic(mnemonic: string): string;
 /** BIP39 check: 12, 15, 18, 21 or 24 English words, each in the list, with a valid checksum. */
 export declare function isValidMnemonic(mnemonic: string): Promise<boolean>;
+/** The first account (m/44'/60'/0'/0/0) of a Secret Recovery Phrase: what the Import a wallet screen shows before anything is imported. */
+export declare function firstAddressOfMnemonic(mnemonic: string): `0x${string}`;
 /** Is this one of Hardhat's 20 published dev addresses (their keys are public, so they must never sign on a real chain)? */
 export declare function isHardhatDevAddress(address: string): boolean;
 /**
@@ -62,11 +68,16 @@ export declare class WalletAccounts {
     addDerived(name?: string): Promise<WalletAccountRecord>;
     /** Import an account by private key. A key whose address is already in the wallet is refused. */
     importPrivateKey(privateKey: string, name?: string): Promise<WalletAccountRecord>;
+    /**
+     * Import a whole wallet: another Secret Recovery Phrase, kept beside the first one (MetaMask: "Import a Secret Recovery Phrase"). Its first account is derived and added, with the name given or "Wallet N Account 1". A phrase that is already here,
+     * or one whose first account is already in the wallet, is refused. The phrase is encrypted with the rest of the vault and is not returned by anything but revealMnemonic (password asked again).
+     */
+    importWallet(mnemonic: string, name?: string): Promise<WalletAccountRecord>;
     /** Remove an imported account. Derived accounts cannot be removed (they come back from the Secret Recovery Phrase), as in MetaMask. */
     remove(address: string): Promise<void>;
     rename(address: string, name: string): Promise<void>;
     /** The Secret Recovery Phrase, only after the password is checked again (MetaMask asks for it every time). */
-    revealMnemonic(password: string): Promise<string>;
+    revealMnemonic(password: string, wallet?: number): Promise<string>;
     /** How many of Hardhat's standard test accounts are in this wallet, however they got here. */
     hardhatTestAccountStatus(): {
         loaded: number;

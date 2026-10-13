@@ -23,6 +23,10 @@ export function emptyWalletContents() {
     return { version: 1, imported: [], names: {} };
 }
 const lower = (a) => a.toLowerCase();
+/** Every Secret Recovery Phrase of the wallet, the first one first; `wallet` is its position (0 for the first). */
+function keyrings(c) {
+    return [...(c.hd ? [{ hd: c.hd, wallet: 0 }] : []), ...(c.hdExtra ?? []).map((hd, i) => ({ hd, wallet: i + 1 }))];
+}
 // ---- BIP39 validation (viem's mnemonicToAccount does not check the checksum) ---------------------------------------------------------
 const WORDLIST = english;
 const WORD_INDEX = new Map(WORDLIST.map((w, i) => [w, i]));
@@ -52,6 +56,10 @@ export async function isValidMnemonic(mnemonic) {
     const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', entropy));
     const hashBits = Array.from(hash).map((b) => b.toString(2).padStart(8, '0')).join('');
     return hashBits.slice(0, checksumBits) === bits.slice(entropyBits);
+}
+/** The first account (m/44'/60'/0'/0/0) of a Secret Recovery Phrase: what the Import a wallet screen shows before anything is imported. */
+export function firstAddressOfMnemonic(mnemonic) {
+    return deriveAddress(normalizeMnemonic(mnemonic), 0);
 }
 function deriveAddress(mnemonic, index) {
     return mnemonicToAccount(mnemonic, { addressIndex: index }).address;
@@ -107,10 +115,11 @@ export class WalletAccounts {
     list() {
         const c = this.contents();
         const out = [];
-        if (c.hd) {
-            for (let i = 0; i < c.hd.count; i++) {
-                const address = deriveAddress(c.hd.mnemonic, i);
-                out.push({ address, name: c.names[lower(address)] ?? `Account ${i + 1}`, source: 'generated', devOrigin: !!c.hd.devOrigin || isHardhatDevAddress(address), index: i });
+        for (const { hd, wallet } of keyrings(c)) {
+            for (let i = 0; i < hd.count; i++) {
+                const address = deriveAddress(hd.mnemonic, i);
+                const fallbackName = wallet === 0 ? `Account ${i + 1}` : `Wallet ${wallet + 1} Account ${i + 1}`;
+                out.push({ address, name: c.names[lower(address)] ?? fallbackName, source: 'generated', devOrigin: !!hd.devOrigin || isHardhatDevAddress(address), index: i, ...(wallet > 0 ? { wallet } : {}) });
             }
         }
         for (const k of c.imported) {
@@ -158,6 +167,29 @@ export class WalletAccounts {
         }));
         return this.list().find((a) => lower(a.address) === lower(address));
     }
+    /**
+     * Import a whole wallet: another Secret Recovery Phrase, kept beside the first one (MetaMask: "Import a Secret Recovery Phrase"). Its first account is derived and added, with the name given or "Wallet N Account 1". A phrase that is already here,
+     * or one whose first account is already in the wallet, is refused. The phrase is encrypted with the rest of the vault and is not returned by anything but revealMnemonic (password asked again).
+     */
+    async importWallet(mnemonic, name) {
+        const c = this.contents();
+        const phrase = normalizeMnemonic(mnemonic);
+        if (!(await isValidMnemonic(phrase)))
+            throw new WalletAccountError('That Secret Recovery Phrase is not valid.');
+        if (keyrings(c).some((k) => k.hd.mnemonic === phrase))
+            throw new WalletAccountError('That wallet is already in this app.');
+        const address = deriveAddress(phrase, 0);
+        if (this.list().some((a) => lower(a.address) === lower(address)))
+            throw new WalletAccountError('The first account of that wallet is already in this wallet.');
+        const wallet = keyrings(c).length;
+        const ring = { mnemonic: phrase, count: 1, ...(phrase === HARDHAT_DEV_MNEMONIC ? { devOrigin: true } : {}) };
+        await this.session.update((cur) => ({
+            ...cur,
+            ...(cur.hd ? { hdExtra: [...(cur.hdExtra ?? []), ring] } : { hd: ring }),
+            names: { ...cur.names, [lower(address)]: name?.trim() || (wallet === 0 ? 'Account 1' : `Wallet ${wallet + 1} Account 1`) },
+        }));
+        return this.list().find((a) => lower(a.address) === lower(address));
+    }
     /** Remove an imported account. Derived accounts cannot be removed (they come back from the Secret Recovery Phrase), as in MetaMask. */
     async remove(address) {
         const record = this.list().find((a) => lower(a.address) === lower(address));
@@ -180,12 +212,12 @@ export class WalletAccounts {
         await this.session.update((cur) => ({ ...cur, names: { ...cur.names, [lower(address)]: trimmed } }));
     }
     /** The Secret Recovery Phrase, only after the password is checked again (MetaMask asks for it every time). */
-    async revealMnemonic(password) {
+    async revealMnemonic(password, wallet = 0) {
         await this.session.verifyPassword(password);
-        const c = this.contents();
-        if (!c.hd)
+        const ring = keyrings(this.contents()).find((k) => k.wallet === wallet);
+        if (!ring)
             throw new WalletAccountError('This wallet has no Secret Recovery Phrase.');
-        return c.hd.mnemonic;
+        return ring.hd.mnemonic;
     }
     // ---- Test accounts (Config tab: Load / Unload) --------------------------------------------------------------------------------------
     /** How many of Hardhat's standard test accounts are in this wallet, however they got here. */
@@ -245,10 +277,10 @@ export class WalletAccounts {
         await this.session.verifyPassword(password);
         const c = this.contents();
         const target = lower(address);
-        if (c.hd) {
-            for (let i = 0; i < c.hd.count; i++) {
-                if (lower(deriveAddress(c.hd.mnemonic, i)) === target) {
-                    const key = mnemonicToAccount(c.hd.mnemonic, { addressIndex: i }).getHdKey().privateKey;
+        for (const { hd } of keyrings(c)) {
+            for (let i = 0; i < hd.count; i++) {
+                if (lower(deriveAddress(hd.mnemonic, i)) === target) {
+                    const key = mnemonicToAccount(hd.mnemonic, { addressIndex: i }).getHdKey().privateKey;
                     if (!key)
                         throw new WalletAccountError('That account has no private key.');
                     return `0x${Array.from(key, (b) => b.toString(16).padStart(2, '0')).join('')}`;
@@ -267,10 +299,10 @@ export class WalletAccounts {
     getSigningAccount(address) {
         const c = this.contents();
         const target = lower(address);
-        if (c.hd) {
-            for (let i = 0; i < c.hd.count; i++) {
-                if (lower(deriveAddress(c.hd.mnemonic, i)) === target)
-                    return { account: mnemonicToAccount(c.hd.mnemonic, { addressIndex: i }), devOrigin: !!c.hd.devOrigin || isHardhatDevAddress(target) };
+        for (const { hd } of keyrings(c)) {
+            for (let i = 0; i < hd.count; i++) {
+                if (lower(deriveAddress(hd.mnemonic, i)) === target)
+                    return { account: mnemonicToAccount(hd.mnemonic, { addressIndex: i }), devOrigin: !!hd.devOrigin || isHardhatDevAddress(target) };
             }
         }
         const imported = c.imported.find((k) => lower(k.address) === target);

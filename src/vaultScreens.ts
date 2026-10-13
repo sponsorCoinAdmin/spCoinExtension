@@ -32,6 +32,11 @@ async function call(message: Record<string, unknown>): Promise<Reply> {
   return reply;
 }
 
+/** Import a whole wallet (another Secret Recovery Phrase) into the extension's vault; its first account is added (docs/connectionDesign.txt item 2). */
+export async function importVaultWallet(mnemonic: string, name?: string): Promise<void> {
+  await call({ type: 'merit/accounts/importWallet', mnemonic, name });
+}
+
 export const vaultAccountsApi: VaultAccountsApi = {
   async list() {
     const reply = await call({ type: 'merit/accounts/list' });

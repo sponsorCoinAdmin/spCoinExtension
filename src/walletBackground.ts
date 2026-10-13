@@ -69,10 +69,11 @@ export type VaultRequest =
   | { type: 'merit/accounts/list' }
   | { type: 'merit/accounts/addDerived'; name?: string }
   | { type: 'merit/accounts/importPrivateKey'; privateKey: string; name?: string }
+  | { type: 'merit/accounts/importWallet'; mnemonic: string; name?: string }
   | { type: 'merit/accounts/remove'; address: string }
   | { type: 'merit/accounts/rename'; address: string; name: string }
   | { type: 'merit/accounts/setActive'; address: string }
-  | { type: 'merit/accounts/revealMnemonic'; password: string }
+  | { type: 'merit/accounts/revealMnemonic'; password: string; wallet?: number }
   | { type: 'merit/accounts/exportPrivateKey'; password: string; address: string }
   | { type: 'merit/accounts/testAccountsStatus' }
   | { type: 'merit/accounts/loadTestAccounts' }
@@ -190,6 +191,10 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
         return snapshot({ accounts: accounts.list(), active: accounts.activeAddress() });
       case 'merit/accounts/addDerived':
         return snapshot({ account: await accounts.addDerived(request.name) });
+      case 'merit/accounts/importWallet':
+        // another Secret Recovery Phrase kept beside the first (docs/connectionDesign.txt item 2); its first account is added
+        if (typeof request.mnemonic !== 'string' || !request.mnemonic.trim()) return { ok: false, error: 'invalid-request', message: 'A Secret Recovery Phrase is required.' };
+        return snapshot({ account: await accounts.importWallet(request.mnemonic, request.name) });
       case 'merit/accounts/importPrivateKey':
         return snapshot({ account: await accounts.importPrivateKey(request.privateKey, request.name) });
       case 'merit/accounts/remove':
@@ -203,7 +208,7 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
         void provider.notifyAccountsChanged();
         return snapshot({ active: accounts.activeAddress() });
       case 'merit/accounts/revealMnemonic':
-        return snapshot({ mnemonic: await accounts.revealMnemonic(request.password) });
+        return snapshot({ mnemonic: await accounts.revealMnemonic(request.password, typeof request.wallet === 'number' ? request.wallet : 0) });
       case 'merit/signing/signMessage':
         // Waits for the user: the response arrives only after approve (or reject) from the wallet UI.
         return snapshot({ signature: await signer.signMessage({ address: request.address, message: request.message, origin: request.origin }) });

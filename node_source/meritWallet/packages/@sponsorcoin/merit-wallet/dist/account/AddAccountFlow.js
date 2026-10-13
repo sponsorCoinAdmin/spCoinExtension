@@ -7,7 +7,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
-import { AddWalletMenu, ImportAccountForm } from '@sponsorcoin/spcoin-panels';
+import { AddWalletMenu, ImportAccountForm, ImportWalletForm } from '@sponsorcoin/spcoin-panels';
+import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
 import { addEntryReasons, readAddTargets } from '../wallet/addTarget';
 /** What a disabled connect row says when the host gave no reason of its own. */
 export const DEFAULT_CONNECT_UNAVAILABLE = {
@@ -45,6 +46,27 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }) 
     }, [wallet, activeAddress, hostTargets]);
     const target = targets.find((t) => t.id === (pickedTarget ?? defaultTarget));
     const [key, setKey] = useState('');
+    // Import a wallet: the phrase typed, whether it is a real BIP-39 phrase, and the first account it would give (checked here, nothing is imported yet)
+    const [phrase, setPhrase] = useState('');
+    const [phraseValid, setPhraseValid] = useState(false);
+    useEffect(() => {
+        let alive = true;
+        const words = normalizeMnemonic(phrase).split(' ').filter(Boolean);
+        if (words.length < 12) {
+            setPhraseValid(false);
+            return undefined;
+        }
+        void isValidMnemonic(phrase).then((ok) => {
+            if (alive)
+                setPhraseValid(ok);
+        });
+        return () => {
+            alive = false;
+        };
+    }, [phrase]);
+    const phraseWords = normalizeMnemonic(phrase).split(' ').filter(Boolean).length;
+    const phraseInvalid = phraseWords >= 12 && !phraseValid;
+    const phrasePreview = phraseValid ? firstAddressOfMnemonic(phrase) : '';
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const trimmed = key.trim();
@@ -61,6 +83,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }) 
     const back = () => {
         setError('');
         setKey('');
+        setPhrase('');
         if (screen === 'menu')
             onDone();
         else
@@ -81,6 +104,8 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }) 
         }
     };
     const unavailable = { ...addEntryReasons(target), ...(host.unavailable ?? {}) };
+    if (!host.importWallet)
+        unavailable.importWallet ?? (unavailable.importWallet = 'Importing a wallet is not available here.');
     if (!host.connectApprover) {
         for (const entry of Object.keys(DEFAULT_CONNECT_UNAVAILABLE))
             unavailable[entry] ?? (unavailable[entry] = DEFAULT_CONNECT_UNAVAILABLE[entry]);
@@ -97,5 +122,5 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }) 
         setError('');
         setScreen(next);
     };
-    return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 10, padding: 12, color: '#fff' }, children: [_jsx("button", { type: "button", onClick: back, style: { ...buttonStyle, flex: 'none', alignSelf: 'flex-start', padding: '6px 12px' }, children: screen === 'menu' ? 'Back' : '← Back' }), screen === 'menu' && target && (_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#cbd5e1' }, children: [_jsxs("span", { children: ["Adding to ", _jsx("strong", { style: { color: '#fff' }, children: target.name })] }), targets.length > 1 ? (_jsx("select", { "aria-label": "Change the wallet to add to", value: target.id, onChange: (event) => setPickedTarget(event.target.value), style: { marginLeft: 'auto', background: '#0E111B', color: '#fff', border: '1px solid #334155', borderRadius: 6, padding: '2px 6px', fontSize: 11 }, children: targets.map((t) => (_jsx("option", { value: t.id, children: t.name }, t.id))) })) : null] })), screen === 'menu' && (_jsx(AddWalletMenu, { onImportWallet: () => undefined, onImportAccount: open('importAccount', 'importAccount'), onCreateAccount: open('createAccount', 'createAccount'), onConnectMetaMask: connect('connectMetaMask'), onConnectMeritExtension: host.connectApprover ? connect('connectMeritExtension') : undefined, onConnectHardware: connect('connectHardware'), unavailable: unavailable, error: error })), screen === 'importAccount' && (_jsx(ImportAccountForm, { value: key, onChange: setKey, formatInvalid: formatInvalid, previewAddress: previewAddress, error: error, isImporting: busy, onImport: () => void run(() => host.importAccount(trimmed, target?.id)) })), screen === 'createAccount' && (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 4px' }, children: [_jsx("p", { style: { margin: 0, fontSize: 12, color: '#cbd5e1' }, children: "Create a new account: a new address and private key, kept under this wallet." }), error && _jsx("p", { style: { margin: 0, fontSize: 12, color: '#fca5a5' }, children: error }), _jsx("button", { type: "button", disabled: busy, onClick: () => void run(() => host.createAccount(target?.id)), style: { ...primaryStyle, opacity: busy ? 0.5 : 1 }, children: busy ? 'Creating…' : 'Create Account' })] }))] }));
+    return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 10, padding: 12, color: '#fff' }, children: [_jsx("button", { type: "button", onClick: back, style: { ...buttonStyle, flex: 'none', alignSelf: 'flex-start', padding: '6px 12px' }, children: screen === 'menu' ? 'Back' : '← Back' }), screen === 'menu' && target && (_jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#cbd5e1' }, children: [_jsxs("span", { children: ["Adding to ", _jsx("strong", { style: { color: '#fff' }, children: target.name })] }), targets.length > 1 ? (_jsx("select", { "aria-label": "Change the wallet to add to", value: target.id, onChange: (event) => setPickedTarget(event.target.value), style: { marginLeft: 'auto', background: '#0E111B', color: '#fff', border: '1px solid #334155', borderRadius: 6, padding: '2px 6px', fontSize: 11 }, children: targets.map((t) => (_jsx("option", { value: t.id, children: t.name }, t.id))) })) : null] })), screen === 'menu' && (_jsx(AddWalletMenu, { onImportWallet: open('importWallet', 'importWallet'), onImportAccount: open('importAccount', 'importAccount'), onCreateAccount: open('createAccount', 'createAccount'), onConnectMetaMask: connect('connectMetaMask'), onConnectMeritExtension: host.connectApprover ? connect('connectMeritExtension') : undefined, onConnectHardware: connect('connectHardware'), unavailable: unavailable, error: error })), screen === 'importAccount' && (_jsx(ImportAccountForm, { value: key, onChange: setKey, formatInvalid: formatInvalid, previewAddress: previewAddress, error: error, isImporting: busy, onImport: () => void run(() => host.importAccount(trimmed, target?.id)) })), screen === 'importWallet' && (_jsx(ImportWalletForm, { value: phrase, onChange: setPhrase, invalid: phraseInvalid, previewAddress: phrasePreview, error: error, isImporting: busy, onImport: () => void run(() => host.importWallet(normalizeMnemonic(phrase), target?.id)) })), screen === 'createAccount' && (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 4px' }, children: [_jsx("p", { style: { margin: 0, fontSize: 12, color: '#cbd5e1' }, children: "Create a new account: a new address and private key, kept under this wallet." }), error && _jsx("p", { style: { margin: 0, fontSize: 12, color: '#fca5a5' }, children: error }), _jsx("button", { type: "button", disabled: busy, onClick: () => void run(() => host.createAccount(target?.id)), style: { ...primaryStyle, opacity: busy ? 0.5 : 1 }, children: busy ? 'Creating…' : 'Create Account' })] }))] }));
 }

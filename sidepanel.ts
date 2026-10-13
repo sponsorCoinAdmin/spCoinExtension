@@ -92,7 +92,6 @@ import { getAccountRecord } from './src/getAccountRecord';
 import { estimateOffChainRewards } from './src/estimateOffChainRewards';
 import { SPOIN_STAKE_ABI } from './src/spCoinStakeAbi';
 import { executeClaimTransaction, SPOIN_CLAIM_ABI } from './src/executeClaimTransaction';
-import { executeUniswapV3Swap } from './src/executeUniswapV3Swap';
 import { parseAbi } from 'viem';
 
 // 2026-10-13 (docs/connectionDesign.txt item 12): bring a Ledger the person granted earlier back after a reload (no prompt).
@@ -758,57 +757,6 @@ async function renderWallet() {
   // session) and busy flag while a real send is in flight.
   let sendAmount = '';
    let sendBusy = false;
-    let sponsorSwapBusy = false;
-    // 2026-09-28, TRADING_STATION_PANEL migration — SWAP tab amount + busy state.
-    let swapAmount = '';
-    let swapBusy = false;
-    /** 2026-09-27, Phase 4 — swap execution callback for SPONSOR tab.
-     *  Called by MeritWallet when the user clicks "Swap to spCoin" before
-     *  staking. Uses the extension's executeUniswapV3Swap adapter which
-     *  delegates to the portable @sponsorcoin/spcoin-onchain module via
-     *  the extension's TradeExecutor (tradeExecutorMerit.ts). */
-    async function handleSponsorSwapSubmit(params: {
-      tokenIn: string;
-      tokenOut: string;
-      amountIn: bigint;
-      recipient: string;
-      chainId: number;
-    }) {
-      const from = walletSource.address;
-      if (!from) {
-        alert('Select and activate an account first.');
-        return;
-      }
-
-      sponsorSwapBusy = true;
-      render();
-
-      try {
-        const result = await executeUniswapV3Swap({
-          baseUrl,
-          rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-          chainId: params.chainId,
-          tokenIn: params.tokenIn,
-          tokenOut: params.tokenOut,
-          amountIn: params.amountIn,
-          amountOutMinimum: 0n,
-          recipient: params.recipient,
-          fee: 3000,
-          fromAddress: from,
-        });
-
-        if (result.transactionHash) {
-          alert(`Swap submitted. Transaction hash: ${result.transactionHash}`);
-        } else {
-          alert('Swap completed with no transaction hash.');
-        }
-      } catch (error) {
-        alert(`Swap failed: ${error instanceof Error ? error.message : String(error)}`);
-      } finally {
-        sponsorSwapBusy = false;
-        render();
-      }
-    }
 
   // 2026-09-16 — ACCOUNT_PANEL slice: which account's details are currently
   // being viewed (set the moment the avatar icon is clicked, independent
@@ -1146,19 +1094,8 @@ async function renderWallet() {
                 passwordIcon: React.createElement('img', { src: brandLogoUrl, alt: '' }),
               },
               config: {
-                // 2026-10-04 — the SPONSOR-swap and SWAP execution props
-                // (onSponsorSwapSubmit, sponsorSwapBusy, swapAmount,
-                // onSwapAmountChange, swapBusy, onSwapSubmit, activeChainId)
-                // and the AGENT_HEADER_PANEL auto-seed props
-                // (defaultAgentAddress, onHydrateAgent) were removed:
-                // MeritWalletProps never declared them (verified absent even in
-                // the pre-submodule-conversion copy — a planned-but-never-landed
-                // API), and tsc --noEmit in CI fails on unknown props. MeritWallet
-                // ignores unknown props at runtime, so this changes nothing
-                // behaviorally; the real swap and agent-hydration wiring is the
-                // C1-C3 phase. The handlers (handleSponsorSwapSubmit,
-                // hydrateAccountFromAddress) and state (swapAmount, swapBusy,
-                // sponsorSwapBusy) stay declared for that phase.
+                // 2026-10-13: the swap and agent wiring this block once said was still to come is done (the shared swap flow in src/swapHost.ts, the agent hydration in
+                // src/sponsorPanelHost.ts); the dead handler and its state (handleSponsorSwapSubmit, swapAmount, swapBusy, sponsorSwapBusy) were removed.
                 // 2026-09-27, Phase C — REWARDS tab claim/estimate wiring for
                 // ManageSponsorshipsPanel. Display strings parsed from
                 // accountRecord via parseRewardDisplay(); claim callbacks use the

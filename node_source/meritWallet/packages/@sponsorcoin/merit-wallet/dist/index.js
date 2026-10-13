@@ -82,7 +82,7 @@ export { useApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
-export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, withApprovalNotice } from './auth/approvalWaiting';
+export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, outcomeText, withApprovalNotice } from './auth/approvalWaiting';
 export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons } from './wallet/addTarget';

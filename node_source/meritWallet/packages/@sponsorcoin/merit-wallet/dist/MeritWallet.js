@@ -1680,7 +1680,7 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
                                                     }
                                                     : activeListMode
                                                         ? () => setActiveList(null)
-                                                        : () => closePanel('MeritWallet:back') }) }), _jsxs(MenuTabHeaderBar, { open: menuOpen && menuTabHeaderVisible && !passwordPanelShowing, activeTab: activeTab, onTabClick: handleTabClick, children: [_jsx(ApprovalWaitingNotice, {}), _jsx(WalletRadioPanels, { overlayHost: overlayHost, children: body })] })] }), !overlayHost && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { style: {
+                                                        : () => closePanel('MeritWallet:back') }) }), _jsx(ApprovalWaitingNotice, {}), _jsx(MenuTabHeaderBar, { open: menuOpen && menuTabHeaderVisible && !passwordPanelShowing, activeTab: activeTab, onTabClick: handleTabClick, children: _jsx(WalletRadioPanels, { overlayHost: overlayHost, children: body }) })] }), !overlayHost && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { style: {
                                 position: 'absolute',
                                 bottom: 2,
                                 left: 6,

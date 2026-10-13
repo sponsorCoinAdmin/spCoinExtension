@@ -2519,6 +2519,9 @@ function MeritWalletInner({
         {/* 2026-10-03, on request — the tab strip is also hidden while the
             password panel is active (it collapses; the body below it, which IS
             the password form, is untouched). */}
+        {/* 2026-10-12 (authenticationDesign row 11): while another wallet is deciding on a request, one neutral line says so (nothing shows when nothing is pending). 2026-10-13: it is OUTSIDE the tab header bar, so it also shows over the lock screen, and it
+            also says how a request just ended ("Merit extension did not approve: User rejected the request."). */}
+        <ApprovalWaitingNotice />
         <MenuTabHeaderBar open={menuOpen && menuTabHeaderVisible && !passwordPanelShowing} activeTab={activeTab} onTabClick={handleTabClick}>
           {/* 2026-09-22 — `body` (whichever of tabBody/listOverlay/the
               three detail overlays is currently active — see that
@@ -2528,8 +2531,6 @@ function MeritWalletInner({
               WalletRadioPanels.tsx there already wraps this same way. Real
               shared code now, not two independently-hand-synced copies —
               see docs/npmPanelDisplayIssue.md. */}
-          {/* 2026-10-12 (authenticationDesign row 11): while another wallet is deciding on a request, one neutral line says so (nothing shows when nothing is pending) */}
-          <ApprovalWaitingNotice />
           <WalletRadioPanels overlayHost={overlayHost}>{body}</WalletRadioPanels>
         </MenuTabHeaderBar>
       </div>

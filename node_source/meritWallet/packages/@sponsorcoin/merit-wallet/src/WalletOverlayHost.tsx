@@ -46,6 +46,8 @@ export interface WalletOverlaySlots {
   tokenSellSwapPanel?: React.ReactNode;
   tokenSendPanel?: React.ReactNode;
   networkPanel?: React.ReactNode;
+  /** 2026-10-13: WALLET_PANEL, the active wallet's account.json (a detail branch under ASSET_RADIO_PANELS, like networkPanel). */
+  walletPanel?: React.ReactNode;
   walletConfig?: React.ReactNode;
   activeListPanel?: React.ReactNode;
   messagePanel?: React.ReactNode;
@@ -187,6 +189,10 @@ export default function WalletOverlayHost({ slots = {}, useHostEffects = noHostE
 
         <PanelGate panel={SP_COIN_DISPLAY.NETWORK_PANEL} className="min-h-0 flex-1">
         {slots.networkPanel}
+      </PanelGate>
+
+      <PanelGate panel={SP_COIN_DISPLAY.WALLET_PANEL} className="min-h-0 flex-1">
+        {slots.walletPanel}
       </PanelGate>
       </PanelGate>
 

@@ -19,6 +19,8 @@ export interface WalletOverlaySlots {
     tokenSellSwapPanel?: React.ReactNode;
     tokenSendPanel?: React.ReactNode;
     networkPanel?: React.ReactNode;
+    /** 2026-10-13: WALLET_PANEL, the active wallet's account.json (a detail branch under ASSET_RADIO_PANELS, like networkPanel). */
+    walletPanel?: React.ReactNode;
     walletConfig?: React.ReactNode;
     activeListPanel?: React.ReactNode;
     messagePanel?: React.ReactNode;

@@ -1066,6 +1066,8 @@ async function renderWallet() {
                 onOpenTargetChange: (target: OpenTarget) => void writeOpenTarget(target),
               },
               data: {
+                // 2026-10-13: where the wallet asset files (public/assets/wallets: the wallet pill, the wallet list, the wallet panel) are served from: the web app the Local / Prod toggle points at.
+                walletAssetBaseUrl: urlForOpenTarget(openTarget),
                 // The host's real active account; '' means none selected, so the header reads "Select Account".
                 activeAccountAddress: walletSource.address ?? '',
                 // 2026-10-11 (authenticationDesign.txt section 15.7, W1): the wallet (its backends behind one object); the lock screen, the lock button, the authentication type and the Wallet Security section come from it.

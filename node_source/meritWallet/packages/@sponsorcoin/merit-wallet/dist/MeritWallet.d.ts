@@ -170,6 +170,12 @@ export interface MeritWalletProps {
     accountListNotice?: string;
     /** The wallet that signs for the active account (derived from `wallet` when the host does not pass it), shown as the account header's tooltip. */
     activeWalletName?: string;
+    /** 2026-10-13 (owner request): the id of the wallet that signs for the active account (derived from `wallet` when the host does not pass it). The wallet pill under the tabs shows its icon and name, read from public/assets/wallets. */
+    activeWalletId?: string;
+    /** Show the wallet pill (WalletSelectDropDown) just under the tabs: its down chevron opens the wallet list (REMOTE_WALLET_LIST), its icon opens the active wallet's panel (WALLET_PANEL). Default true. */
+    showWalletSelect?: boolean;
+    /** Where the wallet asset files (public/assets/wallets) are served from: this page's own origin by default; a host on another origin (the extension) passes the web app's address. */
+    walletAssetBaseUrl?: string;
     /** What the component may derive from `wallet` (default: everything). A host that has its own lock gate (the web app) leaves out 'lock' and 'logoff'. */
     walletDerives?: readonly WalletDerivation[];
     /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */

@@ -55,7 +55,7 @@ import {
   useSellAmount,
   useBuyAmount,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import { PanelGate, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps, type WalletDerivation } from './wallet/walletProps';
 import { useApproverAccounts } from './wallet/approverAccountsReact';
@@ -593,6 +593,12 @@ export interface MeritWalletProps {
   accountListNotice?: string;
   /** The wallet that signs for the active account (derived from `wallet` when the host does not pass it), shown as the account header's tooltip. */
   activeWalletName?: string;
+  /** 2026-10-13 (owner request): the id of the wallet that signs for the active account (derived from `wallet` when the host does not pass it). The wallet pill under the tabs shows its icon and name, read from public/assets/wallets. */
+  activeWalletId?: string;
+  /** Show the wallet pill (WalletSelectDropDown) just under the tabs: its down chevron opens the wallet list (REMOTE_WALLET_LIST), its icon opens the active wallet's panel (WALLET_PANEL). Default true. */
+  showWalletSelect?: boolean;
+  /** Where the wallet asset files (public/assets/wallets) are served from: this page's own origin by default; a host on another origin (the extension) passes the web app's address. */
+  walletAssetBaseUrl?: string;
   /** What the component may derive from `wallet` (default: everything). A host that has its own lock gate (the web app) leaves out 'lock' and 'logoff'. */
   walletDerives?: readonly WalletDerivation[];
   /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */
@@ -822,6 +828,9 @@ function MeritWalletInner({
   accountGroups,
   accountListNotice,
   activeWalletName,
+  activeWalletId,
+  showWalletSelect = true,
+  walletAssetBaseUrl,
   wallet,
   tokenRows,
   recipientRows,
@@ -991,6 +1000,11 @@ function MeritWalletInner({
   const menuTabHeaderVisible = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
   const panelTreeVisible = usePanelVisible(SP_COIN_DISPLAY.PANEL_TREE_PANEL);
   const messageVisible = usePanelVisible(SP_COIN_DISPLAY.MESSAGE_PANEL);
+  // 2026-10-13: where the wallet asset files are served from, for the pill, the list and the panel alike (a host on another origin, the extension, passes the web app's address)
+  if (walletAssetBaseUrl !== undefined) setWalletAssetBaseUrl(walletAssetBaseUrl); // set while rendering (an idempotent module setting), so the children's first render already reads it
+  const walletPanelVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_PANEL);
+  const walletLogoVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_LOGO);
+  const walletMetaDataVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_META_DATA);
   const sellVisible = usePanelVisible(SP_COIN_DISPLAY.SELL_SELECT_PANEL);
   const zeroXVisible = usePanelVisible(SP_COIN_DISPLAY.ZERO_X_SELECT_PANEL);
   const swapArrowVisible = usePanelVisible(SP_COIN_DISPLAY.SWAP_ARROW_BUTTON);
@@ -2303,8 +2317,11 @@ function MeritWalletInner({
   // overlayHost; a host without one (the extension) gets it here, in place of the body, until the user closes it.
   const messageOverlay = messageVisible && !overlayHost ? React.createElement(ConnectedMessagePanel) : null;
 
+  // 2026-10-13 (owner request): WALLET_PANEL, the active wallet's account.json. The web app shows it through its overlayHost (walletPanel slot); a host without one (the extension) gets it here, in place of the body.
+  const walletPanelOverlay = walletPanelVisible && !overlayHost ? React.createElement(WalletPanel, { walletId: activeWalletId, baseUrl: walletAssetBaseUrl, showLogo: walletLogoVisible, showMetaData: walletMetaDataVisible }) : null;
+
   const body =
-    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? (listHost && panelTreeListOpen ? listHost : null) ?? listOverlay ?? gatedTabBody;
+    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (listHost && panelTreeListOpen ? listHost : null) ?? listOverlay ?? gatedTabBody;
 
   // Matches the real app's own per-tab titles (useActiveWalletPanelTitle.tsx,
   // its `sponsorshipPanelVisible`/`tradingTabVisible`/`sendTabVisible`/
@@ -2531,6 +2548,12 @@ function MeritWalletInner({
               WalletRadioPanels.tsx there already wraps this same way. Real
               shared code now, not two independently-hand-synced copies —
               see docs/npmPanelDisplayIssue.md. */}
+          {/* 2026-10-13 (owner request): the wallet pill, just under the tabs (not on the lock screen). The down chevron opens the wallet list, the icon the active wallet's panel. */}
+          {showWalletSelect && !passwordPanelShowing && (
+            <div id="WALLET_SELECT_ROW" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center' }}>
+              <WalletSelectDropDownHosted walletId={activeWalletId} baseUrl={walletAssetBaseUrl} />
+            </div>
+          )}
           <WalletRadioPanels overlayHost={overlayHost}>{body}</WalletRadioPanels>
         </MenuTabHeaderBar>
       </div>
@@ -2655,6 +2678,6 @@ export default function MeritWallet(props: MeritWalletProps) {
   // A host that passes `approverHost` has asked for the derived account list: it replaces the host's own accountGroups / onAccountRowSelect (which stay as the fallback until the list has loaded).
   const activeWalletId = props.wallet && props.activeAccountAddress ? props.wallet.backendIdFor(props.activeAccountAddress) : undefined;
   const activeWalletName = activeWalletId && props.wallet ? props.wallet.backend(activeWalletId)?.name : undefined;
-  const merged = props.wallet ? { ...mergeWalletProps(props, { ...derived, activeWalletName }, props.wallet, props.activeAccountAddress), ...accountDerived } : props;
+  const merged = props.wallet ? { ...mergeWalletProps(props, { ...derived, activeWalletName }, props.wallet, props.activeAccountAddress), activeWalletId: props.activeWalletId ?? activeWalletId, ...accountDerived } : props;
   return React.createElement(MeritWalletInner, merged);
 }

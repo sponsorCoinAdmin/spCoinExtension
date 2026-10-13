@@ -87,5 +87,8 @@ export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons } from './wallet/addTarget';
 export { createHardwareAuthenticator, HardwareError } from './auth/hardwareAuthenticator';
+export { createTrezorTransport, translateTrezorError } from './auth/trezorTransport';
+export { createSerialQueue, createDeviceState, prepareTransaction, assembleSignedTransaction, messageSignature, ethereumBip44Path } from './auth/hardwareShared';
+export { createLedgerTransport, translateLedgerError, ledgerLivePath } from './auth/ledgerTransport';
 export { watchSecret, useSecretClearing, SECRET_SHOWN_MAX_MS, NEW_PHRASE_SHOWN_MAX_MS } from './security/secretClearing';
 export { createTransferRequest, sealForTransfer, requestAccountFromProvider } from './vault/accountTransfer';

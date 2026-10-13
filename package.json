@@ -12,6 +12,8 @@
     "postinstall": "node scripts/fix-nested-spcoin-common.mjs"
   },
   "dependencies": {
+    "@ledgerhq/hw-app-eth": "^7.10.0",
+    "@ledgerhq/hw-transport-webhid": "^6.36.0",
     "@sponsorcoin/merit-wallet": "file:./node_source/meritWallet/packages/@sponsorcoin/merit-wallet",
     "@sponsorcoin/spcoin-common": "file:./node_source/spCoinCommon/packages/@sponsorcoin/spcoin-common",
     "@sponsorcoin/spcoin-exchange-engine": "file:./node_source/spCoinExchangeEngine/packages/@sponsorcoin/spcoin-exchange-engine",
@@ -19,6 +21,7 @@
     "@sponsorcoin/spcoin-onchain": "file:./node_source/spCoinOnChain/packages/@sponsorcoin/spcoin-onchain",
     "@sponsorcoin/spcoin-panels": "file:./node_source/spCoinPanels/packages/@sponsorcoin/spcoin-panels",
     "@tanstack/react-query": "^5.104.0",
+    "buffer": "^6.0.3",
     "react": "^18",
     "react-dom": "^18",
     "viem": "^2.56.9",

@@ -16,6 +16,17 @@ export interface AddAccountHost {
      * Throw a readable message on failure. A host that omits it shows those rows disabled with the reason below (the same entries and words in every host).
      */
     connectApprover?(entry: ConnectApproverEntry): Promise<void>;
+    /**
+     * 2026-10-13 (docs/connectionDesign.txt item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
+     * a host that omits them keeps the single connectApprover('connectHardware') row.
+     */
+    hardwareDevices?: Array<{
+        id: string;
+        title: string;
+        subtitle?: string;
+        unavailable?: string;
+    }>;
+    connectHardwareDevice?(id: string): Promise<void>;
     /** The wallets this host can really add keys to (it routes createAccount / importAccount by the target id). Omitted: every reachable wallet that keeps keys. */
     targets?: readonly AuthenticatorId[];
     /** Entries this host cannot offer, each with the reason shown on the disabled row. */

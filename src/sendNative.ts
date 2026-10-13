@@ -10,7 +10,7 @@ import { executeSend, type SendOutcome, type SendRequest, type SendResult } from
 import { signAndSendMeritTransaction } from './meritSign';
 import { isLegacySigningAllowed, vaultUnavailableMessage, waitForReceipt } from './localSigning';
 import { localVaultAuthenticator } from './localVaultAuthenticator';
-import { authenticatorFor } from './metamaskAuthenticator';
+import { authenticatorFor } from './externalAccounts';
 import { rpcUrlForChain } from './chainRpc';
 
 export interface SendNativeParams {

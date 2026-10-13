@@ -110,5 +110,8 @@ export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons, type AddTarget, type AddTargets, type AddKeyEntry } from './wallet/addTarget';
 export { createHardwareAuthenticator, HardwareError, type HardwareTransport, type HardwareErrorCode, type HardwareAuthenticatorOptions } from './auth/hardwareAuthenticator';
+export { createTrezorTransport, translateTrezorError, type TrezorTransport, type TrezorTransportOptions, type TrezorConnectApi, type TrezorResponse } from './auth/trezorTransport';
+export { createSerialQueue, createDeviceState, prepareTransaction, assembleSignedTransaction, messageSignature, ethereumBip44Path, type ChainRpc, type DeviceAccount } from './auth/hardwareShared';
+export { createLedgerTransport, translateLedgerError, ledgerLivePath, type LedgerTransport, type LedgerTransportOptions, type LedgerEthApp, type LedgerHidDevice, type LedgerHidTransportClass } from './auth/ledgerTransport';
 export { watchSecret, useSecretClearing, SECRET_SHOWN_MAX_MS, NEW_PHRASE_SHOWN_MAX_MS, type SecretWatchEnv } from './security/secretClearing';
 export { createTransferRequest, sealForTransfer, requestAccountFromProvider, type TransferSeal, type TransferProvider } from './vault/accountTransfer';

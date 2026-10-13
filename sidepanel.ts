@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import './src/tailwind.css';
 import { bundledFeedData } from './src/bundledFeeds';
 import { extensionAuthenticatorRegistry, extensionWallet, localVaultAuthenticator } from './src/localVaultAuthenticator';
-import { METAMASK_ID, isMetaMaskAccount } from './src/metamaskAuthenticator';
+import { METAMASK_ID } from './src/metamaskAuthenticator';
+import { isExternalAccount } from './src/externalAccounts';
+import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger';
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
@@ -92,6 +94,9 @@ import { SPOIN_STAKE_ABI } from './src/spCoinStakeAbi';
 import { executeClaimTransaction, SPOIN_CLAIM_ABI } from './src/executeClaimTransaction';
 import { executeUniswapV3Swap } from './src/executeUniswapV3Swap';
 import { parseAbi } from 'viem';
+
+// 2026-10-13 (docs/connectionDesign.txt item 12): bring a Ledger the person granted earlier back after a reload (no prompt).
+restoreLedger();
 
 // 2026-09-22, Phase B.2 Stage 4 follow-up — the real Hardhat/HH_BASE RPC
 // URL, same value the web app itself uses for this exact chain id
@@ -494,12 +499,21 @@ async function renderWallet() {
     },
     // MetaMask answers in its own window; the extension reaches it through one tab on the web app's relay page
     connectApprover: async (entry) => {
-      if (entry !== 'connectMetaMask') throw new Error(entry === 'connectMeritExtension' ? 'You are already in the Merit extension.' : 'Using USB or a QR Code — Coming Soon');
-      await connectMetaMaskFromMenu();
+      if (entry === 'connectHardware') throw new Error('Choose a device first.');
+      if (entry !== 'connectMetaMask') throw new Error('You are already in the Merit extension.');
+      await connectExternalFromMenu(METAMASK_ID);
+    },
+    // "Connect a hardware wallet" asks which device (the same screen as the web app). A Ledger works over USB; a Trezor needs the web app for now.
+    hardwareDevices: [
+      { id: LEDGER_ID, title: 'Ledger', subtitle: ledgerTransport.isSupported() ? 'Connect with USB' : undefined, unavailable: ledgerTransport.isSupported() ? undefined : 'This browser cannot talk to a USB device.' },
+      { id: 'hardware:trezor', title: 'Trezor', unavailable: 'Use the Trezor from the web app for now (its connection window cannot run inside the extension yet).' },
+    ],
+    connectHardwareDevice: async (id) => {
+      if (id !== LEDGER_ID) throw new Error('That device is not available in the extension yet.');
+      await connectExternalFromMenu(LEDGER_ID);
     },
     unavailable: {
       connectMeritExtension: 'You are already in the Merit extension.',
-      connectHardware: 'Using USB or a QR Code — Coming Soon',
     },
   };
   const accountProfileHost: AccountProfileHost = {
@@ -647,7 +661,7 @@ async function renderWallet() {
     vaultActive = result.active;
     void enrichVaultRows(result.accounts.map((a) => a.address));
     // MetaMask's account stays the active one while MetaMask still shares it; otherwise the vault's choice is.
-    if (externalActive && !(await isMetaMaskAccount(externalActive))) setExternalActive(undefined);
+    if (externalActive && !(await isExternalAccount(externalActive))) setExternalActive(undefined);
     const wanted = externalActive ?? vaultActive;
     if (wanted && walletSource.address?.toLowerCase() !== wanted.toLowerCase()) activateAccount(wanted);
     else render();
@@ -1323,19 +1337,19 @@ async function renderWallet() {
     }
     activateAccount(address);
   }
-  // The Add menu's Connect MetaMask row (docs/connectionDesign.txt item 9): MetaMask is asked through the relay tab; its account becomes the active one, with MetaMask recorded as the wallet that signs for it.
-  // Several accounts shared: they are all kept and listed under MetaMask, and the first becomes active.
-  async function connectMetaMaskFromMenu() {
+  // The Add menu's Connect MetaMask row (docs/connectionDesign.txt item 9) and its hardware wallets (item 12): the wallet is asked (MetaMask through the relay tab, a Ledger over USB); its account becomes the active one, with that wallet recorded as the one that signs for it.
+  // Several accounts offered: they are all kept and listed under that wallet, and the first becomes active.
+  async function connectExternalFromMenu(approverId: AuthenticatorId) {
     const host = {
       setActiveAccount: (address: string) => setActiveAccountOf(address),
       setActiveAuthenticator: (address: string, id: AuthenticatorId) => extensionWallet.setActiveAuthenticator(address, id),
       clearActiveAccount: () => undefined,
     };
     try {
-      await connectAccount({ registry: extensionAuthenticatorRegistry, approverId: METAMASK_ID, host });
+      await connectAccount({ registry: extensionAuthenticatorRegistry, approverId, host });
     } catch (error) {
       if (!(error instanceof ConnectChoiceRequired)) throw error;
-      await connectAccount({ registry: extensionAuthenticatorRegistry, approverId: METAMASK_ID, address: error.accounts[0].address, host });
+      await connectAccount({ registry: extensionAuthenticatorRegistry, approverId, address: error.accounts[0].address, host });
     }
     vaultRowsStale = true;
     await loadVaultAccounts();
@@ -1445,7 +1459,7 @@ async function renderWallet() {
     const vaultList = (await chrome.runtime.sendMessage({ type: 'merit/accounts/list' }).catch(() => undefined)) as
       | { ok?: boolean; accounts?: Array<{ address: string }> }
       | undefined;
-    const useVault = (!!vaultList?.ok && !!vaultList.accounts?.some((a) => a.address.toLowerCase() === from.trim().toLowerCase())) || (await isMetaMaskAccount(from));
+    const useVault = (!!vaultList?.ok && !!vaultList.accounts?.some((a) => a.address.toLowerCase() === from.trim().toLowerCase())) || (await isExternalAccount(from));
     const network = listConfiguredNetworks({ showTestNets: true }).find((row) => row.chainId === activeChainId);
     const result = await sendNativeMerit({
       useVault,

@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
-import { AddWalletMenu, ImportAccountForm, ImportWalletForm } from '@sponsorcoin/spcoin-panels';
+import { AddWalletMenu, HardwareDeviceMenu, ImportAccountForm, ImportWalletForm } from '@sponsorcoin/spcoin-panels';
 import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
 import type { AuthenticatorId } from '../auth/authenticator';
 import type { Wallet } from '../wallet/wallet';
@@ -30,6 +30,12 @@ export interface AddAccountHost {
    * Throw a readable message on failure. A host that omits it shows those rows disabled with the reason below (the same entries and words in every host).
    */
   connectApprover?(entry: ConnectApproverEntry): Promise<void>;
+  /**
+   * 2026-10-13 (docs/connectionDesign.txt item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
+   * a host that omits them keeps the single connectApprover('connectHardware') row.
+   */
+  hardwareDevices?: Array<{ id: string; title: string; subtitle?: string; unavailable?: string }>;
+  connectHardwareDevice?(id: string): Promise<void>;
   /** The wallets this host can really add keys to (it routes createAccount / importAccount by the target id). Omitted: every reachable wallet that keeps keys. */
   targets?: readonly AuthenticatorId[];
   /** Entries this host cannot offer, each with the reason shown on the disabled row. */
@@ -40,10 +46,10 @@ export interface AddAccountHost {
 export const DEFAULT_CONNECT_UNAVAILABLE: Record<ConnectApproverEntry, string> = {
   connectMetaMask: 'Available in the web app',
   connectMeritExtension: 'Available in the web app',
-  connectHardware: 'Using USB or a QR Code — Coming Soon',
+  connectHardware: 'Available in the web app',
 };
 
-type Screen = 'menu' | 'importAccount' | 'createAccount' | 'importWallet';
+type Screen = 'menu' | 'importAccount' | 'createAccount' | 'importWallet' | 'hardware';
 
 const buttonStyle: React.CSSProperties = { flex: 1, borderRadius: 8, border: 'none', padding: '9px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#243056', color: '#ffffff' };
 const primaryStyle: React.CSSProperties = { ...buttonStyle, background: '#5981F3' };
@@ -173,7 +179,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
           onCreateAccount={open('createAccount', 'createAccount')}
           onConnectMetaMask={connect('connectMetaMask')}
           onConnectMeritExtension={host.connectApprover ? connect('connectMeritExtension') : undefined}
-          onConnectHardware={connect('connectHardware')}
+          onConnectHardware={host.hardwareDevices?.length && host.connectHardwareDevice ? open('connectHardware', 'hardware') : connect('connectHardware')}
           unavailable={unavailable}
           error={error}
         />
@@ -199,6 +205,9 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
           isImporting={busy}
           onImport={() => void run(() => host.importWallet!(normalizeMnemonic(phrase), target?.id))}
         />
+      )}
+      {screen === 'hardware' && host.hardwareDevices && host.connectHardwareDevice && (
+        <HardwareDeviceMenu devices={host.hardwareDevices} busy={busy} error={error} onChoose={(id) => void run(() => host.connectHardwareDevice!(id))} />
       )}
       {screen === 'createAccount' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 4px' }}>

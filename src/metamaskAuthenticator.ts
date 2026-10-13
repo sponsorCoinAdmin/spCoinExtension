@@ -72,7 +72,3 @@ export const metamaskAuthenticator: Authenticator = {
   },
 };
 
-/** Who signs for this account: MetaMask when it shared the account with the extension, else the vault (the extension's own default). */
-export async function authenticatorFor<T extends Authenticator>(address: string | undefined, vault: T): Promise<Authenticator> {
-  return (await isMetaMaskAccount(address)) ? metamaskAuthenticator : vault;
-}

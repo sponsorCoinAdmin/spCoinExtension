@@ -25,7 +25,7 @@ import {
 import type { PendingSignRequestAccountEntry, PendingSignRequestTokenEntry } from './pendingSignRequestStore';
 import { ethCall, isLegacySigningAllowed, isVaultAccount, vaultUnavailableMessage, waitForReceipt } from './localSigning';
 import { localVaultAuthenticator } from './localVaultAuthenticator';
-import { authenticatorFor, isMetaMaskAccount } from './metamaskAuthenticator';
+import { authenticatorFor, isExternalAccount } from './externalAccounts';
 
 export interface MeritTradeExecutorParams {
   /** Base URL for the Merit Wallet API (e.g. chrome-extension://xxx or https://spcoin.app). */
@@ -60,7 +60,7 @@ export function createMeritTradeExecutor(params: MeritTradeExecutorParams): Trad
     }): Promise<TradeExecutionResult> {
       const amountEntry = display?.amount;
       // LOCAL: an account of the unlocked vault signs in the background worker, behind the same confirmation screen.
-      if (params.from && ((await isVaultAccount(params.from)) || (await isMetaMaskAccount(params.from)))) {
+      if (params.from && ((await isVaultAccount(params.from)) || (await isExternalAccount(params.from)))) {
         // the vault is an authenticator like any other (src/localVaultAuthenticator.ts): the request, and what its confirmation screen shows, go to it
         const { hash } = await (await authenticatorFor(params.from, localVaultAuthenticator)).sendTransaction({
           from: params.from,
@@ -112,7 +112,7 @@ export function createMeritTradeExecutor(params: MeritTradeExecutorParams): Trad
 
     async call({ to, data, rpcUrl }): Promise<string> {
       // LOCAL accounts read straight from the chain's RPC (allowances and the like).
-      if (params.from && ((await isVaultAccount(params.from)) || (await isMetaMaskAccount(params.from)))) return ethCall(rpcUrl || params.rpcUrl, to, data);
+      if (params.from && ((await isVaultAccount(params.from)) || (await isExternalAccount(params.from)))) return ethCall(rpcUrl || params.rpcUrl, to, data);
       // Extension-side eth_call is intentionally skipped — the extension has
       // no cross-origin RPC relay for read operations. The portable
       // executeErc20Approve/executeUniswapV3Swap modules catch this and

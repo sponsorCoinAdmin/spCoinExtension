@@ -18,6 +18,7 @@ import {
 } from '@sponsorcoin/merit-wallet';
 import { signMessageWithVault, signWithVault, type ConfirmCopy } from './localSigning';
 import { metamaskAuthenticator } from './metamaskAuthenticator';
+import { ledgerAuthenticator } from './hardwareLedger';
 
 type WorkerReply = { ok: boolean; initialized?: boolean; unlocked?: boolean; accounts?: Array<{ address: string; name?: string; devOrigin?: boolean }> };
 const worker = (message: unknown) => chrome.runtime.sendMessage(message) as Promise<WorkerReply>;
@@ -93,6 +94,8 @@ export const extensionAuthenticatorRegistry = createAuthenticatorRegistry();
 extensionAuthenticatorRegistry.register(localVaultAuthenticator);
 // 2026-10-12 (docs/connectionDesign.txt item 9): MetaMask, asked through the relay tab (src/metamaskRelay.ts); the extension's list shows it as a second wallet beside the vault.
 extensionAuthenticatorRegistry.register(metamaskAuthenticator);
+// 2026-10-13 (docs/connectionDesign.txt item 12): a Ledger over WebHID (the package's shared hardware layer); the device shows every request on its own screen.
+extensionAuthenticatorRegistry.register(ledgerAuthenticator);
 
 /** Which wallet signs for an account, kept per account (the same rule as the web app: owners own accounts). An account with nothing saved is the vault's. */
 const AUTHENTICATOR_CHOICE_KEY = 'meritAccountAuthenticator';

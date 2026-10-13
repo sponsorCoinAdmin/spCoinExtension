@@ -10,6 +10,7 @@ import { executeSend, type SendOutcome, type SendRequest, type SendResult } from
 import { signAndSendMeritTransaction } from './meritSign';
 import { isLegacySigningAllowed, vaultUnavailableMessage, waitForReceipt } from './localSigning';
 import { localVaultAuthenticator } from './localVaultAuthenticator';
+import { authenticatorFor } from './metamaskAuthenticator';
 import { rpcUrlForChain } from './chainRpc';
 
 export interface SendNativeParams {
@@ -39,10 +40,10 @@ function confirmCopy(request: SendRequest) {
   };
 }
 
-/** LOCAL transport: the worker queues, the side panel confirms (src/localSigning.ts). */
+/** LOCAL transport: the worker queues, the side panel confirms (src/localSigning.ts); for an account MetaMask shared with the extension, MetaMask asks in its own window (src/metamaskAuthenticator.ts). */
 const localTransport = async (request: SendRequest): Promise<SendOutcome> => {
   const copy = confirmCopy(request);
-  const { hash } = await localVaultAuthenticator.sendTransaction({
+  const { hash } = await (await authenticatorFor(request.from, localVaultAuthenticator)).sendTransaction({
     from: request.from,
     to: request.tx.to,
     data: request.tx.data,

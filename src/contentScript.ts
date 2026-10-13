@@ -5,6 +5,10 @@
 // things only: pass each request the page's provider (inpage.ts) makes to the background worker, and pass the worker's answers and events back.
 // Who is asking is decided by the worker from the tab (sender.origin), never from anything in the message.
 
+// 2026-10-12 (docs/connectionDesign.txt item 9): on the app's relay page (and only there) this also carries a request of the extension to MetaMask (inpage.ts asks it) and the answer back.
+const RELAY_PATH = '/metamaskRelay.html';
+const isRelayPage = () => window.location.pathname === RELAY_PATH;
+
 const FROM_PAGE = 'merit-wallet-page';
 const TO_PAGE = 'merit-wallet-extension';
 
@@ -23,7 +27,18 @@ window.addEventListener('message', (event: MessageEvent) => {
     });
 });
 
-chrome.runtime.onMessage.addListener((message: { type?: string; event?: string; data?: unknown }) => {
+window.addEventListener('message', (event: MessageEvent) => {
+  if (event.source !== window || !isRelayPage()) return;
+  const d = event.data as { target?: string; id?: unknown; ok?: unknown; result?: unknown; error?: unknown } | null;
+  if (!d || d.target !== 'merit-wallet-relay-result' || typeof d.id !== 'number') return;
+  void chrome.runtime.sendMessage({ type: 'merit/relay/result', id: d.id, ok: !!d.ok, result: d.result, error: d.error }).catch(() => undefined);
+});
+
+chrome.runtime.onMessage.addListener((message: { type?: string; event?: string; data?: unknown; id?: number; method?: string; params?: unknown }) => {
+  if (message?.type === 'merit/relay/call' && isRelayPage() && typeof message.id === 'number' && typeof message.method === 'string') {
+    window.postMessage({ target: 'merit-wallet-relay', id: message.id, method: message.method, params: message.params }, '*');
+    return false;
+  }
   if (message?.type === 'merit/provider/event' && typeof message.event === 'string') {
     window.postMessage({ target: TO_PAGE, type: 'event', event: message.event, data: message.data }, '*');
   }

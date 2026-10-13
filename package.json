@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "node scripts/check-no-ethers.mjs",
+    "test": "node test/metamaskRelay.test.mjs",
     "postinstall": "node scripts/fix-nested-spcoin-common.mjs"
   },
   "dependencies": {

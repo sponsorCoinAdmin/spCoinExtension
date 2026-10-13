@@ -67,6 +67,42 @@
     }
   });
 
+  // 2026-10-12 (docs/connectionDesign.txt item 9): on the app's relay page only, answer the extension's requests to MetaMask (the page has no script of its own). MetaMask is found the EIP-6963 way
+  // (rdns io.metamask); a request is passed on as it came and the answer, or MetaMask's error code, goes back through the content script.
+  if (window.location.pathname === '/metamaskRelay.html') {
+    type Eip1193 = { request(args: { method: string; params?: unknown }): Promise<unknown>; isMetaMask?: boolean; isMeritWallet?: boolean };
+    const found: { provider?: Eip1193 } = {};
+    window.addEventListener('eip6963:announceProvider', (event) => {
+      const detail = (event as CustomEvent<{ info?: { rdns?: string }; provider?: Eip1193 }>).detail;
+      if (detail?.info?.rdns === 'io.metamask' && detail.provider) found.provider = detail.provider;
+    });
+    const findMetaMask = async (): Promise<Eip1193 | undefined> => {
+      for (let i = 0; i < 30 && !found.provider; i++) {
+        window.dispatchEvent(new Event('eip6963:requestProvider'));
+        const legacy = (window as unknown as { ethereum?: Eip1193 }).ethereum;
+        if (legacy?.isMetaMask && !legacy.isMeritWallet) found.provider = legacy;
+        if (!found.provider) await new Promise((r) => setTimeout(r, 100));
+      }
+      return found.provider;
+    };
+    window.addEventListener('message', (event: MessageEvent) => {
+      if (event.source !== window) return;
+      const d = event.data as { target?: string; id?: number; method?: string; params?: unknown } | null;
+      if (!d || d.target !== 'merit-wallet-relay' || typeof d.id !== 'number' || typeof d.method !== 'string') return;
+      const id = d.id;
+      const answer = (payload: Record<string, unknown>) => window.postMessage({ target: 'merit-wallet-relay-result', id, ...payload }, '*');
+      void findMetaMask().then(async (metamask) => {
+        if (!metamask) return answer({ ok: false, error: { code: 4900, message: 'MetaMask is not installed in this browser.' } });
+        try {
+          answer({ ok: true, result: await metamask.request(d.params === undefined ? { method: d.method! } : { method: d.method!, params: d.params }) });
+        } catch (error) {
+          const e = error as { code?: unknown; message?: unknown } | null;
+          answer({ ok: false, error: { code: typeof e?.code === 'number' ? e.code : -32603, message: typeof e?.message === 'string' ? e.message : 'MetaMask refused the request.' } });
+        }
+      });
+    });
+  }
+
   // EIP-6963: announce now and whenever a page asks. rdns is the reverse domain of the project, the stable id pages use to recognise this wallet.
   const info = Object.freeze({
     uuid: '6f5c1a0e-3c7e-4c0a-9a53-5b6f0a7d2c11',

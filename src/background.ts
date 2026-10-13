@@ -1,6 +1,8 @@
 // 2026-10-08 (docs/meritWalletNpmDesignToDo.txt, E1): the wallet vault lives in this worker; see walletBackground.ts.
 import './walletBackground';
 import './bundledFeeds';
+// 2026-10-12 (docs/connectionDesign.txt item 9): MetaMask as an approver for the extension, through one tab on the web app's relay page.
+import './metamaskRelay';
 
 // Phase 1 (spcoin-nextjs-front-end's docs/design/extensionPlan.md,
 // "2026-09-09" section). Real open/focus-tab logic for the "Open" button

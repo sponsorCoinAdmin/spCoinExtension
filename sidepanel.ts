@@ -3,10 +3,11 @@ import { createRoot } from 'react-dom/client';
 import './src/tailwind.css';
 import { bundledFeedData } from './src/bundledFeeds';
 import { extensionAuthenticatorRegistry, extensionWallet, localVaultAuthenticator } from './src/localVaultAuthenticator';
+import { METAMASK_ID, isMetaMaskAccount } from './src/metamaskAuthenticator';
 import { startDappApprovals } from './src/dappApprovals';
 import { createSwapHost } from './src/swapHost';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
+import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
 import { PasswordPanel, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
@@ -491,8 +492,12 @@ async function renderWallet() {
       vaultRowsStale = true;
       await loadVaultAccounts();
     },
+    // MetaMask answers in its own window; the extension reaches it through one tab on the web app's relay page
+    connectApprover: async (entry) => {
+      if (entry !== 'connectMetaMask') throw new Error(entry === 'connectMeritExtension' ? 'You are already in the Merit extension.' : 'Using USB or a QR Code — Coming Soon');
+      await connectMetaMaskFromMenu();
+    },
     unavailable: {
-      connectMetaMask: 'Connecting MetaMask from the extension is not available yet.',
       connectMeritExtension: 'You are already in the Merit extension.',
       connectHardware: 'Using USB or a QR Code — Coming Soon',
     },
@@ -594,6 +599,24 @@ async function renderWallet() {
   // The accounts of the unlocked vault feed the account list and the active account (the hosted-app accounts are only used when requireVault is false).
   let vaultRows: Array<{ address: string; name: string }> | null = null;
   let vaultActive: string | undefined;
+  // 2026-10-12 (docs/connectionDesign.txt item 9): the active account when it is one MetaMask shared with the extension (not in the vault); kept so a reload brings it back. A vault pick clears it.
+  const ACTIVE_EXTERNAL_KEY = 'meritActiveExternalAccount';
+  let externalActive: string | undefined = (() => {
+    try {
+      return window.localStorage.getItem(ACTIVE_EXTERNAL_KEY) || undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+  const setExternalActive = (address: string | undefined) => {
+    externalActive = address;
+    try {
+      if (address) window.localStorage.setItem(ACTIVE_EXTERNAL_KEY, address);
+      else window.localStorage.removeItem(ACTIVE_EXTERNAL_KEY);
+    } catch {
+      /* kept for this session only */
+    }
+  };
   let vaultRowsStale = true;
   // Public profile of each vault account (name, symbol, avatar) from the hosted app's account.json / avatar files, the same source the web wallet's list reads,
   // so a Hardhat test account shows as "Doggie | Hot Dog" with its picture in both apps. Accounts with no profile keep the vault's own name.
@@ -623,7 +646,10 @@ async function renderWallet() {
     vaultRows = result.accounts;
     vaultActive = result.active;
     void enrichVaultRows(result.accounts.map((a) => a.address));
-    if (vaultActive && walletSource.address?.toLowerCase() !== vaultActive.toLowerCase()) activateAccount(vaultActive);
+    // MetaMask's account stays the active one while MetaMask still shares it; otherwise the vault's choice is.
+    if (externalActive && !(await isMetaMaskAccount(externalActive))) setExternalActive(undefined);
+    const wanted = externalActive ?? vaultActive;
+    if (wanted && walletSource.address?.toLowerCase() !== wanted.toLowerCase()) activateAccount(wanted);
     else render();
   }
   let vaultScreen: 'accounts' | 'onboarding' | 'password' | null = null;
@@ -1034,11 +1060,10 @@ async function renderWallet() {
                 // says how its active account is set and cleared and what it knows about each account (the saved profile: symbol, name, avatar).
                 approverHost: {
                   setActiveAccount: async (address: string) => {
-                    await vaultAccountsApi.setActive(address);
-                    vaultActive = address;
-                    activateAccount(address);
+                    await setActiveAccountOf(address);
                   },
                   clearActiveAccount: () => {
+                    setExternalActive(undefined);
                     walletSource = { ...walletSource, address: undefined, isConnected: false };
                     render();
                   },
@@ -1286,6 +1311,35 @@ async function renderWallet() {
   // token prompts for its password (render() swaps to PasswordPanel);
   // everything else (unencrypted entries, or an account this session
   // already unlocked) activates the wallet source immediately, no prompt.
+  // Make an account the active one: a vault account is the vault's choice; an account MetaMask shared is kept as the external active account (the vault's own choice stays as it was).
+  async function setActiveAccountOf(address: string) {
+    const inVault = !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase());
+    if (inVault) {
+      await vaultAccountsApi.setActive(address);
+      vaultActive = address;
+      setExternalActive(undefined);
+    } else {
+      setExternalActive(address);
+    }
+    activateAccount(address);
+  }
+  // The Add menu's Connect MetaMask row (docs/connectionDesign.txt item 9): MetaMask is asked through the relay tab; its account becomes the active one, with MetaMask recorded as the wallet that signs for it.
+  // Several accounts shared: they are all kept and listed under MetaMask, and the first becomes active.
+  async function connectMetaMaskFromMenu() {
+    const host = {
+      setActiveAccount: (address: string) => setActiveAccountOf(address),
+      setActiveAuthenticator: (address: string, id: AuthenticatorId) => extensionWallet.setActiveAuthenticator(address, id),
+      clearActiveAccount: () => undefined,
+    };
+    try {
+      await connectAccount({ registry: extensionAuthenticatorRegistry, approverId: METAMASK_ID, host });
+    } catch (error) {
+      if (!(error instanceof ConnectChoiceRequired)) throw error;
+      await connectAccount({ registry: extensionAuthenticatorRegistry, approverId: METAMASK_ID, address: error.accounts[0].address, host });
+    }
+    vaultRowsStale = true;
+    await loadVaultAccounts();
+  }
   function handleAccountRowSelect(accountId: string) {
     if (vaultRows) {
       // A vault account: the vault keeps the active choice; no hosted-app unlock exists or is needed.
@@ -1391,7 +1445,7 @@ async function renderWallet() {
     const vaultList = (await chrome.runtime.sendMessage({ type: 'merit/accounts/list' }).catch(() => undefined)) as
       | { ok?: boolean; accounts?: Array<{ address: string }> }
       | undefined;
-    const useVault = !!vaultList?.ok && !!vaultList.accounts?.some((a) => a.address.toLowerCase() === from.trim().toLowerCase());
+    const useVault = (!!vaultList?.ok && !!vaultList.accounts?.some((a) => a.address.toLowerCase() === from.trim().toLowerCase())) || (await isMetaMaskAccount(from));
     const network = listConfiguredNetworks({ showTestNets: true }).find((row) => row.chainId === activeChainId);
     const result = await sendNativeMerit({
       useVault,

@@ -12,10 +12,12 @@ import {
   type Authenticator,
   type AuthenticatorAccount,
   type AuthenticatorChange,
+  type AuthenticatorId,
   type AuthenticatorTransaction,
   type WorkerReply as VaultWorkerReply,
 } from '@sponsorcoin/merit-wallet';
 import { signMessageWithVault, signWithVault, type ConfirmCopy } from './localSigning';
+import { metamaskAuthenticator } from './metamaskAuthenticator';
 
 type WorkerReply = { ok: boolean; initialized?: boolean; unlocked?: boolean; accounts?: Array<{ address: string; name?: string; devOrigin?: boolean }> };
 const worker = (message: unknown) => chrome.runtime.sendMessage(message) as Promise<WorkerReply>;
@@ -89,6 +91,28 @@ function translate(error: unknown): AuthenticatorError {
 /** The extension's registry: it has the one authenticator. */
 export const extensionAuthenticatorRegistry = createAuthenticatorRegistry();
 extensionAuthenticatorRegistry.register(localVaultAuthenticator);
+// 2026-10-12 (docs/connectionDesign.txt item 9): MetaMask, asked through the relay tab (src/metamaskRelay.ts); the extension's list shows it as a second wallet beside the vault.
+extensionAuthenticatorRegistry.register(metamaskAuthenticator);
+
+/** Which wallet signs for an account, kept per account (the same rule as the web app: owners own accounts). An account with nothing saved is the vault's. */
+const AUTHENTICATOR_CHOICE_KEY = 'meritAccountAuthenticator';
+const readChoices = (): Record<string, AuthenticatorId> => {
+  try {
+    return JSON.parse(window.localStorage.getItem(AUTHENTICATOR_CHOICE_KEY) || '{}') as Record<string, AuthenticatorId>;
+  } catch {
+    return {};
+  }
+};
+export const extensionAccountAuthenticatorStore = {
+  get: (address: string): AuthenticatorId | undefined => readChoices()[address.toLowerCase()],
+  set: (address: string, id: AuthenticatorId): void => {
+    try {
+      window.localStorage.setItem(AUTHENTICATOR_CHOICE_KEY, JSON.stringify({ ...readChoices(), [address.toLowerCase()]: id }));
+    } catch {
+      /* a browser that refuses storage keeps the choice for this session only */
+    }
+  },
+};
 
 /** The extension's wallet (src/wallet in the package): its one backend today, the local vault; MetaMask-style backends join the same registry later. */
-export const extensionWallet = createWallet({ registry: extensionAuthenticatorRegistry, appDefault: () => 'localVault' });
+export const extensionWallet = createWallet({ registry: extensionAuthenticatorRegistry, store: extensionAccountAuthenticatorStore, appDefault: () => 'localVault' });

@@ -943,7 +943,7 @@ function MeritWalletInner({
   // arrowVisible/buyPrefixContent props (all real, all already supported by
   // ExchangeTradingPair.tsx) was ever fed a value, so they sat on their
   // hardcoded-true/absent defaults regardless of tree state. See
-  // docs/design/meritWalletDesignDoc.txt section 2.1 for the full research.
+  // docs/design/extensionPlan.txt section 6 section 2.1 for the full research.
   //
   // sell/buy token selection also moves here, off this component's own
   // local `selections` state (see commitSelection's own doc comment below)

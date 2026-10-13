@@ -1,11 +1,11 @@
 // File: src/auth/trezorTransport.ts
 //
-// 2026-10-13 (docs/connectionDesign.txt item 12, owner request: Trezor beside Ledger, shared methods): the TREZOR transport over Trezor Connect (@trezor/connect-web): the second HardwareTransport (src/auth/hardwareAuthenticator.ts). The device keeps the keys and shows every request on its own
+// 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12, owner request: Trezor beside Ledger, shared methods): the TREZOR transport over Trezor Connect (@trezor/connect-web): the second HardwareTransport (src/auth/hardwareAuthenticator.ts). The device keeps the keys and shows every request on its own
 // screen; Trezor Connect opens its own popup for the PIN and the permission, so this file only asks: read the first accounts of the standard Ethereum path, sign a personal message, sign a transaction. It signs NOTHING itself and holds no key. What a Trezor and a Ledger share (paths, one request
 // at a time, device state, nonce / gas / fees, signature assembly) is src/auth/hardwareShared.ts. The Trezor library is NOT bundled here: the host passes a loader (() => import('@trezor/connect-web')), so a host that never offers a Trezor never loads it, and the tests drive this file with a fake
 // Trezor Connect that signs with a known test key.
 // Trezor Connect is stateless: it does not announce an unplug, so "connected" means "accounts were read and not disconnected". A request after an unplug fails with the device's own error and the person connects again.
-// STATUS: built and tested against a simulated Trezor Connect (test/trezorTransport.test.mjs, the signatures are checked against viem's own). NOT yet run on a real Trezor: a person with a device must connect, list, sign a message and a transaction (docs/connectionDesign.txt item 12).
+// STATUS: built and tested against a simulated Trezor Connect (test/trezorTransport.test.mjs, the signatures are checked against viem's own). NOT yet run on a real Trezor: a person with a device must connect, list, sign a message and a transaction (docs/design/accountAuthDesign.txt section 17 item 12).
 import { HardwareError, type HardwareTransport } from './hardwareAuthenticator';
 import {
   assembleSignedTransaction,

@@ -1,6 +1,6 @@
 // File: src/vault/vaultCapability.ts
 //
-// 2026-10-11 (docs/authenticationDesign.txt section 14.3, items V1 / V2) -- the VAULT CAPABILITY: what the wallet's panels ask of any place that keeps keys under a credential, written once. The stores differ
+// 2026-10-11 (docs/design/accountAuthDesign.txt section 14.3, items V1 / V2) -- the VAULT CAPABILITY: what the wallet's panels ask of any place that keeps keys under a credential, written once. The stores differ
 // (the extension: chrome.storage.local; a browser: IndexedDB; a phone: Keychain / Keystore with biometrics; the web's dev server keystore); the panels (reset password, remove wallet, reveal key, backup, add account)
 // call this one interface and take their wording from `label`. createLocalVault() builds it over the vault that already lives in this folder (VaultSession + WalletAccounts), so ANY host that can supply a
 // VaultStorage (ciphertext only) gets the whole capability with no new crypto: the browser vault is this plus an IndexedDB storage. Pure TypeScript over WebCrypto, no React and no DOM.

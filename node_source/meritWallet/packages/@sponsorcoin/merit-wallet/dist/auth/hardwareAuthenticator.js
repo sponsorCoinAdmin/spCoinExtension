@@ -1,6 +1,6 @@
 // File: src/auth/hardwareAuthenticator.ts
 //
-// 2026-10-12 (docs/authenticationDesign.txt row 16, Q3): the HARDWARE authenticator ('hardware:<kind>', e.g. 'hardware:ledger'). The device keeps the keys and shows every request on its own screen, so this adapter keeps
+// 2026-10-12 (docs/design/accountAuthDesign.txt row 16, Q3): the HARDWARE authenticator ('hardware:<kind>', e.g. 'hardware:ledger'). The device keeps the keys and shows every request on its own screen, so this adapter keeps
 // none: it speaks to a HardwareTransport (WebHID for a Ledger first, a QR exchange later) and translates what the device says into the one error set. Like MetaMask it is signing-only: it carries no vault capability, lists
 // the accounts the device exposes after a connect, and signs a message or a transaction behind the device's approval. EVM only; typed data is not offered in this version (capability honesty, 6A.7). The browser
 // needs a user gesture and a permission grant to open a device, so connect() is the only call that opens one; everything else needs it already connected. No transport library is bundled here: the host supplies one.

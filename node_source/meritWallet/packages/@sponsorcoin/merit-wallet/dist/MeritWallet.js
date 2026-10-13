@@ -1,7 +1,7 @@
 // File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/MeritWallet.tsx
 // 2026-10-08 — moved here, unchanged apart from its imports, from @sponsorcoin/spcoin-panels (docs/meritWalletNpmDesignToDo.txt, S1).
 // Self-contained Merit Wallet component — 2026-09-14, per docs/design/
-// extensionPlan.md's "Direction changed" entry (one shared `MeritWallet`
+// extensionPlan.txt's "Direction changed" entry (one shared `MeritWallet`
 // component instead of two independently-rebuilt wallets), simplified on
 // direct request: "the extension should embed just MeritWallet.tsx" — not
 // a bare shell requiring the caller to assemble header/account-row/tabs/
@@ -27,7 +27,7 @@
 // MenuTabHeaderBar.tsx, and the 5 tab-panel files).
 //
 // `SP_COIN_DISPLAY.MERIT_WALLET` itself is deliberately NOT gated inside
-// this component — extensionPlan.md's "Third slice" entry ruled that
+// this component — extensionPlan.txt's "Third slice" entry ruled that
 // migration out (PasswordGateOrchestrator.tsx depends on it app-wide;
 // migrating it wrong risks the password gate failing to force closed).
 // Whether/when to render this component at all stays the host's call.
@@ -809,7 +809,7 @@ function MeritWalletInner({ resolveAssetAddress, docked = false, fullWidth = fal
         });
     };
     // WALLET_NETWORK_HEADER seed — this engine starts every panel at `false`
-    // until something calls setVisible (see extensionPlan.md's "Third
+    // until something calls setVisible (see extensionPlan.txt's "Third
     // slice" entry); since this component now owns that gate internally
     // (the PanelGate below), it has to seed it itself on mount rather than
     // relying on the caller to remember to, the way sidepanel.ts used to

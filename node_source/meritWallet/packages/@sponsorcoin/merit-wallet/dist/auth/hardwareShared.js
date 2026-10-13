@@ -1,6 +1,6 @@
 // File: src/auth/hardwareShared.ts
 //
-// 2026-10-13 (docs/connectionDesign.txt item 12, owner request: Ledger AND Trezor, shared methods): everything a hardware-wallet transport needs that does not depend on WHICH device it is. A Ledger (ledgerTransport.ts) and a Trezor (trezorTransport.ts) each speak their own
+// 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12, owner request: Ledger AND Trezor, shared methods): everything a hardware-wallet transport needs that does not depend on WHICH device it is. A Ledger (ledgerTransport.ts) and a Trezor (trezorTransport.ts) each speak their own
 // protocol; they share these: the account paths, one request at a time, the device state (accounts, connected, change announcements), the nonce / gas / fees a device does not know, the personal-message signature and the signed raw transaction put together from the device's r, s and v.
 // No key and no device library here: plain functions over the transport's own results. Tested through both transports (test/ledgerTransport.test.mjs, test/trezorTransport.test.mjs).
 import { serializeTransaction } from 'viem';

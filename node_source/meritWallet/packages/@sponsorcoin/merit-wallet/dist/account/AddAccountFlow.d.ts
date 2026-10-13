@@ -12,12 +12,12 @@ export interface AddAccountHost {
     /** Import a whole wallet (another Secret Recovery Phrase) into this host's approver; its first account is added. Throw a readable message on failure. A host that omits it shows the entry disabled. */
     importWallet?(mnemonic: string, targetId?: AuthenticatorId): Promise<void>;
     /**
-     * 2026-10-12 (docs/connectionDesign.txt items 4 / 7 / 8, authenticationDesign row 9): connect an account that another approver holds (MetaMask, the Merit extension, a hardware wallet): ask the approver, make the account active.
+     * 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 4 / 7 / 8, accountAuthDesign row 9): connect an account that another approver holds (MetaMask, the Merit extension, a hardware wallet): ask the approver, make the account active.
      * Throw a readable message on failure. A host that omits it shows those rows disabled with the reason below (the same entries and words in every host).
      */
     connectApprover?(entry: ConnectApproverEntry): Promise<void>;
     /**
-     * 2026-10-13 (docs/connectionDesign.txt item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
+     * 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
      * a host that omits them keeps the single connectApprover('connectHardware') row.
      */
     hardwareDevices?: Array<{

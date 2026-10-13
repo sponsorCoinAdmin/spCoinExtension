@@ -1,6 +1,6 @@
 // File: src/auth/connect.ts
 //
-// 2026-10-10 (docs/connectionDesign.txt items 3 and 5) -- CONNECT and DISCONNECT, written once for every approver. "Connected" means the wallet has an active account under some approver (connectionDesign 0); to connect is to pick one account of one
+// 2026-10-10 (docs/design/accountAuthDesign.txt section 17 items 3 and 5) -- CONNECT and DISCONNECT, written once for every approver. "Connected" means the wallet has an active account under some approver (docs/design/accountAuthDesign.txt section 17.0); to connect is to pick one account of one
 // approver and make it the active account; the approver is the only thing that differs (Merit Wallet's accounts are already in the wallet, MetaMask answers with a popup, a device with its own prompt).
 // The steps (2.3): ask the approver if it has to be reached -> it answers with the accounts it can sign for -> one of them is chosen -> that approver becomes the account's active authenticator -> the account becomes the active account.
 // The rules this file enforces (and test/connect.test.mjs checks):
@@ -15,7 +15,7 @@ import type { AuthenticatorRegistry } from './resolve';
 export interface ConnectHost {
   /** Make this account the wallet's active account (the host's own state: the exchange context, the vault). */
   setActiveAccount(address: string): Promise<void> | void;
-  /** Remember which approver signs for the account (connectionDesign 2.3 step 3). Optional: a host that has no per-account setting yet may omit it. */
+  /** Remember which approver signs for the account (docs/design/accountAuthDesign.txt section 17.2.3 step 3). Optional: a host that has no per-account setting yet may omit it. */
   setActiveAuthenticator?(address: string, approverId: AuthenticatorId): Promise<void> | void;
   /** Clear the active account (disconnect). */
   clearActiveAccount(): Promise<void> | void;
@@ -43,7 +43,7 @@ export interface ConnectParams {
   host: ConnectHost;
 }
 
-/** The wallet's one name (docs/createWalletAccountDesign.txt 3): every message about it says the same words as the lists do. */
+/** The wallet's one name (docs/design/accountAuthDesign.txt section 18 3): every message about it says the same words as the lists do. */
 const nameOf = (authenticator: Authenticator) => walletName(authenticator.id, authenticator.vault?.platform);
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();

@@ -1,9 +1,9 @@
 // File: src/wallet/approverAccounts.ts
 //
-// 2026-10-12 (docs/connectionDesign.txt items 6 / 7 and docs/authenticationDesign.txt rows 8 / 9): the account list per approver. The list is built from the wallet (its registered backends), one group per approver, in the
-// same words in every host; choosing a row connects that account through the one connect operation (src/auth/connect.ts), and a failure is reported in the list's banner and never changes the active account (connectionDesign 2.6, Q3).
+// 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 6 / 7 and docs/design/accountAuthDesign.txt rows 8 / 9): the account list per approver. The list is built from the wallet (its registered backends), one group per approver, in the
+// same words in every host; choosing a row connects that account through the one connect operation (src/auth/connect.ts), and a failure is reported in the list's banner and never changes the active account (docs/design/accountAuthDesign.txt section 17.2.6, Q3).
 //
-// The group's badge says where the approver stands (the model, connectionDesign 2.1 / 2.8):
+// The group's badge says where the approver stands (the model, docs/design/accountAuthDesign.txt section 17.2.1 / 2.8):
 //   ACTIVE      the active account is held by this approver (a click disconnects)
 //   Install     the approver is not installed / reachable and the host can send the user to it
 //   Unlock      the approver is there but locked (the host shows its unlock screen)
@@ -46,7 +46,7 @@ const same = (a: string | undefined, b: string | undefined) => !!a && !!b && a.t
 /** The groups for the shared account list. Pure: the statuses and the entries are read by the caller. */
 export function buildApproverGroups(input: ApproverGroupsInput): AccountListGroup[] {
   const { backends, entries, statuses, activeAddress, activeApproverId, host } = input;
-  // docs/createWalletAccountDesign.txt 4.2: on an account that more than one wallet holds, the row says where else its key is, by the other wallets' own names
+  // docs/design/accountAuthDesign.txt section 18 4.2: on an account that more than one wallet holds, the row says where else its key is, by the other wallets' own names
   const alsoIn = (entry: WalletAccountEntry, here: AuthenticatorId): string | undefined => {
     const others = entry.backends.filter((id) => id !== here).map((id) => backends.find((b) => b.id === id)?.name ?? id);
     return others.length ? `Key also in ${others.join(', ')}` : undefined;

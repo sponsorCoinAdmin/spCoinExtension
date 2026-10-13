@@ -1,6 +1,6 @@
 // File: src/wallet/AccountSigningSection.tsx
 //
-// 2026-10-12 (docs/authenticationDesign.txt row 15): "Who signs" for the active account, in the Config tab of every host. Lists the holders of the account (src/wallet/accountSigning.ts), marks the one that signs now, says in words when it cannot be
+// 2026-10-12 (docs/design/accountAuthDesign.txt row 15): "Who signs" for the active account, in the Config tab of every host. Lists the holders of the account (src/wallet/accountSigning.ts), marks the one that signs now, says in words when it cannot be
 // reached, and switches with one click when the account has more than one holder (5.6: instant, nothing copied or lost). An account with one holder just says who signs; with no account it says so.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";

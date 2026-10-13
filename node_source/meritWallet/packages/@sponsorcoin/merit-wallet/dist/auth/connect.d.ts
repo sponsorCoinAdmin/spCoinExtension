@@ -3,7 +3,7 @@ import type { AuthenticatorRegistry } from './resolve';
 export interface ConnectHost {
     /** Make this account the wallet's active account (the host's own state: the exchange context, the vault). */
     setActiveAccount(address: string): Promise<void> | void;
-    /** Remember which approver signs for the account (connectionDesign 2.3 step 3). Optional: a host that has no per-account setting yet may omit it. */
+    /** Remember which approver signs for the account (docs/design/accountAuthDesign.txt section 17.2.3 step 3). Optional: a host that has no per-account setting yet may omit it. */
     setActiveAuthenticator?(address: string, approverId: AuthenticatorId): Promise<void> | void;
     /** Clear the active account (disconnect). */
     clearActiveAccount(): Promise<void> | void;

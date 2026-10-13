@@ -1,6 +1,6 @@
 // File: src/wallet/WalletBackupSection.tsx
 //
-// 2026-10-12 (docs/authenticationDesign.txt 14.9 / item V8): the encrypted backup file in the Config tab of every host whose key-keeping backend can make one (the extension's vault, the browser vault). "Back up" asks for the password and downloads
+// 2026-10-12 (docs/design/accountAuthDesign.txt 14.9 / item V8): the encrypted backup file in the Config tab of every host whose key-keeping backend can make one (the extension's vault, the browser vault). "Back up" asks for the password and downloads
 // a file encrypted with it (a format name and a version, no plain key). Restoring is the first screen's job (WalletOnboardingPanel): a wallet that exists is never overwritten. A backend that cannot make one (the dev server, a phone) gets no section.
 'use client';
 

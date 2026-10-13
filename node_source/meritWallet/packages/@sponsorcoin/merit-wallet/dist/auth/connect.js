@@ -1,6 +1,6 @@
 // File: src/auth/connect.ts
 //
-// 2026-10-10 (docs/connectionDesign.txt items 3 and 5) -- CONNECT and DISCONNECT, written once for every approver. "Connected" means the wallet has an active account under some approver (connectionDesign 0); to connect is to pick one account of one
+// 2026-10-10 (docs/design/accountAuthDesign.txt section 17 items 3 and 5) -- CONNECT and DISCONNECT, written once for every approver. "Connected" means the wallet has an active account under some approver (docs/design/accountAuthDesign.txt section 17.0); to connect is to pick one account of one
 // approver and make it the active account; the approver is the only thing that differs (Merit Wallet's accounts are already in the wallet, MetaMask answers with a popup, a device with its own prompt).
 // The steps (2.3): ask the approver if it has to be reached -> it answers with the accounts it can sign for -> one of them is chosen -> that approver becomes the account's active authenticator -> the account becomes the active account.
 // The rules this file enforces (and test/connect.test.mjs checks):
@@ -19,7 +19,7 @@ export class ConnectChoiceRequired extends Error {
         this.accounts = accounts;
     }
 }
-/** The wallet's one name (docs/createWalletAccountDesign.txt 3): every message about it says the same words as the lists do. */
+/** The wallet's one name (docs/design/accountAuthDesign.txt section 18 3): every message about it says the same words as the lists do. */
 const nameOf = (authenticator) => walletName(authenticator.id, authenticator.vault?.platform);
 const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 async function reach(registry, approverId, host) {

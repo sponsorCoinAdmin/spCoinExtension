@@ -1,9 +1,9 @@
 // File: src/auth/approvalWaiting.ts
 //
-// 2026-10-12 (docs/authenticationDesign.txt row 11 / 6A, the "seamless" requirement): while another wallet (MetaMask, the Merit extension, a hardware device) is deciding on a request, the page says so in one neutral sentence instead of
+// 2026-10-12 (docs/design/accountAuthDesign.txt row 11 / 6A, the "seamless" requirement): while another wallet (MetaMask, the Merit extension, a hardware device) is deciding on a request, the page says so in one neutral sentence instead of
 // looking frozen: "Waiting for MetaMask to approve ...". The approval itself is the other wallet's own screen, shown once (5.3); this only tells the person where to look. A store holds what is pending; withApprovalNotice wraps an
 // authenticator so every request that needs the person's decision is registered for as long as it is open, success or failure, and nothing else about the authenticator changes.
-// 2026-10-13 (docs/connectionDesign.txt item 10): when a request ENDS in a refusal or a failure, the notice also says so for a few seconds ("Merit extension did not approve: User rejected the request."), because the status panel that used to carry that
+// 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 10): when a request ENDS in a refusal or a failure, the notice also says so for a few seconds ("Merit extension did not approve: User rejected the request."), because the status panel that used to carry that
 // message lives in the docked wallet popup and is hidden behind its lock screen. A wallet whose own screen already asks the person (the browser wallet) can be wrapped with showWaiting: false: it then reports only how a request ended, never "waiting".
 import { walletName } from './authenticator';
 /** How long the "did not approve" line stays. */

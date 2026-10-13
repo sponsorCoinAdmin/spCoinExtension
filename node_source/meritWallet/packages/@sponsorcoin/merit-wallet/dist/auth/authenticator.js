@@ -1,6 +1,6 @@
 // File: src/auth/authenticator.ts
 //
-// 2026-10-09 (docs/authenticationDesign.txt row 3, docs/nodeSourceMigrationPlan.txt row 6) -- the AUTHENTICATOR interface: what the wallet asks of anything that can sign for an account. One interface, many
+// 2026-10-09 (docs/design/accountAuthDesign.txt row 3, docs/nodeSourceMigrationPlan.txt row 6) -- the AUTHENTICATOR interface: what the wallet asks of anything that can sign for an account. One interface, many
 // implementations (a server keystore, the extension vault, an injected wallet such as MetaMask or the Merit extension, a hardware device); the wallet only ever calls this interface. The implementations are small
 // adapters supplied by the host that has them and registered once at boot; the registry and the resolver (resolve.ts) live here in the package. This file is types and the one error class: no behaviour.
 // Modelled on MetaMask's KeyringController / ApprovalController and on this package's existing hostContract (MeritWalletApi).
@@ -14,7 +14,7 @@ export class AuthenticatorError extends Error {
 }
 const PLATFORM_WORDS = { web: 'Web', extension: 'Extension', android: 'Android', iphone: 'I-Phone' };
 /**
- * 2026-10-12 (docs/createWalletAccountDesign.txt section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit Wallet (Extension)" the extension's vault (the
+ * 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit Wallet (Extension)" the extension's vault (the
  * web page that connects to the extension sees the same wallet, so it has the same name), "Merit Wallet (Android)" / "(I-Phone)" the phone apps, "Merit Wallet (Web Dev Server)" the development keystore of the developer pages, "MetaMask", and a hardware
  * wallet by its own name. A vault's own platform (when it reports one) decides the bracket for the Merit wallets that run in more than one place. Group headers show it in capitals (the header style does that), sentences show it as written here.
  */

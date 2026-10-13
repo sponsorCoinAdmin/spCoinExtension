@@ -29,7 +29,7 @@ export default function WalletOverlayHost({ slots = {}, useHostEffects = noHostE
     // real work only happens for a write that bypasses openPanel entirely
     // (e.g. the bare useSetPanelVisible), which today's code has no ancestor
     // guarantee for at all. See useEnforcePanelAncestorVisibility.ts's own
-    // header comment / extensionPlan.md's panel-tree discussion for the
+    // header comment / extensionPlan.txt's panel-tree discussion for the
     // full reasoning.
     useEnforcePanelAncestorVisibility();
     // 2026-10-03 — MUST stay after useEnforcePanelAncestorVisibility. React runs

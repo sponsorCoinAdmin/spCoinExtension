@@ -95,7 +95,7 @@ export default function SendTabPanel({
     // instead of a real one — this file's own comment above already says
     // the real SendComponent.tsx container has "no explicit padding of its
     // own"). No extension-only styling rule — see
-    // docs/npmPanelDisplayIssue.md and docs/design/spcoinPackagesDesign.md.
+    // docs/npmPanelDisplayIssue.md and docs/design/spcoinPackagesDesign.txt.
     //
     // 2026-09-22 — `gap` now reads PANEL_GAP from
     // @sponsorcoin/spcoin-common/styles instead of a hardcoded `4` — see

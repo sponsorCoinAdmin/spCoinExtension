@@ -1,6 +1,6 @@
 // File: src/vault/workerVault.ts
 //
-// 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1c) -- the VaultCapability (vaultCapability.ts) for a vault that lives in ANOTHER context and is reached by messages: the extension's background
+// 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1c) -- the VaultCapability (vaultCapability.ts) for a vault that lives in ANOTHER context and is reached by messages: the extension's background
 // worker owns the VaultSession and the accounts (walletBackground.ts) and the side panel talks to it with the `merit/vault/*` and `merit/accounts/*` messages. This adapter turns those messages into the one
 // VaultCapability interface, so the extension's vault is passed to the wallet exactly like the browser vault or a phone's store, with no change to the worker. A phone app with a native key manager behind a bridge
 // would implement the same transport.

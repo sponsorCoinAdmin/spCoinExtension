@@ -1,6 +1,6 @@
 // File: src/wallet/walletProps.tsx
 //
-// 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1b) -- how the component uses the `wallet` a host passes. deriveWalletProps turns the Wallet into the props the component used to receive one by one
+// 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1b) -- how the component uses the `wallet` a host passes. deriveWalletProps turns the Wallet into the props the component used to receive one by one
 // (the lock screen, the lock button, the authentication type, the security section); mergeWalletProps lets the host's own props WIN (an explicit prop beats a derived default, so a host can move over one prop at a
 // time) and then removes the screens the account's backend cannot support (no delete-wallet or change-password button for a backend that has neither). Pure functions, tested without React; the hook is a thin wrapper.
 import React, { useEffect, useMemo, useSyncExternalStore } from 'react';

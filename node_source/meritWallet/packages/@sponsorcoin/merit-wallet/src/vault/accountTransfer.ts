@@ -1,6 +1,6 @@
 // File: src/vault/accountTransfer.ts
 //
-// 2026-10-12 (docs/authenticationDesign.txt V11, owner request): an account's private key moves from the Merit extension to a web page's browser vault ONLY as an encrypted blob that the extension makes after the person approved it in the extension's own screen
+// 2026-10-12 (docs/design/accountAuthDesign.txt V11, owner request): an account's private key moves from the Merit extension to a web page's browser vault ONLY as an encrypted blob that the extension makes after the person approved it in the extension's own screen
 // (with the wallet password typed again), and that only the asking page can open. The page makes a one-time P-256 key pair and sends its PUBLIC key; the extension makes its own one-time pair, derives a shared secret (ECDH), turns it into an AES-GCM key (HKDF-SHA256)
 // and seals the key with the account's address as the authenticated data (so the blob cannot be replayed for another account). Nothing here stores anything: the one-time private keys live in memory for one request. WebCrypto only (the same in a page, the extension worker and Node).
 const INFO = new TextEncoder().encode('merit-account-transfer-v1');

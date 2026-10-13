@@ -1,6 +1,6 @@
 // File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/TestAccountsSection.tsx
 //
-// 2026-10-08 (docs/authenticationDesign.txt) -- the Config tab's "Test Accounts" section: Load puts Hardhat's standard test accounts into whatever store this
+// 2026-10-08 (docs/design/accountAuthDesign.txt) -- the Config tab's "Test Accounts" section: Load puts Hardhat's standard test accounts into whatever store this
 // wallet authenticates with (the server keystore for AuthenticationType.KEYSTORE, the vault for VAULT), Unload takes them out again. Wallet setup no
 // longer adds them. Host-independent: the host supplies status / load / unload. When the store needs the password to add keys (the web keystore
 // encrypts them under the master key), the section asks for it in a small popup first.

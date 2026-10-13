@@ -1,6 +1,6 @@
 // File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/auth/authenticationType.ts
 //
-// 2026-10-08 (docs/authenticationDesign.txt) -- how a Merit Wallet authenticates LOCALLY, set once by the host that mounts it:
+// 2026-10-08 (docs/design/accountAuthDesign.txt) -- how a Merit Wallet authenticates LOCALLY, set once by the host that mounts it:
 //   KEYSTORE  the web app: keys sit in the server keystore (resources/data/meritWallet/keystore.json), signed through the meritConnect routes.
 //   VAULT     the extension: keys sit in the encrypted vault in the background worker.
 // The wallet reads it wherever it needs to know which local authenticator it has (for example the Config tab's Test Accounts section). It describes

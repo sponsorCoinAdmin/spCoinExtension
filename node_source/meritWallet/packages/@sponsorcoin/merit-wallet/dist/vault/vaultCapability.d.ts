@@ -35,7 +35,7 @@ export interface VaultAccount {
 export interface VaultCapability {
     /** The words the panels use for "where the keys are kept": 'this device', 'this browser', 'the dev server'. */
     readonly label: string;
-    /** Where this wallet runs (docs/createWalletAccountDesign.txt 3.2): decides the bracket of its name. Optional: a vault that does not say is named from its authenticator's id. */
+    /** Where this wallet runs (docs/design/accountAuthDesign.txt section 18 3.2): decides the bracket of its name. Optional: a vault that does not say is named from its authenticator's id. */
     readonly platform?: WalletPlatform;
     readonly capabilities: VaultCapabilities;
     hasWallet(): Promise<boolean>;

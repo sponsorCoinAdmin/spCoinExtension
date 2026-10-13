@@ -2,7 +2,7 @@
 // Portable placeholder for the network-selector pill WalletHeader's own
 // leftSlot carries in the real app (components/views/MeritWalletComponent.tsx
 // — WALLET_NETWORK_HEADER's actual content IS WalletHeader with this pill
-// as leftSlot, not a separate row; see extensionPlan.md/handoff notes).
+// as leftSlot, not a separate row; see extensionPlan.txt/handoff notes).
 // Same reasoning as WalletAccountHeader.tsx: the real
 // components/views/Buttons/Connect/NetworkSelectDropDown.tsx reads wagmi's
 // useAccount/useChainId, ExchangeContext's useAppChainId, a real network

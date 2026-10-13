@@ -1,6 +1,6 @@
 // File: src/auth/resolve.ts
 //
-// 2026-10-09 (docs/authenticationDesign.txt row 3, sections 5.1-5.5) -- the authenticator REGISTRY (which authenticators this host has) and the RESOLVER (which one signs for an account).
+// 2026-10-09 (docs/design/accountAuthDesign.txt row 3, sections 5.1-5.5) -- the authenticator REGISTRY (which authenticators this host has) and the RESOLVER (which one signs for an account).
 // Every account has exactly ONE active authenticator. The resolver picks it from the ACCOUNT, in this order (first match wins): (1) the account's saved active authenticator, (2) the source the account
 // came from, (3) the app default. The NETWORK plays no part in the choice (a network can only restrict what an authenticator may do). If the chosen authenticator is not registered or not reachable the request
 // fails with a clear, specific error and no other authenticator is asked (5.5). No behaviour change by itself: nothing calls this until getConnectedSigner is rewired onto it.

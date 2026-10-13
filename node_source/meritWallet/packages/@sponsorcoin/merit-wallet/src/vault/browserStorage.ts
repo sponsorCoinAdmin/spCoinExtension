@@ -1,6 +1,6 @@
 // File: src/vault/browserStorage.ts
 //
-// 2026-10-11 (docs/authenticationDesign.txt 14.4, item V4) -- the BROWSER vault's two storage adapters. The encryption, the unlock, auto-lock and the wrong-password limit are the vault's own shared code (vaultSession.ts);
+// 2026-10-11 (docs/design/accountAuthDesign.txt 14.4, item V4) -- the BROWSER vault's two storage adapters. The encryption, the unlock, auto-lock and the wrong-password limit are the vault's own shared code (vaultSession.ts);
 // a store only has to keep ciphertext:
 //   - createIndexedDbVaultStorage: where the ENCRYPTED vault lives (IndexedDB: survives closing the browser; unlike localStorage it is not synchronous and not shared with every script that reads window.localStorage by key).
 //   - createWebSessionStore: where the unlocked SESSION key lives between page loads (sessionStorage: gone when the tab or browser closes). It holds the exported session key, never the password and never the decrypted data,

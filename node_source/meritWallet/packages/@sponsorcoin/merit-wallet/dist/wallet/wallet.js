@@ -1,6 +1,6 @@
 // File: src/wallet/wallet.ts
 //
-// 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1a) -- THE WALLET: the one object a host hands the wallet component for its key backends. Every backend is an Authenticator (src/auth/authenticator.ts):
+// 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1a) -- THE WALLET: the one object a host hands the wallet component for its key backends. Every backend is an Authenticator (src/auth/authenticator.ts):
 // the dev keystore, the extension vault, the browser vault, a phone's key management system, an injected wallet such as MetaMask, a hardware device. A backend that keeps keys itself carries the optional
 // `vault` capability (src/vault/vaultCapability.ts) and so supports create / import / backup / change credential / delete / reveal; a signing-only backend (MetaMask, hardware, a delegated app) has none of those.
 // Modelled on MetaMask's KeyringController: ONE controller, many keyring types, the address as the only join key.

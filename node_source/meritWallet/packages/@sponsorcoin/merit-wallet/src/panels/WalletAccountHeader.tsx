@@ -92,7 +92,7 @@ export interface WalletAccountHeaderProps {
    *  already showing — same chevronUp convention NetworkSelectDropDown's
    *  own trigger mode uses. Defaults false (closed). */
   chevronUp?: boolean;
-  /** The wallet that signs for the account (docs/createWalletAccountDesign.txt 4.3), e.g. "Merit Wallet (Extension)": the header's tooltip, so the person can always see which wallet is about to approve. */
+  /** The wallet that signs for the account (docs/design/accountAuthDesign.txt section 18 4.3), e.g. "Merit Wallet (Extension)": the header's tooltip, so the person can always see which wallet is about to approve. */
   walletName?: string;
 
   // --- Fallback-role-table props, used only when roleSlot is omitted ---

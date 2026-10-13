@@ -1,7 +1,7 @@
 // File: src/auth/injectedAuthenticator.ts
 //
-// 2026-10-10 (docs/connectionDesign.txt items 4, 8 and 9; docs/authenticationDesign.txt rows 5, 7 and 12) -- ONE authenticator for every wallet that speaks EIP-1193: MetaMask, the Merit extension, any EIP-6963 wallet. It is the generic "injected" authenticator of
-// authenticationDesign section 4: it holds no key, it asks the wallet (its own popup) and translates the wallet's answers and errors into the wallet's one error set. The host only says how to FIND the provider (window.ethereum, an EIP-6963 announcement,
+// 2026-10-10 (docs/design/accountAuthDesign.txt section 17 items 4, 8 and 9; docs/design/accountAuthDesign.txt rows 5, 7 and 12) -- ONE authenticator for every wallet that speaks EIP-1193: MetaMask, the Merit extension, any EIP-6963 wallet. It is the generic "injected" authenticator of
+// accountAuthDesign section 4: it holds no key, it asks the wallet (its own popup) and translates the wallet's answers and errors into the wallet's one error set. The host only says how to FIND the provider (window.ethereum, an EIP-6963 announcement,
 // the extension's own provider) and under which id to register it ('injected:io.metamask', 'injected:org.sponsorcoin.merit').
 // connect() is eth_requestAccounts (the wallet's own account picker, so MetaMask shows which accounts to share), accounts() is eth_accounts (no popup), disconnect() revokes the site's permission when the wallet supports that, signMessage() is personal_sign with the
 // message as UTF-8 hex, sendTransaction() is eth_sendTransaction after making sure the wallet is on the right chain.

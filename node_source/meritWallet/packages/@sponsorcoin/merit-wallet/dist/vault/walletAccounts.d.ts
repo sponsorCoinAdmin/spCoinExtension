@@ -15,7 +15,7 @@ export interface ImportedKey {
 export interface WalletVaultContents {
     version: 1;
     hd?: HdKeyring;
-    /** 2026-10-12 (docs/connectionDesign.txt item 2): further Secret Recovery Phrases added by importWallet, each with its own derived accounts (MetaMask keeps several phrases in one wallet). Absent in every vault made before. */
+    /** 2026-10-12 (docs/design/accountAuthDesign.txt section 17 item 2): further Secret Recovery Phrases added by importWallet, each with its own derived accounts (MetaMask keeps several phrases in one wallet). Absent in every vault made before. */
     hdExtra?: HdKeyring[];
     imported: ImportedKey[];
     /** Display names, by lower-case address. */

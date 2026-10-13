@@ -58,7 +58,7 @@ export { saveAccountProfile } from './account/accountProfileClient';
 export * from './account/profileForm';
 export * from './auth/authenticator';
 export * from './auth/resolve';
-// 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1a): the wallet object (registry, saved choice per account, resolver, accounts, capabilities) a host hands the component.
+// 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1a): the wallet object (registry, saved choice per account, resolver, accounts, capabilities) a host hands the component.
 export * from './wallet/wallet';
 export { createWalletLockStore, unlockErrorText } from './wallet/walletLock';
 export { createWalletSecurityApi } from './wallet/walletSecurity';

@@ -1,6 +1,6 @@
 // File: src/wallet/approverAccountsReact.ts
 //
-// 2026-10-12 (docs/connectionDesign.txt items 6 / 7): the React side of src/wallet/approverAccounts.ts. Reads the wallet's accounts and each backend's status whenever the wallet announces a change (a lock, an unlock, an
+// 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 6 / 7): the React side of src/wallet/approverAccounts.ts. Reads the wallet's accounts and each backend's status whenever the wallet announces a change (a lock, an unlock, an
 // installed wallet appearing, an accounts change) and when the page regains focus (an extension installed in another tab), and hands back the groups for the shared account list plus the banner text for a failed connect.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AccountListGroup } from '@sponsorcoin/spcoin-panels';

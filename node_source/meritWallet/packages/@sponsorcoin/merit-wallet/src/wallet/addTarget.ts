@@ -1,6 +1,6 @@
 // File: src/wallet/addTarget.ts
 //
-// 2026-10-12 (docs/createWalletAccountDesign.txt section 5): WHICH wallet the Add a Wallet/Account screen adds to. The screen acts on the ACTIVE WALLET (the one that holds the active account); with no active account it acts on the host's own wallet;
+// 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 5): WHICH wallet the Add a Wallet/Account screen adds to. The screen acts on the ACTIVE WALLET (the one that holds the active account); with no active account it acts on the host's own wallet;
 // a person can point it at another wallet that keeps keys. Each entry (Create Account, Import an account, Import a wallet) is then judged against the TARGET wallet's own capabilities and, when it cannot, shown disabled with the reason in
 // that wallet's own name. Pure reading of the wallet: the screen (src/account/AddAccountFlow.tsx) draws it.
 import type { AuthenticatorId } from '../auth/authenticator';

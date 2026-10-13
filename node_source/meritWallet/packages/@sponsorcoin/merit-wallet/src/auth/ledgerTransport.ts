@@ -1,11 +1,11 @@
 // File: src/auth/ledgerTransport.ts
 //
-// 2026-10-13 (docs/connectionDesign.txt item 12, docs/authenticationDesign.txt row 16, Q3): the LEDGER transport over WebHID: the one HardwareTransport (src/auth/hardwareAuthenticator.ts) a Ledger needs. The device keeps the keys and shows every request on its own screen;
+// 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12, docs/design/accountAuthDesign.txt row 16, Q3): the LEDGER transport over WebHID: the one HardwareTransport (src/auth/hardwareAuthenticator.ts) a Ledger needs. The device keeps the keys and shows every request on its own screen;
 // this file only speaks to it: open it (the browser's USB permission prompt, which needs a user gesture), read the first accounts of the Ledger Live path, sign a personal message, sign a transaction. It signs NOTHING itself and holds no key. What a Ledger and a Trezor share
 // (paths, one request at a time, device state, nonce / gas / fees, signature assembly) is src/auth/hardwareShared.ts.
 // The Ledger libraries (@ledgerhq/hw-transport-webhid, @ledgerhq/hw-app-eth) are NOT bundled here: the host passes loaders for them ((): Promise<module>, i.e. () => import('@ledgerhq/hw-transport-webhid')), so a host that never offers a hardware wallet never loads them,
 // and the tests drive this file with a fake device that signs with a known test key.
-// STATUS: built and tested against a simulated device (test/ledgerTransport.test.mjs, the signatures are checked against viem's own). NOT yet run on a real Ledger: a person with a device must connect, list, sign a message and a transaction (docs/connectionDesign.txt item 12).
+// STATUS: built and tested against a simulated device (test/ledgerTransport.test.mjs, the signatures are checked against viem's own). NOT yet run on a real Ledger: a person with a device must connect, list, sign a message and a transaction (docs/design/accountAuthDesign.txt section 17 item 12).
 import { HardwareError, type HardwareTransport } from './hardwareAuthenticator';
 import {
   assembleSignedTransaction,

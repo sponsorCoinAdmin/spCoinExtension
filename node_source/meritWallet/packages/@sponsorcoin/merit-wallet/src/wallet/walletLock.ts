@@ -1,6 +1,6 @@
 // File: src/wallet/walletLock.ts
 //
-// 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1b) -- the lock screen's state, DERIVED FROM THE WALLET: whichever key-keeping backend already has a wallet (Wallet.primaryVault) decides whether
+// 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1b) -- the lock screen's state, DERIVED FROM THE WALLET: whichever key-keeping backend already has a wallet (Wallet.primaryVault) decides whether
 // the wallet is locked, takes the password, and locks again. A host that passes `wallet` to the component no longer wires walletLocked / onPasswordSubmit / passwordErrorText / passwordSubmitting / onConfigLogoff
 // by hand. A wallet with no key-keeping backend (MetaMask only, a hardware wallet) has no lock screen at all: its own approval popups are the gate. Setting a wallet up (the recovery-phrase screens) stays the host's.
 // A store, not a hook, so it is testable without React; useWalletLock (walletProps.ts) wraps it for the component. MetaMask: KeyringController isUnlocked / submitPassword / setLocked.

@@ -1,11 +1,11 @@
 // File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/approval/meritApproval.ts
 //
 // A real approval gate for Merit-authorized writes. docs/design/
-// meritConnect.md models Merit as a `Simple Key Pair` keyring — same
+// accountAuthDesign.txt section 20 models Merit as a `Simple Key Pair` keyring — same
 // category as MetaMask's simplest account type — and that keyring shape
 // signs in-process with zero consent step by design (MetaMask's own
 // approval popup lives in its *extension UI*, not in the keyring itself).
-// Merit doesn't have that UI layer yet (that's docs/design/extensionPlan.md's
+// Merit doesn't have that UI layer yet (that's docs/design/extensionPlan.txt's
 // eventual scope), so this fills the gap at the application layer instead:
 // a promise-based request/resolve primitive, gating `getSigner` at the
 // call site rather than inside it.
@@ -13,7 +13,7 @@
 // Deliberately NOT inside getSigner above — this file has zero
 // React/UI dependency itself (same "singleton + listeners" shape as
 // authSource.ts), keeping meritConnect's own "no UI dependency" rule intact
-// (see meritConnect.md's WalletConnect section on why that matters — it's
+// (see accountAuthDesign.txt section 20's WalletConnect section on why that matters — it's
 // what lets a second transport wrap this module later as a wrapper, not a
 // rewrite). The actual rendered prompt lives outside meritConnect entirely,
 // in components/views/RadioOverlayPanels/AuthTransactionPanel.tsx — this

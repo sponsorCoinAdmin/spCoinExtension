@@ -1,6 +1,6 @@
 // File: src/vault/vaultAuthenticator.ts
 //
-// 2026-10-11 (docs/authenticationDesign.txt 14.4, item V4) -- an AUTHENTICATOR over a local vault: the package's Authenticator interface implemented by the vault that lives in this folder (VaultSession + WalletAccounts) with the
+// 2026-10-11 (docs/design/accountAuthDesign.txt 14.4, item V4) -- an AUTHENTICATOR over a local vault: the package's Authenticator interface implemented by the vault that lives in this folder (VaultSession + WalletAccounts) with the
 // approval queue and the LocalSigner (devOrigin accounts sign only on the local chain). It is the same shape for every store that holds keys itself: the BROWSER vault ('browserVault', IndexedDB), a phone ('deviceVault',
 // Keychain / Keystore) and, in time, the extension. The host supplies the vault parts, the approval queue (its own confirmation screen drives approve / reject) and the RPC endpoints; this file adds no storage, no UI and no crypto.
 import { AuthenticatorError } from '../auth/authenticator';

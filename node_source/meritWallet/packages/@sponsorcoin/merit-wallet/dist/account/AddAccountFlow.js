@@ -1,8 +1,8 @@
 // File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/account/AddAccountFlow.tsx
 //
-// 2026-10-10 (docs/connectionDesign.txt item 2) -- the "Add a Wallet/Account" flow, written once in the package: the menu (spcoin-panels' AddWalletMenu, the same entries, order and wording the web app shows), and the screens behind
+// 2026-10-10 (docs/design/accountAuthDesign.txt section 17 item 2) -- the "Add a Wallet/Account" flow, written once in the package: the menu (spcoin-panels' AddWalletMenu, the same entries, order and wording the web app shows), and the screens behind
 // the entries a host can offer. A host passes an AddAccountHost: what each entry does for ITS approver (the extension: create = derive the next vault account, import = a private key into the vault) and, for every entry it cannot offer,
-// the reason (shown disabled, connectionDesign 2.7). Whatever is added is made the active account by the host's callback, never by this component (connectionDesign 2.6: the app does not choose the active account).
+// the reason (shown disabled, docs/design/accountAuthDesign.txt section 17.2.7). Whatever is added is made the active account by the host's callback, never by this component (docs/design/accountAuthDesign.txt section 17.2.6: the app does not choose the active account).
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ const primaryStyle = { ...buttonStyle, background: '#5981F3' };
 const KEY_FORMAT = /^0x[0-9a-fA-F]{64}$/;
 export default function AddAccountFlow({ host, onDone, wallet, activeAddress }) {
     const [screen, setScreen] = useState('menu');
-    // docs/createWalletAccountDesign.txt section 5: the wallet this screen adds to: the active wallet by default; the person may point it at another wallet that keeps keys (this visit only)
+    // docs/design/accountAuthDesign.txt section 18 section 5: the wallet this screen adds to: the active wallet by default; the person may point it at another wallet that keeps keys (this visit only)
     // a host that builds its `targets` array on every render must not restart the read each time: the list is keyed by its content
     const hostTargets = host.targets?.join(',');
     const [targets, setTargets] = useState([]);

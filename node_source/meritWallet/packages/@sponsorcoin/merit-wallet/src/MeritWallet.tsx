@@ -1,7 +1,7 @@
 // File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/MeritWallet.tsx
 // 2026-10-08 — moved here, unchanged apart from its imports, from @sponsorcoin/spcoin-panels (docs/meritWalletNpmDesignToDo.txt, S1).
 // Self-contained Merit Wallet component — 2026-09-14, per docs/design/
-// extensionPlan.md's "Direction changed" entry (one shared `MeritWallet`
+// extensionPlan.txt's "Direction changed" entry (one shared `MeritWallet`
 // component instead of two independently-rebuilt wallets), simplified on
 // direct request: "the extension should embed just MeritWallet.tsx" — not
 // a bare shell requiring the caller to assemble header/account-row/tabs/
@@ -27,7 +27,7 @@
 // MenuTabHeaderBar.tsx, and the 5 tab-panel files).
 //
 // `SP_COIN_DISPLAY.MERIT_WALLET` itself is deliberately NOT gated inside
-// this component — extensionPlan.md's "Third slice" entry ruled that
+// this component — extensionPlan.txt's "Third slice" entry ruled that
 // migration out (PasswordGateOrchestrator.tsx depends on it app-wide;
 // migrating it wrong risks the password gate failing to force closed).
 // Whether/when to render this component at all stays the host's call.
@@ -517,7 +517,7 @@ export interface MeritWalletProps {
    * app's account editor over the host's signer. Omit and Account Details stays read-only.
    */
   accountProfileHost?: AccountProfileHost;
-  /** 2026-10-10 (connectionDesign item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
+  /** 2026-10-10 (docs/design/accountAuthDesign.txt section 17 item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
   addAccountHost?: AddAccountHost;
   // 2026-09-16, on request ("do the same for the info.png in the lists")
   // — every AssetListRow already had a real, unwired `onInfoClick` (see
@@ -578,13 +578,13 @@ export interface MeritWalletProps {
    /** May return the outcome (hash + receipt, or a failure message): the wallet then shows the same result card the web app shows. */
    onSendSubmit?: (params: { recipientAddress?: string; tokenAddress?: string; amount: string; decimals?: number; tokenSymbol?: string }) => void | Promise<HostTransactionResult | void>;
   /**
-   * 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1): the host's WALLET: every key backend behind one object (src/wallet/wallet.ts). When given, the lock screen, the lock button, the
+   * 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1): the host's WALLET: every key backend behind one object (src/wallet/wallet.ts). When given, the lock screen, the lock button, the
    * authentication type and the Wallet Security section are derived from it, and the delete-wallet / change-password buttons are removed for a backend that cannot do them. A prop the host passes itself
    * still wins over the derived one, so a host can move over one prop at a time.
    */
   wallet?: Wallet;
   /**
-   * 2026-10-12 (docs/connectionDesign.txt items 6 / 7): with `wallet` AND this, the account list is the per-approver list derived from the wallet (one group per backend, badges ACTIVE / Install / Unlock / Connect /
+   * 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 6 / 7): with `wallet` AND this, the account list is the per-approver list derived from the wallet (one group per backend, badges ACTIVE / Install / Unlock / Connect /
    * INACTIVE), choosing a row connects it through the one connect operation, and a failed connect is shown in the list's banner. The host supplies what it owns: setting / clearing its active account, where an approver is
    * installed from, how an approver is unlocked. Passing it asks for the derived list: it replaces the host's own accountGroups / onAccountRowSelect once the list has loaded (they stay as the fallback until then).
    */
@@ -1495,7 +1495,7 @@ function MeritWalletInner({
   };
 
   // WALLET_NETWORK_HEADER seed — this engine starts every panel at `false`
-  // until something calls setVisible (see extensionPlan.md's "Third
+  // until something calls setVisible (see extensionPlan.txt's "Third
   // slice" entry); since this component now owns that gate internally
   // (the PanelGate below), it has to seed it itself on mount rather than
   // relying on the caller to remember to, the way sidepanel.ts used to
@@ -2536,7 +2536,7 @@ function MeritWalletInner({
         {/* 2026-10-03, on request — the tab strip is also hidden while the
             password panel is active (it collapses; the body below it, which IS
             the password form, is untouched). */}
-        {/* 2026-10-12 (authenticationDesign row 11): while another wallet is deciding on a request, one neutral line says so (nothing shows when nothing is pending). 2026-10-13: it is OUTSIDE the tab header bar, so it also shows over the lock screen, and it
+        {/* 2026-10-12 (accountAuthDesign row 11): while another wallet is deciding on a request, one neutral line says so (nothing shows when nothing is pending). 2026-10-13: it is OUTSIDE the tab header bar, so it also shows over the lock screen, and it
             also says how a request just ended ("Merit extension did not approve: User rejected the request."). */}
         <ApprovalWaitingNotice />
         <MenuTabHeaderBar open={menuOpen && menuTabHeaderVisible && !passwordPanelShowing} activeTab={activeTab} onTabClick={handleTabClick}>
@@ -2628,7 +2628,7 @@ function MeritWalletInner({
           MeritWallet.tsx (spcoin-nextjs-front-end) for the web app's own,
           separate, non-numbered marker on its own genuinely different
           component of the same name — the two are NOT the same file today
-          (see extensionPlan.md's "Direction changed" entry); this marker
+          (see extensionPlan.txt's "Direction changed" entry); this marker
           is what makes that fact directly visible instead of assumed. */}
       {/* 2026-09-15 — same SHOW_BUILD_MARKERS switch TabBodyMarker.tsx now
           checks internally (see packageBuildTag.ts's own doc comment) —

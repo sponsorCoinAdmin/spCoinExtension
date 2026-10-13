@@ -1,6 +1,6 @@
 // File: src/account/signIn.ts
 //
-// 2026-10-12 (docs/authenticationDesign.txt row 13 / 10.6): the one sign-in. The hosted app proves an account is the caller's with a challenge: POST /api/spCoin/auth/nonce { address } answers a nonce and the message to sign, the account signs
+// 2026-10-12 (docs/design/accountAuthDesign.txt row 13 / 10.6): the one sign-in. The hosted app proves an account is the caller's with a challenge: POST /api/spCoin/auth/nonce { address } answers a nonce and the message to sign, the account signs
 // it, POST /api/spCoin/auth/verify { address, nonce, signature } answers a bearer token for the writes (account profile, avatar, exchange-context sync). Four copies of this sequence lived in the web app and this package (the profile client, the
 // account form, the web's account panel, the sync sign-in), each with its own wording of the same errors. Who signs is the ACCOUNT's active authenticator (a key kept by the dev server, the extension's vault, the browser vault, MetaMask, a hardware
 // wallet): this function only needs "sign this message", so it works for every one of them.

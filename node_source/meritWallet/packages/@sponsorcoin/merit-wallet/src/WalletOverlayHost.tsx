@@ -71,7 +71,7 @@ export default function WalletOverlayHost({ slots = {}, useHostEffects = noHostE
   // real work only happens for a write that bypasses openPanel entirely
   // (e.g. the bare useSetPanelVisible), which today's code has no ancestor
   // guarantee for at all. See useEnforcePanelAncestorVisibility.ts's own
-  // header comment / extensionPlan.md's panel-tree discussion for the
+  // header comment / extensionPlan.txt's panel-tree discussion for the
   // full reasoning.
   useEnforcePanelAncestorVisibility();
   // 2026-10-03 — MUST stay after useEnforcePanelAncestorVisibility. React runs
@@ -125,7 +125,7 @@ export default function WalletOverlayHost({ slots = {}, useHostEffects = noHostE
 
           The wrapper is here on purpose, and it was REMOVED from here earlier
           the same day before being restored. It was removed on a read of Rule
-          0 / Flow Rule B in docs/design/RulesOfPanelTreeDisplay.md ("no
+          0 / Flow Rule B in docs/design/RulesOfPanelTreeDisplay.txt ("no
           panel's visibility is derived, inferred, or computed from any other
           panel's state") — a fair reading of the rule as written. It is
           restored because containment is the intended behaviour here, not a

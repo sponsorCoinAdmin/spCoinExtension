@@ -1,6 +1,6 @@
 // File: src/security/secretClearing.ts
 //
-// 2026-10-12 (docs/authenticationDesign.txt 14.7, item V9, memory clearing): a secret that is shown on a screen (the Secret Recovery Phrase after a wallet is created, a revealed phrase or private key in Security) must not stay in the
+// 2026-10-12 (docs/design/accountAuthDesign.txt 14.7, item V9, memory clearing): a secret that is shown on a screen (the Secret Recovery Phrase after a wallet is created, a revealed phrase or private key in Security) must not stay in the
 // page for long. watchSecret takes the function that clears it and calls it when the page is hidden (the tab is switched away or the window is minimised) or when the screen has been open for `maxMs`, whichever comes first, and gives
 // back the function that stops watching. Pure: the document and the timer are passed in, so a test can drive both. SecretClearing (React) is the one hook the screens use.
 import { useEffect } from 'react';

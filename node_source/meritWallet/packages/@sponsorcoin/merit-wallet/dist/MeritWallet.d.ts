@@ -121,7 +121,7 @@ export interface MeritWalletProps {
      * app's account editor over the host's signer. Omit and Account Details stays read-only.
      */
     accountProfileHost?: AccountProfileHost;
-    /** 2026-10-10 (connectionDesign item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
+    /** 2026-10-10 (docs/design/accountAuthDesign.txt section 17 item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
     addAccountHost?: AddAccountHost;
     onTokenIconClick?: (address: string) => void;
     tokenDetail?: {
@@ -155,13 +155,13 @@ export interface MeritWalletProps {
         tokenSymbol?: string;
     }) => void | Promise<HostTransactionResult | void>;
     /**
-     * 2026-10-11 (docs/authenticationDesign.txt section 15.7, item W1): the host's WALLET: every key backend behind one object (src/wallet/wallet.ts). When given, the lock screen, the lock button, the
+     * 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1): the host's WALLET: every key backend behind one object (src/wallet/wallet.ts). When given, the lock screen, the lock button, the
      * authentication type and the Wallet Security section are derived from it, and the delete-wallet / change-password buttons are removed for a backend that cannot do them. A prop the host passes itself
      * still wins over the derived one, so a host can move over one prop at a time.
      */
     wallet?: Wallet;
     /**
-     * 2026-10-12 (docs/connectionDesign.txt items 6 / 7): with `wallet` AND this, the account list is the per-approver list derived from the wallet (one group per backend, badges ACTIVE / Install / Unlock / Connect /
+     * 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 6 / 7): with `wallet` AND this, the account list is the per-approver list derived from the wallet (one group per backend, badges ACTIVE / Install / Unlock / Connect /
      * INACTIVE), choosing a row connects it through the one connect operation, and a failed connect is shown in the list's banner. The host supplies what it owns: setting / clearing its active account, where an approver is
      * installed from, how an approver is unlocked. Passing it asks for the derived list: it replaces the host's own accountGroups / onAccountRowSelect once the list has loaded (they stay as the fallback until then).
      */

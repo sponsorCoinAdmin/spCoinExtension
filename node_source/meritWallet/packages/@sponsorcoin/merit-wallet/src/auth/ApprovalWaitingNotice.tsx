@@ -1,6 +1,6 @@
 // File: src/auth/ApprovalWaitingNotice.tsx
 //
-// 2026-10-12 (docs/authenticationDesign.txt row 11 / 6A): the neutral "Waiting for X to approve ..." line shown while another wallet is deciding (src/auth/approvalWaiting.ts). It renders nothing when nothing is pending.
+// 2026-10-12 (docs/design/accountAuthDesign.txt row 11 / 6A): the neutral "Waiting for X to approve ..." line shown while another wallet is deciding (src/auth/approvalWaiting.ts). It renders nothing when nothing is pending.
 'use client';
 
 import React, { useSyncExternalStore } from 'react';

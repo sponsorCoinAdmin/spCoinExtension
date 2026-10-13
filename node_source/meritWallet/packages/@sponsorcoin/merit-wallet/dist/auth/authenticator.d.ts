@@ -21,7 +21,7 @@ export interface AuthenticatorStatus {
     /** Ready to sign without asking for a password first. */
     unlocked: boolean;
 }
-/** 2026-10-12 (docs/authenticationDesign.txt row 6): what the person is told about a request on the authenticator's own confirmation screen. Optional: an authenticator that has no screen of its own (an injected wallet shows its own) ignores it. */
+/** 2026-10-12 (docs/design/accountAuthDesign.txt row 6): what the person is told about a request on the authenticator's own confirmation screen. Optional: an authenticator that has no screen of its own (an injected wallet shows its own) ignores it. */
 export interface AuthenticatorDisplay {
     title?: string;
     message?: string;
@@ -69,7 +69,7 @@ export interface Authenticator {
     readonly label: string;
     readonly icon?: string;
     readonly capabilities: AuthenticatorCapabilities;
-    /** 2026-10-11 (docs/authenticationDesign.txt 14.3): present when this authenticator keeps keys itself under a credential; the shared password / delete / backup / security panels drive it. */
+    /** 2026-10-11 (docs/design/accountAuthDesign.txt 14.3): present when this authenticator keeps keys itself under a credential; the shared password / delete / backup / security panels drive it. */
     readonly vault?: VaultCapability;
     status(): Promise<AuthenticatorStatus>;
     /** The accounts this authenticator can sign for. */
@@ -99,7 +99,7 @@ export interface AccountAuthenticatorRef {
 /** Where a Merit wallet runs. A vault reports it; a signing-only wallet (MetaMask, a hardware device) has none. */
 export type WalletPlatform = 'web' | 'extension' | 'android' | 'iphone';
 /**
- * 2026-10-12 (docs/createWalletAccountDesign.txt section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit Wallet (Extension)" the extension's vault (the
+ * 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit Wallet (Extension)" the extension's vault (the
  * web page that connects to the extension sees the same wallet, so it has the same name), "Merit Wallet (Android)" / "(I-Phone)" the phone apps, "Merit Wallet (Web Dev Server)" the development keystore of the developer pages, "MetaMask", and a hardware
  * wallet by its own name. A vault's own platform (when it reports one) decides the bracket for the Merit wallets that run in more than one place. Group headers show it in capitals (the header style does that), sentences show it as written here.
  */

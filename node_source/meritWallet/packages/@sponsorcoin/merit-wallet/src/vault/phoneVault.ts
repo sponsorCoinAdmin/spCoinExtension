@@ -1,13 +1,13 @@
 // File: src/vault/phoneVault.ts
 //
-// 2026-10-11 (docs/authenticationDesign.txt section 14.10 and item V12 / W1e) -- the PHONE backend: a phone app passes its own key management system (iOS Keychain / Secure Enclave, Android Keystore / StrongBox, a
+// 2026-10-11 (docs/design/accountAuthDesign.txt section 14.10 and item V12 / W1e) -- the PHONE backend: a phone app passes its own key management system (iOS Keychain / Secure Enclave, Android Keystore / StrongBox, a
 // biometric prompt) to the wallet through ONE small interface, PhoneKeyManager, which native code implements and bridges. This file is the contract plus two adapters that turn it into the wallet's own backend
 // interfaces, so a phone is "just another backend" next to the dev keystore, the extension vault and MetaMask:
 //   createPhoneVault(manager)          the VaultCapability (set up, unlock by biometric, lock, accounts, delete; the flags say what a phone cannot do)
 //   createPhoneAuthenticator(manager)  the Authenticator (id 'deviceVault', carries that vault; signs and sends behind the key manager's own approval)
 // What makes a phone different, and how the flags say it: its keys are NON-EXPORTABLE (they never leave the secure element), so revealKey, revealPhrase (after setup) and backup are false and the wallet draws no such
 // screens; there is no wallet password to change (the unlock is the device's biometric or passcode), so changeCredential is false and biometric is true. The adapter has no storage of its own: the manager keeps
-// every secret. Language-neutral on purpose: the manager's methods are plain request / reply shapes (see docs/authenticationDesign.txt 14.10.1), so a native bridge is a thin JSON layer.
+// every secret. Language-neutral on purpose: the manager's methods are plain request / reply shapes (see docs/design/accountAuthDesign.txt 14.10.1), so a native bridge is a thin JSON layer.
 import type { Authenticator, AuthenticatorAccount, AuthenticatorChange, AuthenticatorTransaction } from '../auth/authenticator';
 import { AuthenticatorError } from '../auth/authenticator';
 import { VaultError, type VaultAccount, type VaultCapability, type VaultCredential } from './vaultCapability';

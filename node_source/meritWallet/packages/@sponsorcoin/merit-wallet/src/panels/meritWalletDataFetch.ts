@@ -255,6 +255,8 @@ export async function buildTokenRows(
   caches: MeritWalletIconCaches,
   forceRefresh = false,
 ): Promise<AssetListEntry[] | undefined> {
+  // 2026-10-13: no network chosen yet (chain id 0, for example while the active account is switching) is not a request to make: the tokens API answers 400 for it and the failure surfaced as an error screen.
+  if (!(chainId > 0)) return undefined;
   try {
     let items: Array<{ address: string; symbol?: string; name?: string; decimals?: number }>;
     try {

@@ -150,6 +150,9 @@ export async function buildAllAccountRows(baseUrl, caches, forceRefresh = false)
 // would use, independent of DB registration, so a token with no DB record
 // still gets a real attempt at its real icon.
 export async function buildTokenRows(chainId, baseUrl, caches, forceRefresh = false) {
+    // 2026-10-13: no network chosen yet (chain id 0, for example while the active account is switching) is not a request to make: the tokens API answers 400 for it and the failure surfaced as an error screen.
+    if (!(chainId > 0))
+        return undefined;
     try {
         let items;
         try {

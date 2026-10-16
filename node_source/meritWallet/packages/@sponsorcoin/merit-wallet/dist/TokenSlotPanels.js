@@ -10,6 +10,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
+import { usePlatform } from './platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { useExchangeContext, usePanelVisible, defaultMissingImage } from '@sponsorcoin/spcoin-exchange-engine';
 import { getTokenMetaData } from '@sponsorcoin/spcoin-panels';
@@ -18,7 +19,8 @@ import { useWalletData } from './walletData';
 // text-sp-sm is a Tailwind token only the web app defines (var(--sp-text-sm), 1rem); an inline style gives every host the same size.
 const SP_TEXT_SM = { fontSize: 'var(--sp-text-sm, 1rem)' };
 export function CopyBtn({ text }) {
-    return (_jsx("button", { type: "button", title: "Copy to clipboard", onClick: () => void navigator.clipboard.writeText(text), className: "shrink-0 text-slate-400 hover:text-white transition-colors", children: _jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("rect", { x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" }), _jsx("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })] }) }));
+    const platform = usePlatform();
+    return (_jsx("button", { type: "button", title: "Copy to clipboard", onClick: () => void platform.copyText(text), className: "shrink-0 text-slate-400 hover:text-white transition-colors", children: _jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("rect", { x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" }), _jsx("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })] }) }));
 }
 /** The rows of a token's detail table: the record's fields, addresses and urls with a copy button. */
 export function tokenDetailRows(contract) {

@@ -72,7 +72,9 @@ export declare class ProviderController {
     }): Promise<unknown>;
     private toProviderError;
     private dispatch;
+    private pendingConnects;
     private requestAccounts;
+    private requestAccountsOnce;
     /** The user (or a page) moved the wallet to another network: tell every connected page. */
     setChain(chainId: number): Promise<void>;
     /** The wallet's active account changed or the wallet locked: tell each connected page what it can see now. */

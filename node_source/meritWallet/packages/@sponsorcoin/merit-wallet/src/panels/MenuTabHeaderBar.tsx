@@ -193,8 +193,10 @@ export function TabRow({
           // TabButton's own per-button metrics are untouched.
           paddingLeft: 6,
           paddingRight: 6,
-          paddingTop: 4,
-          paddingBottom: 4,
+          // 2026-10-16 (owner request): the spacing between the PANEL_TITLE and the MENU_TAB_HEADER_BAR is 2px: this 2px top buffer. The title row keeps its own 2px below its buttons (PanelTitle.tsx).
+          paddingTop: 2,
+          // 2026-10-16 (owner request): no bottom buffer. The tab buttons' (flat) bottoms run edge to edge down to the bar's bottom divider; the top buffer above them is unchanged.
+          paddingBottom: 0,
           overflowX: 'auto',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -267,7 +269,8 @@ export default function MenuTabHeaderBar({
       {children && (
         <div
           className="spcoinMenuTabBodyScroll"
-          style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          // 2026-10-16 (owner request): 2px of buffer between the bottom of the MENU_TAB_HEADER_BAR (its divider) and whatever radio panel is on screen (TRADING_STATION_PANEL, SEND_PANEL, ...). The tabs themselves stay flush on the divider.
+          style={{ flex: 1, minHeight: 0, paddingTop: 2, boxSizing: 'border-box', overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {children}
         </div>

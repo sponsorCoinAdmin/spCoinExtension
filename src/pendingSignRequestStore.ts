@@ -47,6 +47,9 @@ export interface PendingSignRequest {
   accounts?: PendingSignRequestAccountEntry[];
   tokens?: PendingSignRequestTokenEntry[];
   amount?: { label: string; value: string };
+  /** Button wording for a request that is not a transaction (the connect page). */
+  approveLabel?: string;
+  rejectLabel?: string;
 }
 
 type Listener = (request: PendingSignRequest | null) => void;

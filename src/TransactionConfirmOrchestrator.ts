@@ -48,6 +48,8 @@ export function TransactionConfirmOrchestrator() {
     chainId: request.chainId,
     contractAddress: request.contractAddress,
     busy,
+    approveLabel: request.approveLabel,
+    rejectLabel: request.rejectLabel,
     onApprove: approvePendingSignRequest,
     // Reject clears the request outright (no write to wait on); Approve
     // leaves it mounted (busy) until whichever caller awaits

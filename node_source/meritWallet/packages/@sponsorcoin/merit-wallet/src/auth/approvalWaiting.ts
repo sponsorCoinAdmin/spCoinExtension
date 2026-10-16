@@ -5,7 +5,7 @@
 // authenticator so every request that needs the person's decision is registered for as long as it is open, success or failure, and nothing else about the authenticator changes.
 // 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 10): when a request ENDS in a refusal or a failure, the notice also says so for a few seconds ("Merit extension did not approve: User rejected the request."), because the status panel that used to carry that
 // message lives in the docked wallet popup and is hidden behind its lock screen. A wallet whose own screen already asks the person (the browser wallet) can be wrapped with showWaiting: false: it then reports only how a request ended, never "waiting".
-import { walletName, type Authenticator, type AuthenticatorTransaction } from './authenticator';
+import { authenticatorName, type Authenticator, type AuthenticatorTransaction } from './authenticator';
 
 export type ApprovalAction = 'connect' | 'sign a message' | 'sign typed data' | 'send a transaction';
 
@@ -109,7 +109,7 @@ export function approvalWaitingText(all: readonly ApprovalWaiting[]): string {
 /** The same authenticator, with each request that needs the person's decision registered in the store while it is open. Everything else (id, label, capabilities, status, accounts, events) is the authenticator's own. */
 export function withApprovalNotice(authenticator: Authenticator, store: ApprovalWaitingStore = approvalWaiting, options: { showWaiting?: boolean } = {}): Authenticator {
   const track = async <T>(action: ApprovalAction, run: () => Promise<T>): Promise<T> => {
-    const end = store.begin({ authenticatorId: authenticator.id, label: walletName(authenticator.id, authenticator.vault?.platform), action, silent: options.showWaiting === false });
+    const end = store.begin({ authenticatorId: authenticator.id, label: authenticatorName(authenticator), action, silent: options.showWaiting === false });
     try {
       const result = await run();
       end();
@@ -126,7 +126,14 @@ export function withApprovalNotice(authenticator: Authenticator, store: Approval
     Object.defineProperty(wrapped, 'signTypedData', { value: (address: string, typedData: unknown) => track('sign typed data', () => authenticator.signTypedData!(address, typedData)) });
   }
   if (authenticator.connect) {
-    Object.defineProperty(wrapped, 'connect', { value: () => track('connect', () => authenticator.connect!()) });
+    // 2026-10-14: one open connect per wallet. A second connect() while the first is waiting (the connect flow asks twice) joins it instead of listing "(2 requests are open)".
+    let openConnect: Promise<unknown> | undefined;
+    Object.defineProperty(wrapped, 'connect', {
+      value: () => {
+        if (!openConnect) openConnect = track('connect', () => authenticator.connect!()).finally(() => { openConnect = undefined; });
+        return openConnect as ReturnType<NonNullable<Authenticator['connect']>>;
+      },
+    });
   }
   return wrapped;
 }

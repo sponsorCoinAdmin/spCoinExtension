@@ -3,8 +3,9 @@
 // 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 6 / 7): the React side of src/wallet/approverAccounts.ts. Reads the wallet's accounts and each backend's status whenever the wallet announces a change (a lock, an unlock, an
 // installed wallet appearing, an accounts change) and when the page regains focus (an extension installed in another tab), and hands back the groups for the shared account list plus the banner text for a failed connect.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { domPlatform } from '../platform/domPlatform';
 import { buildApproverGroups, createApproverController } from './approverAccounts';
-export function useApproverAccounts(wallet, host, activeAddress) {
+export function useApproverAccounts(wallet, host, activeAddress, platform = domPlatform) {
     const [entries, setEntries] = useState(undefined);
     const [statuses, setStatuses] = useState({});
     const [notice, setNotice] = useState('');
@@ -35,15 +36,12 @@ export function useApproverAccounts(wallet, host, activeAddress) {
             return undefined;
         void load();
         const off = wallet.onChange(() => void load());
-        const onFocus = () => void load();
-        if (typeof window !== 'undefined')
-            window.addEventListener('focus', onFocus);
+        const offForeground = platform.onForeground(() => void load());
         return () => {
             off();
-            if (typeof window !== 'undefined')
-                window.removeEventListener('focus', onFocus);
+            offForeground();
         };
-    }, [wallet, load]);
+    }, [wallet, load, platform]);
     const controller = useMemo(() => wallet && host
         ? createApproverController(wallet, {
             ...host,
@@ -63,11 +61,11 @@ export function useApproverAccounts(wallet, host, activeAddress) {
             statuses,
             activeAddress,
             activeApproverId,
-            host,
+            host: { ...host, openInstall: host.openInstall ?? ((url) => platform.openUrl(url)) },
             onConnect: (id) => void controller.connect(id).then(load),
             onDisconnect: (id) => void controller.disconnect(id).then(load),
             canConnect: (id) => typeof wallet.registry.get(id)?.connect === 'function',
         });
-    }, [wallet, host, entries, statuses, activeAddress, controller, load]);
+    }, [wallet, host, entries, statuses, activeAddress, controller, load, platform]);
     return { groups, notice, clearNotice: () => setNotice(''), controller };
 }

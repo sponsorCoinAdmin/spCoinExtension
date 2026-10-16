@@ -19,8 +19,9 @@ const PLATFORM_WORDS = { web: 'Web', extension: 'Extension', android: 'Android',
  * wallet by its own name. A vault's own platform (when it reports one) decides the bracket for the Merit wallets that run in more than one place. Group headers show it in capitals (the header style does that), sentences show it as written here.
  */
 export function walletName(id, platform) {
+    // FALLBACK ONLY: a table of the built-in ids, for an authenticator that supplies no displayName. A new wallet supplies its own name (authenticatorName); nothing is added here.
     if (id === 'serverKeystore')
-        return 'Merit Wallet (Web Dev Server)';
+        return 'Merit (Web App)';
     if (id === 'browserVault')
         return 'Merit Wallet (Web)';
     if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit')
@@ -37,7 +38,11 @@ export function walletName(id, platform) {
         return id.slice('injected:'.length);
     return id;
 }
-/** Short names for the badge next to an account (Merit Wallet, Extension, MetaMask, Hardware). */
+/** The name of this authenticator: the one it supplies, else the fallback table. The component asks this and never switches on the id. */
+export const authenticatorName = (authenticator) => authenticator.displayName ?? walletName(authenticator.id, authenticator.vault?.platform);
+/** The short name of this authenticator: the one it supplies, else the fallback table. */
+export const authenticatorBadgeOf = (authenticator) => authenticator.badge ?? authenticatorBadge(authenticator.id);
+/** Short names for the badge next to an account (Merit Wallet, Extension, MetaMask, Hardware). FALLBACK ONLY, see authenticatorBadgeOf. */
 export function authenticatorBadge(id) {
     if (id === 'serverKeystore')
         return 'Merit Wallet';

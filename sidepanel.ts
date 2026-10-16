@@ -76,7 +76,7 @@ import { MeritWalletConfigBridge } from './src/MeritWalletConfigBridge';
 import { getCachedAccountIconDataUrl } from './src/accountIconCache';
 import { getCachedTokenIconDataUrl } from './src/tokenIconCache';
 import { chromeIconCacheStorage } from './src/chromeIconCacheStorage';
-import { ActiveAccountHydrator } from './src/hydrateActiveAccount';
+import { loadExtensionAccountProfile } from './src/accountProfile';
 import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
 import { TransactionConfirmOrchestrator } from './src/TransactionConfirmOrchestrator';
 import { TransferApprovalHost } from './src/TransferApprovalHost';
@@ -137,6 +137,9 @@ function fetchBalanceFor(chainId: number): ReturnType<typeof makeFetchBalance> |
 // comes from whichever app instance this side panel is actually pointed
 // at, not a hardcoded origin.
 const MERIT_WALLET_HARDHAT_CHAIN_ID = 31337;
+// 2026-10-15 (docs/design/spcoinPackagesDesign.txt 8.5.6): the extension follows the wallet's ACTIVE network. The chain is shared state (the worker keeps it: merit/network/get and set); the RPC comes from the network registry (src/chainRpc.ts) and the spCoin
+// address from the bundled deployment map, both per chain. Hardhat (31337) is only the DEFAULT chain, and the only one with a built-in fallback below.
+let activeChainId: number = MERIT_WALLET_HARDHAT_CHAIN_ID;
 // 2026-10-09 (docs/authenticationDesign.txt row 6): the extension's authenticator registry (localVault). Read-only handle for diagnostics and the live checks (scripts/extensionRequests.cjs).
 (globalThis as unknown as { __spcoinAuthenticators?: typeof extensionAuthenticatorRegistry }).__spcoinAuthenticators = extensionAuthenticatorRegistry;
 
@@ -145,11 +148,19 @@ const MERIT_WALLET_HARDHAT_CHAIN_ID = 31337;
 // (see src/resolveAssetAddress.ts). Module scope for a stable identity; the app origin follows the
 // open-target setting, so it reads currentBaseUrl, which every render refreshes.
 let currentBaseUrl = '';
-const resolveAssetAddress = makeResolveAssetAddress({
-  rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-  chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-  getBaseUrl: () => currentBaseUrl,
-});
+// who is waiting for the wallet to be unlocked (shown on the login page); refreshed while the wallet is locked
+let lockedRequestNotice = '';
+const assetResolvers = new Map<number, ReturnType<typeof makeResolveAssetAddress>>();
+// one resolver per chain, picked when it is called: the active chain can change while the panel is open
+const resolveAssetAddress: ReturnType<typeof makeResolveAssetAddress> = (...args) => {
+  const chainId = activeChainId;
+  let resolver = assetResolvers.get(chainId);
+  if (!resolver) {
+    resolver = makeResolveAssetAddress({ rpcUrl: chainRpcUrl(chainId), chainId, getBaseUrl: () => currentBaseUrl });
+    assetResolvers.set(chainId, resolver);
+  }
+  return resolver(...args);
+};
 
 // spCoin contract address for the Hardhat chain — the same V0 fallback the
 // web app uses (components/views/TradingStationPanel/StakingStatusPanel.tsx's
@@ -165,13 +176,29 @@ const SPOIN_HARDHAT_CONTRACT_ADDRESS = '0x0E9166c03194E40eE84532e9A659abcE40ab17
 // 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 25): the default no longer needs the web app. The spCoin deployment map is bundled (the data package, src/bundledFeedData.json), the engine's registry answers
 // "which spCoin is deployed on this chain" from it, and the newest deployment is the starting point; the synced value from the web app (below) only REFINES it when the hosted app answers.
 loadSpCoinDeploymentMap(bundledFeedData['/resources/data/networks/spCoinDeployment.json']);
-let activeSpCoinAddress: string | undefined = getPreferredSpCoinContractAddress(MERIT_WALLET_HARDHAT_CHAIN_ID);
+let activeSpCoinAddress: string | undefined = getPreferredSpCoinContractAddress(activeChainId);
 let activeSpCoinLoadedFor = '';
-const spCoinAddress = (): string => activeSpCoinAddress ?? SPOIN_HARDHAT_CONTRACT_ADDRESS;
+const NO_SPCOIN_ADDRESS = '0x0000000000000000000000000000000000000000';
+const spCoinAddress = (): string => activeSpCoinAddress ?? (activeChainId === MERIT_WALLET_HARDHAT_CHAIN_ID ? SPOIN_HARDHAT_CONTRACT_ADDRESS : NO_SPCOIN_ADDRESS);
+/** The RPC of a chain (default: the active one): the registry's, and for Hardhat the proxy above when the registry has none. No RPC means no reads for that chain. */
+const chainRpcUrl = (chainId: number = activeChainId): string => rpcUrlForChain(chainId) ?? (chainId === MERIT_WALLET_HARDHAT_CHAIN_ID ? MERIT_WALLET_HARDHAT_RPC_URL : '');
+let spCoinContractCache: { key: string; value: never } | undefined;
+const spCoinContractNow = (): never => {
+  const key = `${activeChainId}|${spCoinAddress()}`;
+  if (spCoinContractCache?.key !== key) spCoinContractCache = { key, value: { address: spCoinAddress() as `0x${string}`, chainId: activeChainId, name: 'Sponsor Coin', symbol: 'SPCOIN', decimals: 18, balance: 0n } as never };
+  return spCoinContractCache.value;
+};
+/** The wallet moved to another network: the chain, the spCoin deployment on it and the per-account spCoin lookup all follow. */
+function setActiveChain(next: number): void {
+  if (next === activeChainId) return;
+  activeChainId = next;
+  activeSpCoinAddress = getPreferredSpCoinContractAddress(next);
+  activeSpCoinLoadedFor = '';
+}
 
 async function loadActiveSpCoinAddress(baseUrl: string, account: string): Promise<string | undefined> {
   // 2026-10-11: the bundled snapshot of the server's activeSpCoin.json answers first, and the hosted app is not asked when there is none (no base).
-  const bundled = (bundledFeedData as Record<string, { address?: unknown } | undefined>)[`/api/spCoin/lab/networks/${MERIT_WALLET_HARDHAT_CHAIN_ID}/activeSpCoin`];
+  const bundled = (bundledFeedData as Record<string, { address?: unknown } | undefined>)[`/api/spCoin/lab/networks/${activeChainId}/activeSpCoin`];
   if (typeof bundled?.address === 'string' && /^0x[0-9a-fA-F]{40}$/.test(bundled.address)) return bundled.address;
   if (!baseUrl) return undefined;
   try {
@@ -220,7 +247,7 @@ async function fetchKeystoreLockStatus(baseUrl: string): Promise<Map<string, boo
   const lockStatus = new Map<string, boolean>();
   if (!baseUrl) return lockStatus;
   try {
-    const response = await fetch(`${baseUrl}/api/spCoin/lab/networks/${MERIT_WALLET_HARDHAT_CHAIN_ID}/testAccounts`);
+    const response = await fetch(`${baseUrl}/api/spCoin/lab/networks/${activeChainId}/testAccounts`);
     if (!response.ok) return lockStatus;
     const entries = (await response.json()) as RawTestAccountEntry[];
     if (!Array.isArray(entries)) return lockStatus;
@@ -254,7 +281,7 @@ async function unlockMeritWalletAccount(
     const response = await fetch(`${baseUrl}/api/spCoin/meritConnect/unlock`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chainId: MERIT_WALLET_HARDHAT_CHAIN_ID, address, password }),
+      body: JSON.stringify({ chainId: activeChainId, address, password }),
     });
     const payload = (await response.json().catch(() => ({}))) as { ok?: boolean; token?: string; message?: string };
     if (!response.ok || !payload.ok || !payload.token) {
@@ -393,6 +420,8 @@ async function renderWallet() {
       return base;
     },
     isMeritAuth: () => false,
+    // the extension's profile loader (its bundle, never the hosted app): the provider's one effect for the ACTIVE account calls it
+    loadAccountProfile: (address) => loadExtensionAccountProfile(address, baseUrl),
     wrap: (children) => React.createElement(DisplayStackProvider, { storage: displayStackStorage, children }),
     features: { hydrateActiveAccount: false, hydrateRoleAccounts: false, normalizeListLogos: false, tokenRegistryRefresh: false, injectedWalletListener: false, followWalletMinimal: true },
   };
@@ -436,6 +465,26 @@ async function renderWallet() {
   chrome.runtime.onMessage.addListener((message: { type?: string }) => {
     if (message?.type === 'merit/vault/changed') void vaultSession.refresh();
   });
+  // While locked, look for a request that is waiting (a connect, a signature) and name the site on the login page.
+  async function refreshLockedRequestNotice() {
+    try {
+      const status = (await chrome.runtime.sendMessage({ type: 'merit/vault/status' })) as { unlocked?: boolean } | undefined;
+      let text = '';
+      if (status && status.unlocked === false) {
+        const reply = (await chrome.runtime.sendMessage({ type: 'merit/signing/pending' })) as { pending?: Array<{ kind: string; origin: string }> } | undefined;
+        const first = (reply?.pending ?? []).find((p) => p.origin && p.origin !== 'wallet');
+        if (first) text = `${first.origin} is waiting to ${first.kind === 'connect' ? 'connect' : 'be approved'}. Log in to continue.`;
+      }
+      if (text !== lockedRequestNotice) {
+        lockedRequestNotice = text;
+        render();
+      }
+    } catch {
+      /* the worker may be restarting */
+    }
+  }
+  window.setInterval(() => void refreshLockedRequestNotice(), 1500);
+  void refreshLockedRequestNotice();
 
   const walletRefresh = createWalletRefresh(
     {
@@ -448,22 +497,31 @@ async function renderWallet() {
   );
   // The active network (chain id), the same role appChainId plays in the web app. MeritWallet self-fetches the network rows and marks
   // this one active; selecting a network row changes it (handleNetworkRowSelect).
-  let activeChainId: number = MERIT_WALLET_HARDHAT_CHAIN_ID;
   // 2026-10-08 (table row 18): the worker owns the active network so web pages and the side panel agree on it (MetaMask: one selected network).
   void (chrome.runtime.sendMessage({ type: 'merit/network/get' }) as Promise<{ ok?: boolean; chainId?: number }>).then((reply) => {
     if (reply?.ok && typeof reply.chainId === 'number' && reply.chainId !== activeChainId) {
-      activeChainId = reply.chainId;
+      setActiveChain(reply.chainId);
       render();
     }
   }).catch(() => undefined);
   chrome.runtime.onMessage.addListener((message: { type?: string; chainId?: number }) => {
     if (message?.type === 'merit/network/changed' && typeof message.chainId === 'number' && message.chainId !== activeChainId) {
-      activeChainId = message.chainId;
+      setActiveChain(message.chainId);
       render();
     }
     return false;
   });
   startDappApprovals();
+  // While this screen is open the worker holds a port to it: the port going away is how the worker learns the screen was closed, and it then rejects every page still waiting (walletProvider.ts). A worker the browser stopped
+  // drops the port too; the screen is still here, so it connects again.
+  const holdPortOpen = () => {
+    try {
+      chrome.runtime.connect({ name: 'merit-sidepanel' }).onDisconnect.addListener(() => window.setTimeout(holdPortOpen, 500));
+    } catch {
+      window.setTimeout(holdPortOpen, 1000);
+    }
+  };
+  holdPortOpen();
   // The wallet's own account screens (VaultAccountsPanel / WalletOnboardingPanel): opened from the account list's Add button.
   // The Swap tab's trade button (table row 22): price from Uniswap on-chain or the hosted 0x quote service, swap through the same executor as stake.
   // Editing the public profile of the wallet's own accounts (Account Details > Edit Profile): the hosted app's nonce / verify / save sequence, the account signing its challenge
@@ -536,7 +594,7 @@ async function renderWallet() {
   };
   // Sponsor staking (the Rewards tab's Unstake list and the Sponsor tab's "Sponsor Staked spCoins" line): contract views are read straight from the chain's RPC, an Un-Stake
   // leg is encoded here and signed by the vault behind the confirmation screen, one transaction per leg, each waited for. One stable object so the wallet does not refetch every render.
-  const sponsorReadParams = () => ({ contractAddress: spCoinAddress(), rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL, accessSource: 'local' as const, readMode: 'hardhat' as const });
+  const sponsorReadParams = () => ({ contractAddress: spCoinAddress(), rpcUrl: chainRpcUrl(), accessSource: 'local' as const, readMode: 'hardhat' as const });
   const stakingHost: SponsorStakingHost = {
     contractAddress: () => spCoinAddress(),
     read: (method, args) => runSpCoinReadStep(sponsorReadParams(), method, args, baseUrl),
@@ -544,27 +602,33 @@ async function renderWallet() {
       const from = walletSource.address;
       if (!from) throw new Error('Select and activate an account first.');
       const data = encodeFunctionData({ abi: SPOIN_STAKE_ABI, functionName: method, args: args as never });
-      const context = buildMeritTradeExecutorContext({ baseUrl, rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL }, { address: from, isConnected: true, chainId: MERIT_WALLET_HARDHAT_CHAIN_ID });
+      const context = buildMeritTradeExecutorContext({ baseUrl, rpcUrl: chainRpcUrl() }, { address: from, isConnected: true, chainId: activeChainId });
       const result = await context.executor.execute({
         to: spCoinAddress(),
         data,
-        chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-        rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+        chainId: activeChainId,
+        rpcUrl: chainRpcUrl(),
         display: { title: 'Un-Stake', label: method, contractAddress: spCoinAddress() } as never,
       });
       const receipt = result.receipt;
       return { hash: result.transactionHash, gasUsed: receipt ? BigInt(receipt.gasUsed) : undefined, gasPrice: receipt?.gasPrice != null ? BigInt(receipt.gasPrice) : undefined };
     },
     loadProfile: async (address) => (await hydrateAccountFromAddress(address, { baseUrl })) ?? { address },
-    spCoinContract: { address: spCoinAddress() as `0x${string}`, chainId: MERIT_WALLET_HARDHAT_CHAIN_ID, name: 'Sponsor Coin', symbol: 'SPCOIN', decimals: 18, balance: 0n } as never,
+    // read when used, and the same object while the chain and the address stay the same (the staking list refetches when its identity changes)
+    get spCoinContract() {
+      return spCoinContractNow();
+    },
     onChanged: () => void walletRefresh.run(),
   };
   // The Rewards tab (the same card and data hook as the web app's): reads go to the hosted app's run-script route, a CLAIM is signed by the vault behind the confirmation screen.
   // 2026-10-09 (row 25): one throttled direct read of the active spCoin contract's views, shared by the reward estimate and the account record (no hosted app needed for either).
-  const chainRead = throttleRead((m, a) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL, accessSource: 'local', readMode: 'hardhat' }, m, a, baseUrl));
+  const chainRead = throttleRead((m, a) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: chainRpcUrl(), accessSource: 'local', readMode: 'hardhat' }, m, a, baseUrl));
   const rewardsHost: RewardsHost = {
     contractAddress: () => spCoinAddress(),
-    rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+    // read when used: the active chain can change while the panel is open
+    get rpcUrl() {
+      return chainRpcUrl();
+    },
     accessSource: 'local',
     readMode: 'hardhat',
     endpoint: `${baseUrl}/api/spCoin/run-script`,
@@ -573,16 +637,16 @@ async function renderWallet() {
     // checked against the run-script result for 18 live accounts), so the Rewards tab needs no hosted app.
     estimate: (method, accountKey) =>
       estimateRewardsByMethod(method, { accountKey, read: chainRead }),
-    readAccountRecord: (accountKey) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL, accessSource: 'local', readMode: 'hardhat' }, 'getAccountRecord', [{ key: 'Account Key', value: accountKey }], baseUrl),
+    readAccountRecord: (accountKey) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: chainRpcUrl(), accessSource: 'local', readMode: 'hardhat' }, 'getAccountRecord', [{ key: 'Account Key', value: accountKey }], baseUrl),
     claim: async (method, accountKey) => {
       const result = await executeClaimTransaction({
         baseUrl,
-        rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+        rpcUrl: chainRpcUrl(),
         accountKey,
         method: method as Parameters<typeof executeClaimTransaction>[0]['method'],
         abi: SPOIN_CLAIM_ABI,
         contractAddress: spCoinAddress(),
-        chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+        chainId: activeChainId,
         fromAddress: accountKey,
       });
       return { transactionHash: result.transactionHash };
@@ -856,7 +920,6 @@ async function renderWallet() {
         // Phase B.2 Stage 3 — hydrates activeAccount's real name/logo/etc
         // once a wallet source resolves to a real address; no UI of its
         // own (see hydrateActiveAccount.ts's own doc comment).
-        React.createElement(ActiveAccountHydrator, { baseUrl }),
         // 2026-10-11 (row 13): the active spCoin (bundled) and its contract metadata go into the exchange context, where the shared Sponsor panel reads them.
         React.createElement(ActiveSpCoinLoader),
         // 2026-10-03 — supplies the Config tab's two exchange-engine
@@ -960,7 +1023,7 @@ async function renderWallet() {
           : unlockPrompt
           ? React.createElement(PasswordPanel, {
               mode: 'unlock',
-              icon: React.createElement('img', { src: brandLogoUrl, alt: '' }),
+              icon: React.createElement('img', { src: brandLogoUrl, alt: '', style: { width: '100%', maxWidth: 160, display: 'block', margin: '0 auto' } }),
               errorText: unlockError,
               submitting: unlocking,
               onSubmit: (password: string) => void handleUnlockSubmit(password),
@@ -1023,6 +1086,8 @@ async function renderWallet() {
                 // 2026-10-12 (docs/connectionDesign.txt items 6 / 7): the account list is derived from the wallet, one group per approver (here the vault), with the same badges and the same connect operation as every host; the host only
                 // says how its active account is set and cleared and what it knows about each account (the saved profile: symbol, name, avatar).
                 approverHost: {
+                  // the vault of this extension IS the Merit wallet here: listed first, always connected
+                  nativeWalletId: 'localVault',
                   setActiveAccount: async (address: string) => {
                     await setActiveAccountOf(address);
                   },
@@ -1091,6 +1156,8 @@ async function renderWallet() {
               lock: {
                 // 2026-10-08 (table row 23): the lock gate is the component's own: while the vault is locked it shows the password screen in place of everything.
                 onResetWallet: resetWallet,
+                // 2026-10-14: a site asked to connect (or sign) while the wallet is locked: say so on the login page, like MetaMask's "unlock to continue"; the connect page follows the login.
+                passwordNoticeText: lockedRequestNotice || undefined,
                 passwordIcon: React.createElement('img', { src: brandLogoUrl, alt: '' }),
               },
               config: {
@@ -1232,8 +1299,8 @@ async function renderWallet() {
     tokenDetail = null;
     render();
     const [logoSrc, record] = await Promise.all([
-      getCachedTokenIconDataUrl(getTokenLogoURL(MERIT_WALLET_HARDHAT_CHAIN_ID, address), baseUrl),
-      fetchTokenByAddress(MERIT_WALLET_HARDHAT_CHAIN_ID, address, { baseUrl }).catch(() => null),
+      getCachedTokenIconDataUrl(getTokenLogoURL(activeChainId, address), baseUrl),
+      fetchTokenByAddress(activeChainId, address, { baseUrl }).catch(() => null),
     ]);
     tokenDetail = {
       address,
@@ -1403,8 +1470,8 @@ async function renderWallet() {
     const result = await sendNativeMerit({
       useVault,
       baseUrl,
-      chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
-      rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+      chainId: activeChainId,
+      rpcUrl: chainRpcUrl(),
       from,
       recipientAddress: params.recipientAddress,
        tokenAddress: params.tokenAddress,
@@ -1486,8 +1553,8 @@ async function renderWallet() {
        rewardEstimate = await estimateOffChainRewards(from, TOTAL_REWARD_CONFIG.estimateMethod, {
          baseUrl,
          contractAddress: spCoinAddress(),
-         rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-         chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+         rpcUrl: chainRpcUrl(),
+         chainId: activeChainId,
        });
        parseRewardDisplay();
      } catch (error) {
@@ -1516,8 +1583,8 @@ async function renderWallet() {
         await estimateOffChainRewards(from, config.estimateMethod as Parameters<typeof estimateOffChainRewards>[1], {
          baseUrl,
          contractAddress: spCoinAddress(),
-         rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
-         chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+         rpcUrl: chainRpcUrl(),
+         chainId: activeChainId,
        });
        parseRewardDisplay();
       } catch (error) {
@@ -1549,12 +1616,12 @@ async function renderWallet() {
      try {
        const result = await executeClaimTransaction({
          baseUrl,
-         rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+         rpcUrl: chainRpcUrl(),
          accountKey: from,
          method: TOTAL_REWARD_CONFIG.claimMethod,
          abi: SPOIN_CLAIM_ABI,
          contractAddress: spCoinAddress(),
-         chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+         chainId: activeChainId,
          fromAddress: from,
          onConfirmed: () => void fetchAccountRecord(from),
        });
@@ -1585,12 +1652,12 @@ async function renderWallet() {
      try {
        const result = await executeClaimTransaction({
          baseUrl,
-         rpcUrl: MERIT_WALLET_HARDHAT_RPC_URL,
+         rpcUrl: chainRpcUrl(),
          accountKey: from,
           method: config.claimMethod as Parameters<typeof executeClaimTransaction>[0]['method'],
          abi: SPOIN_CLAIM_ABI,
          contractAddress: spCoinAddress(),
-         chainId: MERIT_WALLET_HARDHAT_CHAIN_ID,
+         chainId: activeChainId,
          fromAddress: from,
          onConfirmed: () => void fetchAccountRecord(from),
        });
@@ -1609,7 +1676,7 @@ async function renderWallet() {
    function handleNetworkRowSelect(networkId: string) {
     const next = Number(networkId);
     if (!Number.isFinite(next) || next === activeChainId) return;
-    activeChainId = next;
+    setActiveChain(next);
     void chrome.runtime.sendMessage({ type: 'merit/network/set', chainId: next }).catch(() => undefined);
     render();
   }

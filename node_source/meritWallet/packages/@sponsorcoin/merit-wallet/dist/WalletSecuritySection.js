@@ -7,6 +7,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState } from 'react';
+import { usePlatform } from './platform/platform';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from './PasswordPromptDialog';
 import { useActiveAccountProfile } from './swap/activeAccountProfile';
@@ -28,6 +29,7 @@ function RevealRow({ title, hint, dialogTitle, dialogMessage, disabled, reveal, 
     const [asking, setAsking] = useState(false);
     const [secret, setSecret] = useState('');
     const [visible, setVisible] = useState(false);
+    const platform = usePlatform();
     const [copied, setCopied] = useState(false);
     const clear = () => {
         setSecret('');
@@ -38,7 +40,7 @@ function RevealRow({ title, hint, dialogTitle, dialogMessage, disabled, reveal, 
     const copy = () => {
         if (!secret)
             return;
-        void navigator.clipboard.writeText(secret).then(() => {
+        void platform.copyText(secret).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
         });

@@ -62,6 +62,8 @@ export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACK
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export type { PreparedTransaction, PrepareResult, TransferParams, SendRequest, SendOutcome, SendTransport, ExecuteSendParams, SendResult } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';
+export { validateLogin, isLoginGateClosed, deriveLoginState } from './session/validateLogin';
+export type { LoginState, LoginRequestKind, LoginRequirement, ValidateLoginInput } from './session/validateLogin';
 export type { WalletSessionPhase, WalletPasswordMode, WalletSessionStatus, WalletSessionAdapter, WalletSessionState, PasswordSubmitResult, WalletSessionController } from './session/walletSession';
 export { useWalletSession } from './session/walletSessionReact';
 export type { UseWalletSessionResult } from './session/walletSessionReact';
@@ -77,6 +79,8 @@ export { default as ConnectedPasswordPanel } from './ConnectedPasswordPanel';
 export type { ConnectedPasswordPanelProps } from './ConnectedPasswordPanel';
 export { default as VaultAccountsPanel } from './VaultAccountsPanel';
 export type { VaultAccountsApi, VaultAccountRow, VaultAccountsPanelProps } from './VaultAccountsPanel';
+export { default as RecoveryPhraseScreen } from './RecoveryPhraseScreen';
+export type { RecoveryPhraseScreenProps } from './RecoveryPhraseScreen';
 export { default as WalletOnboardingPanel } from './WalletOnboardingPanel';
 export type { WalletOnboardingPanelProps } from './WalletOnboardingPanel';
 export { quoteSwap, minimumAmountOut, NoSwapPriceError } from './swap/swapPrice';
@@ -113,6 +117,8 @@ export * from './auth/authenticator';
 export * from './auth/resolve';
 // 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1a): the wallet object (registry, saved choice per account, resolver, accounts, capabilities) a host hands the component.
 export * from './wallet/wallet';
+export { MeritPlatformContext, usePlatform, type MeritPlatform, type PlatformStorage } from './platform/platform';
+export { domPlatform } from './platform/domPlatform';
 export { createWalletLockStore, unlockErrorText, type WalletLockState, type WalletLockStore, type WalletLockPhase } from './wallet/walletLock';
 export { createWalletSecurityApi } from './wallet/walletSecurity';
 export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf, ALL_WALLET_DERIVATIONS, type WalletDerivation } from './wallet/walletProps';

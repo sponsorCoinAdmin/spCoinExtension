@@ -30,7 +30,7 @@ export function translateProviderError(error, id, label) {
             return error;
     }
 }
-export function createInjectedAuthenticator({ id, label, icon, getProvider }) {
+export function createInjectedAuthenticator({ id, label, displayName, badge, icon, getProvider }) {
     const need = async () => {
         const provider = await getProvider();
         if (!provider)
@@ -50,6 +50,8 @@ export function createInjectedAuthenticator({ id, label, icon, getProvider }) {
     return {
         id,
         label,
+        displayName,
+        badge,
         icon,
         capabilities: { signMessage: true, signTypedData: true, sendTransaction: true, listAccounts: true, createAccount: false, importKey: false, lock: false },
         async status() {

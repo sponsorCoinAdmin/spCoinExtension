@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { usePlatform } from '../../platform/platform';
 import { Check } from 'lucide-react';
 import { msTableTw } from '@sponsorcoin/spcoin-panels';
 import type {
@@ -102,20 +103,21 @@ export default function CreateAccountFormPanel({
     null,
   );
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const platform = usePlatform();
   const handleCopyAddress = useCallback(() => {
     if (!publicKey) return;
-    navigator.clipboard.writeText(publicKey).then(() => {
+    platform.copyText(publicKey).then(() => {
       setCopiedField('address');
       setTimeout(() => setCopiedField(null), 1500);
     });
-  }, [publicKey]);
+  }, [publicKey, platform]);
   const handleCopyField = useCallback((fieldName: string, value: string) => {
     if (!value) return;
-    navigator.clipboard.writeText(value).then(() => {
+    platform.copyText(value).then(() => {
       setCopiedField(fieldName);
       setTimeout(() => setCopiedField(null), 1500);
     });
-  }, []);
+  }, [platform]);
 
   const CopyIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -286,10 +288,10 @@ export default function CreateAccountFormPanel({
                               return;
                             }
                             if (href.startsWith('mailto:')) {
-                              window.location.href = href;
+                              platform.openUrl(href, { sameTab: true });
                               return;
                             }
-                            window.open(href, '_blank', 'noopener,noreferrer');
+                            platform.openUrl(href);
                           }}
                           onMouseEnter={() => setHoveredInput(name)}
                           onMouseMove={(e) => {

@@ -9,7 +9,7 @@
 //   - the chosen account must be one the approver really answered with (no connecting an address the approver did not offer);
 //   - an approver that is not registered or not reachable fails with the authenticator error (and the host's notify, i.e. the MESSAGE_PANEL, hears about it) and again changes nothing (Q3);
 //   - disconnect clears the active account, and revokes the approver's permission only when it supports that, best effort: a failed revoke is reported, the account is still cleared (Q1).
-import { AuthenticatorError, walletName, type Authenticator, type AuthenticatorAccount, type AuthenticatorId } from './authenticator';
+import { AuthenticatorError, authenticatorName, type Authenticator, type AuthenticatorAccount, type AuthenticatorId } from './authenticator';
 import type { AuthenticatorRegistry } from './resolve';
 
 export interface ConnectHost {
@@ -44,7 +44,7 @@ export interface ConnectParams {
 }
 
 /** The wallet's one name (docs/design/accountAuthDesign.txt section 18 3): every message about it says the same words as the lists do. */
-const nameOf = (authenticator: Authenticator) => walletName(authenticator.id, authenticator.vault?.platform);
+const nameOf = (authenticator: Authenticator) => authenticatorName(authenticator);
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 

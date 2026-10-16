@@ -5,6 +5,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useCallback, useEffect, useState } from 'react';
+import { usePlatform } from '../platform/platform';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from '../PasswordPromptDialog';
 const note = { fontSize: 11, color: '#94a3b8', margin: 0 };
@@ -12,17 +13,8 @@ const ok = { fontSize: 11, color: '#86efac', margin: 0 };
 const bad = { fontSize: 11, color: '#fca5a5', margin: 0 };
 /** The file name a backup is saved under. */
 export const BACKUP_FILE_NAME = 'merit-wallet-backup.json';
-function download(text, name) {
-    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 export default function WalletBackupSection({ wallet }) {
+    const platform = usePlatform();
     const [vault, setVault] = useState(undefined);
     const [dialog, setDialog] = useState('none');
     const [message, setMessage] = useState(undefined);
@@ -38,7 +30,7 @@ export default function WalletBackupSection({ wallet }) {
         return null;
     return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 }, children: [_jsx("p", { style: note, children: "A backup file holds every account of this wallet, encrypted with your password. Keep it somewhere safe: anyone with the file and the password can use the accounts." }), _jsx("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' }, children: _jsx(SmallYellowButton, { onClick: () => { setMessage(undefined); setDialog('backup'); }, children: "Back up to a file" }) }), _jsx("p", { style: note, children: "To restore a backup, remove this wallet first, then choose \"Restore from a backup file\" on the first screen: a wallet that already exists is never overwritten." }), message ? _jsx("p", { style: message.good ? ok : bad, children: message.text }) : null, dialog === 'backup' ? (_jsx(PasswordPromptDialog, { title: "Back up this wallet", message: "Enter your wallet password. The file is encrypted with it.", confirmLabel: "Download backup", onConfirm: async (password) => {
                     const text = await vault.exportBackup({ kind: 'password', value: password }).catch((e) => { throw new Error(e instanceof Error ? e.message : 'The backup could not be made.'); });
-                    download(text, BACKUP_FILE_NAME);
+                    platform.saveFile(BACKUP_FILE_NAME, text, 'application/json');
                     setDialog('none');
                     setMessage({ text: `Saved ${BACKUP_FILE_NAME}.`, good: true });
                 }, onClose: () => setDialog('none') })) : null] }));

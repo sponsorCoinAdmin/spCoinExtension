@@ -8,7 +8,7 @@ import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-run
 import { useState } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from './vault/walletAccounts';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
-import { NEW_PHRASE_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';
+import RecoveryPhraseScreen from './RecoveryPhraseScreen';
 const BLUE = '#5981F3';
 const BORDER = '#334155';
 const box = { boxSizing: 'border-box', width: '100%', padding: '12px', color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 };
@@ -25,15 +25,10 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
     const [backupText, setBackupText] = useState('');
     const [backupName, setBackupName] = useState('');
     const [phrase, setPhrase] = useState('');
-    const [phraseHidden, setPhraseHidden] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [copied, setCopied] = useState(false);
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
     const passwordProblem = () => password.length < MIN_WALLET_PASSWORD_LENGTH ? `Password must be at least ${MIN_WALLET_PASSWORD_LENGTH} characters.` : password !== confirm ? 'Passwords do not match.' : '';
     const passwordFields = (_jsxs(_Fragment, { children: [_jsx("input", { type: "password", autoComplete: "new-password", placeholder: "Password", value: password, onChange: (e) => setPassword(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "Confirm password", value: confirm, onChange: (e) => setConfirm(e.target.value), style: field })] }));
-    // the new phrase does not stay on the screen forever: hidden when the page is hidden or after five minutes (it can be shown again in Security, with the password)
-    useSecretClearing(!!phrase, () => { setPhrase(''); setPhraseHidden(true); }, NEW_PHRASE_SHOWN_MAX_MS);
     if (step === 'create') {
         return (_jsxs("form", { id: "WALLET_ONBOARDING_CREATE", style: box, onSubmit: (e) => {
                 e.preventDefault();
@@ -54,13 +49,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
             }, children: [_jsx("p", { style: muted, children: "Choose a password. It unlocks this wallet on this device." }), passwordFields, error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy, style: { ...primary, opacity: busy ? 0.6 : 1 }, children: busy ? 'Creating…' : 'Create wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
     }
     if (step === 'phrase') {
-        const words = phrase ? phrase.split(' ') : [];
-        return (_jsxs("div", { id: "WALLET_ONBOARDING_PHRASE", style: box, children: [_jsx("p", { style: { margin: 0, fontWeight: 600 }, children: "Your Secret Recovery Phrase" }), _jsx("p", { style: muted, children: "Write these words down in order and keep them somewhere safe. They are the only way to get your accounts back, and anyone who has them can take everything. This is the only time they are shown automatically." }), phraseHidden && _jsx("p", { id: "WALLET_ONBOARDING_PHRASE_HIDDEN", style: muted, children: "The phrase was hidden for your safety (the page was hidden or the screen was open for a while). Your wallet is created: show the phrase again in Security, with your password." }), !phraseHidden && _jsx("ol", { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, margin: 0, padding: 0, listStylePosition: 'inside', fontFamily: 'monospace', fontSize: 12 }, children: words.map((w, i) => _jsx("li", { style: { border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 6px' }, children: w }, i)) }), _jsxs("div", { style: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }, children: [_jsxs("label", { style: { display: 'flex', gap: 8, alignItems: 'center', flex: 1 }, children: [_jsx("input", { type: "checkbox", checked: saved, disabled: phraseHidden, onChange: (e) => setSaved(e.target.checked) }), " I have saved my Secret Recovery Phrase"] }), _jsx("button", { type: "button", title: copied ? 'Copied' : 'Copy the phrase (words separated by commas)', "aria-label": "Copy Secret Recovery Phrase", onClick: () => {
-                                void navigator.clipboard.writeText(words.join(',')).then(() => {
-                                    setCopied(true);
-                                    setTimeout(() => setCopied(false), 1500);
-                                });
-                            }, style: { background: 'none', border: 0, padding: 2, cursor: 'pointer', color: copied ? '#4ade80' : '#94a3b8', display: 'flex' }, children: copied ? (_jsx("svg", { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("polyline", { points: "20 6 9 17 4 12" }) })) : (_jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("rect", { x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" }), _jsx("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })] })) })] }), _jsx("button", { type: "button", disabled: !saved && !phraseHidden, style: { ...primary, opacity: saved || phraseHidden ? 1 : 0.5 }, onClick: () => { setPhrase(''); setPhraseHidden(false); onDone(); }, children: "Continue" })] }));
+        return _jsx(RecoveryPhraseScreen, { recoveryPhrase: phrase, onContinue: () => { setPhrase(''); onDone(); } });
     }
     if (step === 'restore' && restoreBackup) {
         return (_jsxs("form", { id: "WALLET_ONBOARDING_RESTORE", style: box, onSubmit: (e) => {

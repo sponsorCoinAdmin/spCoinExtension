@@ -9,7 +9,7 @@ import React from 'react';
 import MeritWallet from './MeritWallet';
 /** The flat props the component takes, from a host's sections. Later sections win on a repeated key, but no key belongs to two sections. */
 export function meritWalletPropsFromHost(host) {
-    return { ...host.layout, ...host.uiState, ...host.data, ...host.selection, ...host.actions, ...host.slots, ...host.lock, ...host.config };
+    return { ...host.layout, ...host.uiState, ...host.data, ...host.selection, ...host.actions, ...host.slots, ...host.lock, ...host.config, ...host.platform };
 }
 export default function MeritWalletHostView({ host }) {
     return React.createElement(MeritWallet, meritWalletPropsFromHost(host));

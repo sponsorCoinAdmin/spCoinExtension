@@ -40,6 +40,8 @@ export function createHardwareAuthenticator(transport, options) {
     return {
         id,
         label: transport.kind.charAt(0).toUpperCase() + transport.kind.slice(1),
+        displayName: `${transport.kind.charAt(0).toUpperCase()}${transport.kind.slice(1)} (Hardware)`,
+        badge: 'Hardware',
         capabilities: { signMessage: true, signTypedData: false, sendTransaction: true, listAccounts: true, createAccount: false, importKey: false, lock: false },
         async status() {
             return { available: transport.isSupported(), unlocked: transport.isConnected() };

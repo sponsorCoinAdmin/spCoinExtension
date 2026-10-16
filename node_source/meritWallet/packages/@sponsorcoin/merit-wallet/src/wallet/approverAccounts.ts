@@ -9,6 +9,10 @@
 //   Unlock      the approver is there but locked (the host shows its unlock screen)
 //   Connect     the approver is reachable and holds no account here yet (a click connects: its own account picker)
 //   INACTIVE    anything else (red, no action)
+// 2026-10-15 (owner rule): the list shows only CONNECTED wallets, and the NATIVE wallet (the Merit wallet this app is, `nativeId`) is always first and always connected: it is us. Whether another wallet is connected is the host's one definition (`isConnected`, the same
+// one the host's wallet list screen shows); a host that gives none gets the default below. Inactive ACCOUNTS are fine, a wallet that is not connected is not.
+// (earlier wording, still true for the default:) a wallet that is not connected is NOT on the list at all, so a Ledger nobody connected, or a MetaMask that holds no account here, shows no group; connecting is the Add menu's job.
+// A group stays when it is the active one, when it holds accounts, or when it is locked and offers Unlock. Install / Connect badges appear only when a host asks for the disconnected wallets (`showDisconnected`).
 import type { AccountListGroup, AccountListEntry } from '@sponsorcoin/spcoin-panels';
 import type { AuthenticatorId, AuthenticatorStatus } from '../auth/authenticator';
 import { connectAccount, disconnectAccount, ConnectChoiceRequired, type ConnectHost } from '../auth/connect';
@@ -20,7 +24,11 @@ export interface ApproverHost extends Pick<ConnectHost, 'setActiveAccount' | 'cl
   installUrl?: (approverId: AuthenticatorId) => string | undefined;
   /** Show this approver's unlock screen (a password prompt, the wallet's own popup). Omitted: the group shows no Unlock action. */
   onUnlock?: (approverId: AuthenticatorId) => void;
-  /** Open an install page. Default: window.open in a new tab. */
+  /** 2026-10-15: the id of the NATIVE wallet: the Merit wallet this host is (the web app's dev keystore, the extension's vault). Listed first, always connected, never offered Install or Connect. */
+  nativeWalletId?: AuthenticatorId;
+  /** 2026-10-15: is this wallet CONNECTED to the app? The host's one definition (the same its wallet list screen shows). undefined: no opinion, the default applies (it holds accounts here, or it is locked and offers Unlock). */
+  isConnected?: (approverId: AuthenticatorId) => boolean | undefined;
+  /** Open an install page. The component supplies the platform's openUrl when the host gives none. */
   openInstall?: (url: string) => void;
   /** The words for a row's name, symbol and avatar when the host knows more than the approver does (the account profiles). */
   describeAccount?: (address: string) => { symbol?: string; name?: string; iconSrc?: string } | undefined;
@@ -34,11 +42,13 @@ export interface ApproverGroupsInput {
   activeAddress?: string;
   /** The approver of the active account (wallet.backendIdFor(active)). */
   activeApproverId?: AuthenticatorId;
-  host: Pick<ApproverHost, 'installUrl' | 'onUnlock' | 'openInstall' | 'describeAccount'>;
+  host: Pick<ApproverHost, 'installUrl' | 'onUnlock' | 'openInstall' | 'describeAccount' | 'nativeWalletId' | 'isConnected'>;
   onConnect: (approverId: AuthenticatorId) => void;
   onDisconnect: (approverId: AuthenticatorId) => void;
   /** Whether a backend can connect an account by asking (remote approvers); keys kept here are chosen from the list instead. */
   canConnect: (approverId: AuthenticatorId) => boolean;
+  /** Also list the wallets that are not connected (no accounts here), with their Install / Connect badges. Default false: they are not on the list. */
+  showDisconnected?: boolean;
 }
 
 const same = (a: string | undefined, b: string | undefined) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
@@ -51,7 +61,7 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
     const others = entry.backends.filter((id) => id !== here).map((id) => backends.find((b) => b.id === id)?.name ?? id);
     return others.length ? `Key also in ${others.join(', ')}` : undefined;
   };
-  return backends.map((backend) => {
+  const groups = backends.map((backend) => {
     const status = statuses[backend.id];
     const isActiveSource = !!activeAddress && activeApproverId === backend.id;
     const held = entries.filter((entry) => entry.backends.includes(backend.id));
@@ -78,11 +88,13 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
       group.onActiveClick = () => input.onDisconnect(backend.id);
       return group;
     }
+    // the native wallet is us: connected by definition, so it is never offered Install, Unlock or Connect
+    if (backend.id === host.nativeWalletId) return group;
     const url = host.installUrl?.(backend.id);
     if (status && !status.available) {
       if (url) {
         group.connectLabel = 'Install';
-        group.onConnectClick = () => (host.openInstall ? host.openInstall(url) : typeof window !== 'undefined' && window.open(url, '_blank', 'noopener'));
+        group.onConnectClick = () => host.openInstall?.(url);
       }
     } else if (status && status.available && !status.unlocked && backend.features.lock && host.onUnlock) {
       group.connectLabel = 'Unlock';
@@ -93,6 +105,17 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
     }
     return group;
   });
+  const native = host.nativeWalletId;
+  const kept = input.showDisconnected
+    ? groups
+    : groups.filter((g) => {
+        if (g.id === native || g.isActiveSource) return true;
+        const connected = host.isConnected?.(g.id as AuthenticatorId);
+        if (connected !== undefined) return connected;
+        return g.accounts.length > 0 || g.connectLabel === 'Unlock';
+      });
+  // the native wallet first, the others in the wallet's own order
+  return native ? [...kept.filter((g) => g.id === native), ...kept.filter((g) => g.id !== native)] : kept;
 }
 
 /** The words a failed connect is reported in. */

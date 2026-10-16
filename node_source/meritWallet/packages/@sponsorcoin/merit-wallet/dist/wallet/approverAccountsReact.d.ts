@@ -1,5 +1,6 @@
 import type { AccountListGroup } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet';
+import type { MeritPlatform } from '../platform/platform';
 import { type ApproverController, type ApproverHost } from './approverAccounts';
 export interface ApproverAccounts {
     groups: AccountListGroup[] | undefined;
@@ -8,4 +9,4 @@ export interface ApproverAccounts {
     clearNotice: () => void;
     controller: ApproverController | undefined;
 }
-export declare function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHost | undefined, activeAddress: string | undefined): ApproverAccounts;
+export declare function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHost | undefined, activeAddress: string | undefined, platform?: MeritPlatform): ApproverAccounts;

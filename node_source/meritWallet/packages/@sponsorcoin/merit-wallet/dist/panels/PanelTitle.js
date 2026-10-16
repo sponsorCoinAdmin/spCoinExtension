@@ -68,7 +68,8 @@ export default function PanelTitle({ title = 'Trading Station', onBackClick, onM
             userSelect: 'none',
             alignItems: 'center',
             gap: 6,
-            borderBottom: '1px solid #21273a',
+            // 2026-10-13, on request: no divider line under the title on any panel (was borderBottom: '1px solid #21273a').
+            borderBottom: 'none',
             // 2026-09-22, on direct request — 6px (was 10/8), matching the two
             // header rows' own canonical left/right buffer (WalletHeader.tsx/
             // WalletAccountHeader.tsx) for one continuous buffer top to
@@ -79,7 +80,8 @@ export default function PanelTitle({ title = 'Trading Station', onBackClick, onM
             paddingLeft: 6,
             paddingRight: 6,
             paddingTop: 3,
-            paddingBottom: 3,
+            // 2026-10-16 (owner request): 2px of buffer INSIDE the title row, below the back and menu buttons (was 3). The 2px spacing to the tab bar stays: the tab row's own 2px top buffer (MenuTabHeaderBar.tsx).
+            paddingBottom: 2,
         }, children: [_jsx("div", { style: { display: 'flex', flexShrink: 0, alignItems: 'center', width: hideBackButton ? ICON_BUTTON_SIZE : undefined }, children: !hideBackButton && (_jsx(IconButton, { onClick: onBackClick, ariaLabel: "Go back", children: _jsx(ArrowLeft, { size: 15, color: "#91a5ff", strokeWidth: 1.75 }) })) }), _jsx("h2", { style: {
                     pointerEvents: 'none',
                     margin: 0,

@@ -4,6 +4,7 @@
 // page for long. watchSecret takes the function that clears it and calls it when the page is hidden (the tab is switched away or the window is minimised) or when the screen has been open for `maxMs`, whichever comes first, and gives
 // back the function that stops watching. Pure: the document and the timer are passed in, so a test can drive both. SecretClearing (React) is the one hook the screens use.
 import { useEffect } from 'react';
+import { usePlatform } from '../platform/platform';
 
 export interface SecretWatchEnv {
   /** The page whose visibility is watched (document). */
@@ -42,13 +43,27 @@ export function watchSecret(clear: () => void, maxMs: number, env: SecretWatchEn
 
 /** While `shown` is true, clear the secret when the page is hidden or after `maxMs`. */
 export function useSecretClearing(shown: boolean, clear: () => void, maxMs: number): void {
+  const platform = usePlatform();
   useEffect(() => {
-    if (!shown || typeof document === 'undefined') return undefined;
+    if (!shown) return undefined;
+    // the page's visibility comes from the platform (the DOM's in a browser host), so a host with another device decides what "hidden" means
+    const stops = new Map<() => void, () => void>();
     return watchSecret(clear, maxMs, {
-      page: document,
+      page: {
+        get hidden() {
+          return platform.isHidden();
+        },
+        addEventListener: (_type, listener) => {
+          stops.set(listener, platform.onVisibilityChange(listener));
+        },
+        removeEventListener: (_type, listener) => {
+          stops.get(listener)?.();
+          stops.delete(listener);
+        },
+      },
       setTimer: (fn, ms) => setTimeout(fn, ms),
       clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shown, maxMs]);
+  }, [shown, maxMs, platform]);
 }

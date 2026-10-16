@@ -224,7 +224,19 @@ export class ProviderController {
     }
   }
 
-  private async requestAccounts(origin: string): Promise<string[]> {
+  // 2026-10-14 (owner report: "3 requests are open"): one connect request per site at a time. A page that asks again while its first connect page is still open (a second click, a probe, a retry) gets the SAME answer
+  // instead of a second page to Cancel.
+  private pendingConnects = new Map<string, Promise<string[]>>();
+
+  private requestAccounts(origin: string): Promise<string[]> {
+    const open = this.pendingConnects.get(origin);
+    if (open) return open;
+    const started = this.requestAccountsOnce(origin).finally(() => this.pendingConnects.delete(origin));
+    this.pendingConnects.set(origin, started);
+    return started;
+  }
+
+  private async requestAccountsOnce(origin: string): Promise<string[]> {
     const already = await this.visibleAccounts(origin);
     if (already.length) return already;
     // The user picks: approving connects the account that is active in the wallet.

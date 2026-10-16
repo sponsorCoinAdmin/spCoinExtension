@@ -42,6 +42,8 @@ export const extensionVault = createWorkerVault(
 export const localVaultAuthenticator: Authenticator = {
   id: 'localVault',
   label: 'Extension',
+  displayName: 'Merit Wallet (Extension)',
+  badge: 'Extension',
   capabilities: { signMessage: true, signTypedData: false, sendTransaction: true, listAccounts: true, createAccount: true, importKey: true, lock: true },
   vault: extensionVault,
   async status() {

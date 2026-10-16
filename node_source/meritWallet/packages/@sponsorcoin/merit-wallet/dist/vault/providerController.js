@@ -52,6 +52,9 @@ export class ProviderController {
     constructor(o) {
         this.o = o;
         this.listeners = new Set();
+        // 2026-10-14 (owner report: "3 requests are open"): one connect request per site at a time. A page that asks again while its first connect page is still open (a second click, a probe, a retry) gets the SAME answer
+        // instead of a second page to Cancel.
+        this.pendingConnects = new Map();
     }
     onEvent(listener) {
         this.listeners.add(listener);
@@ -201,7 +204,15 @@ export class ProviderController {
                 throw new ProviderRpcError(PROVIDER_ERROR.methodNotFound, `The method ${method} is not supported.`);
         }
     }
-    async requestAccounts(origin) {
+    requestAccounts(origin) {
+        const open = this.pendingConnects.get(origin);
+        if (open)
+            return open;
+        const started = this.requestAccountsOnce(origin).finally(() => this.pendingConnects.delete(origin));
+        this.pendingConnects.set(origin, started);
+        return started;
+    }
+    async requestAccountsOnce(origin) {
         const already = await this.visibleAccounts(origin);
         if (already.length)
             return already;

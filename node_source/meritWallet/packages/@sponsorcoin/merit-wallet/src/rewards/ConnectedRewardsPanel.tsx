@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import {
@@ -67,15 +68,8 @@ const noopSubscribe = () => () => undefined;
 
 const AUTO_REFRESH_KEY = 'spcoin_rewards_auto_refresh';
 
-function readAutoRefresh(): boolean {
-  try {
-    return localStorage.getItem(AUTO_REFRESH_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
 export default function ConnectedRewardsPanel({ host, extras = {} }: { host: RewardsHost; extras?: RewardsPanelExtras }) {
+  const platform = usePlatform();
   const isActive = extras.isActive ?? true;
   const externalStore = extras.autoRefreshStore;
   const useRegisterRefresh = extras.useRegisterRefresh ?? noopRegisterRefresh;
@@ -86,7 +80,7 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
   const accessSource = host.accessSource ?? 'local';
 
   const [localAutoRefresh, setAutoRefresh] = useState<boolean>(false);
-  useEffect(() => setAutoRefresh(readAutoRefresh()), []);
+  useEffect(() => setAutoRefresh(platform.storage.get(AUTO_REFRESH_KEY) === 'true'), [platform]);
   const sharedAutoRefresh = useSyncExternalStore(externalStore?.subscribe ?? noopSubscribe, externalStore?.getSnapshot ?? (() => false), externalStore?.getServerSnapshot ?? (() => false));
   const autoRefresh = externalStore ? sharedAutoRefresh : localAutoRefresh;
   const changeAutoRefresh = useCallback((next: boolean) => {
@@ -95,11 +89,7 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
       return;
     }
     setAutoRefresh(next);
-    try {
-      localStorage.setItem(AUTO_REFRESH_KEY, String(next));
-    } catch {
-      /* storage may be unavailable; the checkbox still works for this session */
-    }
+    platform.storage.set(AUTO_REFRESH_KEY, String(next));
   }, [externalStore]);
 
   const options = useMemo(() => (host.endpoint ? { endpoint: host.endpoint } : {}), [host.endpoint]);

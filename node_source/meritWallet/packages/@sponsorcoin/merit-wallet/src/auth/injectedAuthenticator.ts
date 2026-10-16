@@ -23,6 +23,9 @@ export interface InjectedProvider {
 export interface InjectedAuthenticatorOptions {
   id: AuthenticatorId;
   label: string;
+  /** The wallet's own name and short badge (Authenticator.displayName / badge). */
+  displayName?: string;
+  badge?: string;
   icon?: string;
   /** Find the wallet's provider now: undefined when it is not installed. */
   getProvider(): InjectedProvider | undefined | Promise<InjectedProvider | undefined>;
@@ -53,7 +56,7 @@ export function translateProviderError(error: unknown, id: AuthenticatorId, labe
   }
 }
 
-export function createInjectedAuthenticator({ id, label, icon, getProvider }: InjectedAuthenticatorOptions): Authenticator {
+export function createInjectedAuthenticator({ id, label, displayName, badge, icon, getProvider }: InjectedAuthenticatorOptions): Authenticator {
   const need = async (): Promise<InjectedProvider> => {
     const provider = await getProvider();
     if (!provider) throw new AuthenticatorError('unreachable', `${label} is not installed in this browser.`, id);
@@ -73,6 +76,8 @@ export function createInjectedAuthenticator({ id, label, icon, getProvider }: In
   return {
     id,
     label,
+    displayName,
+    badge,
     icon,
     capabilities: { signMessage: true, signTypedData: true, sendTransaction: true, listAccounts: true, createAccount: false, importKey: false, lock: false },
     async status() {

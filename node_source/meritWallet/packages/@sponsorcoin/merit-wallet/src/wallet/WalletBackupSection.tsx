@@ -5,6 +5,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { usePlatform } from '../platform/platform';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from '../PasswordPromptDialog';
 import type { VaultCapability } from '../vault/vaultCapability';
@@ -17,18 +18,8 @@ const bad: React.CSSProperties = { fontSize: 11, color: '#fca5a5', margin: 0 };
 /** The file name a backup is saved under. */
 export const BACKUP_FILE_NAME = 'merit-wallet-backup.json';
 
-function download(text: string, name: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = name;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export default function WalletBackupSection({ wallet }: { wallet: Wallet }) {
+  const platform = usePlatform();
   const [vault, setVault] = useState<VaultCapability | undefined>(undefined);
   const [dialog, setDialog] = useState<'none' | 'backup'>('none');
   const [message, setMessage] = useState<{ text: string; good: boolean } | undefined>(undefined);
@@ -59,7 +50,7 @@ export default function WalletBackupSection({ wallet }: { wallet: Wallet }) {
           confirmLabel="Download backup"
           onConfirm={async (password) => {
             const text = await vault.exportBackup({ kind: 'password', value: password }).catch((e: unknown) => { throw new Error(e instanceof Error ? e.message : 'The backup could not be made.'); });
-            download(text, BACKUP_FILE_NAME);
+            platform.saveFile(BACKUP_FILE_NAME, text, 'application/json');
             setDialog('none');
             setMessage({ text: `Saved ${BACKUP_FILE_NAME}.`, good: true });
           }}

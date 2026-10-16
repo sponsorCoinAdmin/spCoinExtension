@@ -8,7 +8,11 @@ export interface ApproverHost extends Pick<ConnectHost, 'setActiveAccount' | 'cl
     installUrl?: (approverId: AuthenticatorId) => string | undefined;
     /** Show this approver's unlock screen (a password prompt, the wallet's own popup). Omitted: the group shows no Unlock action. */
     onUnlock?: (approverId: AuthenticatorId) => void;
-    /** Open an install page. Default: window.open in a new tab. */
+    /** 2026-10-15: the id of the NATIVE wallet: the Merit wallet this host is (the web app's dev keystore, the extension's vault). Listed first, always connected, never offered Install or Connect. */
+    nativeWalletId?: AuthenticatorId;
+    /** 2026-10-15: is this wallet CONNECTED to the app? The host's one definition (the same its wallet list screen shows). undefined: no opinion, the default applies (it holds accounts here, or it is locked and offers Unlock). */
+    isConnected?: (approverId: AuthenticatorId) => boolean | undefined;
+    /** Open an install page. The component supplies the platform's openUrl when the host gives none. */
     openInstall?: (url: string) => void;
     /** The words for a row's name, symbol and avatar when the host knows more than the approver does (the account profiles). */
     describeAccount?: (address: string) => {
@@ -25,11 +29,13 @@ export interface ApproverGroupsInput {
     activeAddress?: string;
     /** The approver of the active account (wallet.backendIdFor(active)). */
     activeApproverId?: AuthenticatorId;
-    host: Pick<ApproverHost, 'installUrl' | 'onUnlock' | 'openInstall' | 'describeAccount'>;
+    host: Pick<ApproverHost, 'installUrl' | 'onUnlock' | 'openInstall' | 'describeAccount' | 'nativeWalletId' | 'isConnected'>;
     onConnect: (approverId: AuthenticatorId) => void;
     onDisconnect: (approverId: AuthenticatorId) => void;
     /** Whether a backend can connect an account by asking (remote approvers); keys kept here are chosen from the list instead. */
     canConnect: (approverId: AuthenticatorId) => boolean;
+    /** Also list the wallets that are not connected (no accounts here), with their Install / Connect badges. Default false: they are not on the list. */
+    showDisconnected?: boolean;
 }
 /** The groups for the shared account list. Pure: the statuses and the entries are read by the caller. */
 export declare function buildApproverGroups(input: ApproverGroupsInput): AccountListGroup[];

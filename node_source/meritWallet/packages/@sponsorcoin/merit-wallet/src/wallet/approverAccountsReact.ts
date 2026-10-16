@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AccountListGroup } from '@sponsorcoin/spcoin-panels';
 import type { AuthenticatorId, AuthenticatorStatus } from '../auth/authenticator';
 import type { Wallet, WalletAccountEntry } from './wallet';
+import { domPlatform } from '../platform/domPlatform';
+import type { MeritPlatform } from '../platform/platform';
 import { buildApproverGroups, createApproverController, type ApproverController, type ApproverHost } from './approverAccounts';
 
 export interface ApproverAccounts {
@@ -16,7 +18,7 @@ export interface ApproverAccounts {
   controller: ApproverController | undefined;
 }
 
-export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHost | undefined, activeAddress: string | undefined): ApproverAccounts {
+export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHost | undefined, activeAddress: string | undefined, platform: MeritPlatform = domPlatform): ApproverAccounts {
   const [entries, setEntries] = useState<WalletAccountEntry[] | undefined>(undefined);
   const [statuses, setStatuses] = useState<Partial<Record<AuthenticatorId, AuthenticatorStatus>>>({});
   const [notice, setNotice] = useState('');
@@ -47,13 +49,12 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
     if (!wallet) return undefined;
     void load();
     const off = wallet.onChange(() => void load());
-    const onFocus = () => void load();
-    if (typeof window !== 'undefined') window.addEventListener('focus', onFocus);
+    const offForeground = platform.onForeground(() => void load());
     return () => {
       off();
-      if (typeof window !== 'undefined') window.removeEventListener('focus', onFocus);
+      offForeground();
     };
-  }, [wallet, load]);
+  }, [wallet, load, platform]);
 
   const controller = useMemo(
     () =>
@@ -83,12 +84,12 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
       statuses,
       activeAddress,
       activeApproverId,
-      host,
+      host: { ...host, openInstall: host.openInstall ?? ((url: string) => platform.openUrl(url)) },
       onConnect: (id) => void controller.connect(id).then(load),
       onDisconnect: (id) => void controller.disconnect(id).then(load),
       canConnect: (id) => typeof wallet.registry.get(id)?.connect === 'function',
     });
-  }, [wallet, host, entries, statuses, activeAddress, controller, load]);
+  }, [wallet, host, entries, statuses, activeAddress, controller, load, platform]);
 
   return { groups, notice, clearNotice: () => setNotice(''), controller };
 }

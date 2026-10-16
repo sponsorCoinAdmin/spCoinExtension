@@ -15,18 +15,21 @@ interface PendingItem {
   summary: string;
   details?: Record<string, unknown>;
 }
-type Reply = { ok: boolean; unlocked?: boolean; pending?: PendingItem[]; chainId?: number; active?: string };
+type Reply = { ok: boolean; unlocked?: boolean; initialized?: boolean; pending?: PendingItem[]; chainId?: number; active?: string };
 const worker = (message: unknown) => chrome.runtime.sendMessage(message) as Promise<Reply>;
 
 function confirmCopy(item: PendingItem, chainId: number, activeAddress: string): Omit<PendingSignRequest, 'id'> {
   const d = item.details ?? {};
   if (item.kind === 'connect') {
     return {
-      title: `Connect ${item.origin}`,
-      message: 'This site wants to see your active account and ask you to sign. It cannot move anything without asking you again.',
+      // 2026-10-14 (owner request): the same page as MetaMask's "Connect this website with MetaMask": the site, the account it will see, and Cancel / Connect.
+      title: `Connect ${item.origin} with Merit`,
+      message: 'Connect this website with Merit Wallet. It sees your active account and can ask you to sign; it cannot move anything without asking you again.',
       signerAddress: activeAddress,
       chainId,
-      accounts: [{ role: 'SITE', address: item.origin }],
+      accounts: [{ role: 'ACCOUNT', address: activeAddress }],
+      approveLabel: 'Connect',
+      rejectLabel: 'Cancel',
     };
   }
   if (item.kind === 'transaction') {
@@ -54,6 +57,29 @@ export function startDappApprovals(): void {
     try {
       for (;;) {
         const status = await worker({ type: 'merit/vault/status' }).catch(() => undefined);
+        // 2026-10-14 (owner report: the web wallet's Connect sat at "Waiting..." forever): an extension with NO wallet set up (it shows the account list of the hosted dev keystore, not a vault) cannot approve a site: there
+        // is no account here to share. Say so on screen and answer the site, instead of leaving both waiting for an unlock that cannot come.
+        if (status && (status as { initialized?: boolean }).initialized === false) {
+          const waiting = ((await worker({ type: 'merit/signing/pending' }).catch(() => undefined))?.pending ?? []).find((p) => p.origin !== 'wallet' && !handled.has(p.id));
+          if (!waiting) return;
+          handled.add(waiting.id);
+          try {
+            await requestSignApproval({
+              title: `Connect ${waiting.origin} with Merit`,
+              message: 'This extension has no wallet set up yet, so there is no account to connect. Create a new wallet or import a Secret Recovery Phrase in the extension first, then connect again.',
+              signerAddress: '',
+              chainId: 31337,
+              approveLabel: 'OK',
+              rejectLabel: 'Cancel',
+            });
+          } catch {
+            handled.delete(waiting.id);
+            return;
+          }
+          await worker({ type: 'merit/signing/reject', id: waiting.id }).catch(() => undefined);
+          clearPendingSignRequest();
+          continue;
+        }
         if (!status?.unlocked) return; // shown after the unlock gate opens
         const list = (await worker({ type: 'merit/signing/pending' })).pending ?? [];
         const next = list.find((p) => p.origin !== 'wallet' && !handled.has(p.id));

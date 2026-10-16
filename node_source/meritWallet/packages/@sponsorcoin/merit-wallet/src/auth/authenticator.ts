@@ -74,6 +74,11 @@ export interface Authenticator {
   readonly id: AuthenticatorId;
   /** For the account list and the Add menu. */
   readonly label: string;
+  /** 2026-10-15 (docs/design/spcoinPackagesDesign.txt 8.5.8): the wallet's own name, the same everywhere it is seen ("Merit Wallet (Extension)", "MetaMask", "Ledger (Hardware)"). The authenticator SUPPLIES it, so a new wallet needs no edit in the package;
+   *  walletName(id) below is only the fallback for an authenticator that gives none. */
+  readonly displayName?: string;
+  /** The short name next to an account ("Extension", "MetaMask", "Hardware"). Supplied the same way; authenticatorBadge(id) is the fallback. */
+  readonly badge?: string;
   readonly icon?: string;
   readonly capabilities: AuthenticatorCapabilities;
   /** 2026-10-11 (docs/design/accountAuthDesign.txt 14.3): present when this authenticator keeps keys itself under a credential; the shared password / delete / backup / security panels drive it. */
@@ -114,7 +119,9 @@ const PLATFORM_WORDS: Record<WalletPlatform, string> = { web: 'Web', extension: 
  * wallet by its own name. A vault's own platform (when it reports one) decides the bracket for the Merit wallets that run in more than one place. Group headers show it in capitals (the header style does that), sentences show it as written here.
  */
 export function walletName(id: string, platform?: WalletPlatform): string {
-  if (id === 'serverKeystore') return 'Merit Wallet (Web Dev Server)';
+  // FALLBACK ONLY: a table of the built-in ids, for an authenticator that supplies no displayName. A new wallet supplies its own name (authenticatorName); nothing is added here.
+
+  if (id === 'serverKeystore') return 'Merit (Web App)';
   if (id === 'browserVault') return 'Merit Wallet (Web)';
   if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit') return 'Merit Wallet (Extension)';
   if (id === 'deviceVault') return platform ? `Merit Wallet (${PLATFORM_WORDS[platform]})` : 'Merit Wallet (Phone)';
@@ -127,7 +134,13 @@ export function walletName(id: string, platform?: WalletPlatform): string {
   return id;
 }
 
-/** Short names for the badge next to an account (Merit Wallet, Extension, MetaMask, Hardware). */
+/** The name of this authenticator: the one it supplies, else the fallback table. The component asks this and never switches on the id. */
+export const authenticatorName = (authenticator: Pick<Authenticator, 'id' | 'displayName' | 'vault'>): string => authenticator.displayName ?? walletName(authenticator.id, authenticator.vault?.platform);
+
+/** The short name of this authenticator: the one it supplies, else the fallback table. */
+export const authenticatorBadgeOf = (authenticator: Pick<Authenticator, 'id' | 'badge'>): string => authenticator.badge ?? authenticatorBadge(authenticator.id);
+
+/** Short names for the badge next to an account (Merit Wallet, Extension, MetaMask, Hardware). FALLBACK ONLY, see authenticatorBadgeOf. */
 export function authenticatorBadge(id: string): string {
   if (id === 'serverKeystore') return 'Merit Wallet';
   if (id === 'localVault') return 'Extension';

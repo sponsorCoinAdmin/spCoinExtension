@@ -39,7 +39,7 @@ export function useWalletConfigPanelProps({ adapter, engine }: { adapter: Wallet
 
   const persistedTimeoutContent = (
     <div className="mt-2 flex items-center gap-3">
-      <span className="text-sm font-semibold text-white" title="How long a persisted password stays valid without being used before it expires. Resets to this full duration every time it's actually used.">
+      <span className="text-sm font-semibold text-white" title="2026-10-13: ONE idle time limit for every password mode. How long the wallet stays logged in without being used before it locks itself (in Persisted mode it is also how long the stored password stays valid). Resets to this full duration every time the wallet is actually used.">
         Time Limit
       </span>
       <div className="flex items-center gap-2">

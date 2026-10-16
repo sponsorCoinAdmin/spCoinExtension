@@ -33,6 +33,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePlatform } from '../platform/platform';
 import { ChevronDown, ChevronUp, Copy, CheckCheck } from 'lucide-react';
 import AnonymousAvatar from './AnonymousAvatar';
 import { dropDownStyle } from '@sponsorcoin/spcoin-common/styles';
@@ -42,6 +43,7 @@ import { dropDownStyle } from '@sponsorcoin/spcoin-common/styles';
 // no internal-only shared-utility convention yet; see that file's own
 // header comment history for why extracting one wasn't done speculatively).
 function CopyAddressButton({ address }: { address: string }) {
+  const platform = usePlatform();
   const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
   return (
@@ -50,7 +52,7 @@ function CopyAddressButton({ address }: { address: string }) {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        navigator.clipboard.writeText(address).then(() => {
+        platform.copyText(address).then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         });

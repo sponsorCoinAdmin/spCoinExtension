@@ -5,6 +5,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useCallback } from 'react';
+import { usePlatform } from '../../platform/platform';
 import { Check } from 'lucide-react';
 import { msTableTw } from '@sponsorcoin/spcoin-panels';
 import { FIELD_PLACEHOLDERS, FIELD_TITLES, getAbsoluteFieldError, shouldOpenLinkFromInputClick, toPreviewHref, } from './formHelpers';
@@ -13,22 +14,23 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
     const [hoveringLinkTextField, setHoveringLinkTextField] = useState(null);
     const [hoverTarget, setHoverTarget] = useState(null);
     const [copiedField, setCopiedField] = useState(null);
+    const platform = usePlatform();
     const handleCopyAddress = useCallback(() => {
         if (!publicKey)
             return;
-        navigator.clipboard.writeText(publicKey).then(() => {
+        platform.copyText(publicKey).then(() => {
             setCopiedField('address');
             setTimeout(() => setCopiedField(null), 1500);
         });
-    }, [publicKey]);
+    }, [publicKey, platform]);
     const handleCopyField = useCallback((fieldName, value) => {
         if (!value)
             return;
-        navigator.clipboard.writeText(value).then(() => {
+        platform.copyText(value).then(() => {
             setCopiedField(fieldName);
             setTimeout(() => setCopiedField(null), 1500);
         });
-    }, []);
+    }, [platform]);
     const CopyIcon = () => (_jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("rect", { x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" }), _jsx("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })] }));
     const th = 'px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-300/80';
     const cell = 'px-3 py-3 text-sm align-middle';
@@ -83,10 +85,10 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
                                                                     return;
                                                                 }
                                                                 if (href.startsWith('mailto:')) {
-                                                                    window.location.href = href;
+                                                                    platform.openUrl(href, { sameTab: true });
                                                                     return;
                                                                 }
-                                                                window.open(href, '_blank', 'noopener,noreferrer');
+                                                                platform.openUrl(href);
                                                             }, onMouseEnter: () => setHoveredInput(name), onMouseMove: (e) => {
                                                                 setHoveredInput(name);
                                                                 if (!href) {

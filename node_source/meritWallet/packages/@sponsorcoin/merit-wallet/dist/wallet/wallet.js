@@ -14,7 +14,7 @@
 //
 // MORE THAN ONE BACKEND AT ONCE IS NORMAL (owner decision 2026-10-11): vault accounts and MetaMask accounts live in one list and each signs through its own backend. No browser globals here: the host passes
 // its storage in as the `store`.
-import { authenticatorBadge, walletName, } from '../auth/authenticator';
+import { authenticatorBadgeOf, authenticatorName, } from '../auth/authenticator';
 import { createAuthenticatorRegistry, resolveAuthenticator } from '../auth/resolve';
 export function createMemoryActiveAuthenticatorStore(initial = {}) {
     const map = new Map(Object.entries(initial).map(([k, v]) => [k.toLowerCase(), v]));
@@ -55,8 +55,8 @@ function infoOf(authenticator) {
     return {
         id: authenticator.id,
         label: authenticator.label,
-        badge: authenticatorBadge(authenticator.id),
-        name: walletName(authenticator.id, authenticator.vault?.platform),
+        badge: authenticatorBadgeOf(authenticator),
+        name: authenticatorName(authenticator),
         keepsKeys: !!authenticator.vault,
         where: authenticator.vault?.label ?? '',
         features: featuresOf(authenticator),
@@ -130,7 +130,7 @@ export function createWallet(options) {
                         existing.name ?? (existing.name = account.name);
                         continue;
                     }
-                    byAddress.set(key, { ...account, authenticatorId: authenticator.id, badge: authenticatorBadge(authenticator.id), backends: [authenticator.id] });
+                    byAddress.set(key, { ...account, authenticatorId: authenticator.id, badge: authenticatorBadgeOf(authenticator), backends: [authenticator.id] });
                 }
             }
             // The saved choice wins over "the first backend that listed it", when that backend is one of the ones holding the address.
@@ -138,7 +138,7 @@ export function createWallet(options) {
                 const saved = store.get(key);
                 if (saved && entry.backends.includes(saved)) {
                     entry.authenticatorId = saved;
-                    entry.badge = authenticatorBadge(saved);
+                    entry.badge = authenticatorBadgeOf(registry.get(saved) ?? { id: saved });
                 }
             }
             return [...byAddress.values()];

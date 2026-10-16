@@ -2,6 +2,7 @@ import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import type { Wallet } from './wallet/wallet';
+import { type MeritPlatform } from './platform/platform';
 import { type WalletDerivation } from './wallet/walletProps';
 import type { ApproverHost } from './wallet/approverAccounts';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
@@ -85,6 +86,10 @@ export interface MeritWalletProps {
     stakingHost?: SponsorStakingHost;
     /** The host's real active account. When provided (even as ''), it alone decides which row is active: '' means none, so the header reads "Select Account". Omit to keep each row's own isActive flag (the extension's own feed). */
     activeAccountAddress?: string;
+    /** 2026-10-13: the active account's profile as the host knows it (any wallet's account, not only the keystore's). The header's account pill shows it when no listed row is the active one (a MetaMask account is not in the keystore list). */
+    activeAccountName?: string;
+    activeAccountSymbol?: string;
+    activeAccountLogoURL?: string;
     chainId?: number;
     baseUrl?: string;
     storage?: IconCacheStorage;
@@ -161,6 +166,11 @@ export interface MeritWalletProps {
      */
     wallet?: Wallet;
     /**
+     * 2026-10-15 (docs/design/spcoinPackagesDesign.txt 8.5.7): the PLATFORM this wallet runs on: copy to the clipboard, open a URL, save a file, remember a small preference, tell when the window came back to the front. A browser host (the web app, the extension,
+     * a WebView) leaves it out and gets the DOM implementation; a host with another device injects its own. The component never calls window, document, navigator or localStorage for these.
+     */
+    platform?: MeritPlatform;
+    /**
      * 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 6 / 7): with `wallet` AND this, the account list is the per-approver list derived from the wallet (one group per backend, badges ACTIVE / Install / Unlock / Connect /
      * INACTIVE), choosing a row connects it through the one connect operation, and a failed connect is shown in the list's banner. The host supplies what it owns: setting / clearing its active account, where an approver is
      * installed from, how an approver is unlocked. Passing it asks for the derived list: it replaces the host's own accountGroups / onAccountRowSelect once the list has loaded (they stay as the fallback until then).
@@ -197,8 +207,16 @@ export interface MeritWalletProps {
     /** Shown as a "Forgot password? Reset wallet" link under the lock screen; the host confirms and wipes (the wallet can only be restored from its Secret Recovery Phrase). */
     onResetWallet?: () => void;
     passwordErrorText?: string;
+    /** 2026-10-14: a neutral line above the login form (the extension: a site is waiting to connect). */
+    passwordNoticeText?: string;
     onPasswordSubmit?: (password: string, confirmPassword: string) => void;
     passwordSubmitting?: boolean;
+    /**
+     * 2026-10-13 (first-run wallet creation): a NEW wallet's Secret Recovery Phrase, set by the host right after the password is created. While it is set, the login page shows the shared
+     * RecoveryPhraseScreen (the words, a copy icon, "I have saved it") in place of the password form; the host keeps the wallet gated until onRecoveryPhraseSaved fires.
+     */
+    recoveryPhrase?: string;
+    onRecoveryPhraseSaved?: () => void;
     sellBalanceText?: string;
     buyBalanceText?: string;
     /** 2026-10-05, on request — the 0X engine's trade/submit
@@ -265,4 +283,4 @@ export interface MeritWalletProps {
  * The component. A host that passes `wallet` gets the lock screen, the lock button, the authentication type and the Wallet Security section from it (src/wallet/walletProps.tsx); everything else, and every
  * prop the host passes explicitly, is unchanged.
  */
-export default function MeritWallet(props: MeritWalletProps): React.FunctionComponentElement<MeritWalletProps>;
+export default function MeritWallet(props: MeritWalletProps): React.FunctionComponentElement<React.ProviderProps<MeritPlatform>>;

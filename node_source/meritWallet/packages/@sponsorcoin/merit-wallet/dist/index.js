@@ -28,6 +28,7 @@ export { createPhoneVault, createPhoneAuthenticator, PhoneAuthError } from './va
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';
+export { validateLogin, isLoginGateClosed, deriveLoginState } from './session/validateLogin';
 export { useWalletSession } from './session/walletSessionReact';
 export { readContractDirect, toRunScriptShape, createDirectReadStep } from './chain/directReads';
 export { MERIT_RDNS, discoverWallets, findMeritWallet, createInjectedWalletApi } from './provider/injectedWallet';
@@ -36,6 +37,7 @@ export { default as TokenPanel } from './TokenPanel';
 export { tokenDetailRows, CopyBtn } from './TokenSlotPanels';
 export { default as ConnectedPasswordPanel } from './ConnectedPasswordPanel';
 export { default as VaultAccountsPanel } from './VaultAccountsPanel';
+export { default as RecoveryPhraseScreen } from './RecoveryPhraseScreen';
 export { default as WalletOnboardingPanel } from './WalletOnboardingPanel';
 export { quoteSwap, minimumAmountOut, NoSwapPriceError } from './swap/swapPrice';
 export { default as SwapTradeButton } from './swap/SwapTradeButton';
@@ -60,6 +62,8 @@ export * from './auth/authenticator';
 export * from './auth/resolve';
 // 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1a): the wallet object (registry, saved choice per account, resolver, accounts, capabilities) a host hands the component.
 export * from './wallet/wallet';
+export { MeritPlatformContext, usePlatform } from './platform/platform';
+export { domPlatform } from './platform/domPlatform';
 export { createWalletLockStore, unlockErrorText } from './wallet/walletLock';
 export { createWalletSecurityApi } from './wallet/walletSecurity';
 export { deriveWalletProps, mergeWalletProps, useWalletDerivedProps, authenticationTypeOf, ALL_WALLET_DERIVATIONS } from './wallet/walletProps';

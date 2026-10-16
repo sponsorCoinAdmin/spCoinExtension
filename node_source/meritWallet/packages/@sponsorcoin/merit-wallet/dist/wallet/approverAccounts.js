@@ -8,7 +8,7 @@ export function buildApproverGroups(input) {
         const others = entry.backends.filter((id) => id !== here).map((id) => backends.find((b) => b.id === id)?.name ?? id);
         return others.length ? `Key also in ${others.join(', ')}` : undefined;
     };
-    return backends.map((backend) => {
+    const groups = backends.map((backend) => {
         const status = statuses[backend.id];
         const isActiveSource = !!activeAddress && activeApproverId === backend.id;
         const held = entries.filter((entry) => entry.backends.includes(backend.id));
@@ -35,11 +35,14 @@ export function buildApproverGroups(input) {
             group.onActiveClick = () => input.onDisconnect(backend.id);
             return group;
         }
+        // the native wallet is us: connected by definition, so it is never offered Install, Unlock or Connect
+        if (backend.id === host.nativeWalletId)
+            return group;
         const url = host.installUrl?.(backend.id);
         if (status && !status.available) {
             if (url) {
                 group.connectLabel = 'Install';
-                group.onConnectClick = () => (host.openInstall ? host.openInstall(url) : typeof window !== 'undefined' && window.open(url, '_blank', 'noopener'));
+                group.onConnectClick = () => host.openInstall?.(url);
             }
         }
         else if (status && status.available && !status.unlocked && backend.features.lock && host.onUnlock) {
@@ -52,6 +55,19 @@ export function buildApproverGroups(input) {
         }
         return group;
     });
+    const native = host.nativeWalletId;
+    const kept = input.showDisconnected
+        ? groups
+        : groups.filter((g) => {
+            if (g.id === native || g.isActiveSource)
+                return true;
+            const connected = host.isConnected?.(g.id);
+            if (connected !== undefined)
+                return connected;
+            return g.accounts.length > 0 || g.connectLabel === 'Unlock';
+        });
+    // the native wallet first, the others in the wallet's own order
+    return native ? [...kept.filter((g) => g.id === native), ...kept.filter((g) => g.id !== native)] : kept;
 }
 /** The words a failed connect is reported in. */
 export function connectNoticeText(error) {

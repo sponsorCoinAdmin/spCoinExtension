@@ -8,7 +8,7 @@
 
 import React from 'react';
 import MeritWallet, { type MeritWalletProps } from './MeritWallet';
-import type { HostActions, HostConfig, HostData, HostLayout, HostLock, HostSelection, HostSlots, HostUiState } from './hostContract';
+import type { HostActions, HostConfig, HostData, HostLayout, HostLock, HostPlatform, HostSelection, HostSlots, HostUiState } from './hostContract';
 
 export interface MeritWalletHostSections {
   layout: HostLayout;
@@ -19,11 +19,12 @@ export interface MeritWalletHostSections {
   slots?: HostSlots;
   lock?: HostLock;
   config?: HostConfig;
+  platform?: HostPlatform;
 }
 
 /** The flat props the component takes, from a host's sections. Later sections win on a repeated key, but no key belongs to two sections. */
 export function meritWalletPropsFromHost(host: MeritWalletHostSections): MeritWalletProps {
-  return { ...host.layout, ...host.uiState, ...host.data, ...host.selection, ...host.actions, ...host.slots, ...host.lock, ...host.config };
+  return { ...host.layout, ...host.uiState, ...host.data, ...host.selection, ...host.actions, ...host.slots, ...host.lock, ...host.config, ...host.platform };
 }
 
 export default function MeritWalletHostView({ host }: { host: MeritWalletHostSections }) {

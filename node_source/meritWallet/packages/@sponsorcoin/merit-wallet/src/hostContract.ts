@@ -34,6 +34,7 @@ export type HostUiState = Pick<
 export type HostData = Pick<
   MeritWalletProps,
   | 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage'
+  | 'activeAccountName' | 'activeAccountSymbol' | 'activeAccountLogoURL'
   | 'wallet' | 'walletDerives' | 'approverHost' | 'accountListNotice' | 'activeWalletName' | 'activeWalletId' | 'showWalletSelect' | 'walletAssetBaseUrl' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'
 >;
 
@@ -61,7 +62,7 @@ export type HostSlots = Pick<
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */
 export type HostLock = Pick<
   MeritWalletProps,
-  'passwordMode' | 'walletLocked' | 'onResetWallet' | 'passwordIcon' | 'passwordErrorText' | 'onPasswordSubmit' | 'passwordSubmitting'
+  'passwordMode' | 'walletLocked' | 'onResetWallet' | 'passwordIcon' | 'passwordErrorText' | 'passwordNoticeText' | 'onPasswordSubmit' | 'passwordSubmitting' | 'recoveryPhrase' | 'onRecoveryPhraseSaved'
 >;
 
 /** The Config tab's values and handlers. */
@@ -75,7 +76,10 @@ export type HostConfig = Pick<
   | 'onConfigExtensionChannelChange' | 'configExtensionDownloadPath' | 'onConfigLogoff' | 'onConfigResetPassword' | 'onConfigDeleteAccount' | 'onConfigDeleteWallet' | 'authenticationType'
 >;
 
-export type MeritWalletHost = HostLayout & HostUiState & HostData & HostSelection & HostActions & HostSlots & HostLock & HostConfig;
+/** 2026-10-15: the device the wallet runs on (clipboard, open a URL, save a file, small preferences, window foreground). Left out, the DOM implementation is used. */
+export type HostPlatform = Pick<MeritWalletProps, 'platform'>;
+
+export type MeritWalletHost = HostLayout & HostUiState & HostData & HostSelection & HostActions & HostSlots & HostLock & HostConfig & HostPlatform;
 
 // Compile-time completeness check: every key of MeritWalletProps must be in one section. Adding a prop without filing it makes
 // `Unclassified` non-empty and the assignment below a type error.

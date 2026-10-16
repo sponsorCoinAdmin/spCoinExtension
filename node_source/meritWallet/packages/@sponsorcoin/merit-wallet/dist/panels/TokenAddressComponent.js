@@ -22,12 +22,14 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState } from 'react';
+import { usePlatform } from '../platform/platform';
 import { Copy, Check, ChevronDown } from 'lucide-react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 export default function TokenAddressComponent({ panelId = SP_COIN_DISPLAY.TOKEN_ADDRESS_COMPONENT, address, symbol, name, blockchainName, icon, onSelectClick, }) {
     const visible = usePanelVisible(panelId);
     const tokenListVisible = usePanelVisible(SP_COIN_DISPLAY.ACTIVE_LIST_PANEL);
+    const platform = usePlatform();
     const [copied, setCopied] = useState(false);
     const [headerVisible, setHeaderVisible] = useState(false);
     if (!visible)
@@ -36,7 +38,7 @@ export default function TokenAddressComponent({ panelId = SP_COIN_DISPLAY.TOKEN_
         e.stopPropagation();
         if (!address)
             return;
-        navigator.clipboard.writeText(address).then(() => {
+        platform.copyText(address).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
         });

@@ -29,7 +29,7 @@ import React, { useState } from 'react';
 
 export type MenuTabKey = 'SWAP' | 'SEND' | 'SPONSOR' | 'REWARDS' | 'CONFIG';
 
-const TABS: ReadonlyArray<{ key: Exclude<MenuTabKey, 'CONFIG'>; label: string }> = [
+const TABS: readonly { key: Exclude<MenuTabKey, 'CONFIG'>; label: string }[] = [
   { key: 'SWAP', label: 'Swap' },
   { key: 'SEND', label: 'Send' },
   { key: 'SPONSOR', label: 'Sponsor' },

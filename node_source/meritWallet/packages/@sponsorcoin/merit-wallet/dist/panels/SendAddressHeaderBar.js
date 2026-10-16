@@ -38,10 +38,7 @@ import { walletColors, walletTints } from '@sponsorcoin/spcoin-common/styles';
 import { useMemo } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelTree, usePanelVisible, useOpenActiveListPanel } from '@sponsorcoin/spcoin-exchange-engine';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
-import { AccountSelectDropDown, ACCOUNT_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
-import { PACKAGE_BUILD } from '@sponsorcoin/spcoin-panels';
-import { TabBodyMarker } from '@sponsorcoin/spcoin-panels';
+import { PanelGate, AccountSelectDropDown, ACCOUNT_SELECT_DISPLAY, PACKAGE_BUILD, TabBodyMarker } from '@sponsorcoin/spcoin-panels';
 const BASE_SHOW_DISPLAY = ACCOUNT_SELECT_DISPLAY.ICON |
     ACCOUNT_SELECT_DISPLAY.SYMBOL |
     ACCOUNT_SELECT_DISPLAY.ADDRESS |

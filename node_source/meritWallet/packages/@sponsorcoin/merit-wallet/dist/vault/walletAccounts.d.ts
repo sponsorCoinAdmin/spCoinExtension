@@ -1,5 +1,5 @@
 import { type HDAccount, type PrivateKeyAccount } from 'viem/accounts';
-import { VaultSession } from './vaultSession';
+import type { VaultSession } from './vaultSession';
 export type WalletAccountSource = 'generated' | 'imported';
 export interface HdKeyring {
     mnemonic: string;

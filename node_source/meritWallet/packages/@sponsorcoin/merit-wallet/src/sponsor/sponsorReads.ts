@@ -18,7 +18,7 @@ export function throttleRead(read: ChainRead, options: { concurrency?: number; r
   const pauseMs = options.pauseMs ?? 250;
   if ((read as ChainRead & { __throttled?: boolean }).__throttled) return read;
   let active = 0;
-  const waiting: Array<() => void> = [];
+  const waiting: (() => void)[] = [];
   const acquire = () =>
     new Promise<void>((resolve) => {
       if (active < concurrency) {

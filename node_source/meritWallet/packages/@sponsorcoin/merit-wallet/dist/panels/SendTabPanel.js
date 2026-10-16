@@ -16,12 +16,8 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
-import { PACKAGE_BUILD } from '@sponsorcoin/spcoin-panels';
-import { TabBodyMarker } from '@sponsorcoin/spcoin-panels';
+import { PACKAGE_BUILD, TabBodyMarker, TradeAmountRow, PanelGate, SendButton } from '@sponsorcoin/spcoin-panels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { TradeAmountRow } from '@sponsorcoin/spcoin-panels';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
-import { SendButton } from '@sponsorcoin/spcoin-panels';
 export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy = false, balanceText = 'Balance: 0', recipientBalanceText, sendDecimals = 18, sendBalanceRaw, sendHasRecipient = false, sendSymbol = '', onSendTokenClick, onRecipientClick, }) {
     return (
     // 2026-09-14, on request ("spacing between SEND_SELECT_PANEL,

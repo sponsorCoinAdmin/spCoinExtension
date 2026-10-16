@@ -217,7 +217,7 @@ export class VaultSession<T = unknown> {
     return this.serialize(async () => {
       if (!this.isUnlocked()) throw new VaultLockedError();
       const next = mutate(this.data as T);
-      const vault = await encryptWithKey(next, this.key as CryptoKey, this.salt as Uint8Array, this.vaultIterations);
+      const vault = await encryptWithKey(next, this.key!, this.salt!, this.vaultIterations);
       await this.storage.write(vault);
       this.data = next;
       this.touch();

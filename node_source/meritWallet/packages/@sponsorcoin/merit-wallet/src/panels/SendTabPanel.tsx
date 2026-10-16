@@ -18,12 +18,12 @@
 
 import React from 'react';
 import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
-import { PACKAGE_BUILD } from '@sponsorcoin/spcoin-panels';
-import { TabBodyMarker } from '@sponsorcoin/spcoin-panels';
+import { PACKAGE_BUILD, TabBodyMarker, TradeAmountRow, PanelGate, SendButton } from '@sponsorcoin/spcoin-panels';
+
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { TradeAmountRow } from '@sponsorcoin/spcoin-panels';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
-import { SendButton } from '@sponsorcoin/spcoin-panels';
+
+
+
 
 export interface SendTabPanelProps {
   sendTokenSymbol?: string;

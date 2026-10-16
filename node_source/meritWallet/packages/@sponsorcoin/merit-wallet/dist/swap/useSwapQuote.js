@@ -73,7 +73,12 @@ export function useSwapQuote(host, options) {
         host
             .getPrice({ chainId, sellToken: sellAddress, buyToken: buyAddress, sellAmount })
             .catch(() => price)
-            .then((fresh) => runSwap(fresh));
+            .then((fresh) => runSwap(fresh))
+            // runSwap throwing before it starts its own chain would leave the button disabled for good: say so and let it be pressed again
+            .catch((error) => {
+            console.error('swap could not start', error);
+            setSwapping(false);
+        });
     };
     const runSwap = (price) => {
         const slippageBps = host.slippageBps ?? 50;
@@ -122,6 +127,8 @@ export function useSwapQuote(host, options) {
                 if (succeeded)
                     setSellAmount(0n);
             })
+                // the shared flow reports its own failures through setErrorMessage; a rejection that escapes it is logged, never left unhandled
+                .catch((error) => console.error('Uniswap swap failed', error))
                 .finally(() => setSwapping(false));
             return;
         }

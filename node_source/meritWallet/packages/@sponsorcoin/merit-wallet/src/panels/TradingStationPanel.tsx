@@ -31,7 +31,6 @@
 // (previously duplicated here) re-exported from ExchangeTradingPairProps
 // so nothing about this component's own public API changes.
 
-
 //
 // 2026-10-03, on request ("I want a universal fix ... mirror display between the
 // web app and the panels") — this is no longer a second, hand-maintained
@@ -53,10 +52,10 @@
 import { walletColors } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import { ExchangeTradingPair, type ExchangeTradingPairProps } from '@sponsorcoin/spcoin-panels';
-import { TradingStationLayout } from '@sponsorcoin/spcoin-panels';
-import { PACKAGE_BUILD } from '@sponsorcoin/spcoin-panels';
-import { TabBodyMarker } from '@sponsorcoin/spcoin-panels';
-import { ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
+import { TradingStationLayout, PACKAGE_BUILD, TabBodyMarker, ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
+
+
+
 
 export interface TradingStationPanelProps extends ExchangeTradingPairProps {
   onSubmit?: () => void;

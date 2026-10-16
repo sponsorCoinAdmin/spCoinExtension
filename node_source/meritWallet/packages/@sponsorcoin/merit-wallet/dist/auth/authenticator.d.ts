@@ -26,20 +26,20 @@ export interface AuthenticatorDisplay {
     title?: string;
     message?: string;
     contractAddress?: string;
-    accounts?: Array<{
+    accounts?: {
         role: string;
         address: string;
         symbol?: string;
         name?: string;
         logoURL?: string;
-    }>;
-    tokens?: Array<{
+    }[];
+    tokens?: {
         label: string;
         symbol?: string;
         name?: string;
         address?: string;
         logoURL?: string;
-    }>;
+    }[];
     amount?: {
         label: string;
         value: string;

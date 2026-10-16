@@ -37,8 +37,8 @@ export interface AuthenticatorDisplay {
   title?: string;
   message?: string;
   contractAddress?: string;
-  accounts?: Array<{ role: string; address: string; symbol?: string; name?: string; logoURL?: string }>;
-  tokens?: Array<{ label: string; symbol?: string; name?: string; address?: string; logoURL?: string }>;
+  accounts?: { role: string; address: string; symbol?: string; name?: string; logoURL?: string }[];
+  tokens?: { label: string; symbol?: string; name?: string; address?: string; logoURL?: string }[];
   amount?: { label: string; value: string };
 }
 

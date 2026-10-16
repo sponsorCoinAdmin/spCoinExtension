@@ -37,8 +37,8 @@
 import { walletColors } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import { AssetSelectDropDown, ASSET_SELECT_DISPLAY, PanelGate } from '@sponsorcoin/spcoin-panels';
+
 import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
 
 export interface WalletAccountHeaderRoles {

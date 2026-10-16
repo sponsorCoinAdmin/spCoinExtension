@@ -49,7 +49,7 @@ const localTransport = async (request: SendRequest): Promise<SendOutcome> => {
     data: request.tx.data,
     value: request.tx.value === undefined ? undefined : BigInt(request.tx.value),
     chainId: request.chainId,
-    display: { title: copy.title, contractAddress: copy.contractAddress, accounts: copy.accounts, tokens: copy.tokens, amount: copy.amount },
+    display: { title: copy.title, contractAddress: copy.contractAddress, accounts: copy.accounts, amount: copy.amount },
   });
   // Wait for the block so the result card can say "confirmed" with block / gas, as the web app's send does.
   const rpcUrl = rpcUrlForChain(request.chainId);

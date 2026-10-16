@@ -26,7 +26,7 @@ export default function WalletBackupSection({ wallet }: { wallet: Wallet }) {
 
   const load = useCallback(async () => {
     const primary = await wallet.primaryVault();
-    setVault(primary && primary.vault.capabilities.backup ? primary.vault : undefined);
+    setVault(primary?.vault.capabilities.backup ? primary.vault : undefined);
   }, [wallet]);
   useEffect(() => {
     void load();

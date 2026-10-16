@@ -6,6 +6,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { usePlatform } from '../../platform/platform';
+import { useCopyFeedback } from '../../platform/useCopyFeedback';
 import { Check } from 'lucide-react';
 import { msTableTw } from '@sponsorcoin/spcoin-panels';
 import type {
@@ -102,22 +103,16 @@ export default function CreateAccountFormPanel({
   const [hoverTarget, setHoverTarget] = useState<'createAccount' | 'revertChanges' | null>(
     null,
   );
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const { copiedKey: copiedField, copy } = useCopyFeedback();
   const platform = usePlatform();
   const handleCopyAddress = useCallback(() => {
     if (!publicKey) return;
-    platform.copyText(publicKey).then(() => {
-      setCopiedField('address');
-      setTimeout(() => setCopiedField(null), 1500);
-    });
-  }, [publicKey, platform]);
+    copy(publicKey, 'address');
+  }, [publicKey, copy]);
   const handleCopyField = useCallback((fieldName: string, value: string) => {
     if (!value) return;
-    platform.copyText(value).then(() => {
-      setCopiedField(fieldName);
-      setTimeout(() => setCopiedField(null), 1500);
-    });
-  }, [platform]);
+    copy(value, fieldName);
+  }, [copy]);
 
   const CopyIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

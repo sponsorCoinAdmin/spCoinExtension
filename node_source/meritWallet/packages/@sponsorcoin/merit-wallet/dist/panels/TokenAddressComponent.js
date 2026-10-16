@@ -22,15 +22,14 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState } from 'react';
-import { usePlatform } from '../platform/platform';
+import { useCopyFeedback } from '../platform/useCopyFeedback';
 import { Copy, Check, ChevronDown } from 'lucide-react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 export default function TokenAddressComponent({ panelId = SP_COIN_DISPLAY.TOKEN_ADDRESS_COMPONENT, address, symbol, name, blockchainName, icon, onSelectClick, }) {
     const visible = usePanelVisible(panelId);
     const tokenListVisible = usePanelVisible(SP_COIN_DISPLAY.ACTIVE_LIST_PANEL);
-    const platform = usePlatform();
-    const [copied, setCopied] = useState(false);
+    const { copied, copy } = useCopyFeedback();
     const [headerVisible, setHeaderVisible] = useState(false);
     if (!visible)
         return null;
@@ -38,10 +37,7 @@ export default function TokenAddressComponent({ panelId = SP_COIN_DISPLAY.TOKEN_
         e.stopPropagation();
         if (!address)
             return;
-        platform.copyText(address).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-        });
+        copy(address);
     };
     return (_jsxs(_Fragment, { children: [headerVisible && (_jsxs("div", { className: "relative shrink-0 border-b border-slate-700/50 -mx-4 px-4 py-3 flex flex-col items-center", children: [_jsx("span", { className: "text-[19px] font-semibold text-[#5981F3]", children: blockchainName ? `${blockchainName} Network` : 'Network' }), (symbol || name) && (_jsxs("span", { className: "text-[14px] font-normal text-slate-400", children: [symbol, name ? `: ${name}` : ''] }))] })), _jsxs("div", { className: "shrink-0 border-b border-slate-700/50 -mx-4 px-4 py-2 flex items-center gap-2 text-sm text-slate-300/80", children: [_jsx("div", { className: "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#11162A]", children: icon }), _jsxs("div", { className: "flex min-w-0 flex-1 items-center gap-2 rounded-[22px] bg-[#243056] px-3 py-1 text-[15px] text-[#5981F3]", children: [_jsx("span", { className: "w-full truncate whitespace-nowrap text-center font-mono cursor-pointer", title: headerVisible ? 'Hide token info' : 'Show token info', onClick: () => setHeaderVisible((v) => !v), children: address || '—' }), _jsx("button", { type: "button", onClick: onSelectClick, className: "shrink-0 flex items-center justify-center rounded hover:bg-white/10 p-0.5", "aria-label": tokenListVisible ? 'Close token list' : 'Select token', children: _jsx(ChevronDown, { className: [
                                         'h-4 w-4 text-slate-400 transition-transform duration-200',

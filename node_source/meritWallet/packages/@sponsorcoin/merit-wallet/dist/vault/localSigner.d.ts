@@ -1,7 +1,7 @@
 import { type Hex, type Transport } from 'viem';
-import { ApprovalController } from './approvals';
+import type { ApprovalController } from './approvals';
 import { type VaultSession } from './vaultSession';
-import { WalletAccounts, type WalletVaultContents } from './walletAccounts';
+import { type WalletAccounts, type WalletVaultContents } from './walletAccounts';
 export declare const HARDHAT_CHAIN_ID = 31337;
 export declare class DevAccountOnRealChainError extends Error {
     constructor();

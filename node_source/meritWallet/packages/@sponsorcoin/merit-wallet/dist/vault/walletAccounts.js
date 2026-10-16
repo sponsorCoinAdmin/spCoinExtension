@@ -146,7 +146,7 @@ export class WalletAccounts {
         const address = deriveAddress(c.hd.mnemonic, index);
         await this.session.update((cur) => ({
             ...cur,
-            hd: { ...cur.hd, count: index + 1 },
+            hd: { ...(cur.hd), count: index + 1 },
             names: { ...cur.names, [lower(address)]: name?.trim() || `Account ${index + 1}` },
         }));
         return this.list().find((a) => lower(a.address) === lower(address));

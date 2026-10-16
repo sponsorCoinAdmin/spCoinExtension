@@ -38,9 +38,9 @@ import { walletColors } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getAddress } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { APP_TYPE } from '@sponsorcoin/spcoin-common';
+import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
-import { TRADE_DIRECTION } from '@sponsorcoin/spcoin-common/context';
+import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import {
   usePanelTree,
   usePanelVisible,
@@ -55,7 +55,7 @@ import {
   useSellAmount,
   useBuyAmount,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import { PanelGate, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle } from '@sponsorcoin/spcoin-panels';
+import { PanelGate, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AssetListTable, type AssetListEntry, AccountListCard, type AccountListGroup, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, type AssetPreviewRowProps } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, type MeritPlatform } from './platform/platform';
@@ -64,20 +64,13 @@ import { useApproverAccounts } from './wallet/approverAccountsReact';
 import { useApprovalMessagePanel } from './auth/useApprovalMessagePanel';
 import type { ApproverHost } from './wallet/approverAccounts';
 import type { AuthenticatorId } from './auth/authenticator';
-import { WalletConnectProvider } from '@sponsorcoin/spcoin-panels';
-import { ConfigSlippagePanel } from '@sponsorcoin/spcoin-panels';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
-import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildRecipientRows as selfFetchRecipientRows, buildAllAccountRows as selfFetchAllAccountRows, buildTokenRows as selfFetchTokenRows } from './panels';
+import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildRecipientRows as selfFetchRecipientRows, buildAllAccountRows as selfFetchAllAccountRows, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, type MenuTabKey, WalletRadioPanels, TradingStationPanel, SendTabPanel, AddressPanel, AccountDetailPanel, TokenDetailPanel, NetworkDetailPanel, type MeritWalletNetworkRow } from './panels';
 // Panel visibility in this component goes through exactly one engine:
 // @sponsorcoin/spcoin-exchange-engine's panelStore, read via PanelGate /
 // usePanelVisible. The package's own separate store (panelState.ts) was
 // deleted 2026-10-02 — see this package's index.ts header for why a
 // second store let a tree toggle silently do nothing.
-import { PACKAGE_BUILD, SHOW_BUILD_MARKERS } from '@sponsorcoin/spcoin-panels';
-import { LoginHeader, WalletNetworkHeader } from '@sponsorcoin/spcoin-panels';
-import { NetworkSelectDropDown } from './panels';
-import { WalletAccountHeader } from './panels';
-import { PanelTitle } from './panels';
 import ConnectedMessagePanel from './ConnectedMessagePanel';
 import ConnectedRewardsPanel, { type RewardsHost } from './rewards/ConnectedRewardsPanel';
 import AccountProfileEditor, { type AccountProfileHost } from './account/AccountProfileEditor';
@@ -88,34 +81,8 @@ import { buildSendReceipt, type HostTransactionResult } from './receipt/transact
 import { isNativePlaceholder } from './send/sendTransfer';
 import { useTransactionReceipt } from './receipt/useTransactionReceipt';
 import { ActiveAccountProfileContext } from './swap/activeAccountProfile';
-import { MenuTabHeaderBar, type MenuTabKey } from './panels';
-import { WalletRadioPanels } from './panels';
-import { TradingStationPanel } from './panels';
-import { SendTabPanel } from './panels';
-import { ManageSponsorshipsPanel } from '@sponsorcoin/spcoin-panels';
-import { AgentHeaderPanel } from '@sponsorcoin/spcoin-panels';
 import ConnectedAgentSelectDropDown from './AgentSelectDropDown';
-import { WalletConfigPanel, type OpenTarget,
-  type MeritWalletPasswordMode as ConfigPasswordMode,
-  type ApplicationSyncMode,
-  type MeritWalletLocation,
-  type MeritExtensionChannel, } from '@sponsorcoin/spcoin-panels';
-import { PasswordPanel } from '@sponsorcoin/spcoin-panels';
-import { AssetListTable, type AssetListEntry } from '@sponsorcoin/spcoin-panels';
-import { AccountListCard, type AccountListGroup } from '@sponsorcoin/spcoin-panels';
-import { SponsorStakingListPanel } from '@sponsorcoin/spcoin-panels';
-import { FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
-import { AssetListSelectPanel } from '@sponsorcoin/spcoin-panels';
-import { AddressPanel } from './panels';
-import { PanelTreePanel } from '@sponsorcoin/spcoin-panels';
-import { WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance } from '@sponsorcoin/spcoin-panels';
 import { classifyAddressText, useNativeToken, type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-exchange-engine';
-import type { AssetPreviewRowProps } from '@sponsorcoin/spcoin-panels';
-import { AccountDetailPanel } from './panels';
-import { TokenDetailPanel } from './panels';
-import { NetworkDetailPanel } from './panels';
-import { NetworkListTable, type NetworkListEntry } from '@sponsorcoin/spcoin-panels';
-import type { MeritWalletNetworkRow } from './panels';
 
 // 2026-09-30, Stage B (real trade wiring) — a minimal, dependency-free
 // decimal-string -> bigint parser for the SWAP tab's amount inputs. No
@@ -1998,7 +1965,7 @@ function MeritWalletInner({
               onInfoClick: hit.address ? () => onInfo(hit.address!) : undefined,
             }
           : resolveAssetAddress
-            ? resolved && resolved.result
+            ? resolved?.result
               ? resolved.result.status === 'ok'
                 ? {
                     icon: iconFromSrc(resolved.result.asset.logoURL),
@@ -2007,11 +1974,11 @@ function MeritWalletInner({
                     address: resolved.result.asset.address,
                     onSelect: () =>
                       commitSelection({
-                        symbol: resolved.result && resolved.result.status === 'ok' ? resolved.result.asset.symbol : undefined,
-                        name: resolved.result && resolved.result.status === 'ok' ? resolved.result.asset.name : undefined,
+                        symbol: resolved.result?.status === 'ok' ? resolved.result.asset.symbol : undefined,
+                        name: resolved.result?.status === 'ok' ? resolved.result.asset.name : undefined,
                         address: typed,
-                        iconSrc: resolved.result && resolved.result.status === 'ok' ? resolved.result.asset.logoURL : undefined,
-                        decimals: resolved.result && resolved.result.status === 'ok' ? resolved.result.asset.decimals : undefined,
+                        iconSrc: resolved.result?.status === 'ok' ? resolved.result.asset.logoURL : undefined,
+                        decimals: resolved.result?.status === 'ok' ? resolved.result.asset.decimals : undefined,
                       }),
                   }
                 : {
@@ -2248,10 +2215,9 @@ function MeritWalletInner({
               })
             : null;
 
-      const gatedTabBody = React.createElement(
-        PanelGate,
-        { panel: TAB_PANEL_IDS[activeTab], children: tabBody },
-      );
+      // PanelGate's props type requires `children` as a prop, so createElement's children argument does not type-check here
+      // eslint-disable-next-line react/no-children-prop
+      const gatedTabBody = React.createElement(PanelGate, { panel: TAB_PANEL_IDS[activeTab], children: tabBody });
 
   const accountDetailView = accountDetailAddress
     ? React.createElement(AccountDetailPanel, {
@@ -2261,7 +2227,7 @@ function MeritWalletInner({
         // still-fresh previous account's details (or stale undefined
         // fields) under the new address for one render, between the click
         // and the caller's own fetch resolving.
-        ...(accountDetail && accountDetail.address === accountDetailAddress
+        ...(accountDetail?.address === accountDetailAddress
           ? {
               avatarSrc: accountDetail.avatarSrc,
               name: accountDetail.name,
@@ -2311,7 +2277,7 @@ function MeritWalletInner({
         address: tokenDetailAddress,
         // Same "only trust it once it answers the current address" gate
         // as accountDetailOverlay above.
-        ...(tokenDetail && tokenDetail.address === tokenDetailAddress
+        ...(tokenDetail?.address === tokenDetailAddress
           ? {
               logoSrc: tokenDetail.logoSrc,
               name: tokenDetail.name,

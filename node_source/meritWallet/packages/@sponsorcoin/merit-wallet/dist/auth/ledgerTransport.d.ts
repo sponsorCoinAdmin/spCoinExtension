@@ -53,10 +53,10 @@ export interface LedgerTransportOptions {
 export declare function translateLedgerError(error: unknown): HardwareError;
 /** The Ledger transport: the common interface plus restore() (reopen a device granted earlier, no prompt). */
 export type LedgerTransport = HardwareTransport & {
-    restore(): Promise<Array<{
+    restore(): Promise<{
         address: string;
         name?: string;
         path?: string;
-    }>>;
+    }[]>;
 };
 export declare function createLedgerTransport(options: LedgerTransportOptions): LedgerTransport;

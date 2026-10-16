@@ -25,8 +25,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
-import { RewardRow, REWARD_ROW_BG_A, REWARD_ROW_BG_B } from '@sponsorcoin/spcoin-panels';
+import { PanelGate, RewardRow, REWARD_ROW_BG_A, REWARD_ROW_BG_B } from '@sponsorcoin/spcoin-panels';
 export default function RewardsPendingByAccountTypePanel({ sponsorAmountText = '0', 
 // 2026-09-15, on direct request ("there should bo no red N/A. 0 is
 // file for the placement") — this is an inert, disconnected placeholder

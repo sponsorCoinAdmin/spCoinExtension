@@ -1,6 +1,6 @@
 const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 const stateOf = (status, canLock) => {
-    if (!status || !status.available)
+    if (!status?.available)
         return 'unreachable';
     if (!status.unlocked && canLock)
         return 'locked';

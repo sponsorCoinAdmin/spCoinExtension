@@ -48,7 +48,7 @@ export async function quoteSwap(request: SwapPriceRequest, deps: SwapPriceDeps):
   let zeroXError: unknown;
   if (useZeroX) {
     try {
-      return { source: '0x', buyAmount: await (deps.zeroXPrice as NonNullable<SwapPriceDeps['zeroXPrice']>)(request) };
+      return { source: '0x', buyAmount: await (deps.zeroXPrice!)(request) };
     } catch (error) {
       zeroXError = error;
     }

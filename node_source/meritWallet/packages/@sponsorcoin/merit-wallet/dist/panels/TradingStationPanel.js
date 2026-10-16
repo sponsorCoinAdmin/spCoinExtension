@@ -49,10 +49,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { walletColors } from '@sponsorcoin/spcoin-common/styles';
 import { ExchangeTradingPair } from '@sponsorcoin/spcoin-panels';
-import { TradingStationLayout } from '@sponsorcoin/spcoin-panels';
-import { PACKAGE_BUILD } from '@sponsorcoin/spcoin-panels';
-import { TabBodyMarker } from '@sponsorcoin/spcoin-panels';
-import { ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
+import { TradingStationLayout, PACKAGE_BUILD, TabBodyMarker, ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
 export default function TradingStationPanel({ onSubmit, submitLabel = 'Enter an Amount', affiliateFeeContent, ...exchangeTradingPairProps }) {
     // 2026-10-09: no active account -> the placeholder trade button is a Connect button (ConnectContext in spcoin-panels).
     const { connectMode } = useConnectMode();

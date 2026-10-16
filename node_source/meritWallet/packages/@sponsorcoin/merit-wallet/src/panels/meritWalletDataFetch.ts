@@ -221,17 +221,17 @@ export async function buildAllAccountRows(
   try {
     // through the feeds' own fetch so a host with no hosted app makes no request (it fails at once and the recipient list is used instead)
     const json = await fetchJson<{
-      items?: Array<{ address?: string; data?: { name?: string; symbol?: string } }>;
+      items?: { address?: string; data?: { name?: string; symbol?: string } }[];
     }>('/api/spCoin/accounts?allData=true&page=1&pageSize=200', { baseUrl }, { cache: 'no-store' });
     const rows = (json.items ?? []).filter((item) => typeof item.address === 'string');
     return await withAssetIcons(
       rows,
       baseUrl,
       forceRefresh,
-      (row) => getAccountAvatarURL(row.address as string),
+      (row) => getAccountAvatarURL(row.address!),
       caches.getCachedAccountIconDataUrl,
       (row, iconSrc) => ({
-        id: row.address as string,
+        id: row.address!,
         symbol: row.data?.symbol,
         name: row.data?.name,
         address: row.address,
@@ -258,7 +258,7 @@ export async function buildTokenRows(
   // 2026-10-13: no network chosen yet (chain id 0, for example while the active account is switching) is not a request to make: the tokens API answers 400 for it and the failure surfaced as an error screen.
   if (!(chainId > 0)) return undefined;
   try {
-    let items: Array<{ address: string; symbol?: string; name?: string; decimals?: number }>;
+    let items: { address: string; symbol?: string; name?: string; decimals?: number }[];
     try {
       ({ items } = await fetchTokenList(chainId, { pageSize: TOKEN_LIST_PAGE_SIZE }, { baseUrl }));
     } catch (hostedError) {
@@ -268,11 +268,11 @@ export async function buildTokenRows(
       // Same rows, same order as the hosted list: the hosted tokens API drops a token that has no details record and sorts the rest by address; the web picker then lists the native token first,
       // then the spCoins, then the rest in that order.
       const rank = (t: { address: string }) => (t.address.toLowerCase() === NATIVE_TOKEN_SENTINEL ? 0 : isSpCoin({ address: t.address, chainId } as never) ? 1 : 2);
-      const tokens = ((feed as { tokens?: Array<{ address?: string; symbol?: string; name?: string; decimals?: number; __invalid?: boolean }> }).tokens ?? [])
+      const tokens = ((feed as { tokens?: { address?: string; symbol?: string; name?: string; decimals?: number; __invalid?: boolean }[] }).tokens ?? [])
         .filter((t) => typeof t.address === 'string' && !t.__invalid && Boolean(t.symbol) && t.symbol !== 'N/A')
         .sort((a, b) => rank(a as { address: string }) - rank(b as { address: string }) || String(a.address).toLowerCase().localeCompare(String(b.address).toLowerCase()));
       if (tokens.length === 0) throw hostedError;
-      items = tokens.map((t) => ({ address: t.address as string, symbol: t.symbol, name: t.name, decimals: t.decimals }));
+      items = tokens.map((t) => ({ address: t.address!, symbol: t.symbol, name: t.name, decimals: t.decimals }));
     }
     return await withAssetIcons(
       items,

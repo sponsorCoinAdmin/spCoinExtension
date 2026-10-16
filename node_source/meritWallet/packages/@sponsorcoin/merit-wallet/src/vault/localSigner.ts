@@ -10,9 +10,9 @@
 // Sending uses viem: it fills the nonce, gas and fees from the chain through `rpcUrlFor` (the host supplies the endpoint from the network registry,
 // so this module stays free of host data) and broadcasts the signed transaction.
 import { createWalletClient, hexToBytes, http, type Hex, type Transport } from 'viem';
-import { ApprovalController } from './approvals';
+import type { ApprovalController } from './approvals';
 import { VaultLockedError, type VaultSession } from './vaultSession';
-import { WalletAccountError, WalletAccounts, type WalletVaultContents } from './walletAccounts';
+import { WalletAccountError, type WalletAccounts, type WalletVaultContents } from './walletAccounts';
 
 export const HARDHAT_CHAIN_ID = 31337;
 

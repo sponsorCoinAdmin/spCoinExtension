@@ -4,8 +4,7 @@
 // It was copied three ways before: the web app's RadioOverlayPanelHost.tsx (the reference, with three adjustments), and MeritWallet.tsx's own
 // copy (which lacked the STAKED_SP_COIN_PANEL_MODES fallback, so the extension could drop that group to "nothing visible"). The text below
 // is the web app's, unchanged.
-import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { RADIO_PANEL_GROUPS } from '@sponsorcoin/spcoin-common/panels';
+import { SP_COIN_DISPLAY, RADIO_PANEL_GROUPS } from '@sponsorcoin/spcoin-common/panels';
 
 // 2026-09-07, on request — "in the WALLET_RADIO_PANELS at least 1 should be
 // selected, if none is selected, open TRADING_STATION". RADIO_PANEL_GROUPS

@@ -60,7 +60,7 @@ function DetailRow({ label, value, zebra }: { label: string; value: React.ReactN
 }
 
 export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }: NetworkDetailPanelProps) {
-  const rows: Array<{ label: string; value: React.ReactNode }> = [
+  const rows: { label: string; value: React.ReactNode }[] = [
     { label: 'Network Id', value: id },
     { label: 'Name', value: name || '—' },
     { label: 'Symbol', value: symbol || '—' },

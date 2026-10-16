@@ -7,7 +7,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState } from 'react';
-import { usePlatform } from './platform/platform';
+import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from './PasswordPromptDialog';
 import { useActiveAccountProfile } from './swap/activeAccountProfile';
@@ -29,8 +29,7 @@ function RevealRow({ title, hint, dialogTitle, dialogMessage, disabled, reveal, 
     const [asking, setAsking] = useState(false);
     const [secret, setSecret] = useState('');
     const [visible, setVisible] = useState(false);
-    const platform = usePlatform();
-    const [copied, setCopied] = useState(false);
+    const { copied, copy: copyToClipboard } = useCopyFeedback();
     const clear = () => {
         setSecret('');
         setVisible(false);
@@ -40,10 +39,7 @@ function RevealRow({ title, hint, dialogTitle, dialogMessage, disabled, reveal, 
     const copy = () => {
         if (!secret)
             return;
-        void platform.copyText(secret).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-        });
+        copyToClipboard(secret);
     };
     return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 6 }, children: [_jsx("span", { style: labelStyle, children: title }), hint && _jsx("span", { style: { fontSize: 11, color: '#94a3b8' }, children: hint }), secret ? (_jsxs(_Fragment, { children: [_jsx("div", { style: boxStyle, children: visible ? secret : '•'.repeat(Math.min(secret.length, 48)) }), _jsxs("div", { style: { display: 'flex', gap: 6 }, children: [_jsx(SmallYellowButton, { onClick: () => setVisible((v) => !v), children: visible ? 'Hide' : 'Show' }), _jsx(SmallYellowButton, { onClick: copy, children: copied ? 'Copied' : 'Copy' }), _jsx(SmallYellowButton, { onClick: clear, children: "Clear" })] })] })) : (_jsx("div", { children: _jsx(SmallYellowButton, { disabled: disabled, onClick: () => setAsking(true), children: "Reveal" }) })), asking && (_jsx(PasswordPromptDialog, { title: dialogTitle, message: dialogMessage, confirmLabel: "Reveal", onClose: () => setAsking(false), onConfirm: async (password) => {
                     const value = await reveal(password);

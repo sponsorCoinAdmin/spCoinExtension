@@ -21,7 +21,7 @@ export async function quoteSwap(request, deps) {
     let zeroXError;
     if (useZeroX) {
         try {
-            return { source: '0x', buyAmount: await deps.zeroXPrice(request) };
+            return { source: '0x', buyAmount: await (deps.zeroXPrice)(request) };
         }
         catch (error) {
             zeroXError = error;

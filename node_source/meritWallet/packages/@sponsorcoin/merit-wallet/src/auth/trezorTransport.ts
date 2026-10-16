@@ -25,7 +25,7 @@ export type TrezorResponse<T> = { success: true; payload: T } | { success: false
 /** The slice of @trezor/connect-web this file uses (its default export). */
 export interface TrezorConnectApi {
   init(settings: { manifest: { appName: string; appUrl: string; email: string }; lazyLoad?: boolean; popup?: boolean }): Promise<void>;
-  ethereumGetAddress(params: { bundle: Array<{ path: string; showOnTrezor?: boolean }> }): Promise<TrezorResponse<Array<{ address: string; serializedPath?: string }>>>;
+  ethereumGetAddress(params: { bundle: { path: string; showOnTrezor?: boolean }[] }): Promise<TrezorResponse<{ address: string; serializedPath?: string }[]>>;
   ethereumSignMessage(params: { path: string; message: string; hex?: boolean }): Promise<TrezorResponse<{ address: string; signature: string }>>;
   ethereumSignTransaction(params: { path: string; transaction: Record<string, unknown> }): Promise<TrezorResponse<{ v: string; r: string; s: string }>>;
   dispose?(): void;

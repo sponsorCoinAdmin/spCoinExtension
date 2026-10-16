@@ -60,7 +60,7 @@ export function createWorkerVault(transport, options = {}) {
         catch (error) {
             throw new VaultError('unsupported', error instanceof Error ? error.message : 'The wallet could not be reached.');
         }
-        if (!reply || !reply.ok)
+        if (!reply?.ok)
             throw workerError(reply ?? { ok: false });
         const before = unlocked;
         absorb(reply);

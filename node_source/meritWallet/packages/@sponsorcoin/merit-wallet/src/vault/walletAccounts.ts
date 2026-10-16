@@ -11,7 +11,8 @@
 // Dev accounts: MetaMask has no auto-seeding; the Hardhat accounts are IMPORTED (the well-known mnemonic or its keys). Anything made from them
 // is flagged devOrigin, which the signer step uses to refuse them on any chain except 31337 (their keys are public).
 import { english, generateMnemonic, mnemonicToAccount, privateKeyToAccount, type HDAccount, type PrivateKeyAccount } from 'viem/accounts';
-import { VaultLockedError, VaultSession } from './vaultSession';
+import type { VaultSession } from './vaultSession';
+import { VaultLockedError } from './vaultSession';
 
 export type WalletAccountSource = 'generated' | 'imported';
 
@@ -67,7 +68,7 @@ export function emptyWalletContents(): WalletVaultContents {
 const lower = (a: string) => a.toLowerCase();
 
 /** Every Secret Recovery Phrase of the wallet, the first one first; `wallet` is its position (0 for the first). */
-function keyrings(c: WalletVaultContents): Array<{ hd: HdKeyring; wallet: number }> {
+function keyrings(c: WalletVaultContents): { hd: HdKeyring; wallet: number }[] {
   return [...(c.hd ? [{ hd: c.hd, wallet: 0 }] : []), ...(c.hdExtra ?? []).map((hd, i) => ({ hd, wallet: i + 1 }))];
 }
 
@@ -199,10 +200,10 @@ export class WalletAccounts {
     const address = deriveAddress(c.hd.mnemonic, index);
     await this.session.update((cur) => ({
       ...cur,
-      hd: { ...(cur.hd as HdKeyring), count: index + 1 },
+      hd: { ...(cur.hd!), count: index + 1 },
       names: { ...cur.names, [lower(address)]: name?.trim() || `Account ${index + 1}` },
     }));
-    return this.list().find((a) => lower(a.address) === lower(address)) as WalletAccountRecord;
+    return this.list().find((a) => lower(a.address) === lower(address))!;
   }
 
   /** Import an account by private key. A key whose address is already in the wallet is refused. */
@@ -217,7 +218,7 @@ export class WalletAccounts {
       imported: [...cur.imported, { privateKey: normalized, address, ...(isHardhatDevAddress(address) ? { devOrigin: true } : {}) }],
       names: { ...cur.names, [lower(address)]: name?.trim() || 'Imported account' },
     }));
-    return this.list().find((a) => lower(a.address) === lower(address)) as WalletAccountRecord;
+    return this.list().find((a) => lower(a.address) === lower(address))!;
   }
 
   /**
@@ -238,7 +239,7 @@ export class WalletAccounts {
       ...(cur.hd ? { hdExtra: [...(cur.hdExtra ?? []), ring] } : { hd: ring }),
       names: { ...cur.names, [lower(address)]: name?.trim() || (wallet === 0 ? 'Account 1' : `Wallet ${wallet + 1} Account 1`) },
     }));
-    return this.list().find((a) => lower(a.address) === lower(address)) as WalletAccountRecord;
+    return this.list().find((a) => lower(a.address) === lower(address))!;
   }
 
   /** Remove an imported account. Derived accounts cannot be removed (they come back from the Secret Recovery Phrase), as in MetaMask. */

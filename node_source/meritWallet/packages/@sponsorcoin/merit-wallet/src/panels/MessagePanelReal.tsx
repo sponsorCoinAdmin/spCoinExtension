@@ -22,9 +22,9 @@ import type { ErrorMessage, MessageAccountEntry, MessageTokenEntry } from '@spon
 import { MESSAGE_ACCOUNTS_MARKER } from '@sponsorcoin/spcoin-common/context';
 import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen } from '@sponsorcoin/spcoin-exchange-engine';
 import { errorPanelDisplayStore } from './errorPanelDisplayStore';
-import { MESSAGE_STATUS_STYLES, classifyMessageStatus } from '@sponsorcoin/spcoin-panels';
+import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import MessageDetailsSection from './MessageDetailsSection';
-import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
+
 
 export interface MessagePanelRealProps {
   panelId?: SP_COIN_DISPLAY;

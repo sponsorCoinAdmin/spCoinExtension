@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuthenticationType } from './auth/authenticationType';
+import type { AuthenticationType } from './auth/authenticationType';
 export interface TestAccountsApi {
     /** How many of the standard test accounts are in the store. */
     status(): Promise<{

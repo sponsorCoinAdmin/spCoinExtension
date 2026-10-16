@@ -7,12 +7,12 @@ export interface WorkerReply {
     initialized?: boolean;
     unlocked?: boolean;
     mnemonic?: string;
-    accounts?: Array<{
+    accounts?: {
         address: string;
         name?: string;
         source?: string;
         devOrigin?: boolean;
-    }>;
+    }[];
     account?: {
         address: string;
         name?: string;

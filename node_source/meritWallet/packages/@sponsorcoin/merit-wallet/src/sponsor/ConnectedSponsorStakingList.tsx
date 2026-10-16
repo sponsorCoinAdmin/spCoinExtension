@@ -55,7 +55,7 @@ export interface SponsorStakingHost {
 const snapshots = new Map<string, { recipients: spCoinAccount[]; stakeInfoByAddress: Record<string, RecipientStakeInfo[] | undefined> }>();
 
 function account(profile: ReceiptProfile): spCoinAccount {
-  return toMessageAccount(profile) as spCoinAccount;
+  return toMessageAccount(profile)!;
 }
 
 const noopRegisterRefresh = () => undefined;
@@ -93,7 +93,7 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
       const profileOf = (address: string) => {
         const key = address.toLowerCase();
         if (!profiles.has(key)) profiles.set(key, host.loadProfile(address).catch(() => ({ address })));
-        return profiles.get(key) as Promise<ReceiptProfile>;
+        return profiles.get(key)!;
       };
       const rows = await Promise.all(tree.map(async (node) => account(await profileOf(node.recipientKey))));
       if (mine !== generation.current) return;

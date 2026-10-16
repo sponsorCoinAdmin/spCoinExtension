@@ -7,7 +7,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { usePlatform } from './platform/platform';
+import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from './PasswordPromptDialog';
 import { useActiveAccountProfile } from './swap/activeAccountProfile';
@@ -52,8 +52,7 @@ function RevealRow({
   const [asking, setAsking] = useState(false);
   const [secret, setSecret] = useState('');
   const [visible, setVisible] = useState(false);
-  const platform = usePlatform();
-  const [copied, setCopied] = useState(false);
+  const { copied, copy: copyToClipboard } = useCopyFeedback();
 
   const clear = () => {
     setSecret('');
@@ -65,10 +64,7 @@ function RevealRow({
 
   const copy = () => {
     if (!secret) return;
-    void platform.copyText(secret).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
+    copyToClipboard(secret);
   };
 
   return (

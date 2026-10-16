@@ -1,7 +1,7 @@
-import { ApprovalController } from './approvals';
-import { LocalSigner } from './localSigner';
+import { type ApprovalController } from './approvals';
+import { type LocalSigner } from './localSigner';
 import type { VaultSession } from './vaultSession';
-import { WalletAccounts, type WalletVaultContents } from './walletAccounts';
+import { type WalletAccounts, type WalletVaultContents } from './walletAccounts';
 /** EIP-1193 error codes. */
 export declare const PROVIDER_ERROR: {
     readonly userRejected: 4001;

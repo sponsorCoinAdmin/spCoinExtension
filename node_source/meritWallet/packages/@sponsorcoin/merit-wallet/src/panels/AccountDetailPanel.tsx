@@ -87,7 +87,7 @@ export default function AccountDetailPanel({
   description,
   loading = false,
 }: AccountDetailPanelProps) {
-  const rows: Array<{ label: string; value: React.ReactNode }> = [
+  const rows: { label: string; value: React.ReactNode }[] = [
     { label: 'Address', value: address },
     { label: 'Name', value: loading ? 'Loading…' : name || '—' },
     { label: 'Symbol', value: loading ? 'Loading…' : symbol || '—' },

@@ -14,19 +14,19 @@ export interface HardwareTransport {
     /** True while a device is open and its Ethereum app is ready. */
     isConnected(): boolean;
     /** Needs a user gesture: open the device (the browser's permission prompt) and return the accounts it exposes. */
-    connect(): Promise<Array<{
+    connect(): Promise<{
         address: string;
         name?: string;
         path?: string;
-    }>>;
+    }[]>;
     /** Close the device. Never touches keys. */
     disconnect(): Promise<void>;
     /** The accounts of the open device. */
-    accounts(): Array<{
+    accounts(): {
         address: string;
         name?: string;
         path?: string;
-    }>;
+    }[];
     /** Sign inside the device after its approval; throws HardwareError('rejected') when the person declines on the device. */
     signMessage(address: string, message: string): Promise<string>;
     /** Sign a transaction inside the device; returns the RAW signed transaction (the app broadcasts it). */

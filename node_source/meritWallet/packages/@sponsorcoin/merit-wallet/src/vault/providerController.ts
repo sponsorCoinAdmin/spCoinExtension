@@ -8,11 +8,11 @@
 // Pure TypeScript over the vault pieces (session, accounts, signer, approvals) and three host functions (permissions storage, the active chain,
 // an RPC fetcher), so the extension worker supplies chrome.storage and fetch, and the tests supply memory. No key leaves this module.
 import { hexToBigInt, type Hex } from 'viem';
-import { ApprovalController, ApprovalRejectedError } from './approvals';
+import { ApprovalRejectedError, type ApprovalController } from './approvals';
 import { sealForTransfer, type TransferSeal } from './accountTransfer';
-import { DevAccountOnRealChainError, LocalSigner } from './localSigner';
+import { DevAccountOnRealChainError, type LocalSigner } from './localSigner';
 import type { VaultSession } from './vaultSession';
-import { WalletAccountError, WalletAccounts, type WalletVaultContents } from './walletAccounts';
+import { WalletAccountError, type WalletAccounts, type WalletVaultContents } from './walletAccounts';
 
 /** EIP-1193 error codes. */
 export const PROVIDER_ERROR = {

@@ -36,8 +36,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { walletColors } from '@sponsorcoin/spcoin-common/styles';
 import { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import { AssetSelectDropDown, ASSET_SELECT_DISPLAY, PanelGate } from '@sponsorcoin/spcoin-panels';
 import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
 const DEFAULT_ROLES = { isSponsor: false, isRecipient: false, isAgent: false };
 const ROLE_ACTIVE_BG = walletColors.greenDark; // green-600, matches the app's real active-role color

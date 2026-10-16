@@ -27,11 +27,11 @@ export interface HardwareTransport {
   /** True while a device is open and its Ethereum app is ready. */
   isConnected(): boolean;
   /** Needs a user gesture: open the device (the browser's permission prompt) and return the accounts it exposes. */
-  connect(): Promise<Array<{ address: string; name?: string; path?: string }>>;
+  connect(): Promise<{ address: string; name?: string; path?: string }[]>;
   /** Close the device. Never touches keys. */
   disconnect(): Promise<void>;
   /** The accounts of the open device. */
-  accounts(): Array<{ address: string; name?: string; path?: string }>;
+  accounts(): { address: string; name?: string; path?: string }[];
   /** Sign inside the device after its approval; throws HardwareError('rejected') when the person declines on the device. */
   signMessage(address: string, message: string): Promise<string>;
   /** Sign a transaction inside the device; returns the RAW signed transaction (the app broadcasts it). */
@@ -57,7 +57,7 @@ export function createHardwareAuthenticator(transport: HardwareTransport, option
     }
     throw new AuthenticatorError('unreachable', error instanceof Error ? error.message : 'The device did not answer.', id);
   };
-  const toAccounts = (rows: Array<{ address: string; name?: string }>): AuthenticatorAccount[] => rows.map((a) => ({ address: a.address, name: a.name, source: id }));
+  const toAccounts = (rows: { address: string; name?: string }[]): AuthenticatorAccount[] => rows.map((a) => ({ address: a.address, name: a.name, source: id }));
   const open = (address: string) => {
     if (!transport.isConnected()) throw new AuthenticatorError('unreachable', 'The device is not connected. Connect it first.', id);
     const key = String(address ?? '').toLowerCase();

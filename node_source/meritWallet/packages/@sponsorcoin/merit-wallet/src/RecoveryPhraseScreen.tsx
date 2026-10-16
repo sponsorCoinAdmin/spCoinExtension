@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { usePlatform } from './platform/platform';
+import { useCopyFeedback } from './platform/useCopyFeedback';
 import { NEW_PHRASE_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';
 
 const BLUE = '#5981F3';
@@ -28,8 +28,7 @@ export default function RecoveryPhraseScreen({ recoveryPhrase, onContinue, autoH
   const [phrase, setPhrase] = useState(recoveryPhrase);
   const [phraseHidden, setPhraseHidden] = useState(false);
   const [saved, setSaved] = useState(false);
-  const platform = usePlatform();
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyFeedback();
   const [infoOpen, setInfoOpen] = useState(false);
   useSecretClearing(!!phrase, () => { if (autoHide) { setPhrase(''); setPhraseHidden(true); } }, NEW_PHRASE_SHOWN_MAX_MS);
   const infoText = autoHide
@@ -59,10 +58,7 @@ export default function RecoveryPhraseScreen({ recoveryPhrase, onContinue, autoH
           title={copied ? 'Copied' : 'Copy the phrase (words separated by commas)'}
           aria-label="Copy Secret Recovery Phrase"
           onClick={() => {
-            void platform.copyText(words.join(',')).then(() => {
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            });
+            copy(words.join(','));
           }}
           style={{ background: 'none', border: 0, padding: 2, cursor: 'pointer', color: copied ? '#4ade80' : '#94a3b8', display: 'flex' }}
         >

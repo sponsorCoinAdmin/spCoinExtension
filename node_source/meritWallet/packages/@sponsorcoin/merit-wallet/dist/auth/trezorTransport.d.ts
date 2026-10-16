@@ -22,14 +22,14 @@ export interface TrezorConnectApi {
         popup?: boolean;
     }): Promise<void>;
     ethereumGetAddress(params: {
-        bundle: Array<{
+        bundle: {
             path: string;
             showOnTrezor?: boolean;
-        }>;
-    }): Promise<TrezorResponse<Array<{
+        }[];
+    }): Promise<TrezorResponse<{
         address: string;
         serializedPath?: string;
-    }>>>;
+    }[]>>;
     ethereumSignMessage(params: {
         path: string;
         message: string;

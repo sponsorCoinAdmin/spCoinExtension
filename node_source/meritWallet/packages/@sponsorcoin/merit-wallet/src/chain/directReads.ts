@@ -42,7 +42,7 @@ export function namedOutputsShape(abi: Abi, functionName: string, value: unknown
   const fn = (abi as readonly { type?: string; name?: string; outputs?: readonly { name?: string }[] }[]).find((e) => e.type === 'function' && e.name === functionName);
   const outputs = fn?.outputs ?? [];
   if (outputs.length > 1 && outputs.every((o) => !!o.name) && Array.isArray(value)) {
-    return Object.fromEntries(outputs.map((o, i) => [o.name as string, (value as unknown[])[i]]));
+    return Object.fromEntries(outputs.map((o, i) => [o.name!, (value as unknown[])[i]]));
   }
   return value;
 }

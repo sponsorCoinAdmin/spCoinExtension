@@ -10,7 +10,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { usePlatform } from './platform/platform';
+import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import { useExchangeContext, usePanelVisible, defaultMissingImage } from '@sponsorcoin/spcoin-exchange-engine';
@@ -22,12 +22,12 @@ import { useWalletData } from './walletData';
 const SP_TEXT_SM: React.CSSProperties = { fontSize: 'var(--sp-text-sm, 1rem)' };
 
 export function CopyBtn({ text }: { text: string }) {
-  const platform = usePlatform();
+  const { copy } = useCopyFeedback();
   return (
     <button
       type="button"
       title="Copy to clipboard"
-      onClick={() => void platform.copyText(text)}
+      onClick={() => copy(text)}
       className="shrink-0 text-slate-400 hover:text-white transition-colors"
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

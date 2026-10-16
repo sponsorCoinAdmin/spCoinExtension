@@ -17,7 +17,7 @@ export interface WorkerReply {
   initialized?: boolean;
   unlocked?: boolean;
   mnemonic?: string;
-  accounts?: Array<{ address: string; name?: string; source?: string; devOrigin?: boolean }>;
+  accounts?: { address: string; name?: string; source?: string; devOrigin?: boolean }[];
   account?: { address: string; name?: string; source?: string; devOrigin?: boolean };
   active?: string;
   privateKey?: string;
@@ -90,7 +90,7 @@ export function createWorkerVault(transport: WorkerVaultTransport, options: { la
     } catch (error) {
       throw new VaultError('unsupported', error instanceof Error ? error.message : 'The wallet could not be reached.');
     }
-    if (!reply || !reply.ok) throw workerError(reply ?? { ok: false });
+    if (!reply?.ok) throw workerError(reply ?? { ok: false });
     const before = unlocked;
     absorb(reply);
     if (before !== unlocked) notify();

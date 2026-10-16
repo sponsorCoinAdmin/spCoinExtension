@@ -8,7 +8,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
-import { AuthenticationType, authenticationTypeLabel } from './auth/authenticationType';
+import type { AuthenticationType} from './auth/authenticationType';
+import { authenticationTypeLabel } from './auth/authenticationType';
 import PasswordPromptDialog from './PasswordPromptDialog';
 
 export interface TestAccountsApi {

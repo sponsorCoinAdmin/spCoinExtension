@@ -33,7 +33,7 @@ export interface SigningChoices {
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
 const stateOf = (status: AuthenticatorStatus | undefined, canLock: boolean): HolderState => {
-  if (!status || !status.available) return 'unreachable';
+  if (!status?.available) return 'unreachable';
   if (!status.unlocked && canLock) return 'locked';
   return 'ready';
 };

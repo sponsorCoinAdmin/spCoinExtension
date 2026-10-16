@@ -34,7 +34,7 @@ export interface AddAccountHost {
    * 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
    * a host that omits them keeps the single connectApprover('connectHardware') row.
    */
-  hardwareDevices?: Array<{ id: string; title: string; subtitle?: string; unavailable?: string }>;
+  hardwareDevices?: { id: string; title: string; subtitle?: string; unavailable?: string }[];
   connectHardwareDevice?(id: string): Promise<void>;
   /** The wallets this host can really add keys to (it routes createAccount / importAccount by the target id). Omitted: every reachable wallet that keeps keys. */
   targets?: readonly AuthenticatorId[];

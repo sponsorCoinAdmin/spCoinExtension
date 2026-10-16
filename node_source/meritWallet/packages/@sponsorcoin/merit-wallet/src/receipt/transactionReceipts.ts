@@ -38,7 +38,7 @@ export function toMessageAccount(profile: ReceiptProfile | undefined): spCoinAcc
   };
 }
 
-function accountRows(rows: Array<{ role: MessageAccountEntry['role']; profile?: ReceiptProfile; detail?: string }>): MessageAccountEntry[] {
+function accountRows(rows: { role: MessageAccountEntry['role']; profile?: ReceiptProfile; detail?: string }[]): MessageAccountEntry[] {
   const out: MessageAccountEntry[] = [];
   for (const row of rows) {
     const account = toMessageAccount(row.profile);
@@ -47,7 +47,7 @@ function accountRows(rows: Array<{ role: MessageAccountEntry['role']; profile?: 
   return out;
 }
 
-function confirmed(title: string, hash: string, summary: Array<[string, string]>, receipt: HostTransactionResult & { ok: true }) {
+function confirmed(title: string, hash: string, summary: [string, string][], receipt: HostTransactionResult & { ok: true }) {
   const mined = receipt.receipt;
   return [
     title,
@@ -82,7 +82,7 @@ export function buildSendReceipt(input: {
   if (!input.result.ok) {
     return { errCode: 0, msg: [input.result.message, '', MESSAGE_ACCOUNTS_MARKER].join('\n'), source: 'SendTab:send', status: STATUS.MESSAGE_ERROR, accounts: accounts.slice(0, 1) };
   }
-  const summary: Array<[string, string]> = input.tokenAddress ? [['Contract', input.tokenAddress], ['Method', 'transfer']] : [];
+  const summary: [string, string][] = input.tokenAddress ? [['Contract', input.tokenAddress], ['Method', 'transfer']] : [];
   return {
     errCode: 0,
     msg: confirmed('Send confirmed.', input.result.hash, summary, input.result),
@@ -113,8 +113,8 @@ export function buildStakeReceipt(input: {
   if (!input.result.ok) {
     return { errCode: 0, msg: input.result.message, source: 'SponsorTab:stake', status: STATUS.MESSAGE_ERROR, accounts: [] };
   }
-  const summary: Array<[string, string]> = [
-    ...(input.contractAddress ? ([['Contract', input.contractAddress]] as Array<[string, string]>) : []),
+  const summary: [string, string][] = [
+    ...(input.contractAddress ? ([['Contract', input.contractAddress]] as [string, string][]) : []),
     ['Method', input.result.methodName ?? 'addSponsorship'],
   ];
   return {
@@ -159,7 +159,7 @@ export function buildUnstakeReceipt(input: {
     };
   }
   const totalGasUsed = input.legs.reduce((sum, leg) => sum + leg.gasUsed, 0n);
-  const detailRows: Array<[string, string]> = [['Status', 'Success'], ['Legs', String(input.legCount)], ['Gas Used', String(totalGasUsed)]];
+  const detailRows: [string, string][] = [['Status', 'Success'], ['Legs', String(input.legCount)], ['Gas Used', String(totalGasUsed)]];
   const accounts = accountRows([
     { role: 'SPONSOR', profile: input.sponsor },
     { role: 'RECIPIENT', profile: input.recipient, detail: input.rateKey ? `Rate Key: ${input.rateKey}%` : undefined },

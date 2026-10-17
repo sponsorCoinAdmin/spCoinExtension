@@ -1,5 +1,25 @@
 import { connectAccount, disconnectAccount, ConnectChoiceRequired } from '../auth/connect';
 const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+/** Merge host-known accounts with accounts listed by wallet backends, joining duplicate addresses case-insensitively. */
+export function mergeWalletAccountEntries(...sources) {
+    const byAddress = new Map();
+    for (const source of sources) {
+        for (const entry of source) {
+            const key = entry.address.toLowerCase();
+            const existing = byAddress.get(key);
+            if (existing) {
+                for (const backend of entry.backends)
+                    if (!existing.backends.includes(backend))
+                        existing.backends.push(backend);
+                existing.name || (existing.name = entry.name);
+            }
+            else {
+                byAddress.set(key, { ...entry, backends: [...entry.backends] });
+            }
+        }
+    }
+    return Array.from(byAddress.values());
+}
 /** The groups for the shared account list. Pure: the statuses and the entries are read by the caller. */
 export function buildApproverGroups(input) {
     const { backends, entries, statuses, activeAddress, activeApproverId, host } = input;

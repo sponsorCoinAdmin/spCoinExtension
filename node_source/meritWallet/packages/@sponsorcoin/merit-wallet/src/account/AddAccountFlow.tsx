@@ -7,7 +7,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
-import { AddWalletMenu, HardwareDeviceMenu, ImportAccountForm, ImportWalletForm } from '@sponsorcoin/spcoin-panels';
+import { AddWalletMenu, HardwareDeviceMenu, ImportAccountForm, ImportWalletForm, useAddWalletFlow } from '@sponsorcoin/spcoin-panels';
+import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
 import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
 import type { AuthenticatorId } from '../auth/authenticator';
 import type { Wallet } from '../wallet/wallet';
@@ -49,15 +50,19 @@ export const DEFAULT_CONNECT_UNAVAILABLE: Record<ConnectApproverEntry, string> =
   connectHardware: 'Available in the web app',
 };
 
-type Screen = 'menu' | 'importAccount' | 'createAccount' | 'importWallet' | 'hardware';
-
-const buttonStyle: React.CSSProperties = { flex: 1, borderRadius: 8, border: 'none', padding: '9px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#243056', color: '#ffffff' };
-const primaryStyle: React.CSSProperties = { ...buttonStyle, background: '#5981F3' };
+const primaryStyle: React.CSSProperties = { borderRadius: 8, border: 'none', padding: '9px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#5981F3', color: '#ffffff' };
 
 const KEY_FORMAT = /^0x[0-9a-fA-F]{64}$/;
 
 export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: { host: AddAccountHost; onDone(): void; wallet?: Wallet; activeAddress?: string }) {
-  const [screen, setScreen] = useState<Screen>('menu');
+  const [key, setKey] = useState('');
+  const [phrase, setPhrase] = useState('');
+  const [phraseValid, setPhraseValid] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const resetForm = () => { setKey(''); setPhrase(''); setPhraseValid(false); setBusy(false); setError(''); };
+  const flow = useAddWalletFlow({ resetState: resetForm, resetOnMount: false });
+  const menuVisible = flow.addWalletVisible && !flow.isLeafVisible;
   // docs/design/accountAuthDesign.txt section 18 section 5: the wallet this screen adds to: the active wallet by default; the person may point it at another wallet that keeps keys (this visit only)
   // a host that builds its `targets` array on every render must not restart the read each time: the list is keyed by its content
   const hostTargets = host.targets?.join(',');
@@ -80,10 +85,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
     return () => { cancelled = true; };
   }, [wallet, activeAddress, hostTargets]);
   const target = targets.find((t) => t.id === (pickedTarget ?? defaultTarget));
-  const [key, setKey] = useState('');
   // Import a wallet: the phrase typed, whether it is a real BIP-39 phrase, and the first account it would give (checked here, nothing is imported yet)
-  const [phrase, setPhrase] = useState('');
-  const [phraseValid, setPhraseValid] = useState(false);
   useEffect(() => {
     let alive = true;
     const words = normalizeMnemonic(phrase).split(' ').filter(Boolean);
@@ -101,9 +103,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
   const phraseWords = normalizeMnemonic(phrase).split(' ').filter(Boolean).length;
   const phraseInvalid = phraseWords >= 12 && !phraseValid;
   const phrasePreview = phraseValid ? firstAddressOfMnemonic(phrase) : '';
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-
   const trimmed = key.trim();
   const formatInvalid = trimmed.length > 0 && !KEY_FORMAT.test(trimmed);
   let previewAddress = '';
@@ -115,18 +114,12 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
     }
   }
 
-  const back = () => {
-    setError('');
-    setKey('');
-    setPhrase('');
-    if (screen === 'menu') onDone();
-    else setScreen('menu');
-  };
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError('');
     try {
       await action();
+      flow.clearAddWalletFlow('AddAccountFlow:complete');
       onDone();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The account could not be added.');
@@ -137,25 +130,30 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
   const unavailable: Partial<Record<AddAccountEntry, string>> = { ...addEntryReasons(target), ...(host.unavailable ?? {}) };
   if (!host.importWallet) unavailable.importWallet ??= 'Importing a wallet is not available here.';
   if (!host.connectApprover) {
-    for (const entry of Object.keys(DEFAULT_CONNECT_UNAVAILABLE) as ConnectApproverEntry[]) unavailable[entry] ??= DEFAULT_CONNECT_UNAVAILABLE[entry];
+    for (const entry of Object.keys(DEFAULT_CONNECT_UNAVAILABLE) as ConnectApproverEntry[]) {
+      if (entry === 'connectHardware' && host.hardwareDevices?.length && host.connectHardwareDevice) continue;
+      unavailable[entry] ??= DEFAULT_CONNECT_UNAVAILABLE[entry];
+    }
   }
   // a connect entry: ask the approver, then the flow is done (the account is the active one now)
   const connect = (entry: ConnectApproverEntry) => () => {
     if (unavailable[entry] || !host.connectApprover) return;
     void run(() => host.connectApprover!(entry));
   };
-  const open = (entry: AddAccountEntry, next: Screen) => () => {
+  const open = (entry: AddAccountEntry, panel: SP) => () => {
     if (unavailable[entry]) return;
     setError('');
-    setScreen(next);
+    flow.goToLeaf(panel);
+  };
+
+  const openHardware = () => {
+    if (host.hardwareDevices?.length && host.connectHardwareDevice) open('connectHardware', SP.CONNECT_HARDWARE_WALLET)();
+    else connect('connectHardware')();
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, color: '#fff' }}>
-      <button type="button" onClick={back} style={{ ...buttonStyle, flex: 'none', alignSelf: 'flex-start', padding: '6px 12px' }}>
-        {screen === 'menu' ? 'Back' : '← Back'}
-      </button>
-      {screen === 'menu' && target && (
+      {menuVisible && target && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#cbd5e1' }}>
           <span>Adding to <strong style={{ color: '#fff' }}>{target.name}</strong></span>
           {targets.length > 1 ? (
@@ -172,19 +170,19 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
           ) : null}
         </div>
       )}
-      {screen === 'menu' && (
+      {menuVisible && (
         <AddWalletMenu
-          onImportWallet={open('importWallet', 'importWallet')}
-          onImportAccount={open('importAccount', 'importAccount')}
-          onCreateAccount={open('createAccount', 'createAccount')}
+          onImportWallet={open('importWallet', SP.IMPORT_A_WALLET)}
+          onImportAccount={open('importAccount', SP.IMPORT_AN_ACCOUNT)}
+          onCreateAccount={open('createAccount', SP.CREATE_ACCOUNT)}
           onConnectMetaMask={connect('connectMetaMask')}
           onConnectMeritExtension={host.connectApprover ? connect('connectMeritExtension') : undefined}
-          onConnectHardware={host.hardwareDevices?.length && host.connectHardwareDevice ? open('connectHardware', 'hardware') : connect('connectHardware')}
+          onConnectHardware={openHardware}
           unavailable={unavailable}
           error={error}
         />
       )}
-      {screen === 'importAccount' && (
+      {flow.importAccountVisible && (
         <ImportAccountForm
           value={key}
           onChange={setKey}
@@ -195,7 +193,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
           onImport={() => void run(() => host.importAccount(trimmed, target?.id))}
         />
       )}
-      {screen === 'importWallet' && (
+      {flow.importWalletVisible && (
         <ImportWalletForm
           value={phrase}
           onChange={setPhrase}
@@ -206,10 +204,10 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress }: 
           onImport={() => void run(() => host.importWallet!(normalizeMnemonic(phrase), target?.id))}
         />
       )}
-      {screen === 'hardware' && host.hardwareDevices && host.connectHardwareDevice && (
+      {flow.connectHardhatVisible && host.hardwareDevices && host.connectHardwareDevice && (
         <HardwareDeviceMenu devices={host.hardwareDevices} busy={busy} error={error} onChoose={(id) => void run(() => host.connectHardwareDevice!(id))} />
       )}
-      {screen === 'createAccount' && (
+      {flow.createAccountVisible && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 4px' }}>
           <p style={{ margin: 0, fontSize: 12, color: '#cbd5e1' }}>Create a new account: a new address and private key, kept under this wallet.</p>
           {error && <p style={{ margin: 0, fontSize: 12, color: '#fca5a5' }}>{error}</p>}

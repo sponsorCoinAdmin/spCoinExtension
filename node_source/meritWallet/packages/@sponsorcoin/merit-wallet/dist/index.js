@@ -81,7 +81,7 @@ export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownW
 export { connectAccount, disconnectAccount, ConnectChoiceRequired } from './auth/connect';
 export { createInjectedAuthenticator, translateProviderError } from './auth/injectedAuthenticator';
 export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritApproval, resolveMeritApproval, requestReauthentication, clearSettledMeritApproval, } from './approval/meritApproval';
-export { buildApproverGroups, createApproverController, connectNoticeText } from './wallet/approverAccounts';
+export { buildApproverGroups, mergeWalletAccountEntries, createApproverController, connectNoticeText } from './wallet/approverAccounts';
 export { useApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accountSigning';

@@ -89,7 +89,10 @@ export default function WalletOverlayHost({ slots = {}, useHostEffects = noHostE
     <>
       {/* ───────────────────────── Main overlays (radio group) ───────────────────────── */}
       {slots.sponsorPanel}
-      {slots.sendPanel}
+      {/* The Send overlay is gated HERE, by SEND_PANEL, like every other radio overlay: a host's send slot is the bare SendComponent (the web's old SendPanel wrapper that did this was deleted, and the Send form then showed on the login screen). */}
+      <PanelGate panel={SP_COIN_DISPLAY.SEND_PANEL} className="min-h-0 flex-1" lazyLoad={false}>
+        {slots.sendPanel}
+      </PanelGate>
       {slots.processFlowPanel}
       {slots.passwordPanel}
       {slots.tradingStationPanel}

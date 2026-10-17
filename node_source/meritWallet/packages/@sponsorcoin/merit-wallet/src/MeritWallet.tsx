@@ -44,6 +44,7 @@ import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import {
   usePanelTree,
   usePanelVisible,
+  panelStore,
   useEnforceRadioPanelGroups,
   useEnforcePanelAncestorVisibility,
   useEnforceRadioPanelContainers,
@@ -63,7 +64,7 @@ import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps, type W
 import { useApproverAccounts } from './wallet/approverAccountsReact';
 import { useApprovalMessagePanel } from './auth/useApprovalMessagePanel';
 import type { ApproverHost } from './wallet/approverAccounts';
-import type { AuthenticatorId } from './auth/authenticator';
+import { walletName, type AuthenticatorId } from './auth/authenticator';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
 import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildRecipientRows as selfFetchRecipientRows, buildAllAccountRows as selfFetchAllAccountRows, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, type MenuTabKey, WalletRadioPanels, TradingStationPanel, SendTabPanel, AddressPanel, AccountDetailPanel, TokenDetailPanel, NetworkDetailPanel, type MeritWalletNetworkRow } from './panels';
 // Panel visibility in this component goes through exactly one engine:
@@ -902,7 +903,6 @@ function MeritWalletInner({
   onConfigDeleteAccount,
   onConfigDeleteWallet,
 }: MeritWalletProps) {
-  const [menuOpen, setMenuOpen] = useState(initialMenuOpen ?? true);
   // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
   // activeMainOverlay (the same computed value PanelBootstrap itself
   // reads), not owned local state. useEnforceRadioPanelGroups/
@@ -916,6 +916,7 @@ function MeritWalletInner({
     activeMainOverlay,
     openPanel,
     closePanel,
+
     setPanelVisible: setRealPanelVisible,
   } = usePanelTree();
   // 2026-10-09: result cards for Send / Sponsor. The active account's profile is filled in once the account rows are resolved (further down), and read at
@@ -990,7 +991,22 @@ function MeritWalletInner({
   // already exports for exactly this. Portable — reaches the extension
   // too, same as every other fix in this file (see MeritWallet's own
   // top-of-file doc comment on why this is the one shared component).
+  // The hamburger and the tab bar share ONE state: the MENU_TAB_HEADER_BAR flag in the panel tree (no local copy). initialMenuOpen seeds the flag once; onMenuOpenChange hears every change, whoever made it (the hamburger, the panel-tree row).
   const menuTabHeaderVisible = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
+  const menuSeeded = useRef(false);
+  useEffect(() => {
+    if (menuSeeded.current) return;
+    menuSeeded.current = true;
+    if (initialMenuOpen === false) closePanel(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR, 'MeritWallet:initialMenuOpen');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seed once
+  }, []);
+  const lastMenuReported = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (lastMenuReported.current === menuTabHeaderVisible) return;
+    const first = lastMenuReported.current === null;
+    lastMenuReported.current = menuTabHeaderVisible;
+    if (!first) onMenuOpenChange?.(menuTabHeaderVisible);
+  }, [menuTabHeaderVisible, onMenuOpenChange]);
   const panelTreeVisible = usePanelVisible(SP_COIN_DISPLAY.PANEL_TREE_PANEL);
   const messageVisible = usePanelVisible(SP_COIN_DISPLAY.MESSAGE_PANEL);
   // 2026-10-13: where the wallet asset files are served from, for the pill, the list and the panel alike (a host on another origin, the extension, passes the web app's address)
@@ -1180,16 +1196,9 @@ function MeritWalletInner({
     activeMainOverlay != null ? TAB_KEY_BY_PANEL_ID[activeMainOverlay] : undefined;
   if (derivedTab) lastKnownTabRef.current = derivedTab;
   const activeTab: MenuTabKey = derivedTab ?? lastKnownTabRef.current;
-  // activeListMode stays local state (it also carries "which trade slot"
-  // info the panel tree has no id for, see LIST_PANEL_ID_FOR_MODE's own
-  // doc comment below), but every write also mirrors into the real
-  // engine's panel tree via this one helper — into Merit Wallet's own
-  // private MERIT_WALLET_*_LIST_OVERLAY ids as of 2026-09-30, not the real
-  // app's shared list ids (see LIST_PANEL_ID_FOR_MODE's doc comment for
-  // why) — so nothing gets out of sync between "what this component
-  // renders" and "what the shared, single-source-of-truth panel tree says
-  // is open."
-  const [activeListMode, setActiveListModeRaw] = useState<ActiveListMode>(null);
+  // activeListMode remains local because it carries the picker destination slot;
+  // tree flags below remain the sole source for whether the list is visible.
+  const [activeListModeLocal, setActiveListModeRaw] = useState<ActiveListMode>(null);
   // 2026-10-05 — the ADDRESS_PANEL's typed value for the open token/recipient list.
   // Cleared whenever the list changes or closes (setActiveList below).
   const [addressInput, setAddressInput] = useState('');
@@ -1197,56 +1206,26 @@ function MeritWalletInner({
   // rows). `result: null` = lookup in flight. See the effect below buildAddressBar.
   const [entryResolution, setEntryResolution] = useState<{ address: string; result: AssetEntryResult | null } | null>(null);
   const addressRowsRef = useRef<ReadonlyArray<{ address?: string }>>([]);
-  // 2026-09-30 — list overlays use Merit Wallet's own private, flat-root
-  // MERIT_WALLET_*_LIST_OVERLAY ids (see LIST_PANEL_ID_FOR_MODE's own doc
-  // comment for why). This function deliberately does NOT also close/reopen
-  // TAB_PANEL_IDS[activeTab] to keep the debug tree's flag in sync while a
-  // list is shown — two different attempts at that were tried and reverted
-  // the same day, both breaking real navigation worse than the cosmetic
-  // issue they fixed:
-  //   1. closePanel(TAB_PANEL_IDS[activeTab]) — TAB_PANEL_IDS are
-  //      MAIN_RADIO_OVERLAY_PANELS members, and closePanel on one of those
-  //      always pops the display stack and restores whatever was
-  //      PREVIOUSLY active there — confirmed live via trace: closing
-  //      TRADING_STATION_PANEL to open a token list restored a stale
-  //      SEND_PANEL entry left on the stack from an unrelated earlier
-  //      visit, so picking a token landed back on the Send tab instead of
-  //      Swap.
-  //   2. setPanelVisible(TAB_PANEL_IDS[activeTab], false) (the engine's raw,
-  //      side-effect-free setter) — avoids the stack-restore above, but
-  //      leaves the WHOLE MAIN_RADIO_OVERLAY_PANELS group at zero visible
-  //      members while the list is shown, which triggers
-  //      useEnforceRadioPanelGroups's OWN "zero visible -> force the
-  //      group's fallbackPanel visible" effect — and that fallback is
-  //      hardcoded to TRADING_STATION_PANEL always, regardless of which
-  //      tab was actually active, so opening a list from the Send tab
-  //      would snap back to Swap instead.
-  // Both of the engine's own tab-closing primitives are built for REAL
-  // navigation (switching tabs, going back) and carry restore semantics
-  // that actively fight "temporarily cover the current tab, then return to
-  // exactly it" — there is no primitive that does the latter without this
-  // component tracking its own state, and duplicating the engine's
-  // stack/fallback bookkeeping here is worse than the cosmetic cost of
-  // leaving TAB_PANEL_IDS[activeTab] visible:true in the tree while
-  // activeListMode's local override (body's own `??` chain, below) shows
-  // the list overlay instead — the GUI itself is unaffected either way.
-  // 2026-10-03 — a host that supplies overlayHost replaces this component's own
-  // body (WalletRadioPanels renders `overlayHost ?? children`), and that body is
-  // the only place the private MERIT_WALLET_*_LIST_OVERLAY ids are drawn. So the
-  // header's network/account pills opened an id nothing rendered: the web app's
-  // NETWORK_LIST never showed. listPanelIdOverrides lets such a host point a
-  // mode at the shared id its own host renders.
   const listPanelIdFor = (mode: Exclude<ActiveListMode, null>): SP_COIN_DISPLAY =>
     listPanelIdOverrides?.[mode] ?? LIST_PANEL_ID_FOR_MODE[mode];
+  const accountListTreeOpen = usePanelVisible(listPanelIdFor('account'));
+  const networkListTreeOpen = usePanelVisible(listPanelIdFor('network'));
+  const activeListMode: ActiveListMode = activeListModeLocal ?? (accountListTreeOpen ? 'account' : networkListTreeOpen ? 'network' : null);
   const setActiveList = (mode: ActiveListMode) => {
-    setActiveListModeRaw(mode);
     setAddressInput('');
     if (mode) {
+      setActiveListModeRaw(mode);
       openPanel(listPanelIdFor(mode), 'MeritWallet:setActiveList');
     } else {
       const overrideIds = Object.values(listPanelIdOverrides ?? {}) as SP_COIN_DISPLAY[];
       for (const id of [...ALL_LIST_PANEL_IDS, ...overrideIds]) closePanel(id, 'MeritWallet:setActiveList:close');
+      if (panelStore.isVisible(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL)) closePanel(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL, 'NAV_POP:MeritWallet:setActiveList:close');
     }
+  };
+  // A header chevron TOGGLES its list: down opens it (pushes the display stack), up closes it (pops it). Open = the local mode OR the tree flag of the list id (a host may have opened it through the tree).
+  const toggleList = (mode: Exclude<ActiveListMode, null>) => {
+    if (activeListMode === mode || panelStore.isVisible(listPanelIdFor(mode))) setActiveList(null);
+    else setActiveList(mode);
   };
   // 2026-09-16, on live report ("selecting a token from the logo.png,
   // nothing is returned to [the Swap tab]... same case for all tab
@@ -1415,31 +1394,25 @@ function MeritWalletInner({
   // different trigger (the avatar icon, not the row/chevron). Null when
   // closed; a real address string while showing that account's details.
   const [accountDetailAddress, setAccountDetailAddress] = useState<string | null>(null);
+  const accountDetailVisible = usePanelVisible(SP_COIN_DISPLAY.ACCOUNT_PANEL);
   const [editingProfile, setEditingProfile] = useState(false);
-  const [addingAccount, setAddingAccount] = useState(false);
   useEffect(() => setEditingProfile(false), [accountDetailAddress]);
   // Same idea, for the token-list's own info icon (Select a Token).
   const [tokenDetailAddress, setTokenDetailAddress] = useState<string | null>(null);
+  const tokenDetailVisible = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
   // Same idea, for the network-list's own icon (Select Network) — see
   // onNetworkIconClick's own doc comment for why this one needs no
   // separate "detail" data prop from the caller.
   const [networkDetailId, setNetworkDetailId] = useState<string | null>(null);
+  const networkDetailVisible = usePanelVisible(SP_COIN_DISPLAY.NETWORK_PANEL);
   // 2026-09-21, Path A — ACCOUNT_PANEL/TOKEN_PANEL/NETWORK_PANEL are ALL
   // `MAIN_RADIO_OVERLAY_PANELS` members too (verified the same way as
   // the tab/list-overlay pieces — read `panelGroups.ts` directly), so
   // opening one radio-atomically closes whatever else was showing there
   // (a trade tab, or a list overlay's real ids) in the real engine, same
   // interaction as the list-overlay slice already found and fixed for.
-  // These 3 openers mirror that same write; `restoreAfterDetailClose`
-  // (used by every close path below) explicitly re-opens whichever of
-  // {the list overlay, the active tab} should show next now that the
-  // detail's own radio-open has closed it — same explicit,
-  // non-reactive-effect shape as the tab-restore fix above, for the same
-  // race-avoidance reason. Each opener leaves the OTHER two detail
-  // fields untouched, matching this file's own pre-existing behavior
-  // (the body/panelTitle ternaries below only ever read the
-  // highest-priority one, and a caller has never explicitly cleared
-  // siblings on a fresh open) — not a gap introduced here.
+  // These addresses/ids identify the selected detail record. The panel
+  // tree flags below own whether their detail screens are visible.
   const openAccountDetail = (address: string) => {
     setAccountDetailAddress(address);
     openPanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'MeritWallet:openAccountDetail');
@@ -1452,30 +1425,19 @@ function MeritWalletInner({
     setNetworkDetailId(id);
     openPanel(SP_COIN_DISPLAY.NETWORK_PANEL, 'MeritWallet:openNetworkDetail');
   };
-  const restoreAfterDetailClose = () => {
-    if (activeListMode) {
-      openPanel(listPanelIdFor(activeListMode), 'MeritWallet:closeDetail:restoreList');
-    } else {
-      openPanel(TAB_PANEL_IDS[activeTab], 'MeritWallet:closeDetail:restoreTab');
-    }
-  };
   const [showTestNets, setShowTestNets] = useState(false);
 
-  // 2026-09-21, Path A — openPanel(TAB_PANEL_IDS[tab]) now does the tab
-  // switch itself (useEnforceRadioPanelGroups above closes every other
-  // MAIN_RADIO_OVERLAY_PANELS member automatically). activeListMode/
-  // accountDetailAddress/tokenDetailAddress/networkDetailId are NOT
-  // panel-tree ids yet (still local state — the list-overlay/detail-panel
-  // migration is later scope, not done in this change), so all 4 still
-  // need an explicit manual reset here, same as before. Closing the real
-  // engine's ASSET_LIST_SELECT_PANEL via radio-group enforcement has no
-  // effect on this component's own separate activeListMode variable
-  // until that migration actually happens — do not remove this reset
-  // before then, it would silently break tab-switch-closes-overlay.
-  //
+  // The list selection mode is still local state and is reset on tab
+  // changes. Detail visibility is tree-owned; these ids only retain which
+  // record was selected and can be cleared when leaving the detail screen.
   const handleTabClick = (tab: MenuTabKey) => {
+    // Owner rule (docs 8.5.10): selecting the tab you are on changes nothing (what is open over it stays); selecting another tab goes through validateTab (openPanel routes tabs there), and what was open over the tab you leave stays on the stack, to come back with it.
+    if (tab === activeTab) return;
     openPanel(TAB_PANEL_IDS[tab], 'MeritWallet:handleTabClick');
-    setActiveList(null);
+    // This component's own covering state (the private list overlays and the detail screens) is not on the stack: it is cleared. It never pops the stack here.
+    setAddressInput('');
+    setActiveListModeRaw(null);
+    for (const id of ALL_LIST_PANEL_IDS) closePanel(id, 'MeritWallet:handleTabClick:closePrivateList');
     setAccountDetailAddress(null);
     setTokenDetailAddress(null);
     setNetworkDetailId(null);
@@ -1511,11 +1473,8 @@ function MeritWalletInner({
   };
 
   const handleMenuClick = () => {
-    setMenuOpen((prev) => {
-      const next = !prev;
-      onMenuOpenChange?.(next);
-      return next;
-    });
+    if (menuTabHeaderVisible) closePanel(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR, 'MeritWallet:hamburger:close');
+    else openPanel(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR, 'MeritWallet:hamburger:open');
   };
 
   // WALLET_NETWORK_HEADER seed — this engine starts every panel at `false`
@@ -2050,7 +2009,7 @@ function MeritWalletInner({
     activeListMode === 'buyToken' ||
     activeListMode === 'sendToken'
       ? React.createElement(AssetListSelectPanel, {
-          containerType: LIST_PANEL_ID_FOR_MODE[activeListMode],
+          containerType: SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL,
           feedType: FEED_TYPE.REMOTE_TOKEN_LIST,
           addressBar: buildAddressBar(effectiveTokenRows, 'token', (address) => {
             openTokenDetail(address);
@@ -2073,7 +2032,7 @@ function MeritWalletInner({
         })
       : activeListMode === 'sendRecipient'
         ? React.createElement(AssetListSelectPanel, {
-            containerType: LIST_PANEL_ID_FOR_MODE[activeListMode],
+            containerType: SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL,
             // sendRecipient's own real id (REMOTE_ACCOUNT_SEND_LIST) has a matching FEED_TYPE member exactly.
             feedType: FEED_TYPE.REMOTE_ACCOUNT_SEND_LIST,
             addressBar: buildAddressBar(recipientListRows, 'account', (address) => {
@@ -2123,7 +2082,7 @@ function MeritWalletInner({
               // of exactly that screen (see its header comment), so both apps
               // now show the same list from the same account groups.
               return React.createElement(AssetListSelectPanel, {
-                containerType: LIST_PANEL_ID_FOR_MODE.account,
+                containerType: SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL,
                 // WALLET_ACCOUNTS is the closest real match — its own doc
                 // comment in enums.ts: "Local wallet account list (all known
                 // accounts)... Used by the Send flow's recipient picker."
@@ -2150,13 +2109,16 @@ function MeritWalletInner({
                   })),
                   infoIconSrc,
                   errorMessage: accountListNotice,
-                  onAddWalletAccount: addAccountHost ? () => { closeListOverlay(); setAddingAccount(true); } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
+                  onAddWalletAccount: addAccountHost ? () => {
+                    closeListOverlay();
+                    openPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:openAddWalletAccount');
+                  } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
                 }),
               });
             })()
           : activeListMode === 'network'
             ? React.createElement(AssetListSelectPanel, {
-                containerType: LIST_PANEL_ID_FOR_MODE.network,
+                containerType: SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL,
                 // No real FEED_TYPE concept exists for a network list — this
                 // enum has no NETWORK_LIST member. WALLET_ACCOUNTS reused as
                 // a safe inert placeholder: it's not a MANAGE_* value, so
@@ -2219,7 +2181,7 @@ function MeritWalletInner({
       // eslint-disable-next-line react/no-children-prop
       const gatedTabBody = React.createElement(PanelGate, { panel: TAB_PANEL_IDS[activeTab], children: tabBody });
 
-  const accountDetailView = accountDetailAddress
+  const accountDetailView = accountDetailVisible && accountDetailAddress
     ? React.createElement(AccountDetailPanel, {
         address: accountDetailAddress,
         // Only trust accountDetail once it actually answers the address
@@ -2242,12 +2204,14 @@ function MeritWalletInner({
     : null;
 
   // 2026-10-09: an account the wallet owns can be edited from its Account Details (the profile editor), when the host supplies accountProfileHost.
-  const profileLoaded = !!accountDetail && !!accountDetailAddress && accountDetail.address === accountDetailAddress;
+  const profileLoaded = accountDetailVisible && !!accountDetail && !!accountDetailAddress && accountDetail.address === accountDetailAddress;
   const profileEditable = !!accountProfileHost && !!accountDetailAddress && profileLoaded && accountProfileHost.canEdit(accountDetailAddress);
   // 2026-10-10: the shared Add a Wallet/Account flow (the host's addAccountHost), shown over the wallet like the profile editor.
-  const addAccountOverlay = addingAccount && addAccountHost ? React.createElement(AddAccountFlow, { host: addAccountHost, wallet, activeAddress: activeAccountAddress, onDone: () => setAddingAccount(false) }) : null;
+  const addAccountOverlay = addFlowTop != null && addAccountHost
+    ? React.createElement(AddAccountFlow, { host: addAccountHost, wallet, activeAddress: activeAccountAddress, onDone: () => closePanel(addFlowTop, 'MeritWallet:addAccountFlow:done') })
+    : null;
   const accountDetailOverlay =
-    accountDetailAddress && accountProfileHost && editingProfile && profileLoaded
+    accountDetailVisible && accountDetailAddress && accountProfileHost && editingProfile && profileLoaded
       ? React.createElement(AccountProfileEditor, {
           address: accountDetailAddress,
           initial: { name: accountDetail?.name, symbol: accountDetail?.symbol, email: accountDetail?.email, website: accountDetail?.website, description: accountDetail?.description, avatarSrc: accountDetail?.avatarSrc, recipientNetwork: accountDetail?.recipientNetwork },
@@ -2272,7 +2236,7 @@ function MeritWalletInner({
           )
         : accountDetailView;
 
-  const tokenDetailOverlay = tokenDetailAddress
+  const tokenDetailOverlay = tokenDetailVisible && tokenDetailAddress
     ? React.createElement(TokenDetailPanel, {
         address: tokenDetailAddress,
         // Same "only trust it once it answers the current address" gate
@@ -2295,7 +2259,7 @@ function MeritWalletInner({
   // No loading branch needed — unlike accounts/tokens, this row's own data
   // (networkRowsSource) is already fully in memory the moment the icon is
   // clicked; see onNetworkIconClick's own doc comment on MeritWalletProps.
-  const networkDetailRow = networkDetailId
+  const networkDetailRow = networkDetailVisible && networkDetailId
     ? networkRowsSource.find((row) => row.id === networkDetailId)
     : undefined;
   const networkDetailOverlay = networkDetailRow
@@ -2389,11 +2353,11 @@ function MeritWalletInner({
     ? 'Add Wallet Account'
     : panelTreeVisible
     ? 'Panel Tree'
-    : accountDetailAddress
+    : accountDetailVisible
     ? 'Account Details'
-    : tokenDetailAddress
+    : tokenDetailVisible
       ? 'Token Details'
-      : networkDetailId
+      : networkDetailVisible
         ? 'Network Details'
         : activeListMode === 'sellToken' ||
     activeListMode === 'buyToken' ||
@@ -2408,7 +2372,7 @@ function MeritWalletInner({
             : activeTab === 'SWAP'
           ? 'Trading Station'
           : activeTab === 'SEND'
-            ? 'Send Account'
+            ? 'Send Token'
             : activeTab === 'SPONSOR'
               ? 'Add Sponsorship'
               : activeTab === 'REWARDS'
@@ -2474,7 +2438,7 @@ function MeritWalletInner({
                     })
                   : undefined
               }
-              onSelectClick={() => setActiveList('network')}
+              onSelectClick={() => toggleList('network')}
               onIconClick={
                 activeNetworkRow
                   ? () => {
@@ -2512,7 +2476,7 @@ function MeritWalletInner({
           symbol={activeAccountEntry?.symbol}
           name={activeAccountEntry?.name}
           placeholderLabel="Select Account"
-          onSelectClick={() => setActiveList('account')}
+          onSelectClick={() => toggleList('account')}
           onIconClick={(address) => {
             if (!address) return;
             openAccountDetail(address);
@@ -2558,7 +2522,7 @@ function MeritWalletInner({
         <PanelTitle
           title={panelTitle}
           onMenuClick={handleMenuClick}
-          menuOpen={menuOpen}
+          menuOpen={menuTabHeaderVisible}
           // 2026-10-03, on request — on the Account Login / Create Account
           // screen the title bar shows only its title: no back button (nothing
           // to go back to while locked) and no hamburger menu.
@@ -2578,20 +2542,20 @@ function MeritWalletInner({
           // safely when the stack is empty. Same call shape as the web
           // app's own ActiveWalletPanelTitle back button.
           onBackClick={
-            accountDetailAddress
+            accountDetailVisible
               ? () => {
                   setAccountDetailAddress(null);
-                  restoreAfterDetailClose();
+                  closePanel('NAV_POP:MeritWallet:accountDetailBack');
                 }
-              : tokenDetailAddress
+              : tokenDetailVisible
                 ? () => {
                     setTokenDetailAddress(null);
-                    restoreAfterDetailClose();
+                    closePanel('NAV_POP:MeritWallet:tokenDetailBack');
                   }
-                : networkDetailId
+                : networkDetailVisible
                   ? () => {
                       setNetworkDetailId(null);
-                      restoreAfterDetailClose();
+                      closePanel('NAV_POP:MeritWallet:networkDetailBack');
                     }
                   : addFlowTop != null
                     ? () => closePanel(addFlowTop, 'NAV_POP:MeritWallet:addFlowBack')
@@ -2610,7 +2574,7 @@ function MeritWalletInner({
         {/* 2026-10-12 (accountAuthDesign row 11): while another wallet is deciding on a request, one neutral line says so (nothing shows when nothing is pending). 2026-10-13: it is OUTSIDE the tab header bar, so it also shows over the lock screen, and it
             also says how a request just ended ("Merit extension did not approve: User rejected the request."). */}
         {/* 2026-10-14 (owner request): the waiting / did-not-approve notice is a MESSAGE_PANEL message (useApprovalMessagePanel, called above), not a line over the wallet. */}
-        <MenuTabHeaderBar open={menuOpen && menuTabHeaderVisible && !passwordPanelShowing} activeTab={activeTab} onTabClick={handleTabClick}>
+        <MenuTabHeaderBar open={menuTabHeaderVisible && !passwordPanelShowing} activeTab={activeTab} onTabClick={handleTabClick}>
           {/* 2026-09-22 — `body` (whichever of tabBody/listOverlay/the
               three detail overlays is currently active — see that
               variable's own definition above) now renders through the
@@ -2623,7 +2587,7 @@ function MeritWalletInner({
           {/* 2026-10-13 (owner request): the wallet pill belongs to the Active Account Selection page only, not to the tab pages. */}
           {showWalletSelect && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (
             <div id="WALLET_SELECT_ROW" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center' }}>
-              <WalletSelectDropDownHosted walletId={pillWalletId} baseUrl={walletAssetBaseUrl} />
+              <WalletSelectDropDownHosted walletId={pillWalletId} displayName={pillWalletId ? walletName(pillWalletId) : undefined} baseUrl={walletAssetBaseUrl} />
             </div>
           )}
           <WalletRadioPanels overlayHost={overlayHost}>{body}</WalletRadioPanels>

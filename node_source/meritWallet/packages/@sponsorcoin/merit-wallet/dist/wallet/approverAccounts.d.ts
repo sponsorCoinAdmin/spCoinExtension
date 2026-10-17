@@ -37,6 +37,8 @@ export interface ApproverGroupsInput {
     /** Also list the wallets that are not connected (no accounts here), with their Install / Connect badges. Default false: they are not on the list. */
     showDisconnected?: boolean;
 }
+/** Merge host-known accounts with accounts listed by wallet backends, joining duplicate addresses case-insensitively. */
+export declare function mergeWalletAccountEntries(...sources: readonly (readonly WalletAccountEntry[])[]): WalletAccountEntry[];
 /** The groups for the shared account list. Pure: the statuses and the entries are read by the caller. */
 export declare function buildApproverGroups(input: ApproverGroupsInput): AccountListGroup[];
 /** The words a failed connect is reported in. */

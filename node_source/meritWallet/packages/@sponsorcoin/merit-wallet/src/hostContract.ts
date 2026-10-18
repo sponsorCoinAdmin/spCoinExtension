@@ -35,7 +35,7 @@ export type HostData = Pick<
   MeritWalletProps,
   | 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage'
   | 'activeAccountName' | 'activeAccountSymbol' | 'activeAccountLogoURL'
-  | 'wallet' | 'walletDerives' | 'approverHost' | 'accountListNotice' | 'activeWalletName' | 'activeWalletId' | 'nativeWalletId' | 'walletConnection' | 'onDisconnectWallet' | 'showWalletSelect' | 'walletAssetBaseUrl' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'stakingHost' | 'activeAccountAddress'
+  | 'wallet' | 'walletDerives' | 'approverHost' | 'accountListNotice' | 'activeWalletName' | 'activeWalletId' | 'nativeWalletId' | 'walletConnection' | 'onDisconnectWallet' | 'showWalletSelect' | 'walletAssetBaseUrl' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'rewardsExtras' | 'stakingHost' | 'activeAccountAddress'
 >;
 
 /** What the host does when the user picks or inspects a row. */
@@ -55,14 +55,14 @@ export type HostActions = Pick<
 /** The body: who owns the radio groups, the overlay host, and the slots a host fills with its own panels. */
 export type HostSlots = Pick<
   MeritWalletProps,
-  | 'manageRadioPanels' | 'overlayHost' | 'agentSelectSlot' | 'listPanelIdOverrides'
-  | 'configPersistedTimeoutContent' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configSigningPanelContent' | 'configBackupPanelContent' | 'configTestAccounts' | 'configResetPanelsContent'
+  | 'manageRadioPanels'
+  | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configSigningPanelContent' | 'configBackupPanelContent' | 'configTestAccounts' | 'configResetPanelsContent'
 >;
 
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */
 export type HostLock = Pick<
   MeritWalletProps,
-  'passwordMode' | 'walletLocked' | 'onResetWallet' | 'passwordIcon' | 'passwordErrorText' | 'passwordNoticeText' | 'onPasswordSubmit' | 'passwordSubmitting' | 'recoveryPhrase' | 'onRecoveryPhraseSaved'
+  'passwordMode' | 'walletLocked' | 'onResetWallet' | 'passwordIconSrc' | 'passwordErrorText' | 'passwordNoticeText' | 'onPasswordSubmit' | 'passwordSubmitting' | 'recoveryPhrase' | 'onRecoveryPhraseSaved'
 >;
 
 /** The Config tab's values and handlers. */
@@ -73,7 +73,7 @@ export type HostConfig = Pick<
   | 'onConfigSyncModeChange' | 'configSyncDescription' | 'configLocation' | 'onConfigLocationChange' | 'configShowBackgroundPage'
   | 'onConfigShowBackgroundPageChange' | 'configModalMode' | 'onConfigModalModeChange' | 'configUniSelectVisible'
   | 'onConfigUniswapEngineChange' | 'configZeroXEngineVisible' | 'onConfig0xEngineChange' | 'configExtensionChannel'
-  | 'onConfigExtensionChannelChange' | 'configExtensionDownloadPath' | 'onConfigLogoff' | 'onConfigResetPassword' | 'onConfigDeleteAccount' | 'onConfigDeleteWallet' | 'walletSession' | 'authenticationType'
+  | 'onConfigExtensionChannelChange' | 'configExtensionDownloadPath' | 'configPersistedTimeoutHours' | 'onConfigPersistedTimeoutHoursChange' | 'onConfigLogoff' | 'onConfigResetPassword' | 'onConfigDeleteAccount' | 'onConfigDeleteWallet' | 'walletSession' | 'authenticationType'
 >;
 
 /** 2026-10-15: the device the wallet runs on (clipboard, open a URL, save a file, small preferences, window foreground). Left out, the DOM implementation is used. */

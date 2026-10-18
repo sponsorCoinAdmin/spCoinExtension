@@ -1,7 +1,5 @@
 import React from 'react';
-import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
-import { type WalletListSelectionSlot } from '@sponsorcoin/spcoin-exchange-engine';
 import { type AssetListEntry, type AccountListGroup, type FetchBalance, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { type MeritPlatform } from './platform/platform';
@@ -9,7 +7,7 @@ import { type WalletDerivation } from './wallet/walletProps';
 import type { ApproverHost } from './wallet/approverAccounts';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
 import { type MenuTabKey, type MeritWalletNetworkRow } from './panels';
-import { type RewardsHost } from './rewards/ConnectedRewardsPanel';
+import { type RewardsHost, type RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
 import { type AddAccountHost } from './account/AddAccountFlow';
 import { type TestAccountsApi } from './TestAccountsSection';
 import { type TradeHost } from './trade/tradeHost';
@@ -19,7 +17,6 @@ import { type SponsorStakingHost } from './sponsor/ConnectedSponsorStakingList';
 import { type HostTransactionResult } from './receipt/transactionReceipts';
 import { type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-exchange-engine';
 import type { AuthenticationType } from './auth/authenticationType';
-type ActiveListMode = WalletListSelectionSlot | null;
 export type { MeritWalletNetworkRow };
 export interface MeritWalletProps {
     /**
@@ -78,6 +75,8 @@ export interface MeritWalletProps {
     recipientRows?: AssetListEntry[];
     /** 2026-10-09 -- turns the Rewards tab live (Trading / Staked / Pending with estimate and claim, Auto Refresh), the same card and data hook the web app runs. Omit for the static table. */
     rewardsHost?: RewardsHost;
+    /** What the host adds around the Rewards card: a shared Auto Refresh store, the Deposit Account row's starting address, a refresh registration hook and a trace sink (all data or functions). */
+    rewardsExtras?: RewardsPanelExtras;
     /**
      * 2026-10-09 -- turns the Sponsored Recipient Accounts list (opened from Rewards > Unstake) live, with Un-Stake: the web app's card and confirm popup over the host's
      * chain reads and one send-an-unstake-transaction function.
@@ -192,12 +191,10 @@ export interface MeritWalletProps {
     /** The trade screens' host data and functions (the Swap tab and the Sponsor tab trade through one path): the trading provider, a trace sink, how a recipient's site opens and one hook for the confirm popup's state. The component draws the screens. */
     tradeHost?: TradeHost;
     manageRadioPanels?: boolean;
-    overlayHost?: React.ReactNode;
-    agentSelectSlot?: React.ReactNode;
     fetchBalance?: FetchBalance;
-    listPanelIdOverrides?: Partial<Record<Exclude<ActiveListMode, null>, SP_COIN_DISPLAY>>;
     passwordMode?: 'checking' | 'setup' | 'unlock';
-    passwordIcon?: React.ReactNode;
+    /** The artwork of the login page: an image URL (the data); the component draws it. */
+    passwordIconSrc?: string;
     /**
      * 2026-10-08 (table row 23): the wallet is locked (or has no wallet yet), so show the password screen in place of everything else, whatever the panel tree says.
      * The lock gate lives here, in the component; whether and where the wallet is shown at all stays with the host (a layout gate).
@@ -232,7 +229,9 @@ export interface MeritWalletProps {
      *  for it either). */
     configPasswordMode?: ConfigPasswordMode;
     onConfigPasswordModeChange?: (mode: ConfigPasswordMode) => void;
-    configPersistedTimeoutContent?: React.ReactNode;
+    /** The persisted-password time limit in hours (the data) and what a change does (the action): the component draws the Time Limit picker itself. Omit both and there is no picker. */
+    configPersistedTimeoutHours?: number;
+    onConfigPersistedTimeoutHoursChange?: (hours: number) => void;
     configPasswordDescription?: string;
     configMandatorySecurity?: boolean;
     onConfigMandatorySecurityChange?: (mandatory: boolean) => void;

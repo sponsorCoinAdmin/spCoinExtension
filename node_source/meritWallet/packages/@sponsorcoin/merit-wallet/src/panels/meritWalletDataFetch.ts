@@ -50,6 +50,9 @@ const TOKEN_LIST_PAGE_SIZE = 200;
 /** The placeholder address every chain's native token is listed under. */
 const NATIVE_TOKEN_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
+/** The list order: 0 the native token, 1 an spCoin, 2 everything else. */
+const tokenRank = (t: { address: string }, chainId: number): number => (t.address.toLowerCase() === NATIVE_TOKEN_SENTINEL ? 0 : isSpCoin({ address: t.address, chainId } as never) ? 1 : 2);
+
 /** Plain data shape for one NETWORK_LIST row — a consumer with a real feed
  *  (e.g. @sponsorcoin/spcoin-feeds/networks' toNetworkListEntries) passes
  *  these via the networkRows prop below instead of this component's own
@@ -267,13 +270,14 @@ export async function buildTokenRows(
       const feed = await fetchAndBuildDataList(FEED_TYPE.REMOTE_TOKEN_LIST, chainId);
       // Same rows, same order as the hosted list: the hosted tokens API drops a token that has no details record and sorts the rest by address; the web picker then lists the native token first,
       // then the spCoins, then the rest in that order.
-      const rank = (t: { address: string }) => (t.address.toLowerCase() === NATIVE_TOKEN_SENTINEL ? 0 : isSpCoin({ address: t.address, chainId } as never) ? 1 : 2);
       const tokens = ((feed as { tokens?: { address?: string; symbol?: string; name?: string; decimals?: number; __invalid?: boolean }[] }).tokens ?? [])
         .filter((t) => typeof t.address === 'string' && !t.__invalid && Boolean(t.symbol) && t.symbol !== 'N/A')
-        .sort((a, b) => rank(a as { address: string }) - rank(b as { address: string }) || String(a.address).toLowerCase().localeCompare(String(b.address).toLowerCase()));
+        .sort((a, b) => tokenRank(a as { address: string }, chainId) - tokenRank(b as { address: string }, chainId) || String(a.address).toLowerCase().localeCompare(String(b.address).toLowerCase()));
       if (tokens.length === 0) throw hostedError;
       items = tokens.map((t) => ({ address: t.address!, symbol: t.symbol, name: t.name, decimals: t.decimals }));
     }
+    // One order in every app, whichever source answered: the native token first, then the spCoins, then the rest by address (the hosted API answers by address alone).
+    items = [...items].sort((a, b) => tokenRank(a, chainId) - tokenRank(b, chainId) || a.address.toLowerCase().localeCompare(b.address.toLowerCase()));
     return await withAssetIcons(
       items,
       baseUrl,

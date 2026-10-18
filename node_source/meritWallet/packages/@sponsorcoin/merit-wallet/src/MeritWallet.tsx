@@ -34,7 +34,7 @@
 
 'use client';
 
-import { walletColors } from '@sponsorcoin/spcoin-common/styles';
+import { walletColors, lockLogoStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getAddress } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -77,7 +77,7 @@ import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, 
 // deleted 2026-10-02 — see this package's index.ts header for why a
 // second store let a tree toggle silently do nothing.
 import ConnectedMessagePanel from './ConnectedMessagePanel';
-import ConnectedRewardsPanel, { type RewardsHost } from './rewards/ConnectedRewardsPanel';
+import ConnectedRewardsPanel, { type RewardsHost, type RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
 import AddAccountFlow, { type AddAccountHost } from './account/AddAccountFlow';
 import TestAccountsSection, { type TestAccountsApi } from './TestAccountsSection';
 import ConnectedSponsorPanel from './sponsor/ConnectedSponsorPanel';
@@ -138,6 +138,7 @@ const TAB_KEY_BY_PANEL_ID: Partial<Record<SP_COIN_DISPLAY, MenuTabKey>> = Object
 // EMPTY_RADIO_PANEL_GROUPS is manageRadioPanels=false's no-op input (see that prop's doc comment on MeritWalletProps).
 import type { AuthenticationType } from './auth/authenticationType';
 import { RADIO_PANEL_GROUPS_WITH_FALLBACKS, EMPTY_RADIO_PANEL_GROUPS } from './radioPanelGroups';
+import { PersistedTimeoutPicker } from './walletConfigPanelProps';
 
 // 2026-09-15, on request ("the Token/Account/NetworkSelectListDropdown
 // chevrons [need] to be linked to the required panels") — which
@@ -393,6 +394,8 @@ export interface MeritWalletProps {
   recipientRows?: AssetListEntry[];
   /** 2026-10-09 -- turns the Rewards tab live (Trading / Staked / Pending with estimate and claim, Auto Refresh), the same card and data hook the web app runs. Omit for the static table. */
   rewardsHost?: RewardsHost;
+  /** What the host adds around the Rewards card: a shared Auto Refresh store, the Deposit Account row's starting address, a refresh registration hook and a trace sink (all data or functions). */
+  rewardsExtras?: RewardsPanelExtras;
   /**
    * 2026-10-09 -- turns the Sponsored Recipient Accounts list (opened from Rewards > Unstake) live, with Un-Stake: the web app's card and confirm popup over the host's
    * chain reads and one send-an-unstake-transaction function. 
@@ -614,18 +617,6 @@ export interface MeritWalletProps {
   // equivalent disable hook of its own; leaving it called unconditionally
   // here, unchanged, rather than widening this fix into a second package).
   manageRadioPanels?: boolean;
-  // 2026-10-03 — consumer-owned overlay host, rendered inside this wallet's
-  // own <WalletRadioPanels> gate (see WalletRadioPanels.tsx's overlayHost doc
-  // for the full account of how the web app ended up with no overlay host
-  // mounted at all). The web app passes its RadioOverlayPanelHost here; the
-  // extension omits it. Optional, so no existing caller changes behaviour.
-  overlayHost?: React.ReactNode;
-  // 2026-10-03 — consumer-owned AGENT_SELECT_DROP_DOWN picker. AgentHeaderPanel
-  // was mounted with no children, so toggling AGENT_SELECT_DROP_DOWN on drew an
-  // empty row. The web app passes its hook-wired AgentSelectDropDown (list
-  // opening / validateAccount live in the app); when omitted this renders the
-  // engine-wired picker from this package (AgentSelectDropDown.tsx), the same one the web app uses.
-  agentSelectSlot?: React.ReactNode;
   // 2026-10-03 — real token balances for EVERY row that shows one (Swap sell/buy/
   // Uniswap receive, Send, Sponsor pay). The package's rows hard-coded
   // "Balance: 0", so a host without wagmi (the extension) never showed a real
@@ -635,10 +626,6 @@ export interface MeritWalletProps {
   // this component. Omit `tokenAddress` for the native token. Resolve undefined
   // when unavailable. An explicit sellBalanceText/buyBalanceText prop still wins.
   fetchBalance?: FetchBalance;
-  // 2026-10-03 — per-mode override of which panel id the header's list pills
-  // open (see setActiveList). For a host that supplies overlayHost and renders
-  // its own lists from shared ids; omit for the portable standalone behavior.
-  listPanelIdOverrides?: Partial<Record<Exclude<ActiveListMode, null>, SP_COIN_DISPLAY>>;
   // 2026-09-29, real bug fix — this component had ZERO rendering for
   // PASSWORD_PANEL: whenever the wallet is locked, panelTreeCallbacks.ts's
   // own centralized guard (see its own doc comment) silently redirects
@@ -659,7 +646,8 @@ export interface MeritWalletProps {
   // here — a caller that never wires these simply won't show anything
   // when locked (today's exact behavior), not a regression.
   passwordMode?: 'checking' | 'setup' | 'unlock';
-  passwordIcon?: React.ReactNode;
+  /** The artwork of the login page: an image URL (the data); the component draws it. */
+  passwordIconSrc?: string;
   /**
    * 2026-10-08 (table row 23): the wallet is locked (or has no wallet yet), so show the password screen in place of everything else, whatever the panel tree says.
    * The lock gate lives here, in the component; whether and where the wallet is shown at all stays with the host (a layout gate).
@@ -743,7 +731,9 @@ export interface MeritWalletProps {
   // setting would silently collide.
   configPasswordMode?: ConfigPasswordMode;
   onConfigPasswordModeChange?: (mode: ConfigPasswordMode) => void;
-  configPersistedTimeoutContent?: React.ReactNode;
+  /** The persisted-password time limit in hours (the data) and what a change does (the action): the component draws the Time Limit picker itself. Omit both and there is no picker. */
+  configPersistedTimeoutHours?: number;
+  onConfigPersistedTimeoutHoursChange?: (hours: number) => void;
   configPasswordDescription?: string;
   configMandatorySecurity?: boolean;
   onConfigMandatorySecurityChange?: (mandatory: boolean) => void;
@@ -828,6 +818,7 @@ function MeritWalletInner({
   tokenRows,
   recipientRows,
   rewardsHost,
+  rewardsExtras,
   stakingHost,
   accountDetailHost,
   addAccountHost,
@@ -853,12 +844,9 @@ function MeritWalletInner({
   onSendSubmit,
   tradeHost,
   manageRadioPanels = true,
-  overlayHost,
-  agentSelectSlot,
   fetchBalance,
-  listPanelIdOverrides,
   passwordMode = 'unlock',
-  passwordIcon,
+  passwordIconSrc,
   walletLocked,
   onResetWallet,
   passwordErrorText,
@@ -871,7 +859,8 @@ function MeritWalletInner({
   buyBalanceText,
   configPasswordMode,
   onConfigPasswordModeChange,
-  configPersistedTimeoutContent,
+  configPersistedTimeoutHours,
+  onConfigPersistedTimeoutHoursChange,
   configPasswordDescription,
   configMandatorySecurity,
   onConfigMandatorySecurityChange,
@@ -1194,6 +1183,8 @@ function MeritWalletInner({
   // afterward — this component's own rendering stays correct regardless
   // (via the ref), which is what a user actually sees.
   const lastKnownTabRef = useRef<MenuTabKey>(initialActiveTab ?? 'SWAP');
+  // The list (and its picker destination) that was open over each tab when the person left it.
+  const listByTabRef = useRef<Partial<Record<MenuTabKey, ActiveListMode>>>({});
   const derivedTab: MenuTabKey | undefined =
     activeMainOverlay != null ? TAB_KEY_BY_PANEL_ID[activeMainOverlay] : undefined;
   if (derivedTab) lastKnownTabRef.current = derivedTab;
@@ -1213,14 +1204,11 @@ function MeritWalletInner({
   const [entryResolution, setEntryResolution] = useState<{ address: string; result: AssetEntryResult | null } | null>(null);
   const addressRowsRef = useRef<ReadonlyArray<{ address?: string }>>([]);
   const listPanelIdFor = (mode: Exclude<ActiveListMode, null>): SP_COIN_DISPLAY =>
-    listPanelIdOverrides?.[mode] ?? LIST_PANEL_ID_FOR_MODE[mode];
+    LIST_PANEL_ID_FOR_MODE[mode];
   const accountListTreeOpen = usePanelVisible(listPanelIdFor('account'));
   const networkListTreeOpen = usePanelVisible(listPanelIdFor('network'));
-  // A tab on screen means no list is: a shared list's own flag stays set while another tab shows (it is covered, not closed), so it only counts while no tab is the visible overlay.
-  // A tab covers a list only when the list is one of the shared radio panels (the host passed listPanelIdOverrides: opening it closed the tab's radio member, so a tab that is on screen again means the list was covered, not closed).
-  // The wallet's own private list overlays are not radio members: the tab stays the main overlay while one is open, and the list the person just opened must show.
-  const tabCoversList = !!derivedTab && !!listPanelIdOverrides;
-  const activeListMode: ActiveListMode = tabCoversList ? null : activeListModeLocal ?? (accountListTreeOpen ? 'account' : networkListTreeOpen ? 'network' : null);
+  // The wallet's own list overlays are not radio members: the tab stays the main overlay while one is open, and the list the person just opened must show.
+  const activeListMode: ActiveListMode = activeListModeLocal ?? (accountListTreeOpen ? 'account' : networkListTreeOpen ? 'network' : null);
   const setActiveList = (mode: ActiveListMode) => {
     setAddressInput('');
     if (mode) {
@@ -1228,8 +1216,7 @@ function MeritWalletInner({
       openPanel(listPanelIdFor(mode), 'MeritWallet:setActiveList');
     } else {
       activeListPanelStore.setWalletListSelectionSlot(null);
-      const overrideIds = Object.values(listPanelIdOverrides ?? {}) as SP_COIN_DISPLAY[];
-      for (const id of [...ALL_LIST_PANEL_IDS, ...overrideIds]) closePanel(id, 'MeritWallet:setActiveList:close');
+      for (const id of ALL_LIST_PANEL_IDS) closePanel(id, 'MeritWallet:setActiveList:close');
       if (panelStore.isVisible(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL)) closePanel(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL, 'NAV_POP:MeritWallet:setActiveList:close');
     }
   };
@@ -1457,8 +1444,12 @@ function MeritWalletInner({
     // Owner rule (docs 8.5.10): selecting the tab you are on changes nothing (what is open over it stays); selecting another tab goes through validateTab (openPanel routes tabs there), and what was open over the tab you leave stays on the stack, to come back with it.
     if (tab === activeTab) return;
     openPanel(TAB_PANEL_IDS[tab], 'MeritWallet:handleTabClick');
-    // The wallet's own private list overlays are not stack members (they are not radio panels): leaving the tab closes them, or the list would stay on screen over the tab just chosen. Shared lists (listPanelIdOverrides) stay on the stack as the rule above says.
-    if (!listPanelIdOverrides) setActiveList(null);
+    // A list opened over a tab stays with that tab (docs 8.5.10): leaving the tab closes the list's overlay for the tab just chosen and remembers which list it was, and coming back to the tab reopens it with its picker destination.
+    listByTabRef.current[activeTab] = activeListMode;
+    setActiveList(null);
+    const restoreList = listByTabRef.current[tab];
+    listByTabRef.current[tab] = null;
+    if (restoreList) setActiveList(restoreList);
     // Lists are stack members and stay available when returning to this tab;
     // selected detail records are data only and are cleared on tab changes.
     setAddressInput('');
@@ -1771,7 +1762,7 @@ function MeritWalletInner({
         : activeTab === 'SPONSOR'
           ? React.createElement(ConnectedSponsorPanel, { host: tradeHost })
           : activeTab === 'REWARDS' && rewardsHost
-            ? React.createElement(ConnectedRewardsPanel, { host: rewardsHost })
+            ? React.createElement(ConnectedRewardsPanel, { host: rewardsHost, extras: rewardsExtras })
             : activeTab === 'REWARDS'
             ? React.createElement(ManageSponsorshipsPanel, {
                 // 2026-09-24, SPONSOR_STAKING_LIST EXT wiring (minimal bar) —
@@ -1793,7 +1784,7 @@ function MeritWalletInner({
                 // useMeritWalletConfig() — this component only renders it).
                 passwordMode: configPasswordMode,
                 onPasswordModeChange: onConfigPasswordModeChange,
-                persistedTimeoutContent: configPersistedTimeoutContent,
+                persistedTimeoutContent: configPersistedTimeoutHours !== undefined && onConfigPersistedTimeoutHoursChange ? React.createElement(PersistedTimeoutPicker, { hours: configPersistedTimeoutHours, onChange: onConfigPersistedTimeoutHoursChange }) : undefined,
                 passwordDescription: configPasswordDescription,
                 mandatorySecurity: configMandatorySecurity,
                 onMandatorySecurityChange: onConfigMandatorySecurityChange,
@@ -1889,7 +1880,12 @@ function MeritWalletInner({
         isActive: true,
       } as (typeof flatAccountRows)[number])
     : undefined;
-  const activeAccountEntry = flatAccountRows.find((account) => account.isActive) ?? hostActiveEntry;
+  // The listed active row may know less than the host does (a per-wallet list has an address, not a profile): for the same address the host's active-account profile (name, symbol, avatar) fills what the row lacks, so the header never shows the anonymous placeholder.
+  const listedActive = flatAccountRows.find((account) => account.isActive);
+  const activeAccountEntry =
+    listedActive && hostActiveEntry && String(listedActive.address ?? '').toLowerCase() === hostActiveAddress.toLowerCase()
+      ? ({ ...listedActive, name: activeAccountName || listedActive.name, symbol: activeAccountSymbol || listedActive.symbol, iconSrc: activeAccountLogoURL || listedActive.iconSrc, icon: listedActive.icon ?? hostActiveEntry.icon } as typeof listedActive)
+      : listedActive ?? hostActiveEntry;
   activeProfileRef.current = activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined;
   // While the first self-fetch is still running (and no rows were passed in), the picker lists nothing and says it is loading, instead of showing the three placeholder rows and then
   // swapping in the real list (and its logos) the next time it is opened. The placeholders only appear after a fetch that failed.
@@ -2287,7 +2283,7 @@ function MeritWalletInner({
       ? React.createElement(PasswordPanel, {
           mode: passwordMode,
           showTitle: false,
-          icon: passwordIcon,
+          icon: passwordIconSrc ? React.createElement('img', { src: passwordIconSrc, alt: 'Merit Wallet', style: lockLogoStyle }) : undefined,
           errorText: passwordErrorText,
           noticeText: passwordNoticeText,
           onSubmit: onPasswordSubmit,
@@ -2319,10 +2315,10 @@ function MeritWalletInner({
 
   // 2026-10-09 -- the result card of a swap (Success / error, from the shared runUniswapSwap flow). The web app shows MESSAGE_PANEL through its
   // overlayHost; a host without one (the extension) gets it here, in place of the body, until the user closes it.
-  const messageOverlay = messageVisible && !overlayHost ? React.createElement(ConnectedMessagePanel) : null;
+  const messageOverlay = messageVisible ? React.createElement(ConnectedMessagePanel) : null;
 
   // 2026-10-13 (owner request): WALLET_PANEL, the active wallet's account.json. The web app shows it through its overlayHost (walletPanel slot); a host without one (the extension) gets it here, in place of the body.
-  const walletPanelOverlay = walletPanelVisible && !overlayHost ? React.createElement(WalletPanel, { walletId: activeWalletId, baseUrl: walletAssetBaseUrl, showLogo: walletLogoVisible, showMetaData: walletMetaDataVisible }) : null;
+  const walletPanelOverlay = walletPanelVisible ? React.createElement(WalletPanel, { walletId: activeWalletId, baseUrl: walletAssetBaseUrl, showLogo: walletLogoVisible, showMetaData: walletMetaDataVisible }) : null;
 
   const body =
     messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (panelTreeListOpen ? sharedListHost : null) ?? listOverlay ?? gatedTabBody;
@@ -2504,7 +2500,7 @@ function MeritWalletInner({
         <AgentHeaderPanel agentName={agentAccount?.name}>
           {/* 2026-10-08 (docs/meritWalletNpmDesignToDo.txt row 5): the default is the engine-wired picker (AgentSelectDropDown.tsx in this
               package), the same one the web app uses, instead of an inert pill. A host can still pass its own through agentSelectSlot. */}
-          {agentSelectSlot ?? <ConnectedAgentSelectDropDown />}
+          <ConnectedAgentSelectDropDown />
         </AgentHeaderPanel>
       )}
       <div style={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
@@ -2587,7 +2583,7 @@ function MeritWalletInner({
               <WalletSelectDropDownHosted walletId={pillWalletId} displayName={pillWalletId ? walletName(pillWalletId) : undefined} baseUrl={walletAssetBaseUrl} />
             </div>
           )}
-          <WalletRadioPanels overlayHost={overlayHost}>{body}</WalletRadioPanels>
+          <WalletRadioPanels>{body}</WalletRadioPanels>
         </MenuTabHeaderBar>
       </div>
       <WalletSessionDialogs dialog={sessionDialog} onClose={() => setSessionDialog(null)} session={walletSession} />
@@ -2607,7 +2603,7 @@ function MeritWalletInner({
           SponsorStakingListPanel on the same SPONSOR_STAKING_LIST flag, so
           this inert copy rendered a second, empty table under it. */}
       {/* 2026-10-14 (owner report: the locked extension showed the staking list instead of the login form): this overlay self-gates on a flag the extension REMEMBERS across sessions, so it must not draw while the login page is showing. */}
-      {!overlayHost && !passwordPanelShowing && (
+      {!passwordPanelShowing && (
         stakingHost ? <ConnectedSponsorStakingList host={stakingHost} /> : <SponsorStakingListPanel recipients={[]} stakeInfoByAddress={{}} decimals={18} loading={false} />
       )}
       {/* 2026-09-27, STAKING_CONTROLLER_PANEL EXT wiring — render the portable

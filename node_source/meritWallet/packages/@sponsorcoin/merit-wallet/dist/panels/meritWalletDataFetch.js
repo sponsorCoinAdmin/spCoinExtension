@@ -26,6 +26,8 @@ import { FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 const TOKEN_LIST_PAGE_SIZE = 200;
 /** The placeholder address every chain's native token is listed under. */
 const NATIVE_TOKEN_SENTINEL = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+/** The list order: 0 the native token, 1 an spCoin, 2 everything else. */
+const tokenRank = (t, chainId) => (t.address.toLowerCase() === NATIVE_TOKEN_SENTINEL ? 0 : isSpCoin({ address: t.address, chainId }) ? 1 : 2);
 /**
  * One real set of icon caches, built from whatever storage the caller
  * supplies (defaults to a safe in-memory-only fallback). Callers of the
@@ -164,14 +166,15 @@ export async function buildTokenRows(chainId, baseUrl, caches, forceRefresh = fa
             const feed = await fetchAndBuildDataList(FEED_TYPE.REMOTE_TOKEN_LIST, chainId);
             // Same rows, same order as the hosted list: the hosted tokens API drops a token that has no details record and sorts the rest by address; the web picker then lists the native token first,
             // then the spCoins, then the rest in that order.
-            const rank = (t) => (t.address.toLowerCase() === NATIVE_TOKEN_SENTINEL ? 0 : isSpCoin({ address: t.address, chainId }) ? 1 : 2);
             const tokens = (feed.tokens ?? [])
                 .filter((t) => typeof t.address === 'string' && !t.__invalid && Boolean(t.symbol) && t.symbol !== 'N/A')
-                .sort((a, b) => rank(a) - rank(b) || String(a.address).toLowerCase().localeCompare(String(b.address).toLowerCase()));
+                .sort((a, b) => tokenRank(a, chainId) - tokenRank(b, chainId) || String(a.address).toLowerCase().localeCompare(String(b.address).toLowerCase()));
             if (tokens.length === 0)
                 throw hostedError;
             items = tokens.map((t) => ({ address: t.address, symbol: t.symbol, name: t.name, decimals: t.decimals }));
         }
+        // One order in every app, whichever source answered: the native token first, then the spCoins, then the rest by address (the hosted API answers by address alone).
+        items = [...items].sort((a, b) => tokenRank(a, chainId) - tokenRank(b, chainId) || a.address.toLowerCase().localeCompare(b.address.toLowerCase()));
         return await withAssetIcons(items, baseUrl, forceRefresh, (t) => getTokenLogoURL(chainId, t.address), caches.getCachedTokenIconDataUrl, (t, iconSrc) => ({ id: t.address, symbol: t.symbol, name: t.name, address: t.address, decimals: t.decimals, iconSrc }));
     }
     catch (error) {

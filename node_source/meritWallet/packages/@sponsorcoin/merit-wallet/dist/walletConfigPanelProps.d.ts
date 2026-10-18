@@ -10,6 +10,11 @@ export declare function splitPersistedTimeout(hours: number): {
 };
 /** The two picker values back to hours: a missing number counts as 0, and the result stays between one minute and 24 hours. */
 export declare function joinPersistedTimeout(hours: number, minutes: number): number;
+/** The Time Limit picker (hours and minutes) under the Persisted password option. Drawn by the component from the host's hours value (the data) and change callback (the action). */
+export declare function PersistedTimeoutPicker({ hours, onChange }: {
+    hours: number;
+    onChange: (hours: number) => void;
+}): React.JSX.Element;
 export interface WalletConfigEngine {
     uniSelectVisible: boolean;
     zeroXEngineVisible: boolean;
@@ -22,7 +27,8 @@ export declare function useWalletConfigPanelProps({ adapter, engine }: {
 }): {
     passwordMode: MeritWalletPasswordMode;
     onPasswordModeChange: (mode: MeritWalletPasswordMode) => void;
-    persistedTimeoutContent: React.JSX.Element;
+    persistedTimeoutHours: number;
+    onPersistedTimeoutHoursChange: (value: number) => void;
     passwordDescription: string;
     mandatorySecurity: boolean;
     onMandatorySecurityChange: (mandatory: boolean) => void;

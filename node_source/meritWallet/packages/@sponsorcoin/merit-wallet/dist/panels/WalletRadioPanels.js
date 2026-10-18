@@ -44,11 +44,11 @@ import { PanelGate } from '@sponsorcoin/spcoin-panels';
 // UNISWAP_TRADE_BUTTON down to WALLET_RADIO_PANELS' own bottom edge
 // should read as 4px, not 2px.
 const WALLET_RADIO_PANELS_BOTTOM_BUFFER = 4;
-export default function WalletRadioPanels({ children, overlayHost }) {
+export default function WalletRadioPanels({ children }) {
     return (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_RADIO_PANELS, children: _jsx("div", { style: {
                 boxSizing: 'border-box',
                 paddingLeft: RADIO_PANEL_BUFFER,
                 paddingRight: RADIO_PANEL_BUFFER,
                 paddingBottom: WALLET_RADIO_PANELS_BOTTOM_BUFFER,
-            }, children: overlayHost ?? children }) }));
+            }, children: children }) }));
 }

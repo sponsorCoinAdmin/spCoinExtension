@@ -3,6 +3,7 @@
 // docs/meritMigration.txt row 18 -- the Reset Password and Delete Wallet dialogs of the Config tab, drawn once by the component for every host; the host's WalletSessionHost supplies the calls and words.
 'use client';
 
+import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import ChangePasswordPanel from '../ChangePasswordPanel';
 import DeleteWalletDialog from '../DeleteWalletDialog';
@@ -27,11 +28,11 @@ export function sessionConfigHandlers(
 export default function WalletSessionDialogs({ dialog, onClose, session }: { dialog: WalletSessionDialog; onClose(): void; session: WalletSessionHost | undefined }) {
   if (dialog === 'password' && session?.changePassword) {
     return (
-      <div role="dialog" aria-modal="true" style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
-        <div style={{ boxSizing: 'border-box', width: '100%', maxWidth: 340, background: '#0E111B', border: '1px solid #334155', borderRadius: 12, color: '#fff' }}>
+      <div role="dialog" aria-modal="true" style={dialogStyle.backdrop}>
+        <div style={dialogStyle.card}>
           <ChangePasswordPanel title="Reset password" confirmLabel="Update Password" note={session.changePasswordNote} changePassword={session.changePassword} onDone={onClose} />
-          <div style={{ padding: '0 12px 12px' }}>
-            <button type="button" onClick={onClose} style={{ width: '100%', borderRadius: 8, border: '1px solid #334155', background: 'transparent', color: '#fff', padding: '8px 16px', cursor: 'pointer', font: 'inherit' }}>Cancel</button>
+          <div style={dialogStyle.footer}>
+            <button type="button" onClick={onClose} style={dialogStyle.cancelButton}>Cancel</button>
           </div>
         </div>
       </div>

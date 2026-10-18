@@ -9,12 +9,13 @@ import React from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
 import { AccountAvatarWithOpen, RecipientSelectDropDownHosted, SponsorPanelController } from '@sponsorcoin/spcoin-panels';
+import { recipientAvatarStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ConfirmPopup, noConfirmHost } from '../trade/tradeHost';
 export default function ConnectedSponsorPanel({ host }) {
     const useConfirmHost = host?.useConfirmHost ?? noConfirmHost;
     const platform = usePlatform();
     const slots = React.useMemo(() => ({
-        renderRecipientAvatar: (account) => _jsx(AccountAvatarWithOpen, { account: account, mode: SP.RECIPIENT_ACCOUNT, className: "h-[22px] w-[22px] rounded-lg object-contain" }),
+        renderRecipientAvatar: (account) => _jsx(AccountAvatarWithOpen, { account: account, mode: SP.RECIPIENT_ACCOUNT, style: recipientAvatarStyle }),
         onRecipientSiteClick: (href) => {
             if (host?.onRecipientSiteClick)
                 host.onRecipientSiteClick(href);

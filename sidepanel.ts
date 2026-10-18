@@ -16,7 +16,6 @@ import {
   formatAccountRecordAmount,
   REWARD_ROLES,
   REWARD_ROLE_CONFIG,
-  TOTAL_REWARD_CONFIG,
   getPendingRewardsTotalFromRecord,
   getAccountRecordPendingReward,
 } from '@sponsorcoin/spcoin-panels';
@@ -87,11 +86,10 @@ import { buildMeritTradeExecutorContext } from './src/tradeExecutorMerit';
 import { makeFetchBalance } from './src/fetchBalance';
 import { rpcUrlForChain } from './src/chainRpc';
 import { makeResolveAssetAddress } from './src/resolveAssetAddress';
-import { getAccountRecord } from './src/getAccountRecord';
-import { estimateOffChainRewards } from './src/estimateOffChainRewards';
 import { SPOIN_STAKE_ABI } from './src/spCoinStakeAbi';
 import { executeClaimTransaction, SPOIN_CLAIM_ABI } from './src/executeClaimTransaction';
 import { parseAbi } from 'viem';
+
 
 // 2026-10-13 (docs/connectionDesign.txt item 12): bring a Ledger the person granted earlier back after a reload (no prompt).
 restoreLedger();
@@ -894,9 +892,6 @@ async function renderWallet() {
    let rewardTotalCoinsText = '';
    let rewardRows: ManageSponsorshipRoleRow[] = [];
    let rewardRoleLoading: Record<string, boolean> = {};
-   let rewardClaimBusy = false;
-   let rewardEstimateBusy = false;
-   let rewardError: string | undefined;
 
   function render() {
     if (requireVault && vaultSession.getState().phase === 'setup') onboardingOpen = true;
@@ -1140,7 +1135,7 @@ async function renderWallet() {
                 onResetWallet: resetWallet,
                 // 2026-10-14: a site asked to connect (or sign) while the wallet is locked: say so on the login page, like MetaMask's "unlock to continue"; the connect page follows the login.
                 passwordNoticeText: lockedRequestNotice || undefined,
-                passwordIcon: React.createElement('img', { src: brandLogoUrl, alt: '' }),
+                passwordIconSrc: brandLogoUrl,
               },
               config: {
                 // 2026-10-13: the swap and agent wiring this block once said was still to come is done (the shared swap flow in src/swapHost.ts, the agent hydration in
@@ -1513,143 +1508,7 @@ async function renderWallet() {
      });
    }
 
-   // 2026-09-27, Phase C — total-reward estimate callback. Fires the extension's
-   // estimateOffChainRewards client (spcoin_rread via /api/spCoin/run-script,
-   // already CORS-trusted cross-origin). Updates rewardEstimate + re-parses
-   // the display strings. On error, surfaces a message via pendingErrorText.
-   async function handlePendingEstimate() {
-     const from = walletSource.address;
-     if (!from) {
-       alert('Select and activate an account first.');
-       return;
-     }
-     rewardEstimateBusy = true;
-     rewardError = undefined;
-     parseRewardDisplay();
-     render();
-     try {
-       rewardEstimate = await estimateOffChainRewards(from, TOTAL_REWARD_CONFIG.estimateMethod, {
-         baseUrl,
-         contractAddress: spCoinAddress(),
-         rpcUrl: chainRpcUrl(),
-         chainId: activeChainId,
-       });
-       parseRewardDisplay();
-     } catch (error) {
-       rewardError = `Estimate failed: ${error instanceof Error ? error.message : String(error)}`;
-       parseRewardDisplay();
-     } finally {
-       rewardEstimateBusy = false;
-       render();
-     }
-   }
-
-   // 2026-09-27, Phase C — per-role estimate callback. Fires the role-specific
-   // estimate method (estimateOffChainSponsorRewards / Recipient / Agent).
-   async function handleRoleEstimate(role: ManageSponsorshipRole) {
-     const from = walletSource.address;
-     if (!from) {
-       alert('Select and activate an account first.');
-       return;
-     }
-     const config = REWARD_ROLE_CONFIG[role];
-     rewardRoleLoading[role] = true;
-     rewardError = undefined;
-     parseRewardDisplay();
-     render();
-     try {
-        await estimateOffChainRewards(from, config.estimateMethod as Parameters<typeof estimateOffChainRewards>[1], {
-         baseUrl,
-         contractAddress: spCoinAddress(),
-         rpcUrl: chainRpcUrl(),
-         chainId: activeChainId,
-       });
-       parseRewardDisplay();
-      } catch (error) {
-        rewardError = `Estimate failed: ${error instanceof Error ? error.message : String(error)}`;
-        rewardRoleLoading[role] = false;
-        parseRewardDisplay();
-        render();
-        return;
-      }
-      rewardRoleLoading[role] = false;
-      parseRewardDisplay();
-      render();
-    }
-
-
-   // 2026-09-27, Phase C — total-reward claim (claimOnChainTotalRewards).
-   // Uses the extension's executeClaimTransaction adapter: viem encodeFunctionData
-   // + TradeExecutor (meritSign) pipeline. After confirmation, re-fetches accountRecord
-   // to refresh all display strings.
-   async function handlePendingClaim() {
-     const from = walletSource.address;
-     if (!from) {
-       alert('Select and activate an account first.');
-       return;
-     }
-     rewardClaimBusy = true;
-     parseRewardDisplay();
-     render();
-     try {
-       const result = await executeClaimTransaction({
-         baseUrl,
-         rpcUrl: chainRpcUrl(),
-         accountKey: from,
-         method: TOTAL_REWARD_CONFIG.claimMethod,
-         abi: SPOIN_CLAIM_ABI,
-         contractAddress: spCoinAddress(),
-         chainId: activeChainId,
-         fromAddress: from,
-         onConfirmed: () => void fetchAccountRecord(from),
-       });
-       if (result.transactionHash) {
-         alert(`Claim submitted. Transaction hash: ${result.transactionHash}`);
-       }
-     } catch (error) {
-       alert(`Claim failed: ${error instanceof Error ? error.message : String(error)}`);
-     } finally {
-       rewardClaimBusy = false;
-       await fetchAccountRecord(from);
-       render();
-     }
-   }
-
-   // 2026-09-27, Phase C — per-role claim callback.
-   // Uses the role-specific claimOnChain* method.
-   async function handleRoleClaim(role: ManageSponsorshipRole) {
-     const from = walletSource.address;
-     if (!from) {
-       alert('Select and activate an account first.');
-       return;
-     }
-     const config = REWARD_ROLE_CONFIG[role];
-     rewardRoleLoading[role] = true;
-     parseRewardDisplay();
-     render();
-     try {
-       const result = await executeClaimTransaction({
-         baseUrl,
-         rpcUrl: chainRpcUrl(),
-         accountKey: from,
-          method: config.claimMethod as Parameters<typeof executeClaimTransaction>[0]['method'],
-         abi: SPOIN_CLAIM_ABI,
-         contractAddress: spCoinAddress(),
-         chainId: activeChainId,
-         fromAddress: from,
-         onConfirmed: () => void fetchAccountRecord(from),
-       });
-       if (result.transactionHash) {
-         alert(`Claim submitted. Transaction hash: ${result.transactionHash}`);
-       }
-     } catch (error) {
-       alert(`Claim failed: ${error instanceof Error ? error.message : String(error)}`);
-     } finally {
-       rewardRoleLoading[role] = false;
-       await fetchAccountRecord(from);
-       render();
-     }
-   }
+   // (The Rewards tab's estimate and claim run through rewardsHost above; the older per-button handlers that stood here were never wired and are gone.)
 
    function handleNetworkRowSelect(networkId: string) {
     const next = Number(networkId);

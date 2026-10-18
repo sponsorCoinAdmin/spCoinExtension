@@ -6,6 +6,7 @@
 //   engine   the two engine toggles (Uniswap and 0x) as the panel-visibility state plus the functions that change it.
 // The result is spread onto the shared WalletConfigPanel (spcoin-panels). Nothing here imports web code.
 import React from 'react';
+import { timeLimitStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ScrollableDropdown } from '@sponsorcoin/spcoin-panels';
 import type { ApplicationSyncMode, MeritExtensionChannel, MeritWalletLocation, MeritWalletPasswordMode } from '@sponsorcoin/spcoin-panels';
 import { extensionDownloadPathFor, passwordDescriptionFor, syncDescriptionFor, useWalletConfig, type WalletConfigAdapter } from './walletConfig';
@@ -25,6 +26,34 @@ export function joinPersistedTimeout(hours: number, minutes: number): number {
   return Math.min(24, Math.max(1 / 60, raw));
 }
 
+/** The Time Limit picker (hours and minutes) under the Persisted password option. Drawn by the component from the host's hours value (the data) and change callback (the action). */
+export function PersistedTimeoutPicker({ hours, onChange }: { hours: number; onChange: (hours: number) => void }) {
+  const timeout = splitPersistedTimeout(hours);
+  return (
+    <div style={timeLimitStyle.row}>
+      <span style={timeLimitStyle.label} title="2026-10-13: ONE idle time limit for every password mode. How long the wallet stays logged in without being used before it locks itself (in Persisted mode it is also how long the stored password stays valid). Resets to this full duration every time the wallet is actually used.">
+        Time Limit
+      </span>
+      <div style={timeLimitStyle.pickers}>
+        <ScrollableDropdown
+          ariaLabel="Time limit hours"
+          value={timeout.hours}
+          options={HOUR_OPTIONS}
+          suffix="h"
+          onChange={(h) => onChange(joinPersistedTimeout(h, timeout.minutes))}
+        />
+        <ScrollableDropdown
+          ariaLabel="Time limit minutes"
+          value={timeout.minutes}
+          options={MINUTE_OPTIONS}
+          suffix="m"
+          onChange={(m) => onChange(joinPersistedTimeout(timeout.hours, m))}
+        />
+      </div>
+    </div>
+  );
+}
+
 export interface WalletConfigEngine {
   uniSelectVisible: boolean;
   zeroXEngineVisible: boolean;
@@ -35,36 +64,11 @@ export interface WalletConfigEngine {
 export function useWalletConfigPanelProps({ adapter, engine }: { adapter: WalletConfigAdapter; engine: WalletConfigEngine }) {
   const { state: config, set: setConfig } = useWalletConfig(adapter);
   const { showBackgroundPage, modalMode, location, passwordMode, persistedPasswordTimeoutHours, mandatorySecurity, mandatoryApproval, syncMode, extensionChannel } = config;
-  const timeout = splitPersistedTimeout(persistedPasswordTimeoutHours);
-
-  const persistedTimeoutContent = (
-    <div className="mt-2 flex items-center gap-3">
-      <span className="text-sm font-semibold text-white" title="2026-10-13: ONE idle time limit for every password mode. How long the wallet stays logged in without being used before it locks itself (in Persisted mode it is also how long the stored password stays valid). Resets to this full duration every time the wallet is actually used.">
-        Time Limit
-      </span>
-      <div className="flex items-center gap-2">
-        <ScrollableDropdown
-          ariaLabel="Time limit hours"
-          value={timeout.hours}
-          options={HOUR_OPTIONS}
-          suffix="h"
-          onChange={(h) => setConfig({ persistedPasswordTimeoutHours: joinPersistedTimeout(h, timeout.minutes) })}
-        />
-        <ScrollableDropdown
-          ariaLabel="Time limit minutes"
-          value={timeout.minutes}
-          options={MINUTE_OPTIONS}
-          suffix="m"
-          onChange={(m) => setConfig({ persistedPasswordTimeoutHours: joinPersistedTimeout(timeout.hours, m) })}
-        />
-      </div>
-    </div>
-  );
-
   return {
     passwordMode,
     onPasswordModeChange: (mode: MeritWalletPasswordMode) => setConfig({ passwordMode: mode }),
-    persistedTimeoutContent,
+    persistedTimeoutHours: persistedPasswordTimeoutHours,
+    onPersistedTimeoutHoursChange: (value: number) => setConfig({ persistedPasswordTimeoutHours: value }),
     passwordDescription: passwordDescriptionFor(passwordMode),
     mandatorySecurity,
     onMandatorySecurityChange: (mandatory: boolean) => setConfig({ mandatorySecurity: mandatory }),

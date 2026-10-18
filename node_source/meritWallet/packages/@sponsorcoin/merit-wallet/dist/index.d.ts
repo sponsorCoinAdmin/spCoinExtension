@@ -6,8 +6,6 @@ export { default as ConnectedAgentSelectDropDown } from './AgentSelectDropDown';
 export type { ConnectedAgentSelectDropDownProps } from './AgentSelectDropDown';
 export { DEFAULT_WALLET_CONFIG, sanitizeWalletConfig, passwordDescriptionFor, syncDescriptionFor, extensionDownloadPathFor, createWalletConfig, useWalletConfig, } from './walletConfig';
 export type { MeritWalletConfigState, WalletConfigAdapter, WalletConfigController } from './walletConfig';
-export { default as WalletOverlayHost } from './WalletOverlayHost';
-export type { WalletOverlayHostProps, WalletOverlaySlots } from './WalletOverlayHost';
 export { RADIO_PANEL_GROUPS_WITH_FALLBACKS, EMPTY_RADIO_PANEL_GROUPS } from './radioPanelGroups';
 export { WalletDataProvider, useWalletData } from './walletData';
 export type { WalletDataSource } from './walletData';
@@ -29,7 +27,7 @@ export { createVaultAuthenticator, type VaultAuthenticatorOptions } from './vaul
 export { createWorkerVault, workerError, type WorkerVault, type WorkerVaultTransport, type WorkerReply } from './vault/workerVault';
 export { createPhoneVault, createPhoneAuthenticator, PhoneAuthError, type PhoneKeyManager, type PhoneAccount, type PhoneAuthErrorCode, type PhoneAuthenticatorOptions } from './vault/phoneVault';
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT, type VaultCapability, type VaultCapabilities, type VaultCredential, type VaultCredentialKind, type VaultAccount, type VaultErrorCode, type LocalVaultOptions } from './vault/vaultCapability';
-export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend } from './send/sendTransfer';
+export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend, isNativePlaceholder } from './send/sendTransfer';
 export type { PreparedTransaction, PrepareResult, TransferParams, SendRequest, SendOutcome, SendTransport, ExecuteSendParams, SendResult } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';
 export { validateLogin, isLoginGateClosed, deriveLoginState } from './session/validateLogin';

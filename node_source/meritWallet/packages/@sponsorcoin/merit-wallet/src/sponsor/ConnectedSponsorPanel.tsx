@@ -9,6 +9,7 @@ import React from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
 import { AccountAvatarWithOpen, RecipientSelectDropDownHosted, SponsorPanelController, type SponsorPanelSlots } from '@sponsorcoin/spcoin-panels';
+import { recipientAvatarStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ConfirmPopup, noConfirmHost, type StakeConfirmHostState, type TradeHost } from '../trade/tradeHost';
 
 /** The Sponsor tab's host: the same data and functions the Swap tab uses (TradeHost). */
@@ -20,7 +21,7 @@ export default function ConnectedSponsorPanel({ host }: { host?: SponsorPanelHos
   const platform = usePlatform();
   const slots = React.useMemo<SponsorPanelSlots>(
     () => ({
-      renderRecipientAvatar: (account) => <AccountAvatarWithOpen account={account} mode={SP.RECIPIENT_ACCOUNT} className="h-[22px] w-[22px] rounded-lg object-contain" />,
+      renderRecipientAvatar: (account) => <AccountAvatarWithOpen account={account} mode={SP.RECIPIENT_ACCOUNT} style={recipientAvatarStyle} />,
       onRecipientSiteClick: (href) => {
         if (host?.onRecipientSiteClick) host.onRecipientSiteClick(href);
         else platform.openUrl(href);

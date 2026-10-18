@@ -11,11 +11,16 @@ import { parseUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { SponsorStakingListPanel, StakeConfirmPopup, formatTokenAmount, } from '@sponsorcoin/spcoin-panels';
+import { AccountAvatarWithOpen, AccountSelectDropDownHosted, ACCOUNT_SELECT_DISPLAY, LoadingText } from '@sponsorcoin/spcoin-panels';
 import { buildUnstakeReceipt, toMessageAccount } from '../receipt/transactionReceipts';
 import { useTransactionReceipt } from '../receipt/useTransactionReceipt';
 import { useActiveAccountProfile } from '../swap/activeAccountProfile';
 import { loadSponsorTree } from './sponsorReads';
 import { unstakeSpCoin } from './unstakeWalk';
+// The row's account pill and avatar are the same in every app (they were the web app's slots).
+const ROW_ACCOUNT_SELECT_DISPLAY = ACCOUNT_SELECT_DISPLAY.ICON | ACCOUNT_SELECT_DISPLAY.NAME | ACCOUNT_SELECT_DISPLAY.ADDRESS | ACCOUNT_SELECT_DISPLAY.COPY;
+const ROW_ACCOUNT_CELL = ({ account, mode, label, addrPrePostSize, addressSizeClassName, onAddressClick }) => (_jsx(AccountSelectDropDownHosted, { recipientAccount: account, mode: mode, label: label, showDisplay: ROW_ACCOUNT_SELECT_DISPLAY, onSelectClick: (e) => e.preventDefault(), onAddressClick: onAddressClick, addrPrePostSize: addrPrePostSize, addressSizeClassName: addressSizeClassName, panelGateId: null }));
+const ROW_AVATAR = (account) => _jsx(AccountAvatarWithOpen, { account: account, mode: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT, className: "h-6 w-6 rounded object-contain shrink-0" });
 // The last list seen per (contract, sponsor): reopening the panel paints it at once and then refreshes (the web app's list cache did the same).
 const snapshots = new Map();
 function account(profile) {
@@ -141,5 +146,5 @@ export default function ConnectedSponsorStakingList({ host }) {
         }
     }, [host, sponsor, decimals, exchangeContext, activeProfile, showReceipt, fetchList]);
     const activeAccount = exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount;
-    return (_jsx(SponsorStakingListPanel, { recipients: recipients, stakeInfoByAddress: stakeInfoByAddress, decimals: decimals, loading: loading, error: error, activeUnstakeKey: activeUnstakeKey, accountCellSlot: host.accountCellSlot, avatarSlot: host.avatarSlot, loadingContent: host.loadingContent, confirmPopupContent: ({ isOpen, target, totalAmount, onConfirm, onCancel }) => (_jsx(StakeConfirmPopup, { isOpen: isOpen, mode: "REVOKE", isSpCoin: true, spCoinContract: host.spCoinContract, activeAccount: activeAccount, recipientAccount: target?.recipient, agentAccount: target?.agent, hasAgent: Boolean(target?.agent), totalAmount: totalAmount, onCancel: onCancel, onConfirm: onConfirm })), onConfirmUnstake: handleConfirmUnstake }));
+    return (_jsx(SponsorStakingListPanel, { recipients: recipients, stakeInfoByAddress: stakeInfoByAddress, decimals: decimals, loading: loading, error: error, activeUnstakeKey: activeUnstakeKey, accountCellSlot: ROW_ACCOUNT_CELL, avatarSlot: ROW_AVATAR, loadingContent: _jsx(LoadingText, {}), confirmPopupContent: ({ isOpen, target, totalAmount, onConfirm, onCancel }) => (_jsx(StakeConfirmPopup, { isOpen: isOpen, mode: "REVOKE", isSpCoin: true, spCoinContract: host.spCoinContract, activeAccount: activeAccount, recipientAccount: target?.recipient, agentAccount: target?.agent, hasAgent: Boolean(target?.agent), totalAmount: totalAmount, onCancel: onCancel, onConfirm: onConfirm })), onConfirmUnstake: handleConfirmUnstake }));
 }

@@ -9,8 +9,8 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
-import { ManageSponsorshipsPanel, createAccountRecordSource, runRewardScript as runRewardScriptCall, useManageSponsorshipsData, useManageSponsorshipsNavigation, } from '@sponsorcoin/spcoin-panels';
+import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { AddressSelect, ManageSponsorshipsPanel, createAccountRecordSource, runRewardScript as runRewardScriptCall, useManageSponsorshipsData, useManageSponsorshipsNavigation, } from '@sponsorcoin/spcoin-panels';
 const noopRegisterRefresh = () => undefined;
 const noopSubscribe = () => () => undefined;
 const AUTO_REFRESH_KEY = 'spcoin_rewards_auto_refresh';
@@ -77,5 +77,5 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
             onStakedLabelClick: unstakeAllSponsorships, stakedIsZero: stakedIsZero, autoRefresh: autoRefresh, onAutoRefreshChange: changeAutoRefresh, pendingVisible: pendingVisible, pendingInitialLoading: pendingInitialLoading, pendingRoleUnavailable: pendingRoleUnavailable, pendingIsZero: pendingIsZero, pendingClaimInProgress: totalReward.loading && totalReward.action === 'claim', pendingClaimDisabled: !pendingInitialLoading && ((totalReward.loading && totalReward.action === 'claim') || !activeContractAddr || !activeAccountAddr), pendingErrorText: totalReward.error, onPendingEstimate: () => {
                 if (!pendingRoleUnavailable)
                     void runTotalRewardAction('estimate');
-            }, onPendingClaim: () => void runTotalRewardAction('claim'), onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), onRoleClaim: (role) => void runRewardAction(role, 'claim'), addressSelectContent: extras.addressSelectContent }) }));
+            }, onPendingClaim: () => void runTotalRewardAction('claim'), onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), onRoleClaim: (role) => void runRewardAction(role, 'claim'), addressSelectContent: _jsx(AssetSelectDisplayProvider, { children: _jsx(AssetSelectProvider, { containerType: SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL, closePanelCallback: () => extras.onClose?.(), setSelectedAssetCallback: () => undefined, children: _jsx(AddressSelect, { callingParent: "ManageSponsorshipsPanel", defaultAddress: extras.depositAddress ?? host.contractAddress(), bypassDefaultFsm: true, useActiveAddr: true, shortAddr: true, preText: "Deposit Account:", showAccount: false }) }) }) }) }));
 }

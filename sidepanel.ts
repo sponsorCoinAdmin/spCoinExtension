@@ -7,9 +7,8 @@ import { METAMASK_ID } from './src/metamaskAuthenticator';
 import { isExternalAccount } from './src/externalAccounts';
 import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger';
 import { startDappApprovals } from './src/dappApprovals';
-import { createSwapHost } from './src/swapHost';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, TestAccountsSection, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
+import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
 import { PasswordPanel, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
@@ -53,7 +52,7 @@ import { openOrFocusApp } from './src/openApp';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { registerExtensionEngineHosts } from './src/engineHosts';
 import { ActiveSpCoinLoader } from './src/ActiveSpCoinLoader';
-import { createExtensionListHost, createExtensionSponsorPanel } from './src/sponsorPanelHost';
+import { extensionTradeHost } from './src/tradeHost';
 
 // 2026-10-11 (row 13): the shared panels' hooks (quotes, balances) read through React Query; one client for the side panel.
 const queryClient = new QueryClient();
@@ -573,6 +572,29 @@ async function renderWallet() {
       connectMeritExtension: 'You are already in the Merit extension.',
     },
   };
+  // docs/meritMigration.txt row 18: Reset Password and Delete Wallet as functions and words; the component draws the dialogs (ChangePasswordPanel, DeleteWalletDialog).
+  const walletSession: WalletSessionHost = {
+    changePassword: async (oldPassword, newPassword) => {
+      const reply = (await chrome.runtime.sendMessage({ type: 'merit/vault/changePassword', oldPassword, newPassword })) as { ok: boolean; error?: string; message?: string };
+      if (!reply.ok) throw new Error(reply.error === 'wrong-password' ? 'Incorrect current password.' : reply.error === 'too-many-attempts' ? 'Too many incorrect passwords. Wait a moment and try again.' : reply.message ?? 'The password could not be changed.');
+    },
+    deleteWallet: async (password) => {
+      let verified = (await chrome.runtime.sendMessage({ type: 'merit/vault/verifyPassword', password })) as { ok: boolean; error?: string; message?: string };
+      // A background service that has not been reloaded yet does not know verifyPassword; checking through the (password-protected) phrase reveal gives the same answer.
+      if (!verified.ok && verified.error === 'invalid-request') {
+        verified = (await chrome.runtime.sendMessage({ type: 'merit/accounts/revealMnemonic', password })) as { ok: boolean; error?: string; message?: string };
+      }
+      if (!verified.ok) throw new Error(verified.error === 'wrong-password' ? 'Incorrect password.' : verified.error === 'too-many-attempts' ? 'Too many incorrect passwords. Wait a moment and try again.' : verified.message ?? 'The wallet could not be deleted.');
+      await chrome.runtime.sendMessage({ type: 'merit/vault/wipe' });
+      vaultRows = null;
+      vaultRowsStale = true;
+      vaultScreen = null;
+      walletSource = DISCONNECTED_WALLET_SOURCE;
+      await vaultSession.refresh();
+      render();
+    },
+    deleteButton: 'deleteWallet',
+  };
   const accountProfileHost: AccountProfileHost = {
     baseUrl,
     canEdit: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),
@@ -592,6 +614,14 @@ async function renderWallet() {
       })();
     },
   };
+  // docs/meritWallet row 14: the shared account detail screen (avatar, profile table, Private Key row) over this vault: the profile host above signs and says which accounts the wallet may edit; a key is revealed by the vault behind the wallet password.
+  const accountDetailHost = accountDetailHostFromProfile(accountProfileHost, {
+    revealPrivateKey: async (address, password) => {
+      if (!password) throw new PasswordRequiredError();
+      return vaultAccountsApi.exportPrivateKey(password, address);
+    },
+    canReveal: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),
+  });
   // Sponsor staking (the Rewards tab's Unstake list and the Sponsor tab's "Sponsor Staked spCoins" line): contract views are read straight from the chain's RPC, an Un-Stake
   // leg is encoded here and signed by the vault behind the confirmation screen, one transaction per leg, each waited for. One stable object so the wallet does not refetch every render.
   const sponsorReadParams = () => ({ contractAddress: spCoinAddress(), rpcUrl: chainRpcUrl(), accessSource: 'local' as const, readMode: 'hardhat' as const });
@@ -653,15 +683,6 @@ async function renderWallet() {
     },
     onClaimed: () => void walletRefresh.run(),
   };
-  const swapHost = createSwapHost({
-    baseUrl,
-    getAccount: () => walletSource.address,
-    // After a swap: reload balances through the same refresh the header icon runs.
-    onSettled: () => void walletRefresh.run(),
-    onResult: (result) => {
-      alert(result.ok ? `Swap sent.${result.hash ? ` Transaction hash: ${result.hash}` : ''}` : `Swap failed: ${result.message}`);
-    },
-  });
   // Setup is required (the wallet is unusable until a vault exists, MetaMask's onboarding) only when this storage flag is set; until the hosted-app
   // accounts are retired it stays off, so an extension without a vault keeps working as before.
   let requireVault = true;
@@ -746,7 +767,6 @@ async function renderWallet() {
     });
   }
   // Config's Remove Account: remove the active account from the wallet. Only accounts imported by private key can go (the others come from the Secret Recovery Phrase).
-  let deleteWalletDialogOpen = false;
   function removeActiveAccount() {
     const address = walletSource.address;
     if (!address) {
@@ -762,10 +782,6 @@ async function renderWallet() {
         await loadVaultAccounts();
       })
       .catch((error: unknown) => alert(error instanceof Error ? error.message : 'The account could not be removed.'));
-  }
-  function openChangePassword() {
-    vaultScreen = 'password';
-    render();
   }
   function openVaultScreen() {
     void vaultStatus().then((status) => {
@@ -947,30 +963,6 @@ async function renderWallet() {
         // it needs to overlay regardless of which of those two is showing.
         React.createElement(TransactionConfirmOrchestrator),
         React.createElement(TransferApprovalHost),
-        deleteWalletDialogOpen
-          ? React.createElement(DeleteWalletDialog, {
-              confirmDelete: async (password: string) => {
-                let verified = (await chrome.runtime.sendMessage({ type: 'merit/vault/verifyPassword', password })) as { ok: boolean; error?: string; message?: string };
-                // A background service that has not been reloaded yet does not know verifyPassword; checking through the (password-protected) phrase reveal gives the same answer.
-                if (!verified.ok && verified.error === 'invalid-request') {
-                  verified = (await chrome.runtime.sendMessage({ type: 'merit/accounts/revealMnemonic', password })) as { ok: boolean; error?: string; message?: string };
-                }
-                if (!verified.ok) throw new Error(verified.error === 'wrong-password' ? 'Incorrect password.' : verified.error === 'too-many-attempts' ? 'Too many incorrect passwords. Wait a moment and try again.' : verified.message || (verified.error === 'invalid-request' ? 'The wallet service is out of date. Reload the extension at chrome://extensions and try again.' : 'The password could not be checked (' + (verified.error ?? 'no answer') + ').'));
-                await chrome.runtime.sendMessage({ type: 'merit/vault/wipe' });
-                deleteWalletDialogOpen = false;
-                vaultRows = null;
-                vaultRowsStale = true;
-                vaultScreen = null;
-                walletSource = DISCONNECTED_WALLET_SOURCE;
-                await vaultSession.refresh();
-                render();
-              },
-              onClose: () => {
-                deleteWalletDialogOpen = false;
-                render();
-              },
-            })
-          : null,
         // Phase B.2 Stage 2.c — PasswordPanel replaces MeritWallet
         // entirely while a locked account's password is being requested,
         // same shape as the web app's own PasswordGateOrchestrator
@@ -987,15 +979,7 @@ async function renderWallet() {
                 { type: 'button', onClick: closeVaultScreen, style: { alignSelf: 'flex-start', margin: '8px 12px 0', background: 'none', border: 0, color: '#5981F3', cursor: 'pointer', font: 'inherit' } },
                 '← Back to wallet',
               ),
-              vaultScreen === 'password'
-                ? React.createElement(ChangePasswordPanel, {
-                    changePassword: async (oldPassword: string, newPassword: string) => {
-                      const reply = (await chrome.runtime.sendMessage({ type: 'merit/vault/changePassword', oldPassword, newPassword })) as { ok: boolean; error?: string; message?: string };
-                      if (!reply.ok) throw new Error(reply.error === 'wrong-password' ? 'Incorrect current password.' : reply.error === 'too-many-attempts' ? 'Too many incorrect passwords. Wait a moment and try again.' : reply.message || 'The password could not be changed.');
-                    },
-                    onDone: closeVaultScreen,
-                  })
-                : vaultScreen === 'onboarding'
+              vaultScreen === 'onboarding'
                 ? React.createElement(WalletOnboardingPanel, {
                     createWallet: vaultOnboarding.createWallet,
                     importWallet: vaultOnboarding.importWallet,
@@ -1113,13 +1097,12 @@ async function renderWallet() {
               },
               selection: {
                 onAddAccount: openVaultScreen,
-                swapHost,
                 // the vault's rows are chosen through the derived list's connect; the old handler stays only for the (unlocked-keystore) fallback list
                 onAccountRowSelect: vaultRows ? undefined : handleAccountRowSelect,
                 onNetworkRowSelect: handleNetworkRowSelect,
                 onAccountIconClick: (address: string) => void handleAccountIconClick(address),
                 accountDetail,
-                accountProfileHost,
+                accountDetailHost,
                 addAccountHost,
                 onTokenIconClick: (address: string) => void handleTokenIconClick(address),
                 tokenDetail,
@@ -1140,18 +1123,17 @@ async function renderWallet() {
                   tokenSymbol?: string;
                  }) => handleSendSubmit(params),
                 // 2026-10-11 (row 13): the Sponsor tab is the shared panel, driven by the exchange context.
-                sponsorPanel: createExtensionSponsorPanel(),
-                listHost: createExtensionListHost(),
+                tradeHost: extensionTradeHost,
               },
               slots: {
-                configTestAccountsContent: React.createElement(TestAccountsSection, {
+                configTestAccounts: {
                   api: vaultTestAccountsApi,
                   authenticationType: AuthenticationType.VAULT,
                   onChanged: () => {
                     vaultRowsStale = true;
                     render();
                   },
-                }),
+                },
               },
               lock: {
                 // 2026-10-08 (table row 23): the lock gate is the component's own: while the vault is locked it shows the password screen in place of everything.
@@ -1201,12 +1183,8 @@ async function renderWallet() {
                  // is effectively already true. Documented in
                  // docs/design/meritWalletHostExtraction.txt section 6.
                  configPasswordMode: walletConfig.getState().passwordMode,
-            onConfigResetPassword: openChangePassword,
             onConfigDeleteAccount: removeActiveAccount,
-            onConfigDeleteWallet: () => {
-              deleteWalletDialogOpen = true;
-              render();
-            },
+            walletSession,
                 onConfigPasswordModeChange: (mode) => walletConfig.set({ passwordMode: mode }),
                 configPasswordDescription: passwordDescriptionFor(walletConfig.getState().passwordMode),
                 configMandatorySecurity: walletConfig.getState().mandatorySecurity,

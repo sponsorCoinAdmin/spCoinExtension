@@ -38,8 +38,6 @@ export { default as GenericListPanel } from './GenericListPanel';
 export type { GenericListPanelProps, GenericListRow } from './GenericListPanel';
 export { default as RewardsPendingByAccountTypePanel } from './RewardsPendingByAccountTypePanel';
 export type { RewardsPendingByAccountTypePanelProps } from './RewardsPendingByAccountTypePanel';
-export { default as AccountDetailPanel } from './AccountDetailPanel';
-export type { AccountDetailPanelProps } from './AccountDetailPanel';
 export { default as TokenDetailPanel } from './TokenDetailPanel';
 export type { TokenDetailPanelProps } from './TokenDetailPanel';
 export { default as NetworkDetailPanel } from './NetworkDetailPanel';

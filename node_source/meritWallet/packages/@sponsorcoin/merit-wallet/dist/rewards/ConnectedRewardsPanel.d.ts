@@ -38,8 +38,10 @@ export interface RewardsPanelExtras {
         getServerSnapshot(): boolean;
         setUserPreference(next: boolean): void;
     };
-    /** The "Deposit Account" row the web shows above the table. */
-    addressSelectContent?: React.ReactNode;
+    /** The address the "Deposit Account" row starts from (the web app's preferred spCoin contract); default: the host's contract address. The row itself is drawn here, in every app. */
+    depositAddress?: string;
+    /** Close the Rewards panel (the Deposit Account picker closes it after a pick). */
+    onClose?(): void;
     /** Debug trace sink. */
     trace?: (message: string, data?: Record<string, unknown>) => void;
     /** A hook that registers the panel's refresh function with the host's refresh bus (the web's useCacheRefreshHandler). Must be a stable function. */

@@ -27,7 +27,6 @@ export { default as SendTabPanel } from './SendTabPanel';
 export { default as SendAddressHeaderBar } from './SendAddressHeaderBar';
 export { default as GenericListPanel } from './GenericListPanel';
 export { default as RewardsPendingByAccountTypePanel } from './RewardsPendingByAccountTypePanel';
-export { default as AccountDetailPanel } from './AccountDetailPanel';
 export { default as TokenDetailPanel } from './TokenDetailPanel';
 export { default as NetworkDetailPanel } from './NetworkDetailPanel';
 export { default as DetailPanelEmptyState } from './DetailPanelEmptyState';

@@ -9,8 +9,9 @@
 import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import {
+  AddressSelect,
   ManageSponsorshipsPanel,
   createAccountRecordSource,
   runRewardScript as runRewardScriptCall,
@@ -55,8 +56,10 @@ export interface RewardsPanelExtras {
   isActive?: boolean;
   /** A shared Auto Refresh store instead of this panel's own saved preference (the web app's autoRefreshStore also lets other code switch it off temporarily). */
   autoRefreshStore?: { subscribe(listener: () => void): () => void; getSnapshot(): boolean; getServerSnapshot(): boolean; setUserPreference(next: boolean): void };
-  /** The "Deposit Account" row the web shows above the table. */
-  addressSelectContent?: React.ReactNode;
+  /** The address the "Deposit Account" row starts from (the web app's preferred spCoin contract); default: the host's contract address. The row itself is drawn here, in every app. */
+  depositAddress?: string;
+  /** Close the Rewards panel (the Deposit Account picker closes it after a pick). */
+  onClose?(): void;
   /** Debug trace sink. */
   trace?: (message: string, data?: Record<string, unknown>) => void;
   /** A hook that registers the panel's refresh function with the host's refresh bus (the web's useCacheRefreshHandler). Must be a stable function. */
@@ -184,7 +187,13 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
         rewardRows={rewardRows}
         onRoleEstimate={(role) => void runRewardAction(role, 'estimate')}
         onRoleClaim={(role) => void runRewardAction(role, 'claim')}
-        addressSelectContent={extras.addressSelectContent}
+        addressSelectContent={
+          <AssetSelectDisplayProvider>
+            <AssetSelectProvider containerType={SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL} closePanelCallback={() => extras.onClose?.()} setSelectedAssetCallback={() => undefined}>
+              <AddressSelect callingParent="ManageSponsorshipsPanel" defaultAddress={extras.depositAddress ?? host.contractAddress()} bypassDefaultFsm useActiveAddr shortAddr preText="Deposit Account:" showAccount={false} />
+            </AssetSelectProvider>
+          </AssetSelectDisplayProvider>
+        }
       />
     </div>
   );

@@ -8,14 +8,18 @@
 //   api provider     the extension has no hosted trading provider: none
 //   chain clients    viem clients over the chain's RPC from the network registry (the app chain, and any chain by id)
 import { useMemo, useSyncExternalStore } from 'react';
-import { createPublicClient, http, type Abi } from 'viem';
+import { createPublicClient, formatUnits, http, type Abi } from 'viem';
+import { createQuoteClient } from '@sponsorcoin/merit-wallet';
+import type { PriceRequestParams } from '@sponsorcoin/spcoin-common/context';
 import {
   decodeSpCoinErrorFromError,
   setApiProviderHook,
   setApprovalPendingHook,
   setAppPublicClientHook,
   setChainPublicClientHook,
+  setQuoteService,
   setSwapFunctionsHook,
+  setUniswapSwapIoHook,
   useActiveSpCoinAddress,
   useAppChainId,
   useBuyTokenContract,
@@ -27,6 +31,7 @@ import {
 } from '@sponsorcoin/spcoin-exchange-engine';
 import { rpcUrlForChain } from './chainRpc';
 import { buildMeritTradeExecutorContext } from './tradeExecutorMerit';
+import { executeUniswapV3Swap } from './executeUniswapV3Swap';
 import { runSpCoinReadStep } from './runSpCoinReadStep';
 import { SPOIN_STAKE_ABI } from './spCoinStakeAbi';
 import { getPendingSignRequest, subscribePendingSignRequest } from './pendingSignRequestStore';
@@ -92,14 +97,74 @@ export function useExtensionChainPublicClient(chainId?: number) {
   }, [chainId]);
 }
 
+/** What the confirmation screen shows for the swap, from the approval-details request the shared swap flow (runUniswapSwap) hands the signer. */
+function confirmCopy(request: any, minReceived: string) {
+  return {
+    title: String(request?.title ?? 'Swapping via Uniswap V3'),
+    message: `Minimum received ${minReceived}`,
+    amount: request?.amount as { label: string; value: string } | undefined,
+    tokens: ((request?.tokens ?? []) as any[]).map((tk) => ({ label: tk.label, symbol: tk.token?.symbol, name: tk.token?.name, address: tk.token?.address, logoURL: tk.token?.logoURL })),
+  };
+}
+
+/** The Uniswap row's swap I/O: the signer is the request itself (the vault signs locally behind the confirmation screen, see tradeExecutorMerit.ts); the executors are the extension's. */
+function useExtensionUniswapSwapIo() {
+  return {
+    getSigner: async (request: unknown) => request,
+    executeSingle: async (params: any) => {
+      const request = params.signer as any;
+      const buy = (request?.tokens ?? []).find((tk: any) => String(tk.label).startsWith('Receive'))?.token;
+      const minReceived = `${formatUnits(params.amountOutMinimum, buy?.decimals ?? 18)} ${buy?.symbol ?? ''}`.trim();
+      const result = await executeUniswapV3Swap({
+        baseUrl: '',
+        rpcUrl: params.rpcUrl,
+        chainId: params.chainId,
+        tokenIn: params.tokenIn,
+        tokenOut: params.tokenOut,
+        amountIn: params.amountIn,
+        amountOutMinimum: params.amountOutMinimum,
+        recipient: params.recipient,
+        fee: params.fee,
+        fromAddress: String(request?.activeAccountAddress ?? params.recipient),
+        confirm: confirmCopy(request, minReceived),
+      });
+      return { transactionHash: result.transactionHash, receipt: result.receipt, approvalSubmitted: !!(result as any).approvalSubmitted };
+    },
+    executeMultiHop: async () => {
+      throw new Error('Multi-hop swaps are not available in the extension yet.');
+    },
+    invalidateBalanceQueries: () => undefined,
+  };
+}
+
+const QUOTE_URL_KEY = 'swapQuoteBaseUrl';
+
+/** The 0x price, from the hosted quote service the owner configured (storage key swapQuoteBaseUrl). With none configured there is no 0x price (undefined: the engine shows none and no error); the on-chain Uniswap price still runs. */
+async function hostedZeroXPrice(params: PriceRequestParams): Promise<unknown> {
+  const stored = (await chrome.storage.local.get(QUOTE_URL_KEY))[QUOTE_URL_KEY];
+  const baseUrl = typeof stored === 'string' ? stored.trim() : '';
+  if (!baseUrl) return undefined;
+  const p = params as unknown as Record<string, string | number | undefined>;
+  return createQuoteClient({ baseUrl }).getPrice({
+    chainId: Number(p.chainId),
+    sellToken: String(p.sellToken),
+    buyToken: String(p.buyToken),
+    sellAmount: p.sellAmount === undefined ? undefined : String(p.sellAmount),
+    buyAmount: p.buyAmount === undefined ? undefined : String(p.buyAmount),
+    slippageBps: typeof p.slippageBps === 'number' ? p.slippageBps : undefined,
+  });
+}
+
 let registered = false;
 /** Called once at boot (sidepanel.ts), before the first render. */
 export function registerExtensionEngineHosts(): void {
   if (registered) return;
   registered = true;
   setSwapFunctionsHook(useExtensionSwapFunctions);
+  setUniswapSwapIoHook(useExtensionUniswapSwapIo as never);
   setApprovalPendingHook(useExtensionApprovalPending);
   setApiProviderHook(() => undefined);
   setAppPublicClientHook(useExtensionAppPublicClient as never);
   setChainPublicClientHook(useExtensionChainPublicClient as never);
+  setQuoteService({ getPrice: hostedZeroXPrice, serverLabel: 'the hosted quote service' });
 }

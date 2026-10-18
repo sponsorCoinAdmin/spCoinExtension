@@ -1,6 +1,7 @@
 import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
+import { type WalletListSelectionSlot } from '@sponsorcoin/spcoin-exchange-engine';
 import { type AssetListEntry, type AccountListGroup, type FetchBalance, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { type MeritPlatform } from './platform/platform';
@@ -9,14 +10,16 @@ import type { ApproverHost } from './wallet/approverAccounts';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
 import { type MenuTabKey, type MeritWalletNetworkRow } from './panels';
 import { type RewardsHost } from './rewards/ConnectedRewardsPanel';
-import { type AccountProfileHost } from './account/AccountProfileEditor';
 import { type AddAccountHost } from './account/AddAccountFlow';
+import { type TestAccountsApi } from './TestAccountsSection';
+import { type TradeHost } from './trade/tradeHost';
+import type { WalletSessionHost } from './walletSessionHost';
+import { type AccountDetailHost } from './account/AccountDetailScreen';
 import { type SponsorStakingHost } from './sponsor/ConnectedSponsorStakingList';
 import { type HostTransactionResult } from './receipt/transactionReceipts';
 import { type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-exchange-engine';
 import type { AuthenticationType } from './auth/authenticationType';
-import { type SwapTradeButtonHost } from './swap/SwapTradeButton';
-type ActiveListMode = 'sellToken' | 'buyToken' | 'sendToken' | 'sendRecipient' | 'account' | 'network' | null;
+type ActiveListMode = WalletListSelectionSlot | null;
 export type { MeritWalletNetworkRow };
 export interface MeritWalletProps {
     /**
@@ -96,11 +99,6 @@ export interface MeritWalletProps {
     onAccountIconClick?: (address: string) => void;
     /** 2026-10-08 (table row 21): the "Add a Wallet/Account" button at the foot of the account list. Omit it and the list shows the button inert, as before. */
     onAddAccount?: () => void;
-    /**
-     * 2026-10-08 (table row 22): lets a host without the web trading pipeline (the extension) get a working Swap tab. When set and the host passes no
-     * zeroXTradeButtonContent / uniSelectContent of its own, the 0x trade button and the Uniswap section are the package's (price + swap through this host).
-     */
-    swapHost?: SwapTradeButtonHost;
     /** Data to render in the account-details overlay once
      *  onAccountIconClick's caller has resolved it. `address` gates which
      *  click this answers — this component shows a loading state for any
@@ -121,7 +119,8 @@ export interface MeritWalletProps {
      * 2026-10-09 -- lets the user edit the public profile of the wallet's own accounts from Account Details (name, symbol, email, website, description, avatar), the web
      * app's account editor over the host's signer. Omit and Account Details stays read-only.
      */
-    accountProfileHost?: AccountProfileHost;
+    /** docs/meritMigration.txt row 14: the account detail screen (avatar, profile table, Private Key row) over this host's data and functions. */
+    accountDetailHost?: AccountDetailHost;
     /** 2026-10-10 (docs/design/accountAuthDesign.txt section 17 item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
     addAccountHost?: AddAccountHost;
     onTokenIconClick?: (address: string) => void;
@@ -178,16 +177,20 @@ export interface MeritWalletProps {
     activeWalletName?: string;
     /** 2026-10-13 (owner request): the id of the wallet that signs for the active account (derived from `wallet` when the host does not pass it). The wallet pill under the tabs shows its icon and name, read from public/assets/wallets. */
     activeWalletId?: string;
+    /** The wallet THIS app is (web app: its keystore, extension: its vault). The wallet pill on the add and wallet-list screens names it, and the add flow adds to it by default: the host's identity, not the active account's wallet (the active account may belong to another wallet). A host with an `approverHost` may leave it out: approverHost.nativeWalletId is used. */
+    nativeWalletId?: string;
+    /** Which wallets are connected to this app, by wallet asset folder (merit, meritExtension, metamask, ledger, trezor): the wallet list's Connected / Disconnected buttons. Derived from `approverHost` when the host does not pass it. */
+    walletConnection?: Record<string, boolean>;
+    /** Disconnect a wallet of the wallet list, by asset folder. Derived from `approverHost` when the host does not pass it. */
+    onDisconnectWallet?: (slug: string) => void;
     /** Show the wallet pill (WalletSelectDropDown) just under the tabs: its down chevron opens the wallet list (REMOTE_WALLET_LIST), its icon opens the active wallet's panel (WALLET_PANEL). Default true. */
     showWalletSelect?: boolean;
     /** Where the wallet asset files (public/assets/wallets) are served from: this page's own origin by default; a host on another origin (the extension) passes the web app's address. */
     walletAssetBaseUrl?: string;
     /** What the component may derive from `wallet` (default: everything). A host that has its own lock gate (the web app) leaves out 'lock' and 'logoff'. */
     walletDerives?: readonly WalletDerivation[];
-    /** 2026-10-11 (plan row 13): a host that mounts the shared Sponsor panel (spcoin-panels' SponsorPanelController, driven by the exchange context) passes it here, and it replaces this component's own Sponsor tab. */
-    sponsorPanel?: React.ReactNode;
-    /** 2026-10-11 (plan row 13): the host's list overlay (spcoin-panels' ActiveListPanelHost) for the lists the shared panels open through the panel tree; shown in place of the tab body while a panel-tree list is open. */
-    listHost?: React.ReactNode;
+    /** The trade screens' host data and functions (the Swap tab and the Sponsor tab trade through one path): the trading provider, a trace sink, how a recipient's site opens and one hook for the confirm popup's state. The component draws the screens. */
+    tradeHost?: TradeHost;
     manageRadioPanels?: boolean;
     overlayHost?: React.ReactNode;
     agentSelectSlot?: React.ReactNode;
@@ -227,8 +230,6 @@ export interface MeritWalletProps {
      *  additionally gates this slot on its own panel-tree node,
      *  so this component adds no visibility check of its own
      *  for it either). */
-    zeroXTradeButtonContent?: React.ReactNode;
-    uniSelectContent?: React.ReactNode;
     configPasswordMode?: ConfigPasswordMode;
     onConfigPasswordModeChange?: (mode: ConfigPasswordMode) => void;
     configPersistedTimeoutContent?: React.ReactNode;
@@ -252,8 +253,12 @@ export interface MeritWalletProps {
     configSigningPanelContent?: React.ReactNode;
     /** The Config tab's "Backup file" section (derived from `wallet` when its key-keeping backend can make a backup file). */
     configBackupPanelContent?: React.ReactNode;
-    /** 2026-10-08: the Config tab's Test Accounts section (TestAccountsSection); omit to hide it. */
-    configTestAccountsContent?: React.ReactNode;
+    /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */
+    configTestAccounts?: {
+        api: TestAccountsApi;
+        authenticationType?: AuthenticationType;
+        onChanged?(): void;
+    };
     /** 2026-10-08: how this wallet authenticates locally: KEYSTORE (web app, server keystore) or VAULT (extension). Set by the host. */
     authenticationType?: AuthenticationType;
     configUniSelectVisible?: boolean;
@@ -274,6 +279,8 @@ export interface MeritWalletProps {
     onConfigDeleteAccount?: () => void;
     /** The Config tab's Delete Wallet button (below Reset Password); the host asks for the password and wipes. */
     onConfigDeleteWallet?: () => void;
+    /** docs/meritMigration.txt row 18: Reset Password and wallet deletion over host functions; the component draws the dialogs. */
+    walletSession?: WalletSessionHost;
 }
 /**
  * The component. A host that passes `wallet` gets the lock screen, the lock button, the authentication type and the Wallet Security section from it (src/wallet/walletProps.tsx); everything else, and every

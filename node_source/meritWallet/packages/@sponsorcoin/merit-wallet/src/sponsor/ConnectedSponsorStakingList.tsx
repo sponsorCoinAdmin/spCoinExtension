@@ -19,11 +19,29 @@ import {
   type UnstakeTarget,
   formatTokenAmount,
 } from '@sponsorcoin/spcoin-panels';
+import { AccountAvatarWithOpen, AccountSelectDropDownHosted, ACCOUNT_SELECT_DISPLAY, LoadingText, type SponsorStakingAccountCellSlot } from '@sponsorcoin/spcoin-panels';
 import { buildUnstakeReceipt, toMessageAccount, type ReceiptProfile } from '../receipt/transactionReceipts';
 import { useTransactionReceipt } from '../receipt/useTransactionReceipt';
 import { useActiveAccountProfile } from '../swap/activeAccountProfile';
 import { loadSponsorTree, type ChainRead, type TreeRecipient } from './sponsorReads';
 import { unstakeSpCoin, type UnstakeSend } from './unstakeWalk';
+
+// The row's account pill and avatar are the same in every app (they were the web app's slots).
+const ROW_ACCOUNT_SELECT_DISPLAY = ACCOUNT_SELECT_DISPLAY.ICON | ACCOUNT_SELECT_DISPLAY.NAME | ACCOUNT_SELECT_DISPLAY.ADDRESS | ACCOUNT_SELECT_DISPLAY.COPY;
+const ROW_ACCOUNT_CELL: SponsorStakingAccountCellSlot = ({ account, mode, label, addrPrePostSize, addressSizeClassName, onAddressClick }) => (
+  <AccountSelectDropDownHosted
+    recipientAccount={account}
+    mode={mode}
+    label={label}
+    showDisplay={ROW_ACCOUNT_SELECT_DISPLAY}
+    onSelectClick={(e) => e.preventDefault()}
+    onAddressClick={onAddressClick}
+    addrPrePostSize={addrPrePostSize}
+    addressSizeClassName={addressSizeClassName}
+    panelGateId={null}
+  />
+);
+const ROW_AVATAR = (account: spCoinAccount) => <AccountAvatarWithOpen account={account} mode={SP_COIN_DISPLAY.RECIPIENT_ACCOUNT} className="h-6 w-6 rounded object-contain shrink-0" />;
 
 export interface SponsorStakingHost {
   /** The active spCoin contract. */
@@ -39,10 +57,6 @@ export interface SponsorStakingHost {
   spCoinContract?: TokenContract;
   /** Load the whole staking tree in one go when the host has a faster way than the many small reads (the web app asks its server once). Default: loadSponsorTree over `read`. */
   loadTree?(sponsor: string): Promise<TreeRecipient[]>;
-  /** Draw the account cell of a row / the avatar / the loading text the way the host's own screens do (the web app's account pill). Defaults: the panel's plain ones. */
-  accountCellSlot?: React.ComponentProps<typeof SponsorStakingListPanel>['accountCellSlot'];
-  avatarSlot?: React.ComponentProps<typeof SponsorStakingListPanel>['avatarSlot'];
-  loadingContent?: React.ReactNode;
   /** Called once before an unstake walk starts, so the host can obtain its signer once for all the legs (one approval prompt for the whole walk, as the web app's unstake always did). Throw to stop. */
   prepare?(): Promise<void> | void;
   /** A hook that registers the list's reload function with the host's refresh bus (the web's useCacheRefreshHandler); must be a stable function. */
@@ -207,9 +221,9 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
       loading={loading}
       error={error}
       activeUnstakeKey={activeUnstakeKey}
-      accountCellSlot={host.accountCellSlot}
-      avatarSlot={host.avatarSlot}
-      loadingContent={host.loadingContent}
+      accountCellSlot={ROW_ACCOUNT_CELL}
+      avatarSlot={ROW_AVATAR}
+      loadingContent={<LoadingText />}
       confirmPopupContent={({ isOpen, target, totalAmount, onConfirm, onCancel }) => (
         <StakeConfirmPopup
           isOpen={isOpen}

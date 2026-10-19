@@ -62,7 +62,7 @@ export default defineConfig({
   // path can't see a Provider value written through the other. Added
   // here for the identical reason `react`/`react-dom` already are.
   resolve: {
-    dedupe: ['react', 'react-dom', '@sponsorcoin/spcoin-exchange-engine'],
+    dedupe: ['react', 'react-dom', '@sponsorcoin/spcoin-exchange-engine', '@sponsorcoin/spcoin-common'],
   },
   build: {
     // 2026-09-11, on request: renamed from Vite's default `dist` so this

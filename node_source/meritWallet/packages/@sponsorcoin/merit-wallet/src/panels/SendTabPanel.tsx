@@ -17,7 +17,7 @@
 'use client';
 
 import React from 'react';
-import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
+import { PANEL_GAP, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { PACKAGE_BUILD, TabBodyMarker, TradeAmountRow, PanelGate, SendButton } from '@sponsorcoin/spcoin-panels';
 
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -102,7 +102,7 @@ export default function SendTabPanel({
     // that file's own header comment; one shared source instead of a
     // separately hardcoded `4` in this file/TradingStationPanel.tsx/
     // SponsorshipPanel.tsx.
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: PANEL_GAP }}>
+    <div style={panelBoxStyle.stack(PANEL_GAP)}>
       <TabBodyMarker path="SendTabPanel.tsx" build={PACKAGE_BUILD} />
       {/* 2026-10-03 — gated on the same panel-tree flags as the web app's Send tab
           (SEND_SELECT_PANEL around the amount row, SEND_BUTTON around the submit

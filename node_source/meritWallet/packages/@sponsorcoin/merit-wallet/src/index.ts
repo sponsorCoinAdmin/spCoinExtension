@@ -73,8 +73,6 @@ export { createQuoteClient, QuoteServiceError } from './swap/quoteClient';
 export type { QuoteRequest, QuoteClient } from './swap/quoteClient';
 export { default as TokenPanel } from './TokenPanel';
 export { tokenDetailRows, CopyBtn } from './TokenSlotPanels';
-export { default as ConnectedPasswordPanel } from './ConnectedPasswordPanel';
-export type { ConnectedPasswordPanelProps } from './ConnectedPasswordPanel';
 export { default as VaultAccountsPanel } from './VaultAccountsPanel';
 export type { VaultAccountsApi, VaultAccountRow, VaultAccountsPanelProps } from './VaultAccountsPanel';
 export { default as RecoveryPhraseScreen } from './RecoveryPhraseScreen';
@@ -143,13 +141,14 @@ export {
   clearSettledMeritApproval,
 } from './approval/meritApproval';
 export type { MeritApprovalRequest, MeritApprovalPhase } from './approval/meritApproval';
+export { default as ApprovalResponder } from './approval/ApprovalResponder';
+export type { ApprovalHost } from './approval/ApprovalResponder';
 export { buildApproverGroups, mergeWalletAccountEntries, createApproverController, connectNoticeText, type ApproverHost, type ApproverGroupsInput, type ApproverController } from './wallet/approverAccounts';
 export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet, type SignInParams } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning, type SigningChoices, type SigningHolder, type HolderState } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, outcomeText, withApprovalNotice, type ApprovalWaiting, type ApprovalOutcome, type ApprovalWaitingStore, type ApprovalAction } from './auth/approvalWaiting';
-export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons, type AddTarget, type AddTargets, type AddKeyEntry } from './wallet/addTarget';
 export { createHardwareAuthenticator, HardwareError, type HardwareTransport, type HardwareErrorCode, type HardwareAuthenticatorOptions } from './auth/hardwareAuthenticator';
@@ -170,6 +169,7 @@ export type { ConnectedWalletConfigProps } from './config/ConnectedWalletConfig'
 export { default as ConnectedSponsorPanel } from './sponsor/ConnectedSponsorPanel';
 export type { SponsorPanelHost, StakeConfirmHostState } from './sponsor/ConnectedSponsorPanel';
 
+// 2026-10-18 (docs/appPackages.txt, item 2) -- shared injectable component interfaces app packages implement and meritWallet consumes via host.
 // 2026-10-18 (docs/appPackages.txt, item 2) -- shared injectable component interfaces app packages implement and meritWallet consumes via host.
 export type {
   InjectableCredentialKind, InjectableCredential,

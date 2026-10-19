@@ -8,14 +8,14 @@
 // the token hooks and panel-tree hooks from @sponsorcoin/spcoin-exchange-engine. The web app's debug traces were dropped on the move.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { defaultMissingImage, panelTreeOpenSourceStore, useBuyTokenContract, useExchangeContext, usePanelTree, usePanelTreeOpenSource, usePanelVisible, usePreviewTokenContract, usePreviewTokenSource, useSellTokenContract, } from '@sponsorcoin/spcoin-exchange-engine';
 import { ReadOnlyMetaDataTable } from './panels';
 import { tokenDetailRows } from './TokenSlotPanels';
 import { useWalletData } from './walletData';
-// text-sp-sm is a Tailwind token only the web app defines (var(--sp-text-sm), 1rem); an inline style gives every host the same size.
-const SP_TEXT_SM = { fontSize: 'var(--sp-text-sm, 1rem)' };
 /**
  * TokenPanel
  * - Single gate: TOKEN_PANEL
@@ -101,10 +101,10 @@ export default function TokenPanel(_props) {
     if (!vTokenPanel || tokenListCoversThisPanel)
         return null;
     if (!tokenContract) {
-        return (_jsx("div", { id: "TOKEN_PANEL", children: _jsxs("div", { className: "p-4 text-slate-200 text-center", style: SP_TEXT_SM, children: [_jsx("p", { className: "mb-2 font-semibold", children: "No token contract selected." }), _jsx("p", { className: "m-0", children: "Select a token to view its details." })] }) }));
+        return (_jsx("div", { id: "TOKEN_PANEL", children: _jsxs("div", { className: tokenRowClass.empty, style: tokenRowStyle.text, children: [_jsx("p", { className: tokenRowClass.emptyTitle, children: "No token contract selected." }), _jsx("p", { className: tokenRowClass.emptyText, children: "Select a token to view its details." })] }) }));
     }
     const resolvedContract = displayContract ?? tokenContract;
     const logoURL = (resolvedContract.logoURL ?? '').toString().trim();
     const name = (resolvedContract.name ?? '').toString().trim();
-    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: "hidden", "aria-hidden": "true" }), (isPreviewMode || vTokenMetaData) && (_jsx(ReadOnlyMetaDataTable, { rows: tokenDetailRows(resolvedContract), logoURL: logoURL || defaultMissingImage, logoAlt: name, logoVisible: vTokenLogo }))] }));
+    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), (isPreviewMode || vTokenMetaData) && (_jsx(ReadOnlyMetaDataTable, { rows: tokenDetailRows(resolvedContract), logoURL: logoURL || defaultMissingImage, logoAlt: name, logoVisible: vTokenLogo }))] }));
 }

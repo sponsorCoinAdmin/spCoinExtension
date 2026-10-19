@@ -4,6 +4,7 @@
 // inside the popup and keeps it open. Host-independent (no web or chrome code). DeleteWalletDialog is the red, wording-specific cousin of this.
 'use client';
 
+import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 
 export default function PasswordPromptDialog({
@@ -39,13 +40,13 @@ export default function PasswordPromptDialog({
     <div
       role="dialog"
       aria-modal="true"
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}
+      style={dialogStyle.backdrop}
     >
       <div
-        style={{ boxSizing: 'border-box', width: '100%', maxWidth: 340, background: '#0E111B', border: '1px solid #334155', borderRadius: 12, padding: 16, color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 }}
+        style={dialogStyle.formCard}
       >
-        <p style={{ margin: 0, fontWeight: 700 }}>{title}</p>
-        <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>{message}</p>
+        <p style={dialogStyle.title}>{title}</p>
+        <p style={dialogStyle.message}>{message}</p>
         <input
           type="password"
           autoFocus
@@ -59,13 +60,13 @@ export default function PasswordPromptDialog({
               submit();
             }
           }}
-          style={{ boxSizing: 'border-box', width: '100%', borderRadius: 8, border: '1px solid #334155', background: '#0b0e17', padding: '8px 12px', color: '#fff', font: 'inherit', outline: 'none' }}
+          style={dialogStyle.input}
         />
-        {error && <p style={{ margin: 0, fontSize: 12, color: '#f87171' }}>{error}</p>}
-        <button type="button" onClick={submit} disabled={busy || !password} style={{ borderRadius: 8, border: 0, background: '#5981F3', color: '#fff', padding: '8px 16px', fontWeight: 600, cursor: 'pointer', font: 'inherit', opacity: busy || !password ? 0.6 : 1 }}>
+        {error && <p style={dialogStyle.error}>{error}</p>}
+        <button type="button" onClick={submit} disabled={busy || !password} style={dialogStyle.primaryButton(busy || !password)}>
           {busy ? 'Working…' : confirmLabel}
         </button>
-        <button type="button" onClick={onClose} style={{ borderRadius: 8, border: '1px solid #334155', background: 'transparent', color: '#fff', padding: '8px 16px', cursor: 'pointer', font: 'inherit' }}>
+        <button type="button" onClick={onClose} style={dialogStyle.cancelButton}>
           Cancel
         </button>
       </div>

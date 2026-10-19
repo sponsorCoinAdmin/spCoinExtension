@@ -12,6 +12,7 @@
 // A host that passes nothing gets the registry defaults, which is what the extension uses.
 'use client';
 
+import { tokenRowClass, tokenRowStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CopyBtn } from './TokenSlotPanels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -27,9 +28,6 @@ import { getNetworkConfiguration } from '@sponsorcoin/spcoin-feeds/networks';
 import { getNetworkMetaData } from '@sponsorcoin/spcoin-panels';
 import { ReadOnlyMetaDataTable } from './panels';
 import { useWalletData } from './walletData';
-
-// text-sp-sm is a Tailwind token only the web app defines (var(--sp-text-sm), 1rem); an inline style gives every host the same size.
-const SP_TEXT_SM: React.CSSProperties = { fontSize: 'var(--sp-text-sm, 1rem)' };
 
 // The extra fields a NetworkElement does not carry but each network's own info.json does (website, description).
 interface NetworkInfoFile {
@@ -137,9 +135,9 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
   if (!chainId) {
     return (
       <div id="NETWORK_PANEL">
-        <div className="p-4 text-slate-200 text-center" style={SP_TEXT_SM}>
-          <p className="mb-2 font-semibold">No network selected.</p>
-          <p className="m-0">Select a network to view its details.</p>
+        <div className={tokenRowClass.empty} style={tokenRowStyle.text}>
+          <p className={tokenRowClass.emptyTitle}>No network selected.</p>
+          <p className={tokenRowClass.emptyText}>Select a network to view its details.</p>
         </div>
       </div>
     );
@@ -156,9 +154,9 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
       return {
         label: f.label,
         value: (
-          <span className="flex items-center justify-between w-full gap-2">
+          <span className={tokenRowClass.cell}>
             <a href={f.value} target="_blank" rel="noopener noreferrer"
-              className="underline decoration-slate-400/60 underline-offset-2 hover:decoration-slate-200 break-all">
+              className={tokenRowClass.link}>
               {f.value}
             </a>
             <CopyBtn text={f.value} />
@@ -180,8 +178,8 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
           logoVisible={vNetworkLogo}
           // Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind
           // them and no card frame around them (unlike token and account logos).
-          logoBackgroundClassName=""
-          logoContainerClassName="p-2"
+          logoBackgroundClassName={walletPartClass.networkLogo.background}
+          logoContainerClassName={walletPartClass.networkLogo.container}
         />
       )}
     </div>

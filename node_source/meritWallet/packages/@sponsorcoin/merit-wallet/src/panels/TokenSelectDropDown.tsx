@@ -19,6 +19,7 @@
 
 'use client';
 
+import { tokenWrapperStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useRef } from 'react';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 
@@ -68,12 +69,6 @@ export interface TokenSelectDropDownProps {
   }>;
 }
 
-const DEFAULT_WRAPPER_STYLE: React.CSSProperties = {
-  position: 'absolute',
-  top: 12,
-  right: 20,
-  minWidth: 50,
-};
 
 export default function TokenSelectDropDown({
   icon,
@@ -129,7 +124,7 @@ export default function TokenSelectDropDown({
       (showChevron ? ASSET_SELECT_DISPLAY.CHEVRON_DN : 0));
 
   return (
-    <div style={{ ...DEFAULT_WRAPPER_STYLE, ...style }} data-panel-root={dataPanelRoot}>
+    <div style={tokenWrapperStyle(style)} data-panel-root={dataPanelRoot}>
       <AssetSelectDropDown
         rootId="TokenSelectDropDown"
         hasEntity={hasEntity}

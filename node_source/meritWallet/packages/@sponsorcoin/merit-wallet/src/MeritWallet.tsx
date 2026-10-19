@@ -34,7 +34,7 @@
 
 'use client';
 
-import { walletColors, lockLogoStyle } from '@sponsorcoin/spcoin-common/styles';
+import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getAddress } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -77,6 +77,7 @@ import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, 
 // deleted 2026-10-02 — see this package's index.ts header for why a
 // second store let a tree toggle silently do nothing.
 import ConnectedMessagePanel from './ConnectedMessagePanel';
+import ApprovalResponder, { type ApprovalHost } from './approval/ApprovalResponder';
 import ConnectedRewardsPanel, { type RewardsHost, type RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
 import AddAccountFlow, { type AddAccountHost } from './account/AddAccountFlow';
 import TestAccountsSection, { type TestAccountsApi } from './TestAccountsSection';
@@ -87,6 +88,7 @@ import type { WalletSessionHost } from './walletSessionHost';
 import AccountDetailScreen, { type AccountDetailHost } from './account/AccountDetailScreen';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';
+import WalletOnboardingPanel, { type WalletOnboardingPanelProps } from './WalletOnboardingPanel';
 import ConnectedSponsorStakingList, { type SponsorStakingHost } from './sponsor/ConnectedSponsorStakingList';
 import { buildSendReceipt, type HostTransactionResult } from './receipt/transactionReceipts';
 import { isNativePlaceholder } from './send/sendTransfer';
@@ -296,7 +298,7 @@ export interface MeritWalletProps {
    *  layout) vs. floating/dialog (rounded corners, capped height). Default
    *  false. */
   docked?: boolean;
-  /** Drops the web app's 364px cap in favor of a plain 100% width — for a
+  /** Drops the web app's 380px cap in favor of a plain 100% width — for a
    *  consumer (like a Chrome side panel) that's already narrow and
    *  user-resizable rather than floating inside a wider page. Default
    *  false. */
@@ -648,6 +650,8 @@ export interface MeritWalletProps {
   passwordMode?: 'checking' | 'setup' | 'unlock';
   /** The artwork of the login page: an image URL (the data); the component draws it. */
   passwordIconSrc?: string;
+  /** How the wallet answers a write's approval: the host checks the password (`unlock`) and may gate a debug step. The component draws the approval screen itself. */
+  approvalHost?: ApprovalHost;
   /**
    * 2026-10-08 (table row 23): the wallet is locked (or has no wallet yet), so show the password screen in place of everything else, whatever the panel tree says.
    * The lock gate lives here, in the component; whether and where the wallet is shown at all stays with the host (a layout gate).
@@ -671,6 +675,12 @@ export interface MeritWalletProps {
    */
   recoveryPhrase?: string;
   onRecoveryPhraseSaved?: () => void;
+  /**
+   * 2026-10-19 (docs/meritMigration.txt rows 27 / 28: a host passes data and functions, it never draws a wallet screen): first-run setup. While this is set the component draws the
+   * "Set up your wallet" screen (create a wallet, import by recovery phrase, restore a backup) INSTEAD of the wallet, and the host only supplies what the screen calls. The host clears it
+   * (sets undefined) when onDone fires and the vault exists.
+   */
+  onboarding?: WalletOnboardingPanelProps;
   // 2026-09-30, real bug fix (live report — "balanceOf... not working" on
   // the SWAP tab). Real balance TEXT, caller-supplied — this can't just be
   // fetched inside this component (wagmi's usePublicClient, which a real
@@ -847,6 +857,7 @@ function MeritWalletInner({
   fetchBalance,
   passwordMode = 'unlock',
   passwordIconSrc,
+  approvalHost,
   walletLocked,
   onResetWallet,
   passwordErrorText,
@@ -1185,6 +1196,8 @@ function MeritWalletInner({
   const lastKnownTabRef = useRef<MenuTabKey>(initialActiveTab ?? 'SWAP');
   // The list (and its picker destination) that was open over each tab when the person left it.
   const listByTabRef = useRef<Partial<Record<MenuTabKey, ActiveListMode>>>({});
+  // The detail screen that was on top over each tab when the person left it.
+  const detailByTabRef = useRef<Partial<Record<MenuTabKey, SP_COIN_DISPLAY | null>>>({});
   const derivedTab: MenuTabKey | undefined =
     activeMainOverlay != null ? TAB_KEY_BY_PANEL_ID[activeMainOverlay] : undefined;
   if (derivedTab) lastKnownTabRef.current = derivedTab;
@@ -1446,17 +1459,22 @@ function MeritWalletInner({
     openPanel(TAB_PANEL_IDS[tab], 'MeritWallet:handleTabClick');
     // A list opened over a tab stays with that tab (docs 8.5.10): leaving the tab closes the list's overlay for the tab just chosen and remembers which list it was, and coming back to the tab reopens it with its picker destination.
     listByTabRef.current[activeTab] = activeListMode;
+    detailByTabRef.current[activeTab] = accountDetailVisible ? SP_COIN_DISPLAY.ACCOUNT_PANEL : tokenDetailVisible ? SP_COIN_DISPLAY.TOKEN_PANEL : networkDetailVisible ? SP_COIN_DISPLAY.NETWORK_PANEL : null;
     setActiveList(null);
     const restoreList = listByTabRef.current[tab];
+    const restoreDetail = detailByTabRef.current[tab];
     listByTabRef.current[tab] = null;
+    detailByTabRef.current[tab] = null;
     if (restoreList) setActiveList(restoreList);
-    // Lists are stack members and stay available when returning to this tab;
-    // selected detail records are data only and are cleared on tab changes.
+    // What was on TOP when the tab was left is on top again (a detail opened over a list returns over it): reopening an entry already on the stack trims to it, it does not push a copy.
+    if (restoreDetail) openPanel(restoreDetail, 'MeritWallet:restoreDetail');
+    // A detail stays with its tab like a list does (docs 8.5.10): its panel flag stays on the stack, so the record it shows is KEPT here and cleared only when the detail's panel closes (the effect below).
     setAddressInput('');
-    setAccountDetailAddress(null);
-    setTokenDetailAddress(null);
-    setNetworkDetailId(null);
   };
+  // The selected detail record is data tied to its panel: it goes when the panel closes, not when the tab changes.
+  useEffect(() => { if (!accountDetailVisible) setAccountDetailAddress(null); }, [accountDetailVisible]);
+  useEffect(() => { if (!tokenDetailVisible) setTokenDetailAddress(null); }, [tokenDetailVisible]);
+  useEffect(() => { if (!networkDetailVisible) setNetworkDetailId(null); }, [networkDetailVisible]);
 
   // 2026-09-21, Path A — initialActiveTab/onActiveTabChange used to be a
   // plain "seed local state, notify on every setActiveTab" pair; now that
@@ -1627,7 +1645,7 @@ function MeritWalletInner({
       ? React.createElement('img', {
           src,
           alt: '',
-          style: { width: '100%', height: '100%', objectFit: 'contain' },
+          style: fitImageStyle,
         })
       : undefined;
 
@@ -1841,7 +1859,7 @@ function MeritWalletInner({
           ? React.createElement('img', {
               src: account.iconSrc,
               alt: '',
-              style: { width: '100%', height: '100%', objectFit: 'contain' },
+              style: fitImageStyle,
             })
           : undefined),
     })),
@@ -1876,7 +1894,7 @@ function MeritWalletInner({
         name: activeAccountName || listedActiveRow?.name || undefined,
         symbol: activeAccountSymbol || listedActiveRow?.symbol || undefined,
         iconSrc: activeAccountLogoURL || listedActiveRow?.iconSrc || undefined,
-        icon: activeAccountLogoURL ? React.createElement('img', { src: activeAccountLogoURL, alt: '', style: { width: '100%', height: '100%', objectFit: 'contain' } }) : listedActiveRow?.icon,
+        icon: activeAccountLogoURL ? React.createElement('img', { src: activeAccountLogoURL, alt: '', style: fitImageStyle }) : listedActiveRow?.icon,
         isActive: true,
       } as (typeof flatAccountRows)[number])
     : undefined;
@@ -2164,7 +2182,7 @@ function MeritWalletInner({
                     ? React.createElement('img', {
                         src: row.iconSrc,
                         alt: '',
-                        style: { width: '100%', height: '100%', objectFit: 'contain' },
+                        style: fitImageStyle,
                       })
                     : undefined,
                   onSelect: () => {
@@ -2220,7 +2238,7 @@ function MeritWalletInner({
     : roleDetail
     ? roleDetail.account
       ? React.createElement(AccountDetailScreen, { account: roleDetail.account as spCoinAccount, role: roleDetail.role, host: accountDetailHost })
-      : React.createElement('div', { style: { padding: 16, fontSize: 12, color: '#e2e8f0' } }, roleDetail.empty)
+      : React.createElement('div', { style: walletFrameStyle.roleEmpty }, roleDetail.empty)
     : accountDetailVisible && detailAddress
     ? React.createElement(AccountDetailScreen, {
         account: { address: detailAddress, ...(accountDetail?.address === detailAddress ? { name: accountDetail.name, symbol: accountDetail.symbol, logoURL: accountDetail.avatarSrc } : {}) } as spCoinAccount,
@@ -2299,10 +2317,10 @@ function MeritWalletInner({
           passwordOverlay,
           React.createElement(
             'div',
-            { style: { textAlign: 'center', padding: '8px 12px' } },
+            { style: walletFrameStyle.forgotRow },
             React.createElement(
               'button',
-              { type: 'button', onClick: onResetWallet, style: { background: 'none', border: 0, color: '#94a3b8', textDecoration: 'underline', cursor: 'pointer', font: 'inherit', fontSize: 12 } },
+              { type: 'button', onClick: onResetWallet, style: walletFrameStyle.forgotLink },
               'Forgot password? Reset wallet',
             ),
           ),
@@ -2377,24 +2395,8 @@ function MeritWalletInner({
     {/* 2026-10-09: connect mode is derived from "no active account"; every action button below turns into a Connect button that opens the account list. */}
     <WalletConnectProvider hasAccount={!!String(activeAccountAddress ?? '').trim()} openAccountList={() => setActiveList('account')}>
     <ActiveAccountProfileContext.Provider value={activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined}>
-    <div
-      style={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 5,
-        width: fullWidth ? '100%' : 'min(364px, calc(100vw - 32px))',
-        overflow: 'hidden',
-        pointerEvents: 'auto',
-        border: '1px solid #2e3654',
-        background: walletColors.background,
-        color: walletColors.white,
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        ...(docked
-          ? { height: '100%', borderRadius: 0, borderRight: 'none' }
-          : { maxHeight: 'min(1000px, calc(100vh - 100px))', borderRadius: 15 }),
-      }}
-    >
+    <div className={walletFrameClassName} style={walletFrameStyle.frame(fullWidth, docked)}>
+      <style>{walletFrameCss}</style>
       {/* 2026-10-13 (owner request): the login / create-account page has its OWN grey header (LOGIN_HEADER): a text title and the close button, nothing else.
           While it shows, the network header and the account header below are not rendered. */}
       {passwordPanelShowing && (
@@ -2427,7 +2429,7 @@ function MeritWalletInner({
                   ? React.createElement('img', {
                       src: activeNetworkRow.iconSrc,
                       alt: '',
-                      style: { width: '100%', height: '100%', objectFit: 'contain' },
+                      style: fitImageStyle,
                     })
                   : undefined
               }
@@ -2503,7 +2505,7 @@ function MeritWalletInner({
           <ConnectedAgentSelectDropDown />
         </AgentHeaderPanel>
       )}
-      <div style={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={walletFrameStyle.body}>
         {/* 2026-10-03 — PANEL_TITLE and MENU_TAB_HEADER_BAR rendered ungated
             here: the only reads of those flags were the Ctrl+Alt+T / Ctrl+Alt+A key
             handlers, so a tree-row toggle changed the store and nothing else.
@@ -2579,7 +2581,7 @@ function MeritWalletInner({
           {/* 2026-10-13 (owner request): the wallet pill, just under the tabs (not on the lock screen). The down chevron opens the wallet list, the icon the active wallet's panel. */}
           {/* 2026-10-13 (owner request): the wallet pill belongs to the Active Account Selection page only, not to the tab pages. */}
           {showWalletSelect && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (
-            <div id="WALLET_SELECT_ROW" style={{ padding: '6px 10px', display: 'flex', alignItems: 'center' }}>
+            <div id="WALLET_SELECT_ROW" style={walletFrameStyle.walletSelectRow}>
               <WalletSelectDropDownHosted walletId={pillWalletId} displayName={pillWalletId ? walletName(pillWalletId) : undefined} baseUrl={walletAssetBaseUrl} />
             </div>
           )}
@@ -2666,20 +2668,12 @@ function MeritWalletInner({
           this marker isn't rendered via that shared component, so it
           needs its own check. */}
       {SHOW_BUILD_MARKERS && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 2,
-            left: 6,
-            zIndex: 999999,
-            font: '9px monospace',
-            color: walletColors.slateMid,
-            pointerEvents: 'none',
-          }}
-        >
+        <div style={walletFrameStyle.buildMarker}>
           ⟨@sponsorcoin/merit-wallet/MeritWallet.tsx · build {PACKAGE_BUILD}⟩
         </div>
       )}
+      {/* The screen that answers a write's approval (Approve / Reject, the password when locked): the wallet draws it itself, the same in every app. */}
+      <ApprovalResponder host={approvalHost} />
     </div>
     </ActiveAccountProfileContext.Provider>
     </WalletConnectProvider>
@@ -2693,7 +2687,7 @@ let warnedNoAccountSource = false;
  * The component. A host that passes `wallet` gets the lock screen, the lock button, the authentication type and the Wallet Security section from it (src/wallet/walletProps.tsx); everything else, and every
  * prop the host passes explicitly, is unchanged.
  */
-export default function MeritWallet(props: MeritWalletProps) {
+function MeritWalletWired(props: MeritWalletProps) {
   const platform = props.platform ?? domPlatform;
   // 2026-10-15 (docs/design/spcoinPackagesDesign.txt 8.5.7 item 4): a host must say where its accounts come from (a wallet, its own account groups, or a chain to self-fetch for). A host that says none gets the component's SAMPLE accounts and tokens, which is
   // never what a deployment wants, so it is reported loudly, once, instead of shipping silently.
@@ -2731,4 +2725,15 @@ export default function MeritWallet(props: MeritWalletProps) {
     : {};
   const merged = props.wallet ? { ...mergeWalletProps(props, { ...derived, activeWalletName }, props.wallet, props.activeAccountAddress), activeWalletId: props.activeWalletId ?? activeWalletId, nativeWalletId, ...accountDerived, ...derivedConnection } : { ...props, nativeWalletId };
   return React.createElement(MeritPlatformContext.Provider, { value: platform }, React.createElement(MeritWalletInner, merged));
+}
+
+/**
+ * The component. First-run setup replaces the wallet (a different component type, so the wallet's own state starts fresh when setup ends, the same as when the host used to swap it out);
+ * otherwise the wired wallet. The setup screen runs inside the same platform context (clipboard) as the wallet.
+ */
+export default function MeritWallet(props: MeritWalletProps) {
+  if (props.onboarding) {
+    return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(WalletOnboardingPanel, props.onboarding));
+  }
+  return React.createElement(MeritWalletWired, props);
 }

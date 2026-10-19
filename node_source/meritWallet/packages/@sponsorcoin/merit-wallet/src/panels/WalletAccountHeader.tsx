@@ -34,7 +34,7 @@
 
 'use client';
 
-import { walletColors } from '@sponsorcoin/spcoin-common/styles';
+import { accountHeaderStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY, PanelGate } from '@sponsorcoin/spcoin-panels';
@@ -108,8 +108,6 @@ export interface WalletAccountHeaderProps {
 
 const DEFAULT_ROLES: WalletAccountHeaderRoles = { isSponsor: false, isRecipient: false, isAgent: false };
 
-const ROLE_ACTIVE_BG = walletColors.greenDark; // green-600, matches the app's real active-role color
-const ROLE_INACTIVE_BG = walletColors.error; // red-600, matches the app's real inactive-role color
 
 function RoleCell({
   label,
@@ -131,15 +129,9 @@ function RoleCell({
       onClick={onClick}
       onMouseEnter={() => onClick && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{
-        borderRight: borderRight ? '1px solid #1f2937' : undefined,
-        padding: '0 4px',
-        textAlign: 'center',
-        background: active ? (hovered ? walletColors.green : ROLE_ACTIVE_BG) : ROLE_INACTIVE_BG,
-        cursor: onClick ? 'pointer' : 'default',
-      }}
+      style={accountHeaderStyle.roleCell({ borderRight, active, hovered, clickable: !!onClick })}
     >
-      <span style={{ display: 'inline-block' }}>{label}</span>
+      <span style={accountHeaderStyle.roleLabel}>{label}</span>
     </td>
   );
 }
@@ -183,12 +175,12 @@ function DefaultAccountPill({
       onRowClick={onSelectClick}
       onIconClick={onIconClick ? () => onIconClick(address ?? '') : undefined}
       addrPrePostSize={4}
-      iconSizeClassName="h-[22px] w-[22px]"
-      pillHeightClassName="h-[16px]"
-      pillFontClassName="text-[11px]"
-      chevronSize={12}
-      copyIconSize={12}
-      nameLineClassName="text-[11px] font-semibold leading-tight text-white"
+      iconSizeClassName={walletPartClass.compactPill.iconSize}
+      pillHeightClassName={walletPartClass.compactPill.pillHeight}
+      pillFontClassName={walletPartClass.compactPill.pillFont}
+      chevronSize={walletPartClass.compactPill.chevronSize}
+      copyIconSize={walletPartClass.compactPill.copyIconSize}
+      nameLineClassName={walletPartClass.compactPill.nameLine}
     />
   );
 }
@@ -200,8 +192,8 @@ function DefaultRoleTable({
   onRoleClick,
 }: Pick<WalletAccountHeaderProps, 'roles' | 'onRoleClick'>) {
   return (
-    <div style={{ display: 'inline-block', border: '1.5px solid #1f2937' }}>
-      <table style={{ borderCollapse: 'collapse', fontSize: 9, fontWeight: 700, color: walletColors.white }}>
+    <div style={accountHeaderStyle.roleBox}>
+      <table style={accountHeaderStyle.roleTable}>
         <tbody>
           <tr>
             <RoleCell
@@ -268,28 +260,15 @@ export default function WalletAccountHeader({
   return (
     <div
       title={walletName ? `Signs with ${walletName}` : undefined}
-      style={{
-        flexShrink: 0,
-        borderBottom: '1px solid rgba(51,65,85,0.5)',
-        // 2026-09-22, on direct request — 6px (was 16px), matching
-        // WalletHeader.tsx's own matching update above it.
-        paddingLeft: 6,
-        paddingRight: 6,
-        paddingTop: 0,
-        paddingBottom: 1,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        background: walletColors.oneOffChromeMuted,
-      }}
+      style={accountHeaderStyle.row}
     >
-      <div style={{ minWidth: 0, flex: 1 }}>
+      <div style={accountHeaderStyle.pill}>
         <PanelGate panel={SP_COIN_DISPLAY.ACCOUNT_SELECT_DROP_DOWN} lazyLoad={false}>
           {resolvedPill}
         </PanelGate>
       </div>
       {resolvedRole && (
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+        <div style={accountHeaderStyle.role}>
           <PanelGate panel={SP_COIN_DISPLAY.ROLE_TABLE_COMPONENT} lazyLoad={false}>
             {resolvedRole}
           </PanelGate>

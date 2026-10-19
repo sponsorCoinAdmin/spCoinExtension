@@ -35,7 +35,7 @@ import { useState } from 'react';
 import { useCopyFeedback } from '../platform/useCopyFeedback';
 import { ChevronDown, ChevronUp, Copy, CheckCheck } from 'lucide-react';
 import AnonymousAvatar from './AnonymousAvatar';
-import { dropDownStyle } from '@sponsorcoin/spcoin-common/styles';
+import { dropDownStyle, agentPillStyle, agentRowStyle } from '@sponsorcoin/spcoin-common/styles';
 // Same component/reasoning as TradeAmountRow.tsx's own CopyAddressButton —
 // duplicated rather than shared across files on purpose (this package has
 // no internal-only shared-utility convention yet; see that file's own
@@ -47,19 +47,7 @@ function CopyAddressButton({ address }) {
             e.preventDefault();
             e.stopPropagation();
             copy(address);
-        }, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), "aria-label": "Copy address", title: "Copy address", style: {
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexShrink: 0,
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 2,
-            borderRadius: 3,
-            border: 'none',
-            background: hovered ? dropDownStyle.copyHoverBackground : 'transparent',
-            color: copied ? dropDownStyle.copiedColor : 'inherit',
-            cursor: 'pointer',
-        }, children: copied ? _jsx(CheckCheck, { size: dropDownStyle.copyIconSizePx }) : _jsx(Copy, { size: dropDownStyle.copyIconSizePx }) }));
+        }, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), "aria-label": "Copy address", title: "Copy address", style: agentPillStyle.copyButton({ hovered, copied }, dropDownStyle), children: copied ? _jsx(CheckCheck, { size: dropDownStyle.copyIconSizePx }) : _jsx(Copy, { size: dropDownStyle.copyIconSizePx }) }));
 }
 function truncateMiddle(addr, size) {
     return addr.length > size * 2 + 3 ? `${addr.slice(0, size)}...${addr.slice(-size)}` : addr;
@@ -68,28 +56,7 @@ export default function AgentSelectDropDown({ icon, address, symbol, placeholder
     const [hovered, setHovered] = useState(false);
     const hasEntity = Boolean(address);
     const displayAddress = address && addrPrePostSize != null ? truncateMiddle(address, addrPrePostSize) : address;
-    const content = (_jsxs("div", { onClick: onSelectClick, onMouseEnter: () => onSelectClick && setHovered(true), onMouseLeave: () => setHovered(false), style: { ...dropDownStyle.row, cursor: onSelectClick ? 'pointer' : 'default' }, children: [_jsx("span", { style: {
-                    display: 'flex',
-                    height: dropDownStyle.iconSizePx,
-                    width: dropDownStyle.iconSizePx,
-                    flexShrink: 0,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '9999px',
-                    overflow: 'hidden',
-                    background: 'transparent',
-                }, children: icon ?? _jsx(AnonymousAvatar, {}) }), _jsxs("div", { style: {
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    height: dropDownStyle.pill.height,
-                    padding: '0 8px',
-                    borderRadius: 9999,
-                    // Matches the real pill's solid bg-[#243056] (AssetSelectDropDown's
-                    // ADDR_COMP, non-blur variant — the one AGENT_SELECT_DROP_DOWN
-                    // actually uses, not WalletHeader's frosted-glass one).
-                    background: hovered ? dropDownStyle.pill.backgroundHover : dropDownStyle.pill.background,
-                }, children: [_jsx("span", { style: { ...dropDownStyle.text }, children: hasEntity ? [symbol, displayAddress].filter(Boolean).join(' ') : placeholderLabel }), hasEntity && address && _jsx(CopyAddressButton, { address: address }), listOpen ? (_jsx(ChevronUp, { size: dropDownStyle.chevronSizePx, style: { flexShrink: 0, color: dropDownStyle.glyphColor } })) : (_jsx(ChevronDown, { size: dropDownStyle.chevronSizePx, style: { flexShrink: 0, color: dropDownStyle.glyphColor } }))] })] }));
+    const content = (_jsxs("div", { onClick: onSelectClick, onMouseEnter: () => onSelectClick && setHovered(true), onMouseLeave: () => setHovered(false), style: agentRowStyle.row(dropDownStyle.row, !!onSelectClick), children: [_jsx("span", { style: agentPillStyle.iconSlot(dropDownStyle.iconSizePx), children: icon ?? _jsx(AnonymousAvatar, {}) }), _jsxs("div", { style: agentPillStyle.pill({ height: dropDownStyle.pill.height, background: hovered ? dropDownStyle.pill.backgroundHover : dropDownStyle.pill.background }), children: [_jsx("span", { style: agentRowStyle.text(dropDownStyle.text), children: hasEntity ? [symbol, displayAddress].filter(Boolean).join(' ') : placeholderLabel }), hasEntity && address && _jsx(CopyAddressButton, { address: address }), listOpen ? (_jsx(ChevronUp, { size: dropDownStyle.chevronSizePx, style: agentPillStyle.chevron(dropDownStyle.glyphColor) })) : (_jsx(ChevronDown, { size: dropDownStyle.chevronSizePx, style: agentPillStyle.chevron(dropDownStyle.glyphColor) }))] })] }));
     if (panelGateId === undefined || !PanelGate)
         return content;
     return (_jsx(PanelGate, { panel: panelGateId, lazyLoad: false, children: content }));

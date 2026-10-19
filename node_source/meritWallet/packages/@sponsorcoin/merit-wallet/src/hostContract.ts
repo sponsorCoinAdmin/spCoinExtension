@@ -62,7 +62,7 @@ export type HostSlots = Pick<
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */
 export type HostLock = Pick<
   MeritWalletProps,
-  'passwordMode' | 'walletLocked' | 'onResetWallet' | 'passwordIconSrc' | 'passwordErrorText' | 'passwordNoticeText' | 'onPasswordSubmit' | 'passwordSubmitting' | 'recoveryPhrase' | 'onRecoveryPhraseSaved'
+  'passwordMode' | 'walletLocked' | 'onboarding' | 'onResetWallet' | 'passwordIconSrc' | 'approvalHost' | 'passwordErrorText' | 'passwordNoticeText' | 'onPasswordSubmit' | 'passwordSubmitting' | 'recoveryPhrase' | 'onRecoveryPhraseSaved'
 >;
 
 /** The Config tab's values and handlers. */

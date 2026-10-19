@@ -12,6 +12,7 @@
 // A host that passes nothing gets the registry defaults, which is what the extension uses.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { tokenRowClass, tokenRowStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CopyBtn } from './TokenSlotPanels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -20,8 +21,6 @@ import { getNetworkConfiguration } from '@sponsorcoin/spcoin-feeds/networks';
 import { getNetworkMetaData } from '@sponsorcoin/spcoin-panels';
 import { ReadOnlyMetaDataTable } from './panels';
 import { useWalletData } from './walletData';
-// text-sp-sm is a Tailwind token only the web app defines (var(--sp-text-sm), 1rem); an inline style gives every host the same size.
-const SP_TEXT_SM = { fontSize: 'var(--sp-text-sm, 1rem)' };
 /** A NetworkElement for a chain id straight from the registry (the default for previewing a chain other than the live one). */
 export function networkElementFromRegistry(chainId) {
     const cfg = getNetworkConfiguration(chainId);
@@ -100,7 +99,7 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
     if (!vNetworkPanel)
         return null;
     if (!chainId) {
-        return (_jsx("div", { id: "NETWORK_PANEL", children: _jsxs("div", { className: "p-4 text-slate-200 text-center", style: SP_TEXT_SM, children: [_jsx("p", { className: "mb-2 font-semibold", children: "No network selected." }), _jsx("p", { className: "m-0", children: "Select a network to view its details." })] }) }));
+        return (_jsx("div", { id: "NETWORK_PANEL", children: _jsxs("div", { className: tokenRowClass.empty, style: tokenRowStyle.text, children: [_jsx("p", { className: tokenRowClass.emptyTitle, children: "No network selected." }), _jsx("p", { className: tokenRowClass.emptyText, children: "Select a network to view its details." })] }) }));
     }
     const resolvedNetwork = { ...network, ...info };
     const logoURL = (resolvedNetwork.logoURL ?? '').toString().trim();
@@ -111,7 +110,7 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
         if (f.kind === 'url') {
             return {
                 label: f.label,
-                value: (_jsxs("span", { className: "flex items-center justify-between w-full gap-2", children: [_jsx("a", { href: f.value, target: "_blank", rel: "noopener noreferrer", className: "underline decoration-slate-400/60 underline-offset-2 hover:decoration-slate-200 break-all", children: f.value }), _jsx(CopyBtn, { text: f.value })] })),
+                value: (_jsxs("span", { className: tokenRowClass.cell, children: [_jsx("a", { href: f.value, target: "_blank", rel: "noopener noreferrer", className: tokenRowClass.link, children: f.value }), _jsx(CopyBtn, { text: f.value })] })),
             };
         }
         return { label: f.label, value: f.value };
@@ -119,5 +118,5 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
     return (_jsx("div", { id: "NETWORK_PANEL", children: vNetworkMetaData && (_jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: logoURL || defaultMissingImage, logoAlt: name, logoVisible: vNetworkLogo, 
             // Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind
             // them and no card frame around them (unlike token and account logos).
-            logoBackgroundClassName: "", logoContainerClassName: "p-2" })) }));
+            logoBackgroundClassName: walletPartClass.networkLogo.background, logoContainerClassName: walletPartClass.networkLogo.container })) }));
 }

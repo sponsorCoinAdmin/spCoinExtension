@@ -34,21 +34,8 @@
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { RADIO_PANEL_BUFFER } from '@sponsorcoin/spcoin-common/styles';
+import { RADIO_PANEL_BUFFER, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
-// 2026-09-30 — this panel's own internal bottom buffer (distinct from
-// PANEL_GAP, the 2px buffer BETWEEN panels used elsewhere in this
-// package). Corrected same day: first set to PANEL_GAP (2px) on a live
-// report that actually meant this panel specifically, then explicitly
-// raised to 4px once the reporter clarified — e.g. the spacing from
-// UNISWAP_TRADE_BUTTON down to WALLET_RADIO_PANELS' own bottom edge
-// should read as 4px, not 2px.
-const WALLET_RADIO_PANELS_BOTTOM_BUFFER = 4;
 export default function WalletRadioPanels({ children }) {
-    return (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_RADIO_PANELS, children: _jsx("div", { style: {
-                boxSizing: 'border-box',
-                paddingLeft: RADIO_PANEL_BUFFER,
-                paddingRight: RADIO_PANEL_BUFFER,
-                paddingBottom: WALLET_RADIO_PANELS_BOTTOM_BUFFER,
-            }, children: children }) }));
+    return (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_RADIO_PANELS, children: _jsx("div", { style: panelBoxStyle.radioFrame(RADIO_PANEL_BUFFER), children: children }) }));
 }

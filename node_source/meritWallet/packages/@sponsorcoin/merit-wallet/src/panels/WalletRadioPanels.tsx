@@ -36,7 +36,7 @@
 
 import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { RADIO_PANEL_BUFFER  } from '@sponsorcoin/spcoin-common/styles';
+import { RADIO_PANEL_BUFFER, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
 
 // 2026-09-30 — this panel's own internal bottom buffer (distinct from
@@ -46,7 +46,6 @@ import { PanelGate } from '@sponsorcoin/spcoin-panels';
 // raised to 4px once the reporter clarified — e.g. the spacing from
 // UNISWAP_TRADE_BUTTON down to WALLET_RADIO_PANELS' own bottom edge
 // should read as 4px, not 2px.
-const WALLET_RADIO_PANELS_BOTTOM_BUFFER = 4;
 
 export interface WalletRadioPanelsProps {
   children: React.ReactNode;
@@ -56,12 +55,7 @@ export default function WalletRadioPanels({ children }: WalletRadioPanelsProps) 
   return (
     <PanelGate panel={SP_COIN_DISPLAY.WALLET_RADIO_PANELS}>
       <div
-        style={{
-          boxSizing: 'border-box',
-          paddingLeft: RADIO_PANEL_BUFFER,
-          paddingRight: RADIO_PANEL_BUFFER,
-          paddingBottom: WALLET_RADIO_PANELS_BOTTOM_BUFFER,
-        }}
+        style={panelBoxStyle.radioFrame(RADIO_PANEL_BUFFER)}
       >
         {children}
       </div>

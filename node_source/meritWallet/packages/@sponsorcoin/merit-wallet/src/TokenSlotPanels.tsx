@@ -17,9 +17,7 @@ import { useExchangeContext, usePanelVisible, defaultMissingImage } from '@spons
 import { getTokenMetaData } from '@sponsorcoin/spcoin-panels';
 import { ReadOnlyMetaDataTable } from './panels';
 import { useWalletData } from './walletData';
-
-// text-sp-sm is a Tailwind token only the web app defines (var(--sp-text-sm), 1rem); an inline style gives every host the same size.
-const SP_TEXT_SM: React.CSSProperties = { fontSize: 'var(--sp-text-sm, 1rem)' };
+import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 
 export function CopyBtn({ text }: { text: string }) {
   const { copy } = useCopyFeedback();
@@ -28,7 +26,7 @@ export function CopyBtn({ text }: { text: string }) {
       type="button"
       title="Copy to clipboard"
       onClick={() => copy(text)}
-      className="shrink-0 text-slate-400 hover:text-white transition-colors"
+      className={tokenRowClass.copy}
     >
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -47,8 +45,8 @@ export function tokenDetailRows(contract: TokenContract) {
       return {
         label: f.label,
         value: (
-          <span className="flex items-center justify-between w-full gap-2">
-            <span className="font-mono break-all" style={SP_TEXT_SM}>{f.value}</span>
+          <span className={tokenRowClass.cell}>
+            <span className={tokenRowClass.address} style={tokenRowStyle.text}>{f.value}</span>
             <CopyBtn text={f.value} />
           </span>
         ),
@@ -59,9 +57,9 @@ export function tokenDetailRows(contract: TokenContract) {
       return {
         label: f.label,
         value: (
-          <span className="flex items-center justify-between w-full gap-2">
+          <span className={tokenRowClass.cell}>
             <a href={f.value} target="_blank" rel="noopener noreferrer"
-              className="underline decoration-slate-400/60 underline-offset-2 hover:decoration-slate-200 break-all">
+              className={tokenRowClass.link}>
               {f.value}
             </a>
             <CopyBtn text={f.value} />
@@ -125,9 +123,9 @@ function TokenContractDetailPanel({
   if (!tokenContract) {
     return (
       <div id={containerId}>
-        <div className="p-4 text-slate-200 text-center" style={SP_TEXT_SM}>
-          <p className="mb-2 font-semibold">{emptyTitle}</p>
-          <p className="m-0">{emptySubtitle}</p>
+        <div className={tokenRowClass.empty} style={tokenRowStyle.text}>
+          <p className={tokenRowClass.emptyTitle}>{emptyTitle}</p>
+          <p className={tokenRowClass.emptyText}>{emptySubtitle}</p>
         </div>
       </div>
     );

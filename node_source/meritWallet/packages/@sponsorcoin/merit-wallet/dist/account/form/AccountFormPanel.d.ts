@@ -13,7 +13,7 @@ interface Props {
     /** The host's role chips (RoleTableComponent in the web app), shown on the right of the "Value" header. */
     roleTable?: React.ReactNode;
     /** The host's Private Key row (the web app's reveal / one-time-key row), rendered as table cells; it is given the zebra and cell classes of this table. Optional: the extension shows none. */
-    privateKeyRow?: (style: {
+    privateKeyRow?: (classes: {
         zebra: string;
         cell: string;
     }) => React.ReactNode;

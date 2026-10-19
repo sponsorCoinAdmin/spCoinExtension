@@ -6,6 +6,7 @@
 // one function that sends an unstake transaction and waits for it to be mined, and account profiles for the rows. The Un-Stake walk itself is unstakeWalk.ts.
 'use client';
 
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { parseUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -41,7 +42,7 @@ const ROW_ACCOUNT_CELL: SponsorStakingAccountCellSlot = ({ account, mode, label,
     panelGateId={null}
   />
 );
-const ROW_AVATAR = (account: spCoinAccount) => <AccountAvatarWithOpen account={account} mode={SP_COIN_DISPLAY.RECIPIENT_ACCOUNT} className="h-6 w-6 rounded object-contain shrink-0" />;
+const ROW_AVATAR = (account: spCoinAccount) => <AccountAvatarWithOpen account={account} mode={SP_COIN_DISPLAY.RECIPIENT_ACCOUNT} className={panelPartClass.rowAvatar} />;
 
 export interface SponsorStakingHost {
   /** The active spCoin contract. */

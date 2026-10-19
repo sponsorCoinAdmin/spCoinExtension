@@ -12,31 +12,9 @@
 // icon is clicked.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { walletColors, walletTints } from '@sponsorcoin/spcoin-common/styles';
-const ROW_LABEL_STYLE = {
-    color: walletColors.textMuted,
-    fontSize: 10,
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-};
-const ROW_VALUE_STYLE = {
-    color: walletColors.white,
-    fontSize: 12,
-    fontWeight: 500,
-    wordBreak: 'break-word',
-};
+import { detailPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 function DetailRow({ label, value, zebra }) {
-    return (_jsxs("div", { style: {
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            padding: '8px 14px',
-            // Same rowA/rowB zebra values AssetListTable.tsx's own
-            // ASSET_LIST_ROW_BG_A/B use — same duplicated-literal reasoning as
-            // AccountDetailPanel.tsx/TokenDetailPanel.tsx's own identical row.
-            background: zebra ? walletTints.panelTint35 : walletTints.grayTint25,
-        }, children: [_jsx("span", { style: ROW_LABEL_STYLE, children: label }), _jsx("span", { style: ROW_VALUE_STYLE, children: value })] }));
+    return (_jsxs("div", { style: detailPanelStyle.row(zebra), children: [_jsx("span", { style: detailPanelStyle.label, children: label }), _jsx("span", { style: detailPanelStyle.value, children: value })] }));
 }
 export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }) {
     const rows = [
@@ -45,24 +23,5 @@ export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestne
         { label: 'Symbol', value: symbol || '—' },
         { label: 'Network Type', value: isTestnet ? 'Testnet' : 'Mainnet' },
     ];
-    return (_jsx("div", { style: { display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden', padding: '3px 12px' }, children: _jsxs("div", { style: {
-                display: 'flex',
-                minHeight: 0,
-                flex: 1,
-                flexDirection: 'column',
-                overflow: 'hidden',
-                borderRadius: 20,
-                border: '1px solid #334155',
-                background: walletColors.background,
-            }, children: [_jsx("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '20px 14px 14px' }, children: _jsx("div", { style: {
-                            width: 96,
-                            height: 96,
-                            borderRadius: 16,
-                            overflow: 'hidden',
-                            background: walletColors.slateDark,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                        }, children: logoSrc ? (_jsx("img", { src: logoSrc, alt: "", style: { width: '100%', height: '100%', objectFit: 'contain' } })) : null }) }), _jsx("div", { style: { minHeight: 0, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
+    return (_jsx("div", { style: detailPanelStyle.screen, children: _jsxs("div", { style: detailPanelStyle.card, children: [_jsx("div", { style: detailPanelStyle.logoRow, children: _jsx("div", { style: detailPanelStyle.logoBox, children: logoSrc ? (_jsx("img", { src: logoSrc, alt: "", style: detailPanelStyle.logoContain })) : null }) }), _jsx("div", { style: detailPanelStyle.rows, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
 }

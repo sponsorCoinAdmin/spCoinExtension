@@ -8,6 +8,8 @@
 // the token hooks and panel-tree hooks from @sponsorcoin/spcoin-exchange-engine. The web app's debug traces were dropped on the move.
 'use client';
 
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
@@ -26,9 +28,6 @@ import {
 import { ReadOnlyMetaDataTable } from './panels';
 import { tokenDetailRows } from './TokenSlotPanels';
 import { useWalletData } from './walletData';
-
-// text-sp-sm is a Tailwind token only the web app defines (var(--sp-text-sm), 1rem); an inline style gives every host the same size.
-const SP_TEXT_SM: React.CSSProperties = { fontSize: 'var(--sp-text-sm, 1rem)' };
 
 /**
  * TokenPanel
@@ -118,9 +117,9 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
   if (!tokenContract) {
     return (
       <div id="TOKEN_PANEL">
-        <div className="p-4 text-slate-200 text-center" style={SP_TEXT_SM}>
-          <p className="mb-2 font-semibold">No token contract selected.</p>
-          <p className="m-0">Select a token to view its details.</p>
+        <div className={tokenRowClass.empty} style={tokenRowStyle.text}>
+          <p className={tokenRowClass.emptyTitle}>No token contract selected.</p>
+          <p className={tokenRowClass.emptyText}>Select a token to view its details.</p>
         </div>
       </div>
     );
@@ -132,7 +131,7 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
 
   return (
     <div id="TOKEN_PANEL">
-      {isPreviewMode && <div id="TOKEN_META_DATA_PREVIEW" className="hidden" aria-hidden="true" />}
+      {isPreviewMode && <div id="TOKEN_META_DATA_PREVIEW" className={panelPartClass.hidden} aria-hidden="true" />}
       {(isPreviewMode || vTokenMetaData) && (
         <ReadOnlyMetaDataTable rows={tokenDetailRows(resolvedContract)} logoURL={logoURL || defaultMissingImage} logoAlt={name} logoVisible={vTokenLogo} />
       )}

@@ -5,18 +5,17 @@
 // continuing) or import an existing phrase. Host-independent: the host supplies two async calls and gets told when setup is finished.
 'use client';
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
+import { formKitStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useState } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from './vault/walletAccounts';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';
-const BLUE = '#5981F3';
-const BORDER = '#334155';
-const box = { boxSizing: 'border-box', width: '100%', padding: '12px', color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 };
-const primary = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: 0, background: BLUE, padding: '8px 16px', fontWeight: 600, color: '#fff', cursor: 'pointer', font: 'inherit' };
-const ghost = { ...primary, background: 'transparent', border: `1px solid ${BORDER}`, fontWeight: 500 };
-const field = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#0E111B', padding: '8px 12px', color: '#fff', font: 'inherit', outline: 'none' };
-const muted = { color: '#94a3b8', fontSize: 12, margin: 0 };
-const err = { color: '#f87171', fontSize: 12, margin: 0 };
+const box = formKitStyle.box('12px');
+const primary = formKitStyle.primary;
+const ghost = formKitStyle.ghost;
+const field = formKitStyle.input;
+const muted = formKitStyle.muted;
+const err = formKitStyle.error;
 export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }) {
     const [step, setStep] = useState('choose');
     const [password, setPassword] = useState('');
@@ -46,7 +45,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
                 })
                     .catch((e2) => setError(e2 instanceof Error ? e2.message : 'The wallet could not be created.'))
                     .finally(() => setBusy(false));
-            }, children: [_jsx("p", { style: muted, children: "Choose a password. It unlocks this wallet on this device." }), passwordFields, error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy, style: { ...primary, opacity: busy ? 0.6 : 1 }, children: busy ? 'Creating…' : 'Create wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
+            }, children: [_jsx("p", { style: muted, children: "Choose a password. It unlocks this wallet on this device." }), passwordFields, error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy, style: formKitStyle.primaryDim(busy), children: busy ? 'Creating…' : 'Create wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
     }
     if (step === 'phrase') {
         return _jsx(RecoveryPhraseScreen, { recoveryPhrase: phrase, onContinue: () => { setPhrase(''); onDone(); } });
@@ -72,7 +71,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
                             return;
                         setBackupName(file.name);
                         void file.text().then(setBackupText);
-                    } }), backupName && _jsx("p", { style: muted, children: backupName }), _jsx("input", { type: "password", autoComplete: "current-password", placeholder: "Backup password", value: password, onChange: (e) => setPassword(e.target.value), style: field }), error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy || !backupText || !password, style: { ...primary, opacity: busy || !backupText || !password ? 0.6 : 1 }, children: busy ? 'Restoring…' : 'Restore wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
+                    } }), backupName && _jsx("p", { style: muted, children: backupName }), _jsx("input", { type: "password", autoComplete: "current-password", placeholder: "Backup password", value: password, onChange: (e) => setPassword(e.target.value), style: field }), error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy || !backupText || !password, style: formKitStyle.primaryDim(busy || !backupText || !password), children: busy ? 'Restoring…' : 'Restore wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
     }
     if (step === 'import') {
         const normalized = normalizeMnemonic(phraseInput);
@@ -100,7 +99,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
                         setBusy(false);
                     }
                 })();
-            }, children: [_jsx("p", { style: muted, children: "Enter your 12-word Secret Recovery Phrase, then choose a password for this device." }), _jsx("textarea", { rows: 3, placeholder: "Secret Recovery Phrase", value: phraseInput, onChange: (e) => setPhraseInput(e.target.value), style: { ...field, resize: 'none' } }), passwordFields, error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy || !phraseInput.trim(), style: { ...primary, opacity: busy || !phraseInput.trim() ? 0.6 : 1 }, children: busy ? 'Importing…' : 'Import wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
+            }, children: [_jsx("p", { style: muted, children: "Enter your 12-word Secret Recovery Phrase, then choose a password for this device." }), _jsx("textarea", { rows: 3, placeholder: "Secret Recovery Phrase", value: phraseInput, onChange: (e) => setPhraseInput(e.target.value), style: formKitStyle.inputNoResize }), passwordFields, error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy || !phraseInput.trim(), style: formKitStyle.primaryDim(busy || !phraseInput.trim()), children: busy ? 'Importing…' : 'Import wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
     }
-    return (_jsxs("div", { id: "WALLET_ONBOARDING", style: box, children: [_jsx("p", { style: { margin: 0, fontWeight: 600 }, children: "Set up your wallet" }), _jsx("p", { style: muted, children: "This wallet keeps your keys on this device, encrypted with your password." }), _jsx("button", { type: "button", style: primary, onClick: () => { setError(''); setStep('create'); }, children: "Create a new wallet" }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('import'); }, children: "I already have a Secret Recovery Phrase" }), restoreBackup ? _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('restore'); }, children: "Restore from a backup file" }) : null] }));
+    return (_jsxs("div", { id: "WALLET_ONBOARDING", style: box, children: [_jsx("p", { style: formKitStyle.heading, children: "Set up your wallet" }), _jsx("p", { style: muted, children: "This wallet keeps your keys on this device, encrypted with your password." }), _jsx("button", { type: "button", style: primary, onClick: () => { setError(''); setStep('create'); }, children: "Create a new wallet" }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('import'); }, children: "I already have a Secret Recovery Phrase" }), restoreBackup ? _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('restore'); }, children: "Restore from a backup file" }) : null] }));
 }

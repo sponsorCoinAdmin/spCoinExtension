@@ -4,6 +4,7 @@
 // the account panel on click (spcoin-panels' AccountAvatarWithOpen), so a host no longer has to write the adapter.
 'use client';
 
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AccountAvatarWithOpen } from '@sponsorcoin/spcoin-panels';
@@ -23,7 +24,7 @@ export default function AgentSelectDropDownWithAvatar({ panelGateId, label = 'Se
       panelGateId={panelGateId}
       label={label}
       addrPrePostSize={addrPrePostSize}
-      renderAccountAvatar={(account) => <AccountAvatarWithOpen account={account} mode={SP_COIN_DISPLAY.AGENT_ACCOUNT} className="h-full w-full object-cover" roleLabel="AGENT" />}
+      renderAccountAvatar={(account) => <AccountAvatarWithOpen account={account} mode={SP_COIN_DISPLAY.AGENT_ACCOUNT} className={panelPartClass.avatarFill} roleLabel="AGENT" />}
     />
   );
 }

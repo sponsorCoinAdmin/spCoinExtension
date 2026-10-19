@@ -22,6 +22,7 @@
 
 'use client';
 
+import { tokenAddressClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { useCopyFeedback } from '../platform/useCopyFeedback';
 import { Copy, Check, ChevronDown } from 'lucide-react';
@@ -64,12 +65,12 @@ export default function TokenAddressComponent({
     <>
       {/* Collapsible header — mirrors ActiveWalletPanel style */}
       {headerVisible && (
-        <div className="relative shrink-0 border-b border-slate-700/50 -mx-4 px-4 py-3 flex flex-col items-center">
-          <span className="text-[19px] font-semibold text-[#5981F3]">
+        <div className={tokenAddressClass.header}>
+          <span className={tokenAddressClass.headerTitle}>
             {blockchainName ? `${blockchainName} Network` : 'Network'}
           </span>
           {(symbol || name) && (
-            <span className="text-[14px] font-normal text-slate-400">
+            <span className={tokenAddressClass.headerSub}>
               {symbol}{name ? `: ${name}` : ''}
             </span>
           )}
@@ -77,13 +78,13 @@ export default function TokenAddressComponent({
       )}
 
       {/* Address row — mirrors ActiveAccount style */}
-      <div className="shrink-0 border-b border-slate-700/50 -mx-4 px-4 py-2 flex items-center gap-2 text-sm text-slate-300/80">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#11162A]">
+      <div className={tokenAddressClass.row}>
+        <div className={tokenAddressClass.iconBox}>
           {icon}
         </div>
-        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-[22px] bg-[#243056] px-3 py-1 text-[15px] text-[#5981F3]">
+        <div className={tokenAddressClass.pill}>
           <span
-            className="w-full truncate whitespace-nowrap text-center font-mono cursor-pointer"
+            className={tokenAddressClass.address}
             title={headerVisible ? 'Hide token info' : 'Show token info'}
             onClick={() => setHeaderVisible((v) => !v)}
           >
@@ -92,14 +93,11 @@ export default function TokenAddressComponent({
           <button
             type="button"
             onClick={onSelectClick}
-            className="shrink-0 flex items-center justify-center rounded hover:bg-white/10 p-0.5"
+            className={tokenAddressClass.selectButton}
             aria-label={tokenListVisible ? 'Close token list' : 'Select token'}
           >
             <ChevronDown
-              className={[
-                'h-4 w-4 text-slate-400 transition-transform duration-200',
-                tokenListVisible ? 'rotate-180' : '',
-              ].join(' ')}
+              className={tokenAddressClass.chevron(tokenListVisible)}
             />
           </button>
         </div>
@@ -107,13 +105,13 @@ export default function TokenAddressComponent({
           type="button"
           onClick={handleCopy}
           disabled={!address}
-          className="shrink-0 flex items-center justify-center rounded hover:bg-white/10 pl-0.5 pr-0 disabled:opacity-40"
+          className={tokenAddressClass.copyButton}
           aria-label="Copy token contract address"
           title="Copy token contract address"
         >
           {copied
-            ? <Check className="h-6 w-6 text-green-400" />
-            : <Copy className="h-6 w-6 text-slate-400" />
+            ? <Check className={tokenAddressClass.copied} />
+            : <Copy className={tokenAddressClass.copy} />
           }
         </button>
       </div>

@@ -6,6 +6,7 @@
 // where the run-script endpoint is, which contract and chain, and how a CLAIM is executed (the web app's server script; the extension signs it with the vault).
 'use client';
 
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -154,7 +155,7 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
 
   if (!isActive) return null;
   return (
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+    <div style={panelBoxStyle.fill}>
       <ManageSponsorshipsPanel
         tradingAmountText={tradingAmountDisplay}
         stakedAmountText={stakedAmountDisplay}

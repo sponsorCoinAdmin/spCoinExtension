@@ -5,6 +5,7 @@
 // continuing) or import an existing phrase. Host-independent: the host supplies two async calls and gets told when setup is finished.
 'use client';
 
+import { formKitStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from './vault/walletAccounts';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
@@ -23,14 +24,12 @@ export interface WalletOnboardingPanelProps {
 
 type Step = 'choose' | 'create' | 'phrase' | 'import' | 'restore';
 
-const BLUE = '#5981F3';
-const BORDER = '#334155';
-const box: React.CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '12px', color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 };
-const primary: React.CSSProperties = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: 0, background: BLUE, padding: '8px 16px', fontWeight: 600, color: '#fff', cursor: 'pointer', font: 'inherit' };
-const ghost: React.CSSProperties = { ...primary, background: 'transparent', border: `1px solid ${BORDER}`, fontWeight: 500 };
-const field: React.CSSProperties = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: `1px solid ${BORDER}`, background: '#0E111B', padding: '8px 12px', color: '#fff', font: 'inherit', outline: 'none' };
-const muted: React.CSSProperties = { color: '#94a3b8', fontSize: 12, margin: 0 };
-const err: React.CSSProperties = { color: '#f87171', fontSize: 12, margin: 0 };
+const box = formKitStyle.box('12px');
+const primary = formKitStyle.primary;
+const ghost = formKitStyle.ghost;
+const field = formKitStyle.input;
+const muted = formKitStyle.muted;
+const err = formKitStyle.error;
 
 export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }: WalletOnboardingPanelProps) {
   const [step, setStep] = useState<Step>('choose');
@@ -78,7 +77,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
         <p style={muted}>Choose a password. It unlocks this wallet on this device.</p>
         {passwordFields}
         {error && <p style={err}>{error}</p>}
-        <button type="submit" disabled={busy} style={{ ...primary, opacity: busy ? 0.6 : 1 }}>{busy ? 'Creating…' : 'Create wallet'}</button>
+        <button type="submit" disabled={busy} style={formKitStyle.primaryDim(busy)}>{busy ? 'Creating…' : 'Create wallet'}</button>
         <button type="button" style={ghost} onClick={() => { setError(''); setStep('choose'); }}>Back</button>
       </form>
     );
@@ -123,7 +122,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
         {backupName && <p style={muted}>{backupName}</p>}
         <input type="password" autoComplete="current-password" placeholder="Backup password" value={password} onChange={(e) => setPassword(e.target.value)} style={field} />
         {error && <p style={err}>{error}</p>}
-        <button type="submit" disabled={busy || !backupText || !password} style={{ ...primary, opacity: busy || !backupText || !password ? 0.6 : 1 }}>{busy ? 'Restoring…' : 'Restore wallet'}</button>
+        <button type="submit" disabled={busy || !backupText || !password} style={formKitStyle.primaryDim(busy || !backupText || !password)}>{busy ? 'Restoring…' : 'Restore wallet'}</button>
         <button type="button" style={ghost} onClick={() => { setError(''); setStep('choose'); }}>Back</button>
       </form>
     );
@@ -158,10 +157,10 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
         }}
       >
         <p style={muted}>Enter your 12-word Secret Recovery Phrase, then choose a password for this device.</p>
-        <textarea rows={3} placeholder="Secret Recovery Phrase" value={phraseInput} onChange={(e) => setPhraseInput(e.target.value)} style={{ ...field, resize: 'none' }} />
+        <textarea rows={3} placeholder="Secret Recovery Phrase" value={phraseInput} onChange={(e) => setPhraseInput(e.target.value)} style={formKitStyle.inputNoResize} />
         {passwordFields}
         {error && <p style={err}>{error}</p>}
-        <button type="submit" disabled={busy || !phraseInput.trim()} style={{ ...primary, opacity: busy || !phraseInput.trim() ? 0.6 : 1 }}>{busy ? 'Importing…' : 'Import wallet'}</button>
+        <button type="submit" disabled={busy || !phraseInput.trim()} style={formKitStyle.primaryDim(busy || !phraseInput.trim())}>{busy ? 'Importing…' : 'Import wallet'}</button>
         <button type="button" style={ghost} onClick={() => { setError(''); setStep('choose'); }}>Back</button>
       </form>
     );
@@ -169,7 +168,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
 
   return (
     <div id="WALLET_ONBOARDING" style={box}>
-      <p style={{ margin: 0, fontWeight: 600 }}>Set up your wallet</p>
+      <p style={formKitStyle.heading}>Set up your wallet</p>
       <p style={muted}>This wallet keeps your keys on this device, encrypted with your password.</p>
       <button type="button" style={primary} onClick={() => { setError(''); setStep('create'); }}>Create a new wallet</button>
       <button type="button" style={ghost} onClick={() => { setError(''); setStep('import'); }}>I already have a Secret Recovery Phrase</button>

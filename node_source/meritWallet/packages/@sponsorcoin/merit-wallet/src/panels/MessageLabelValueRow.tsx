@@ -5,6 +5,8 @@
 // MessageDetailsSection for `amount`, `reason`, and `gasFee`.
 'use client';
 
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
+
 export interface MessageLabelValueRowProps {
   label: string;
   value: string;
@@ -12,7 +14,7 @@ export interface MessageLabelValueRowProps {
 
 export default function MessageLabelValueRow({ label, value }: MessageLabelValueRowProps) {
   return (
-    <div className="text-sm font-semibold">
+    <div className={panelPartClass.labelValue}>
       {label}: {value}
     </div>
   );

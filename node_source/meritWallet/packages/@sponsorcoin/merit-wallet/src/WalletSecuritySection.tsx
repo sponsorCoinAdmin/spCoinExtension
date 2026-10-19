@@ -6,6 +6,7 @@
 // the active account's private key, and (as in MetaMask) the Secret Recovery Phrase. No host imports: the host passes the two reveal calls.
 'use client';
 
+import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
@@ -19,20 +20,6 @@ export interface WalletSecurityApi {
   /** Resolve with the Secret Recovery Phrase; throw a readable message for a wrong password. Omit to hide that row. */
   revealPhrase?(password: string): Promise<string>;
 }
-
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#fff', marginBottom: 6 };
-const boxStyle: React.CSSProperties = {
-  boxSizing: 'border-box',
-  width: '100%',
-  borderRadius: 8,
-  border: '1px solid #334155',
-  background: '#0b0e17',
-  padding: '8px 10px',
-  color: '#fff',
-  fontSize: 11,
-  wordBreak: 'break-all',
-  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-};
 
 function RevealRow({
   title,
@@ -68,13 +55,13 @@ function RevealRow({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span style={labelStyle}>{title}</span>
-      {hint && <span style={{ fontSize: 11, color: '#94a3b8' }}>{hint}</span>}
+    <div style={configSectionStyle.column(6)}>
+      <span style={configSectionStyle.label}>{title}</span>
+      {hint && <span style={configSectionStyle.hint}>{hint}</span>}
       {secret ? (
         <>
-          <div style={boxStyle}>{visible ? secret : '•'.repeat(Math.min(secret.length, 48))}</div>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={configSectionStyle.secretBox}>{visible ? secret : '•'.repeat(Math.min(secret.length, 48))}</div>
+          <div style={configSectionStyle.buttons}>
             <SmallYellowButton onClick={() => setVisible((v) => !v)}>{visible ? 'Hide' : 'Show'}</SmallYellowButton>
             <SmallYellowButton onClick={copy}>{copied ? 'Copied' : 'Copy'}</SmallYellowButton>
             <SmallYellowButton onClick={clear}>Clear</SmallYellowButton>
@@ -110,7 +97,7 @@ export default function WalletSecuritySection({ api }: { api: WalletSecurityApi 
   const address = profile?.address ?? '';
   const who = [profile?.symbol, profile?.name].filter(Boolean).join(' | ');
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={configSectionStyle.column(14)}>
       <RevealRow
         title="Security — Reveal Private Key"
         hint={address ? `${who ? `${who} — ` : ''}${address}` : 'Select an account first.'}

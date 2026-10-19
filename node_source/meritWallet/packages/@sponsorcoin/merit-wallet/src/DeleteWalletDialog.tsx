@@ -4,6 +4,7 @@
 // the password is right. Host-independent: the host supplies confirmDelete(password), which throws a readable message for a wrong password.
 'use client';
 
+import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 
 /**
@@ -19,10 +20,10 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
       id="DELETE_WALLET_DIALOG"
       role="dialog"
       aria-modal="true"
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}
+      style={dialogStyle.backdrop}
     >
       <form
-        style={{ boxSizing: 'border-box', width: '100%', maxWidth: 340, background: '#0E111B', border: '1px solid #7f1d1d', borderRadius: 12, padding: 16, color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 }}
+        style={dialogStyle.formCardDanger}
         onSubmit={(e) => {
           e.preventDefault();
           setBusy(true);
@@ -35,8 +36,8 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
             .finally(() => setBusy(false));
         }}
       >
-        <p style={{ margin: 0, fontWeight: 700 }}>{title}</p>
-        <p style={{ margin: 0, fontSize: 12, color: '#fbbf24' }}>
+        <p style={dialogStyle.title}>{title}</p>
+        <p style={dialogStyle.warning}>
           {warning ?? 'This deletes the wallet and all its accounts from this device. You can only get them back with your Secret Recovery Phrase (imported accounts need their private keys).'}
         </p>
         <input
@@ -46,16 +47,16 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
           placeholder="Enter your password to confirm"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ boxSizing: 'border-box', width: '100%', borderRadius: 8, border: '1px solid #334155', background: '#0b0e17', padding: '8px 12px', color: '#fff', font: 'inherit', outline: 'none' }}
+          style={dialogStyle.input}
         />
-        {error && <p style={{ margin: 0, fontSize: 12, color: '#f87171' }}>{error}</p>}
-        <button type="submit" disabled={busy || !password} style={{ borderRadius: 8, border: 0, background: '#b91c1c', color: '#fff', padding: '8px 16px', fontWeight: 600, cursor: 'pointer', font: 'inherit', opacity: busy || !password ? 0.6 : 1 }}>
+        {error && <p style={dialogStyle.error}>{error}</p>}
+        <button type="submit" disabled={busy || !password} style={dialogStyle.dangerButton(busy || !password)}>
           {busy ? 'Deleting…' : confirmLabel}
         </button>
-        <button type="button" onClick={onClose} style={{ borderRadius: 8, border: '1px solid #334155', background: 'transparent', color: '#fff', padding: '8px 16px', cursor: 'pointer', font: 'inherit' }}>
+        <button type="button" onClick={onClose} style={dialogStyle.cancelButton}>
           Cancel
         </button>
-        {footnote && <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>{footnote}</p>}
+        {footnote && <p style={dialogStyle.footnote}>{footnote}</p>}
       </form>
     </div>
   );

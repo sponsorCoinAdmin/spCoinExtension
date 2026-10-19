@@ -5,6 +5,7 @@
 // MessageDetailsSection for `amount`, `reason`, and `gasFee`.
 'use client';
 import { jsxs as _jsxs } from "react/jsx-runtime";
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 export default function MessageLabelValueRow({ label, value }) {
-    return (_jsxs("div", { className: "text-sm font-semibold", children: [label, ": ", value] }));
+    return (_jsxs("div", { className: panelPartClass.labelValue, children: [label, ": ", value] }));
 }

@@ -36,7 +36,7 @@ import React, { useState } from 'react';
 import { useCopyFeedback } from '../platform/useCopyFeedback';
 import { ChevronDown, ChevronUp, Copy, CheckCheck } from 'lucide-react';
 import AnonymousAvatar from './AnonymousAvatar';
-import { dropDownStyle } from '@sponsorcoin/spcoin-common/styles';
+import { dropDownStyle, agentPillStyle, agentRowStyle } from '@sponsorcoin/spcoin-common/styles';
 
 // Same component/reasoning as TradeAmountRow.tsx's own CopyAddressButton —
 // duplicated rather than shared across files on purpose (this package has
@@ -57,19 +57,7 @@ function CopyAddressButton({ address }: { address: string }) {
       onMouseLeave={() => setHovered(false)}
       aria-label="Copy address"
       title="Copy address"
-      style={{
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexShrink: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 2,
-        borderRadius: 3,
-        border: 'none',
-        background: hovered ? dropDownStyle.copyHoverBackground : 'transparent',
-        color: copied ? dropDownStyle.copiedColor : 'inherit',
-        cursor: 'pointer',
-      }}
+      style={agentPillStyle.copyButton({ hovered, copied }, dropDownStyle)}
     >
       {copied ? <CheckCheck size={dropDownStyle.copyIconSizePx} /> : <Copy size={dropDownStyle.copyIconSizePx} />}
     </button>
@@ -143,49 +131,28 @@ export default function AgentSelectDropDown({
       onClick={onSelectClick}
       onMouseEnter={() => onSelectClick && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ ...dropDownStyle.row, cursor: onSelectClick ? 'pointer' : 'default' }}
+      style={agentRowStyle.row(dropDownStyle.row, !!onSelectClick)}
     >
       {/* Outside the pill — sized by the shared asset-select scale (spcoin-common/styles, 22px; was a stale 40px that predates AssetSelectDropDown's own 2026-09-13 resize), matching the real
           AssetSelectDropDown.tsx's default icon slot exactly. */}
       <span
-        style={{
-          display: 'flex',
-          height: dropDownStyle.iconSizePx,
-          width: dropDownStyle.iconSizePx,
-          flexShrink: 0,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '9999px',
-          overflow: 'hidden',
-          background: 'transparent',
-        }}
+        style={agentPillStyle.iconSlot(dropDownStyle.iconSizePx)}
       >
         {/* 2026-10-03 — no agent selected: the shared Anonymous avatar, not a
             blank dark circle (see AnonymousAvatar.tsx). */}
         {icon ?? <AnonymousAvatar />}
       </span>
       <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          height: dropDownStyle.pill.height,
-          padding: '0 8px',
-          borderRadius: 9999,
-          // Matches the real pill's solid bg-[#243056] (AssetSelectDropDown's
-          // ADDR_COMP, non-blur variant — the one AGENT_SELECT_DROP_DOWN
-          // actually uses, not WalletHeader's frosted-glass one).
-          background: hovered ? dropDownStyle.pill.backgroundHover : dropDownStyle.pill.background,
-        }}
+        style={agentPillStyle.pill({ height: dropDownStyle.pill.height, background: hovered ? dropDownStyle.pill.backgroundHover : dropDownStyle.pill.background })}
       >
-        <span style={{ ...dropDownStyle.text }}>
+        <span style={agentRowStyle.text(dropDownStyle.text)}>
           {hasEntity ? [symbol, displayAddress].filter(Boolean).join(' ') : placeholderLabel}
         </span>
         {hasEntity && address && <CopyAddressButton address={address} />}
         {listOpen ? (
-          <ChevronUp size={dropDownStyle.chevronSizePx} style={{ flexShrink: 0, color: dropDownStyle.glyphColor }} />
+          <ChevronUp size={dropDownStyle.chevronSizePx} style={agentPillStyle.chevron(dropDownStyle.glyphColor)} />
         ) : (
-          <ChevronDown size={dropDownStyle.chevronSizePx} style={{ flexShrink: 0, color: dropDownStyle.glyphColor }} />
+          <ChevronDown size={dropDownStyle.chevronSizePx} style={agentPillStyle.chevron(dropDownStyle.glyphColor)} />
         )}
       </div>
     </div>

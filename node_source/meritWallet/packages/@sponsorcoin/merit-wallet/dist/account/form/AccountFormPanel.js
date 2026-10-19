@@ -4,6 +4,7 @@
 // the extension show one editor. What only the web app has comes in through slots: the role chips, the Private Key row (one-time key or click-to-reveal with a password step-up), the Connect button and the modal that row opens.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { accountFormClass } from '@sponsorcoin/spcoin-common/styles';
 import { useState, useCallback } from 'react';
 import { usePlatform } from '../../platform/platform';
 import { useCopyFeedback } from '../../platform/useCopyFeedback';
@@ -27,19 +28,17 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
         copy(value, fieldName);
     }, [copy]);
     const CopyIcon = () => (_jsxs("svg", { xmlns: "http://www.w3.org/2000/svg", width: "22", height: "22", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("rect", { x: "9", y: "9", width: "13", height: "13", rx: "2", ry: "2" }), _jsx("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })] }));
-    const th = 'px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-300/80';
-    const cell = 'px-3 py-3 text-sm align-middle';
-    const baseInputClasses = 'w-full rounded bg-transparent text-white focus:outline-none focus:ring-0';
-    const requiredInputClasses = `${baseInputClasses} placeholder:text-red-500`;
-    const optionalInputClasses = `${baseInputClasses} placeholder:text-green-400`;
-    const zebraA = 'bg-[rgba(56,78,126,0.35)]';
-    const zebraB = 'bg-[rgba(156,163,175,0.25)]';
-    const tableGrid = 'grid grid-cols-[max-content_minmax(0,1fr)]';
+    const th = accountFormClass.th;
+    const cell = accountFormClass.cell;
+    const requiredInputClasses = accountFormClass.requiredInput;
+    const optionalInputClasses = accountFormClass.optionalInput;
+    const zebraA = accountFormClass.zebraA;
+    const zebraB = accountFormClass.zebraB;
+    const tableGrid = accountFormClass.tableGridRow;
     const disconnectedInputMessage = 'Connection Required and input is prohibited until connection is established.';
     const disconnectedMetaMaskMessage = 'MetaMask Connection Required';
-    const inputErrorClasses = 'border-red-500';
-    const errorValueClasses = errorValueDisplay ? ' border-red-500 font-semibold text-red-500' : '';
-    const loadingFieldClasses = 'bg-red-900/60 border-red-500 cursor-not-allowed';
+    const errorValueClasses = errorValueDisplay ? accountFormClass.errorValue : '';
+    const loadingFieldClasses = accountFormClass.loadingField;
     const lockedInputMessage = isLoading ? loadingInputMessage : disconnectedInputMessage;
     const noChangesToUpdate = submitLabel !== 'Create Account' && !hasUnsavedChanges;
     const getLoadingClassesForField = (fieldName) => isLoading && hoveredInput === fieldName ? loadingFieldClasses : '';
@@ -50,7 +49,7 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
         { label: 'Email Address', name: 'email', labelTitle: FIELD_TITLES.email },
         { label: 'Website', name: 'website', labelTitle: FIELD_TITLES.website },
     ];
-    return (_jsxs("section", { className: `${panelMarginClass} ${accountPanelBorderClass} order-2 flex h-full w-full flex-col items-start justify-start px-0 pt-4 pb-4`, children: [formHeading || topRowContent ? (_jsxs("div", { className: `mb-4 w-full ${contentWidthClass}`, children: [formHeading ? (_jsxs("div", { className: "grid w-full grid-cols-1 md:grid-cols-[minmax(10rem,max-content)_minmax(0,1fr)]", children: [_jsx("div", { className: "invisible hidden h-0 overflow-hidden px-2 whitespace-nowrap md:block", children: "Address" }), _jsx("h2", { className: "w-full text-center text-lg font-semibold text-[#5981F3]", children: formHeading })] })) : null, topRowContent ? _jsx("div", { className: formHeading ? 'mt-3 w-full' : 'w-full', children: topRowContent }) : null] })) : null, _jsx("div", { className: "scrollbar-hide mb-4 mt-0 w-full min-w-0 overflow-x-hidden overflow-y-auto rounded-xl border border-black", children: _jsxs("div", { className: `w-full min-w-0 ${tableGrid}`, children: [_jsxs("div", { className: "contents", children: [_jsx("div", { className: `${msTableTw.theadRow} ${th} whitespace-nowrap border-b border-black flex items-center`, children: "Field Name" }), _jsxs("div", { className: `${msTableTw.theadRow} ${th} border-b border-black flex items-center justify-between`, children: [_jsx("span", { children: "Value" }), roleTable] })] }), _jsxs("div", { className: "contents", children: [_jsx("div", { className: `${zebraA} ${cell} whitespace-nowrap border-b border-black`, children: "Address" }), _jsxs("div", { className: `${zebraA} ${cell} min-w-0 border-b border-black`, children: [_jsxs("div", { className: "flex items-center justify-between w-full min-w-0 gap-1", children: [_jsx("input", { id: fieldId('publicKey'), type: "text", name: "publicKey", value: connected ? publicKey : disconnectedMetaMaskMessage, readOnly: !connected || inputLocked || publicKeyLocked, placeholder: !connected
+    return (_jsxs("section", { className: accountFormClass.section(panelMarginClass, accountPanelBorderClass), children: [formHeading || topRowContent ? (_jsxs("div", { className: accountFormClass.headingBox(contentWidthClass), children: [formHeading ? (_jsxs("div", { className: accountFormClass.headingGrid, children: [_jsx("div", { className: accountFormClass.headingSpacer, children: "Address" }), _jsx("h2", { className: accountFormClass.heading, children: formHeading })] })) : null, topRowContent ? _jsx("div", { className: accountFormClass.topRow(!!formHeading), children: topRowContent }) : null] })) : null, _jsx("div", { className: accountFormClass.tableBox, children: _jsxs("div", { className: accountFormClass.grid(tableGrid), children: [_jsxs("div", { className: accountFormClass.contents, children: [_jsx("div", { className: accountFormClass.headCellName(msTableTw.theadRow, th), children: "Field Name" }), _jsxs("div", { className: accountFormClass.headCellValue(msTableTw.theadRow, th), children: [_jsx("span", { children: "Value" }), roleTable] })] }), _jsxs("div", { className: accountFormClass.contents, children: [_jsx("div", { className: accountFormClass.labelCell(zebraA, cell), children: "Address" }), _jsxs("div", { className: accountFormClass.valueCell(zebraA, cell), children: [_jsxs("div", { className: accountFormClass.inputLine, children: [_jsx("input", { id: fieldId('publicKey'), type: "text", name: "publicKey", value: connected ? publicKey : disconnectedMetaMaskMessage, readOnly: !connected || inputLocked || publicKeyLocked, placeholder: !connected
                                                         ? disconnectedMetaMaskMessage
                                                         : hoveredInput === 'publicKey'
                                                             ? FIELD_PLACEHOLDERS.publicKey
@@ -58,7 +57,7 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
                                                         ? disconnectedMetaMaskMessage
                                                         : errors.publicKey
                                                             ? `Required for Code Account Operations | Error: ${errors.publicKey}`
-                                                            : 'Required for Code Account Operations', className: `${requiredInputClasses}${!connected ? ' text-center font-bold text-red-500' : ''}${errorValueClasses}${errors.publicKey ? ` ${inputErrorClasses}` : ''}${getLoadingClassesForField('publicKey') ? ` ${getLoadingClassesForField('publicKey')}` : ''}`, onChange: onPublicKeyChange, onBlur: onPublicKeyBlur, onMouseEnter: () => setHoveredInput('publicKey'), onMouseLeave: () => setHoveredInput(null) }), connected && publicKey ? (_jsx("button", { type: "button", onClick: handleCopyAddress, title: "Copy address", className: "shrink-0 text-slate-400 hover:text-white transition-colors", children: copiedField === 'address' ? _jsx(Check, { className: "h-[22px] w-[22px] text-green-400" }) : _jsx(CopyIcon, {}) })) : null] }), errors.publicKey ? (_jsx("p", { className: "text-sm text-red-500", children: errors.publicKey })) : null] })] }), privateKeyRow ? privateKeyRow({ zebra: zebraB, cell }) : null, formFieldRows.map(({ label, name, labelTitle }, index) => (_jsxs("div", { className: "contents", children: [_jsx("div", { className: `${(index + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA} ${cell} whitespace-nowrap border-b border-black`, title: labelTitle, children: label }), _jsx("div", { className: `${(index + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA} ${cell} min-w-0 border-b border-black`, children: (() => {
+                                                            : 'Required for Code Account Operations', className: accountFormClass.input({ base: requiredInputClasses, disconnected: !connected, valueError: errorValueClasses, error: !!errors.publicKey, loading: getLoadingClassesForField('publicKey') }), onChange: onPublicKeyChange, onBlur: onPublicKeyBlur, onMouseEnter: () => setHoveredInput('publicKey'), onMouseLeave: () => setHoveredInput(null) }), connected && publicKey ? (_jsx("button", { type: "button", onClick: handleCopyAddress, title: "Copy address", className: accountFormClass.copyButton, children: copiedField === 'address' ? _jsx(Check, { className: accountFormClass.copiedIcon }) : _jsx(CopyIcon, {}) })) : null] }), errors.publicKey ? (_jsx("p", { className: accountFormClass.errorText, children: errors.publicKey })) : null] })] }), privateKeyRow ? privateKeyRow({ zebra: zebraB, cell }) : null, formFieldRows.map(({ label, name, labelTitle }, index) => (_jsxs("div", { className: accountFormClass.contents, children: [_jsx("div", { className: accountFormClass.labelCell((index + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA, cell), title: labelTitle, children: label }), _jsx("div", { className: accountFormClass.valueCell((index + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA, cell), children: (() => {
                                         const key = name;
                                         const href = toPreviewHref(key, String(formData[key] ?? ''));
                                         const isLinkField = key === 'email' || key === 'website';
@@ -69,7 +68,7 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
                                             : labelTitle;
                                         const fieldValue = String(formData[key] ?? '');
                                         const showCopy = isLinkField && !!fieldValue;
-                                        return (_jsxs(_Fragment, { children: [_jsxs("div", { className: "flex items-center justify-between w-full min-w-0 gap-1", children: [_jsx("input", { id: fieldId(name), name: name, type: "text", value: connected ? formData[key] : '', onChange: onChange, readOnly: inputLocked, placeholder: hoveredInput === name ? inputLocked ? lockedInputMessage : FIELD_PLACEHOLDERS[key] : 'Optional', title: composedTitle, className: `${optionalInputClasses}${errorValueClasses}${isLinkField && href && hoveringLinkTextField === key ? ' underline text-blue-300 cursor-pointer' : ''}${fieldError ? ` ${inputErrorClasses}` : ''}${getLoadingClassesForField(name) ? ` ${getLoadingClassesForField(name)}` : ''}`, onClick: (e) => {
+                                        return (_jsxs(_Fragment, { children: [_jsxs("div", { className: accountFormClass.inputLine, children: [_jsx("input", { id: fieldId(name), name: name, type: "text", value: connected ? formData[key] : '', onChange: onChange, readOnly: inputLocked, placeholder: hoveredInput === name ? inputLocked ? lockedInputMessage : FIELD_PLACEHOLDERS[key] : 'Optional', title: composedTitle, className: accountFormClass.input({ base: optionalInputClasses, valueError: errorValueClasses, link: !!(isLinkField && href && hoveringLinkTextField === key), error: !!fieldError, loading: getLoadingClassesForField(name) }), onClick: (e) => {
                                                                 if (!href || inputLocked)
                                                                     return;
                                                                 const clickedOnText = shouldOpenLinkFromInputClick(e.currentTarget, String(formData[key] ?? ''), e);
@@ -99,20 +98,8 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
                                                                 if (hoveringLinkTextField === key) {
                                                                     setHoveringLinkTextField(null);
                                                                 }
-                                                            }, onBlur: () => onFieldBlur(key) }), showCopy ? (_jsx("button", { type: "button", title: `Copy ${label}`, onClick: () => handleCopyField(name, fieldValue), className: "shrink-0 text-slate-400 hover:text-white transition-colors", children: copiedField === name ? _jsx(Check, { className: "h-[22px] w-[22px] text-green-400" }) : _jsx(CopyIcon, {}) })) : null] }), fieldError ? (_jsx("p", { className: "text-sm text-red-500", children: fieldError })) : null] }));
-                                    })() })] }, name))), _jsxs("div", { className: `${zebraB} ${cell} col-span-2 min-w-0`, children: [_jsx("div", { className: "whitespace-nowrap text-center", children: "Description:" }), _jsxs("div", { className: "box-border w-full min-w-0 whitespace-normal break-all pr-[5px]", children: [_jsx("textarea", { id: fieldId('description'), name: "description", ref: descriptionTextareaRef, value: connected ? formData.description : '', onChange: onChange, readOnly: inputLocked, rows: 1, placeholder: hoveredInput === 'description' ? inputLocked ? lockedInputMessage : FIELD_PLACEHOLDERS.description : 'Optional', title: formData.description && errors.description ? `Account Description | Error: ${errors.description}` : 'Account Description', className: `${optionalInputClasses}${errorValueClasses} min-h-[42px] resize-none overflow-hidden whitespace-pre-wrap break-words ${errors.description ? ` ${inputErrorClasses}` : ''}${getLoadingClassesForField('description') ? ` ${getLoadingClassesForField('description')}` : ''}`, onMouseEnter: () => setHoveredInput('description'), onMouseLeave: () => setHoveredInput(null), onBlur: () => onFieldBlur('description') }), errors.description ? (_jsx("p", { className: "text-sm text-red-500", children: errors.description })) : null] })] }), _jsx("div", { className: "contents", children: _jsx("div", { className: "col-span-2 border-t border-black/30", children: !connected ? (connectButton ?? null) : (_jsxs("div", { className: "flex", children: [_jsx("button", { type: !isEditMode ? 'button' : 'submit', "aria-disabled": disableSubmit, className: `flex-1 rounded-l-md rounded-r-none rounded-tl-none rounded-tr-none border-r border-black/50 py-2 text-center font-bold text-black transition-colors ${noChangesToUpdate
-                                                ? 'bg-[#E5B94F] text-black hover:bg-[#E5B94F] transition-none cursor-default'
-                                                : !isEditMode
-                                                    ? hoverTarget === 'createAccount'
-                                                        ? 'bg-red-500 text-black'
-                                                        : 'bg-[#E5B94F] text-black'
-                                                    : disableSubmit
-                                                        ? 'bg-red-500 text-black cursor-not-allowed'
-                                                        : hoverTarget === 'createAccount'
-                                                            ? hasUnsavedChanges || canCreateMissingAccount
-                                                                ? 'bg-green-500 text-black'
-                                                                : 'bg-red-500 text-black'
-                                                            : 'bg-[#E5B94F] text-black'}`, title: submitLabel === 'Create Account'
+                                                            }, onBlur: () => onFieldBlur(key) }), showCopy ? (_jsx("button", { type: "button", title: `Copy ${label}`, onClick: () => handleCopyField(name, fieldValue), className: accountFormClass.copyButton, children: copiedField === name ? _jsx(Check, { className: accountFormClass.copiedIcon }) : _jsx(CopyIcon, {}) })) : null] }), fieldError ? (_jsx("p", { className: accountFormClass.errorText, children: fieldError })) : null] }));
+                                    })() })] }, name))), _jsxs("div", { className: accountFormClass.descriptionCell(zebraB, cell), children: [_jsx("div", { className: accountFormClass.descriptionLabel, children: "Description:" }), _jsxs("div", { className: accountFormClass.descriptionBox, children: [_jsx("textarea", { id: fieldId('description'), name: "description", ref: descriptionTextareaRef, value: connected ? formData.description : '', onChange: onChange, readOnly: inputLocked, rows: 1, placeholder: hoveredInput === 'description' ? inputLocked ? lockedInputMessage : FIELD_PLACEHOLDERS.description : 'Optional', title: formData.description && errors.description ? `Account Description | Error: ${errors.description}` : 'Account Description', className: accountFormClass.input({ base: optionalInputClasses, valueError: errorValueClasses, tail: accountFormClass.descriptionInputTail, error: !!errors.description, loading: getLoadingClassesForField('description') }), onMouseEnter: () => setHoveredInput('description'), onMouseLeave: () => setHoveredInput(null), onBlur: () => onFieldBlur('description') }), errors.description ? (_jsx("p", { className: accountFormClass.errorText, children: errors.description })) : null] })] }), _jsx("div", { className: accountFormClass.contents, children: _jsx("div", { className: accountFormClass.buttonRowOuter, children: !connected ? (connectButton ?? null) : (_jsxs("div", { className: accountFormClass.buttonRow, children: [_jsx("button", { type: !isEditMode ? 'button' : 'submit', "aria-disabled": disableSubmit, className: accountFormClass.saveButton({ noChangesToUpdate, isEditMode, hoverCreate: hoverTarget === 'createAccount', disableSubmit, hasUnsavedChanges, canCreateMissingAccount }), title: submitLabel === 'Create Account'
                                                 ? undefined
                                                 : !hasUnsavedChanges
                                                     ? submitLabel === 'Edit Account'
@@ -126,19 +113,7 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
                                                 if (noChangesToUpdate)
                                                     return;
                                                 setHoverTarget(null);
-                                            }, children: isSaving ? 'Saving...' : submitLabel }), _jsx("button", { type: "button", "aria-disabled": disableRevert, className: `flex-1 rounded-bl-none rounded-br-md rounded-tl-none rounded-tr-none py-2 text-center font-bold text-black transition-colors ${isRevertNoop
-                                                ? 'bg-[#E5B94F] text-black hover:bg-[#E5B94F] transition-none cursor-default'
-                                                : !isEditMode
-                                                    ? hoverTarget === 'revertChanges'
-                                                        ? 'bg-red-500 text-black'
-                                                        : 'bg-[#E5B94F] text-black'
-                                                    : disableRevert
-                                                        ? 'bg-red-500 text-black cursor-not-allowed'
-                                                        : hoverTarget === 'revertChanges'
-                                                            ? hasUnsavedChanges
-                                                                ? 'bg-green-500 text-black'
-                                                                : 'bg-red-500 text-black'
-                                                            : 'bg-[#E5B94F] text-black'}`, title: disableRevert || !hasUnsavedChanges
+                                            }, children: isSaving ? 'Saving...' : submitLabel }), _jsx("button", { type: "button", "aria-disabled": disableRevert, className: accountFormClass.revertButton({ isRevertNoop, isEditMode, hoverRevert: hoverTarget === 'revertChanges', disableRevert, hasUnsavedChanges }), title: disableRevert || !hasUnsavedChanges
                                                 ? 'No changes to revert'
                                                 : 'Revert all pending changes', disabled: disableRevert, onClick: () => {
                                                 if (isRevertNoop)

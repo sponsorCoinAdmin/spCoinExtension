@@ -10,6 +10,7 @@
 
 'use client';
 
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import { HexAddressInput } from '@sponsorcoin/spcoin-panels';
 import { AssetPreviewRow, type AssetPreviewRowProps } from '@sponsorcoin/spcoin-panels';
@@ -29,7 +30,7 @@ export default function AddressPanel({
   preview,
 }: AddressPanelProps) {
   return (
-    <div id="AddressPanel" style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 0 }}>
+    <div id="AddressPanel" style={panelBoxStyle.addressStack}>
       <HexAddressInput inputValue={value} onChange={onChange} placeholder={placeholder} />
       {preview ? <AssetPreviewRow {...preview} /> : null}
     </div>

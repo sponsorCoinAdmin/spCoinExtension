@@ -4,6 +4,7 @@
 // the extension show one editor. What only the web app has comes in through slots: the role chips, the Private Key row (one-time key or click-to-reveal with a password step-up), the Connect button and the modal that row opens.
 'use client';
 
+import { accountFormClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState, useCallback } from 'react';
 import { usePlatform } from '../../platform/platform';
 import { useCopyFeedback } from '../../platform/useCopyFeedback';
@@ -34,7 +35,7 @@ interface Props {
   /** The host's role chips (RoleTableComponent in the web app), shown on the right of the "Value" header. */
   roleTable?: React.ReactNode;
   /** The host's Private Key row (the web app's reveal / one-time-key row), rendered as table cells; it is given the zebra and cell classes of this table. Optional: the extension shows none. */
-  privateKeyRow?: (style: { zebra: string; cell: string }) => React.ReactNode;
+  privateKeyRow?: (classes: { zebra: string; cell: string }) => React.ReactNode;
   /** The host's Connect button, shown instead of the Save / Revert buttons while not connected. */
   connectButton?: React.ReactNode;
   /** Anything the host needs after the table (the web app's password modal for the private key). */
@@ -121,21 +122,18 @@ export default function CreateAccountFormPanel({
     </svg>
   );
 
-  const th = 'px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-300/80';
-  const cell = 'px-3 py-3 text-sm align-middle';
-  const baseInputClasses =
-    'w-full rounded bg-transparent text-white focus:outline-none focus:ring-0';
-  const requiredInputClasses = `${baseInputClasses} placeholder:text-red-500`;
-  const optionalInputClasses = `${baseInputClasses} placeholder:text-green-400`;
-  const zebraA = 'bg-[rgba(56,78,126,0.35)]';
-  const zebraB = 'bg-[rgba(156,163,175,0.25)]';
-  const tableGrid = 'grid grid-cols-[max-content_minmax(0,1fr)]';
+  const th = accountFormClass.th;
+  const cell = accountFormClass.cell;
+  const requiredInputClasses = accountFormClass.requiredInput;
+  const optionalInputClasses = accountFormClass.optionalInput;
+  const zebraA = accountFormClass.zebraA;
+  const zebraB = accountFormClass.zebraB;
+  const tableGrid = accountFormClass.tableGridRow;
   const disconnectedInputMessage =
     'Connection Required and input is prohibited until connection is established.';
   const disconnectedMetaMaskMessage = 'MetaMask Connection Required';
-  const inputErrorClasses = 'border-red-500';
-  const errorValueClasses = errorValueDisplay ? ' border-red-500 font-semibold text-red-500' : '';
-  const loadingFieldClasses = 'bg-red-900/60 border-red-500 cursor-not-allowed';
+  const errorValueClasses = errorValueDisplay ? accountFormClass.errorValue : '';
+  const loadingFieldClasses = accountFormClass.loadingField;
   const lockedInputMessage = isLoading ? loadingInputMessage : disconnectedInputMessage;
   const noChangesToUpdate = submitLabel !== 'Create Account' && !hasUnsavedChanges;
   const getLoadingClassesForField = (fieldName: string): string =>
@@ -155,37 +153,37 @@ export default function CreateAccountFormPanel({
 
   return (
     <section
-      className={`${panelMarginClass} ${accountPanelBorderClass} order-2 flex h-full w-full flex-col items-start justify-start px-0 pt-4 pb-4`}
+      className={accountFormClass.section(panelMarginClass, accountPanelBorderClass)}
     >
       {formHeading || topRowContent ? (
-        <div className={`mb-4 w-full ${contentWidthClass}`}>
+        <div className={accountFormClass.headingBox(contentWidthClass)}>
           {formHeading ? (
-            <div className="grid w-full grid-cols-1 md:grid-cols-[minmax(10rem,max-content)_minmax(0,1fr)]">
-              <div className="invisible hidden h-0 overflow-hidden px-2 whitespace-nowrap md:block">
+            <div className={accountFormClass.headingGrid}>
+              <div className={accountFormClass.headingSpacer}>
                 Address
               </div>
-              <h2 className="w-full text-center text-lg font-semibold text-[#5981F3]">
+              <h2 className={accountFormClass.heading}>
                 {formHeading}
               </h2>
             </div>
           ) : null}
-          {topRowContent ? <div className={formHeading ? 'mt-3 w-full' : 'w-full'}>{topRowContent}</div> : null}
+          {topRowContent ? <div className={accountFormClass.topRow(!!formHeading)}>{topRowContent}</div> : null}
         </div>
       ) : null}
-      <div className="scrollbar-hide mb-4 mt-0 w-full min-w-0 overflow-x-hidden overflow-y-auto rounded-xl border border-black">
-        <div className={`w-full min-w-0 ${tableGrid}`}>
-          <div className="contents">
-            <div className={`${msTableTw.theadRow} ${th} whitespace-nowrap border-b border-black flex items-center`}>Field Name</div>
-            <div className={`${msTableTw.theadRow} ${th} border-b border-black flex items-center justify-between`}>
+      <div className={accountFormClass.tableBox}>
+        <div className={accountFormClass.grid(tableGrid)}>
+          <div className={accountFormClass.contents}>
+            <div className={accountFormClass.headCellName(msTableTw.theadRow, th)}>Field Name</div>
+            <div className={accountFormClass.headCellValue(msTableTw.theadRow, th)}>
               <span>Value</span>
               {roleTable}
             </div>
           </div>
 
-          <div className="contents">
-            <div className={`${zebraA} ${cell} whitespace-nowrap border-b border-black`}>Address</div>
-            <div className={`${zebraA} ${cell} min-w-0 border-b border-black`}>
-              <div className="flex items-center justify-between w-full min-w-0 gap-1">
+          <div className={accountFormClass.contents}>
+            <div className={accountFormClass.labelCell(zebraA, cell)}>Address</div>
+            <div className={accountFormClass.valueCell(zebraA, cell)}>
+              <div className={accountFormClass.inputLine}>
                 <input
                   id={fieldId('publicKey')}
                   type="text"
@@ -206,7 +204,7 @@ export default function CreateAccountFormPanel({
                       ? `Required for Code Account Operations | Error: ${errors.publicKey}`
                       : 'Required for Code Account Operations'
                   }
-                  className={`${requiredInputClasses}${!connected ? ' text-center font-bold text-red-500' : ''}${errorValueClasses}${errors.publicKey ? ` ${inputErrorClasses}` : ''}${getLoadingClassesForField('publicKey') ? ` ${getLoadingClassesForField('publicKey')}` : ''}`}
+                  className={accountFormClass.input({ base: requiredInputClasses, disconnected: !connected, valueError: errorValueClasses, error: !!errors.publicKey, loading: getLoadingClassesForField('publicKey') })}
                   onChange={onPublicKeyChange}
                   onBlur={onPublicKeyBlur}
                   onMouseEnter={() => setHoveredInput('publicKey')}
@@ -217,14 +215,14 @@ export default function CreateAccountFormPanel({
                     type="button"
                     onClick={handleCopyAddress}
                     title="Copy address"
-                    className="shrink-0 text-slate-400 hover:text-white transition-colors"
+                    className={accountFormClass.copyButton}
                   >
-                    {copiedField === 'address' ? <Check className="h-[22px] w-[22px] text-green-400" /> : <CopyIcon />}
+                    {copiedField === 'address' ? <Check className={accountFormClass.copiedIcon} /> : <CopyIcon />}
                   </button>
                 ) : null}
               </div>
               {errors.publicKey ? (
-                <p className="text-sm text-red-500">{errors.publicKey}</p>
+                <p className={accountFormClass.errorText}>{errors.publicKey}</p>
               ) : null}
             </div>
           </div>
@@ -232,14 +230,14 @@ export default function CreateAccountFormPanel({
           {privateKeyRow ? privateKeyRow({ zebra: zebraB, cell }) : null}
 
           {formFieldRows.map(({ label, name, labelTitle }, index) => (
-            <div className="contents" key={name}>
+            <div className={accountFormClass.contents} key={name}>
               <div
-                className={`${(index + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA} ${cell} whitespace-nowrap border-b border-black`}
+                className={accountFormClass.labelCell((index + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA, cell)}
                 title={labelTitle}
               >
                 {label}
               </div>
-              <div className={`${(index + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA} ${cell} min-w-0 border-b border-black`}>
+              <div className={accountFormClass.valueCell((index + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA, cell)}>
                 {(() => {
                   const key = name;
                   const href = toPreviewHref(key, String(formData[key] ?? ''));
@@ -258,7 +256,7 @@ export default function CreateAccountFormPanel({
 
                   return (
                     <>
-                      <div className="flex items-center justify-between w-full min-w-0 gap-1">
+                      <div className={accountFormClass.inputLine}>
                         <input
                           id={fieldId(name)}
                           name={name}
@@ -268,7 +266,7 @@ export default function CreateAccountFormPanel({
                           readOnly={inputLocked}
                           placeholder={hoveredInput === name ? inputLocked ? lockedInputMessage : FIELD_PLACEHOLDERS[key] : 'Optional'}
                           title={composedTitle}
-                          className={`${optionalInputClasses}${errorValueClasses}${isLinkField && href && hoveringLinkTextField === key ? ' underline text-blue-300 cursor-pointer' : ''}${fieldError ? ` ${inputErrorClasses}` : ''}${getLoadingClassesForField(name) ? ` ${getLoadingClassesForField(name)}` : ''}`}
+                          className={accountFormClass.input({ base: optionalInputClasses, valueError: errorValueClasses, link: !!(isLinkField && href && hoveringLinkTextField === key), error: !!fieldError, loading: getLoadingClassesForField(name) })}
                           onClick={(e) => {
                             if (!href || inputLocked) return;
                             const clickedOnText = shouldOpenLinkFromInputClick(
@@ -317,14 +315,14 @@ export default function CreateAccountFormPanel({
                             type="button"
                             title={`Copy ${label}`}
                             onClick={() => handleCopyField(name, fieldValue)}
-                            className="shrink-0 text-slate-400 hover:text-white transition-colors"
+                            className={accountFormClass.copyButton}
                           >
-                            {copiedField === name ? <Check className="h-[22px] w-[22px] text-green-400" /> : <CopyIcon />}
+                            {copiedField === name ? <Check className={accountFormClass.copiedIcon} /> : <CopyIcon />}
                           </button>
                         ) : null}
                       </div>
                       {fieldError ? (
-                        <p className="text-sm text-red-500">{fieldError}</p>
+                        <p className={accountFormClass.errorText}>{fieldError}</p>
                       ) : null}
                     </>
                   );
@@ -333,9 +331,9 @@ export default function CreateAccountFormPanel({
             </div>
           ))}
 
-          <div className={`${zebraB} ${cell} col-span-2 min-w-0`}>
-            <div className="whitespace-nowrap text-center">Description:</div>
-            <div className="box-border w-full min-w-0 whitespace-normal break-all pr-[5px]">
+          <div className={accountFormClass.descriptionCell(zebraB, cell)}>
+            <div className={accountFormClass.descriptionLabel}>Description:</div>
+            <div className={accountFormClass.descriptionBox}>
               <textarea
                 id={fieldId('description')}
                 name="description"
@@ -346,41 +344,27 @@ export default function CreateAccountFormPanel({
                 rows={1}
                 placeholder={hoveredInput === 'description' ? inputLocked ? lockedInputMessage : FIELD_PLACEHOLDERS.description : 'Optional'}
                 title={formData.description && errors.description ? `Account Description | Error: ${errors.description}` : 'Account Description'}
-                className={`${optionalInputClasses}${errorValueClasses} min-h-[42px] resize-none overflow-hidden whitespace-pre-wrap break-words ${errors.description ? ` ${inputErrorClasses}` : ''}${getLoadingClassesForField('description') ? ` ${getLoadingClassesForField('description')}` : ''}`}
+                className={accountFormClass.input({ base: optionalInputClasses, valueError: errorValueClasses, tail: accountFormClass.descriptionInputTail, error: !!errors.description, loading: getLoadingClassesForField('description') })}
                 onMouseEnter={() => setHoveredInput('description')}
                 onMouseLeave={() => setHoveredInput(null)}
                 onBlur={() => onFieldBlur('description')}
               />
               {errors.description ? (
-                <p className="text-sm text-red-500">{errors.description}</p>
+                <p className={accountFormClass.errorText}>{errors.description}</p>
               ) : null}
             </div>
           </div>
 
-          <div className="contents">
-            <div className="col-span-2 border-t border-black/30">
+          <div className={accountFormClass.contents}>
+            <div className={accountFormClass.buttonRowOuter}>
               {!connected ? (
                 connectButton ?? null
               ) : (
-                <div className="flex">
+                <div className={accountFormClass.buttonRow}>
                   <button
                     type={!isEditMode ? 'button' : 'submit'}
                     aria-disabled={disableSubmit}
-                    className={`flex-1 rounded-l-md rounded-r-none rounded-tl-none rounded-tr-none border-r border-black/50 py-2 text-center font-bold text-black transition-colors ${
-                      noChangesToUpdate
-                        ? 'bg-[#E5B94F] text-black hover:bg-[#E5B94F] transition-none cursor-default'
-                        : !isEditMode
-                        ? hoverTarget === 'createAccount'
-                          ? 'bg-red-500 text-black'
-                          : 'bg-[#E5B94F] text-black'
-                        : disableSubmit
-                        ? 'bg-red-500 text-black cursor-not-allowed'
-                        : hoverTarget === 'createAccount'
-                        ? hasUnsavedChanges || canCreateMissingAccount
-                          ? 'bg-green-500 text-black'
-                          : 'bg-red-500 text-black'
-                        : 'bg-[#E5B94F] text-black'
-                    }`}
+                    className={accountFormClass.saveButton({ noChangesToUpdate, isEditMode, hoverCreate: hoverTarget === 'createAccount', disableSubmit, hasUnsavedChanges, canCreateMissingAccount })}
                     title={
                       submitLabel === 'Create Account'
                         ? undefined
@@ -405,21 +389,7 @@ export default function CreateAccountFormPanel({
                   <button
                     type="button"
                     aria-disabled={disableRevert}
-                    className={`flex-1 rounded-bl-none rounded-br-md rounded-tl-none rounded-tr-none py-2 text-center font-bold text-black transition-colors ${
-                      isRevertNoop
-                        ? 'bg-[#E5B94F] text-black hover:bg-[#E5B94F] transition-none cursor-default'
-                        : !isEditMode
-                        ? hoverTarget === 'revertChanges'
-                          ? 'bg-red-500 text-black'
-                          : 'bg-[#E5B94F] text-black'
-                        : disableRevert
-                        ? 'bg-red-500 text-black cursor-not-allowed'
-                        : hoverTarget === 'revertChanges'
-                        ? hasUnsavedChanges
-                          ? 'bg-green-500 text-black'
-                          : 'bg-red-500 text-black'
-                        : 'bg-[#E5B94F] text-black'
-                    }`}
+                    className={accountFormClass.revertButton({ isRevertNoop, isEditMode, hoverRevert: hoverTarget === 'revertChanges', disableRevert, hasUnsavedChanges })}
                     title={
                       disableRevert || !hasUnsavedChanges
                         ? 'No changes to revert'

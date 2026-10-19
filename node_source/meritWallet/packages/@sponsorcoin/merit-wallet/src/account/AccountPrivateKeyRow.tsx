@@ -5,6 +5,7 @@
 // The row itself never talks to a server: how a key is revealed (the web app's keystore route, the extension's vault) is the host's function.
 'use client';
 
+import { accountFormClass, privateKeyRowClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useState } from 'react';
 import PasswordPromptDialog from '../PasswordPromptDialog';
 import { useCopyFeedback } from '../platform/useCopyFeedback';
@@ -65,33 +66,32 @@ export default function AccountPrivateKeyRow({
     if (key) copyText(key);
   };
 
-  const inputClasses = 'w-full rounded bg-transparent font-mono text-xs text-amber-400 focus:outline-none focus:ring-0';
   return (
     <>
-      <div className="contents">
-        <div className={`${zebra} ${cell} whitespace-nowrap border-b border-black`}>Private Key</div>
-        <div className={`${zebra} ${cell} min-w-0 border-b border-black`}>
+      <div className={accountFormClass.contents}>
+        <div className={accountFormClass.labelCell(zebra, cell)}>Private Key</div>
+        <div className={accountFormClass.valueCell(zebra, cell)}>
           {mode === 'revealed' ? (
             <>
-              <div className="flex w-full min-w-0 items-center justify-between gap-1">
-                <input id={`${idPrefix}privateKey`} type="text" readOnly value={key} title="Click to hide" onClick={hide} className={`${inputClasses} cursor-pointer`} />
-                <button type="button" onClick={copy} title="Copy private key" className="shrink-0 text-xs text-slate-400 transition-colors hover:text-white">
+              <div className={accountFormClass.inputLine}>
+                <input id={`${idPrefix}privateKey`} type="text" readOnly value={key} title="Click to hide" onClick={hide} className={privateKeyRowClass.revealedInput} />
+                <button type="button" onClick={copy} title="Copy private key" className={privateKeyRowClass.copy}>
                   {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-amber-400">Keep this private.</p>
-                <button type="button" onClick={hide} className="text-xs text-[#8FA8FF] hover:text-white">Hide</button>
+              <div className={privateKeyRowClass.footerRow}>
+                <p className={privateKeyRowClass.warn}>Keep this private.</p>
+                <button type="button" onClick={hide} className={privateKeyRowClass.hide}>Hide</button>
               </div>
             </>
           ) : trying ? (
-            <span className="w-full truncate text-left font-mono text-xs text-slate-400">Loading…</span>
+            <span className={privateKeyRowClass.loading}>Loading…</span>
           ) : (
             <>
-              <button type="button" onClick={() => void attempt()} title="Click to reveal — password required" className="w-full truncate text-left font-mono text-xs text-slate-400 hover:text-white">
+              <button type="button" onClick={() => void attempt()} title="Click to reveal — password required" className={privateKeyRowClass.reveal}>
                 ***...***
               </button>
-              {error && <p className="text-xs text-red-400">{error}</p>}
+              {error && <p className={privateKeyRowClass.error}>{error}</p>}
             </>
           )}
         </div>

@@ -15,6 +15,7 @@
 // hasAccounts/hasTokens gating and layout order.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import MessageLabelValueRow from './MessageLabelValueRow';
 export default function MessageDetailsSection({ errorMessage, renderAccountRow, renderTokenRow }) {
     const hasAmount = Boolean(errorMessage?.amount);
@@ -24,5 +25,5 @@ export default function MessageDetailsSection({ errorMessage, renderAccountRow, 
     const hasTokens = Boolean(errorMessage?.tokens && errorMessage.tokens.length > 0);
     if (!hasAmount && !hasReason && !hasGasFee && !hasAccounts && !hasTokens)
         return null;
-    return (_jsxs("div", { className: "flex flex-col gap-1.5", children: [hasAmount && _jsx(MessageLabelValueRow, { label: errorMessage.amount.label, value: errorMessage.amount.value }), hasReason && _jsx(MessageLabelValueRow, { label: "Reason", value: errorMessage.reason }), hasGasFee && _jsx(MessageLabelValueRow, { label: "Gas Fee", value: errorMessage.gasFee }), hasAccounts && errorMessage.accounts.map((entry, i) => renderAccountRow(entry, i)), hasTokens && errorMessage.tokens.map((entry, i) => renderTokenRow(entry, i))] }));
+    return (_jsxs("div", { className: panelPartClass.detailsColumn, children: [hasAmount && _jsx(MessageLabelValueRow, { label: errorMessage.amount.label, value: errorMessage.amount.value }), hasReason && _jsx(MessageLabelValueRow, { label: "Reason", value: errorMessage.reason }), hasGasFee && _jsx(MessageLabelValueRow, { label: "Gas Fee", value: errorMessage.gasFee }), hasAccounts && errorMessage.accounts.map((entry, i) => renderAccountRow(entry, i)), hasTokens && errorMessage.tokens.map((entry, i) => renderTokenRow(entry, i))] }));
 }

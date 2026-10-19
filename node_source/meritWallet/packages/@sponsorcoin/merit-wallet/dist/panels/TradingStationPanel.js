@@ -47,7 +47,7 @@
 //   - The Uniswap section: supplied by ExchangeTradingPair itself (UniSelectPanel).
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
-import { walletColors } from '@sponsorcoin/spcoin-common/styles';
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ExchangeTradingPair } from '@sponsorcoin/spcoin-panels';
 import { TradingStationLayout, PACKAGE_BUILD, TabBodyMarker, ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
 export default function TradingStationPanel({ onSubmit, submitLabel = 'Enter an Amount', affiliateFeeContent, ...exchangeTradingPairProps }) {
@@ -57,17 +57,6 @@ export default function TradingStationPanel({ onSubmit, submitLabel = 'Enter an 
     // wraps it in the ZERO_X_TRADE_BUTTON gate — never rendered ungated. (Was
     // the CONNECT_TRADE_BUTTON slot's default content until that panel was
     // removed 2026-10-05.)
-    const placeholderTradeButton = connectMode ? (_jsx(ConnectButton, { id: "SWAP_CONNECT_BUTTON" })) : (_jsx("button", { type: "button", onClick: onSubmit, style: {
-            boxSizing: 'border-box',
-            width: '100%',
-            borderRadius: 8,
-            border: 'none',
-            background: walletColors.panel,
-            color: walletColors.accentSoft,
-            fontSize: 12,
-            fontWeight: 600,
-            padding: '10px 0',
-            cursor: onSubmit ? 'pointer' : 'default',
-        }, children: submitLabel }));
+    const placeholderTradeButton = connectMode ? (_jsx(ConnectButton, { id: "SWAP_CONNECT_BUTTON" })) : (_jsx("button", { type: "button", onClick: onSubmit, style: panelBoxStyle.submit(!!onSubmit), children: submitLabel }));
     return (_jsx(TradingStationLayout, { marker: _jsx(TabBodyMarker, { path: "TradingStationPanel.tsx", build: PACKAGE_BUILD }), pair: _jsx(ExchangeTradingPair, { ...exchangeTradingPairProps, zeroXTradeButtonContent: exchangeTradingPairProps.zeroXTradeButtonContent ?? placeholderTradeButton }), affiliateFee: affiliateFeeContent }));
 }

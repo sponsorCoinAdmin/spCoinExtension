@@ -6,6 +6,7 @@
 // where the run-script endpoint is, which contract and chain, and how a CLAIM is executed (the web app's server script; the extension signs it with the vault).
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -71,7 +72,7 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
     const { unstakeAllSponsorships, goToSponsorStakeTab, onOpenRewardsByAccountType, onCloseRewardsByAccountType } = useManageSponsorshipsNavigation({ pendingVisible });
     if (!isActive)
         return null;
-    return (_jsx("div", { style: { position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }, children: _jsx(ManageSponsorshipsPanel, { tradingAmountText: tradingAmountDisplay, stakedAmountText: stakedAmountDisplay, pendingAmountText: pendingTotalAmountDisplay, totalCoinsText: totalCoinsDisplay, tradingOrStalledLoading: tradingOrStakedLoading, tradingIsZero: tradingIsZero, onStake: goToSponsorStakeTab, onUnstake: unstakeAllSponsorships, 
+    return (_jsx("div", { style: panelBoxStyle.fill, children: _jsx(ManageSponsorshipsPanel, { tradingAmountText: tradingAmountDisplay, stakedAmountText: stakedAmountDisplay, pendingAmountText: pendingTotalAmountDisplay, totalCoinsText: totalCoinsDisplay, tradingOrStalledLoading: tradingOrStakedLoading, tradingIsZero: tradingIsZero, onStake: goToSponsorStakeTab, onUnstake: unstakeAllSponsorships, 
             // The web opens a role-account list here (ACTIVE_SPONSORSHIPS); without the web's list host that mode has nothing to draw and left the body blank. The accounts you
             // sponsor are the Un-Stake list's rows, so the label opens that list.
             onStakedLabelClick: unstakeAllSponsorships, stakedIsZero: stakedIsZero, autoRefresh: autoRefresh, onAutoRefreshChange: changeAutoRefresh, pendingVisible: pendingVisible, pendingInitialLoading: pendingInitialLoading, pendingRoleUnavailable: pendingRoleUnavailable, pendingIsZero: pendingIsZero, pendingClaimInProgress: totalReward.loading && totalReward.action === 'claim', pendingClaimDisabled: !pendingInitialLoading && ((totalReward.loading && totalReward.action === 'claim') || !activeContractAddr || !activeAccountAddr), pendingErrorText: totalReward.error, onPendingEstimate: () => {

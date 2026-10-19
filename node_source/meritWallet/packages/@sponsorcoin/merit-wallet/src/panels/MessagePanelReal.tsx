@@ -24,6 +24,7 @@ import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen } fro
 import { errorPanelDisplayStore } from './errorPanelDisplayStore';
 import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import MessageDetailsSection from './MessageDetailsSection';
+import { messagePanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 
 
 export interface MessagePanelRealProps {
@@ -100,18 +101,16 @@ export default function MessagePanelReal({
   const styles = MESSAGE_STATUS_STYLES[kind];
 
   return (
-    <div className="h-full min-h-0 flex flex-col overflow-hidden">
+    <div className={messagePanelClass.outer}>
       <div
         id="MESSAGE_PANEL"
-        className={`flex flex-col min-w-0 ${
-          isUnsupportedNetworkError ? 'gap-1' : 'gap-3'
-        } w-full rounded-[15px] p-4 border ${styles.border} ${styles.bg} ${styles.text} min-h-0 overflow-y-auto overflow-x-auto scrollbar-hide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+        className={messagePanelClass.box(isUnsupportedNetworkError, styles.border, styles.bg, styles.text)}
         role={kind === 'error' ? 'alert' : 'status'}
         aria-live={kind === 'error' ? 'assertive' : 'polite'}
       >
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-base font-semibold">{kind !== 'warning' ? title : ''}</h3>
-          <div className="flex shrink-0 items-center gap-1">
+        <div className={messagePanelClass.titleRow}>
+          <h3 className={messagePanelClass.title}>{kind !== 'warning' ? title : ''}</h3>
+          <div className={messagePanelClass.buttons}>
             <SmallYellowButton
               title="Copy message"
               onClick={async () => {
@@ -135,13 +134,9 @@ export default function MessagePanelReal({
           </div>
         </div>
 
-        <div ref={bodyRef} className="flex flex-col gap-3 min-w-0">
-        <div className="min-w-0">
-          <p
-            className={`text-[15.4px] leading-relaxed ${
-              wrap ? 'whitespace-pre-wrap break-words break-all' : 'whitespace-pre'
-            } ${isUnsupportedNetworkError ? 'mt-2' : ''}`}
-          >
+        <div ref={bodyRef} className={messagePanelClass.body}>
+        <div className={messagePanelClass.block}>
+          <p className={messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : '')}>
             {bodyHead}
           </p>
         </div>
@@ -149,22 +144,18 @@ export default function MessagePanelReal({
         <MessageDetailsSection errorMessage={errorMessage} renderAccountRow={renderAccountRow} renderTokenRow={renderTokenRow} />
 
         {bodyTail && (
-          <div className="min-w-0">
-            <p
-              className={`text-[15.4px] leading-relaxed ${
-                wrap ? 'whitespace-pre-wrap break-words break-all' : 'whitespace-pre'
-              }`}
-            >
+          <div className={messagePanelClass.block}>
+            <p className={messagePanelClass.text(wrap)}>
               {bodyTail}
             </p>
           </div>
         )}
 
         {hasSource && (
-          <div className="text-xs opacity-80 mt-2">
+          <div className={messagePanelClass.source}>
             {errorMessage?.source && (
               <div>
-                <span className="font-medium">Source:</span> {errorMessage.source}
+                <span className={messagePanelClass.sourceLabel}>Source:</span> {errorMessage.source}
               </div>
             )}
           </div>

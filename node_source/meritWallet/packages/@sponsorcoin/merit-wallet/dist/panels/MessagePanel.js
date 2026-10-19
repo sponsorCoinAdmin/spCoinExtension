@@ -18,6 +18,7 @@
 // there's something real to feed them.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { plainPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import { walletColors, walletTints } from '@sponsorcoin/spcoin-common/styles';
 const STATUS_STYLES = {
     error: { border: walletTints.oneOffErrorTint40, bg: walletTints.oneOffMaroonTint20, text: walletColors.oneOffErrorBg },
@@ -36,22 +37,5 @@ const DEFAULT_TITLES = {
 export default function MessagePanel({ kind = 'info', title, message = 'No message yet.', source, wrap = true, }) {
     const styles = STATUS_STYLES[kind];
     const resolvedTitle = title ?? DEFAULT_TITLES[kind];
-    return (_jsxs("div", { role: kind === 'error' ? 'alert' : 'status', style: {
-            display: 'flex',
-            flexDirection: 'column',
-            minWidth: 0,
-            gap: 8,
-            width: '100%',
-            borderRadius: 12,
-            padding: 12,
-            border: `1px solid ${styles.border}`,
-            background: styles.bg,
-            color: styles.text,
-        }, children: [resolvedTitle && (_jsx("h3", { style: { margin: 0, fontSize: 13, fontWeight: 600 }, children: resolvedTitle })), _jsx("p", { style: {
-                    margin: 0,
-                    fontSize: 12,
-                    lineHeight: 1.5,
-                    whiteSpace: wrap ? 'pre-wrap' : 'pre',
-                    overflowWrap: wrap ? 'break-word' : undefined,
-                }, children: message }), source && (_jsxs("div", { style: { fontSize: 10, opacity: 0.8 }, children: [_jsx("span", { style: { fontWeight: 500 }, children: "Source:" }), " ", source] }))] }));
+    return (_jsxs("div", { role: kind === 'error' ? 'alert' : 'status', style: plainPanelStyle.message(styles), children: [resolvedTitle && (_jsx("h3", { style: plainPanelStyle.messageTitle, children: resolvedTitle })), _jsx("p", { style: plainPanelStyle.messageBody(wrap), children: message }), source && (_jsxs("div", { style: plainPanelStyle.messageSource, children: [_jsx("span", { style: plainPanelStyle.messageSourceLabel, children: "Source:" }), " ", source] }))] }));
 }

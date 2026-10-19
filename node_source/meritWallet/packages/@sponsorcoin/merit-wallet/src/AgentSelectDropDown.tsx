@@ -11,6 +11,7 @@
 // that passes renderAccountAvatar; without it the package's plain AccountAvatar is used (no click behaviour).
 'use client';
 
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback } from 'react';
 import { FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
@@ -80,7 +81,7 @@ export default function ConnectedAgentSelectDropDown({
         agentAccount && !isUnselected
           ? (renderAccountAvatar
               ? renderAccountAvatar(agentAccount)
-              : <AccountAvatar account={agentAccount} mode={SP_COIN_DISPLAY.AGENT_ACCOUNT} className="h-full w-full object-cover" roleLabel="AGENT" />)
+              : <AccountAvatar account={agentAccount} mode={SP_COIN_DISPLAY.AGENT_ACCOUNT} className={panelPartClass.avatarFill} roleLabel="AGENT" />)
           : undefined
       }
       address={isUnselected ? undefined : address || undefined}

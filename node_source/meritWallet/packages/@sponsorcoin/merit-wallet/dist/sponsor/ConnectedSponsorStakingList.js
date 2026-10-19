@@ -6,6 +6,7 @@
 // one function that sends an unstake transaction and waits for it to be mined, and account profiles for the rows. The Un-Stake walk itself is unstakeWalk.ts.
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -20,7 +21,7 @@ import { unstakeSpCoin } from './unstakeWalk';
 // The row's account pill and avatar are the same in every app (they were the web app's slots).
 const ROW_ACCOUNT_SELECT_DISPLAY = ACCOUNT_SELECT_DISPLAY.ICON | ACCOUNT_SELECT_DISPLAY.NAME | ACCOUNT_SELECT_DISPLAY.ADDRESS | ACCOUNT_SELECT_DISPLAY.COPY;
 const ROW_ACCOUNT_CELL = ({ account, mode, label, addrPrePostSize, addressSizeClassName, onAddressClick }) => (_jsx(AccountSelectDropDownHosted, { recipientAccount: account, mode: mode, label: label, showDisplay: ROW_ACCOUNT_SELECT_DISPLAY, onSelectClick: (e) => e.preventDefault(), onAddressClick: onAddressClick, addrPrePostSize: addrPrePostSize, addressSizeClassName: addressSizeClassName, panelGateId: null }));
-const ROW_AVATAR = (account) => _jsx(AccountAvatarWithOpen, { account: account, mode: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT, className: "h-6 w-6 rounded object-contain shrink-0" });
+const ROW_AVATAR = (account) => _jsx(AccountAvatarWithOpen, { account: account, mode: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT, className: panelPartClass.rowAvatar });
 // The last list seen per (contract, sponsor): reopening the panel paints it at once and then refreshes (the web app's list cache did the same).
 const snapshots = new Map();
 function account(profile) {

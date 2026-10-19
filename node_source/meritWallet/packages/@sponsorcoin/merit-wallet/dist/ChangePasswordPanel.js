@@ -4,12 +4,12 @@
 // re-encrypts the vault (the extension sends merit/vault/changePassword to its worker, which checks the old password again).
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { formKitStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useState } from 'react';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
-const BORDER = '#334155';
-const box = { boxSizing: 'border-box', width: '100%', padding: 12, color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 };
-const field = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: '1px solid ' + BORDER, background: '#0E111B', padding: '8px 12px', color: '#fff', font: 'inherit', outline: 'none' };
-const primary = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: 0, background: '#5981F3', padding: '8px 16px', fontWeight: 600, color: '#fff', cursor: 'pointer', font: 'inherit' };
+const box = formKitStyle.box(12);
+const field = formKitStyle.input;
+const primary = formKitStyle.primary;
 /**
  * 2026-10-11 (docs/design/accountAuthDesign.txt 14.3, item V5): `note` is the host's own small print (the web's development keystore says that every account is re-encrypted); `title` and `confirmLabel`
  * let a host keep its wording. The new password must also differ from the current one.
@@ -22,7 +22,7 @@ export default function ChangePasswordPanel({ changePassword, onDone, note, titl
     const [busy, setBusy] = useState(false);
     const [changed, setChanged] = useState(false);
     if (changed) {
-        return (_jsxs("div", { id: "WALLET_PASSWORD_CHANGED", style: box, children: [_jsx("p", { style: { margin: 0 }, children: "Your password was changed." }), _jsx("button", { type: "button", style: primary, onClick: onDone, children: "Done" })] }));
+        return (_jsxs("div", { id: "WALLET_PASSWORD_CHANGED", style: box, children: [_jsx("p", { style: formKitStyle.plain, children: "Your password was changed." }), _jsx("button", { type: "button", style: primary, onClick: onDone, children: "Done" })] }));
     }
     return (_jsxs("form", { id: "WALLET_CHANGE_PASSWORD", style: box, onSubmit: (e) => {
             e.preventDefault();
@@ -38,5 +38,5 @@ export default function ChangePasswordPanel({ changePassword, onDone, note, titl
                 .then(() => setChanged(true))
                 .catch((err) => setError(err instanceof Error ? err.message : 'The password could not be changed.'))
                 .finally(() => setBusy(false));
-        }, children: [_jsx("p", { style: { margin: 0, fontWeight: 600 }, children: title }), _jsx("input", { type: "password", autoComplete: "current-password", placeholder: "Current password", value: oldPw, onChange: (e) => setOldPw(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "New password", value: newPw, onChange: (e) => setNewPw(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "Confirm new password", value: confirm, onChange: (e) => setConfirm(e.target.value), style: field }), error && _jsx("p", { style: { color: '#f87171', fontSize: 12, margin: 0 }, children: error }), _jsx("button", { type: "submit", disabled: busy || !oldPw, style: { ...primary, opacity: busy || !oldPw ? 0.6 : 1 }, children: busy ? 'Changing…' : confirmLabel }), note && _jsx("p", { style: { margin: 0, fontSize: 12, color: '#9ca3af' }, children: note })] }));
+        }, children: [_jsx("p", { style: formKitStyle.heading, children: title }), _jsx("input", { type: "password", autoComplete: "current-password", placeholder: "Current password", value: oldPw, onChange: (e) => setOldPw(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "New password", value: newPw, onChange: (e) => setNewPw(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "Confirm new password", value: confirm, onChange: (e) => setConfirm(e.target.value), style: field }), error && _jsx("p", { style: formKitStyle.error, children: error }), _jsx("button", { type: "submit", disabled: busy || !oldPw, style: formKitStyle.primaryDim(busy || !oldPw), children: busy ? 'Changing…' : confirmLabel }), note && _jsx("p", { style: formKitStyle.note, children: note })] }));
 }

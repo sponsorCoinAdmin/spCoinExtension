@@ -6,6 +6,7 @@
 // encrypts them under the master key), the section asks for it in a small popup first.
 'use client';
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
+import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useState } from 'react';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
 import { authenticationTypeLabel } from './auth/authenticationType';
@@ -56,7 +57,7 @@ export default function TestAccountsSection({ api, authenticationType, onChanged
     };
     const loaded = status?.loaded ?? 0;
     const total = status?.total ?? 0;
-    return (_jsxs("div", { id: "TEST_ACCOUNTS_SECTION", style: { display: 'flex', flexDirection: 'column', gap: 8 }, children: [_jsxs("p", { style: { margin: 0, fontSize: 12, color: '#94a3b8' }, children: ["Hardhat's standard test accounts (their keys are public, so they can sign only on the local test chain). ", status ? `${loaded} of ${total} are in the ${where}.` : ''] }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 8 }, children: [_jsx(WalletActionButton, { disabled: busy || (status !== null && loaded >= total), onClick: () => start('load'), children: "Load" }), _jsx(WalletActionButton, { disabled: busy || loaded === 0, onClick: () => start('unload'), children: "Unload" })] }), message && _jsx("p", { style: { margin: 0, fontSize: 12, color: '#4ade80' }, children: message }), error && _jsx("p", { style: { margin: 0, fontSize: 12, color: '#f87171' }, children: error }), asking && (_jsx(PasswordPromptDialog, { title: asking === 'load' ? 'Load test accounts' : 'Unload test accounts', message: asking === 'load' ? 'Enter your wallet password to add the Hardhat test accounts.' : 'Enter your wallet password to remove the Hardhat test accounts.', confirmLabel: asking === 'load' ? 'Load' : 'Unload', onConfirm: async (password) => {
+    return (_jsxs("div", { id: "TEST_ACCOUNTS_SECTION", style: configSectionStyle.column(8), children: [_jsxs("p", { style: configSectionStyle.testNote, children: ["Hardhat's standard test accounts (their keys are public, so they can sign only on the local test chain). ", status ? `${loaded} of ${total} are in the ${where}.` : ''] }), _jsxs("div", { style: configSectionStyle.buttonsCentered, children: [_jsx(WalletActionButton, { disabled: busy || (status !== null && loaded >= total), onClick: () => start('load'), children: "Load" }), _jsx(WalletActionButton, { disabled: busy || loaded === 0, onClick: () => start('unload'), children: "Unload" })] }), message && _jsx("p", { style: configSectionStyle.testGood, children: message }), error && _jsx("p", { style: configSectionStyle.testBad, children: error }), asking && (_jsx(PasswordPromptDialog, { title: asking === 'load' ? 'Load test accounts' : 'Unload test accounts', message: asking === 'load' ? 'Enter your wallet password to add the Hardhat test accounts.' : 'Enter your wallet password to remove the Hardhat test accounts.', confirmLabel: asking === 'load' ? 'Load' : 'Unload', onConfirm: async (password) => {
                     await run(asking, password);
                     setAsking(null);
                 }, onClose: () => setAsking(null) }))] }));

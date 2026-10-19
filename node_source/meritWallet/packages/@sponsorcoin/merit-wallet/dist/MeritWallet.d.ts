@@ -7,12 +7,14 @@ import { type WalletDerivation } from './wallet/walletProps';
 import type { ApproverHost } from './wallet/approverAccounts';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
 import { type MenuTabKey, type MeritWalletNetworkRow } from './panels';
+import { type ApprovalHost } from './approval/ApprovalResponder';
 import { type RewardsHost, type RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
 import { type AddAccountHost } from './account/AddAccountFlow';
 import { type TestAccountsApi } from './TestAccountsSection';
 import { type TradeHost } from './trade/tradeHost';
 import type { WalletSessionHost } from './walletSessionHost';
 import { type AccountDetailHost } from './account/AccountDetailScreen';
+import { type WalletOnboardingPanelProps } from './WalletOnboardingPanel';
 import { type SponsorStakingHost } from './sponsor/ConnectedSponsorStakingList';
 import { type HostTransactionResult } from './receipt/transactionReceipts';
 import { type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-exchange-engine';
@@ -30,7 +32,7 @@ export interface MeritWalletProps {
      *  layout) vs. floating/dialog (rounded corners, capped height). Default
      *  false. */
     docked?: boolean;
-    /** Drops the web app's 364px cap in favor of a plain 100% width — for a
+    /** Drops the web app's 380px cap in favor of a plain 100% width — for a
      *  consumer (like a Chrome side panel) that's already narrow and
      *  user-resizable rather than floating inside a wider page. Default
      *  false. */
@@ -195,6 +197,8 @@ export interface MeritWalletProps {
     passwordMode?: 'checking' | 'setup' | 'unlock';
     /** The artwork of the login page: an image URL (the data); the component draws it. */
     passwordIconSrc?: string;
+    /** How the wallet answers a write's approval: the host checks the password (`unlock`) and may gate a debug step. The component draws the approval screen itself. */
+    approvalHost?: ApprovalHost;
     /**
      * 2026-10-08 (table row 23): the wallet is locked (or has no wallet yet), so show the password screen in place of everything else, whatever the panel tree says.
      * The lock gate lives here, in the component; whether and where the wallet is shown at all stays with the host (a layout gate).
@@ -213,6 +217,12 @@ export interface MeritWalletProps {
      */
     recoveryPhrase?: string;
     onRecoveryPhraseSaved?: () => void;
+    /**
+     * 2026-10-19 (docs/meritMigration.txt rows 27 / 28: a host passes data and functions, it never draws a wallet screen): first-run setup. While this is set the component draws the
+     * "Set up your wallet" screen (create a wallet, import by recovery phrase, restore a backup) INSTEAD of the wallet, and the host only supplies what the screen calls. The host clears it
+     * (sets undefined) when onDone fires and the vault exists.
+     */
+    onboarding?: WalletOnboardingPanelProps;
     sellBalanceText?: string;
     buyBalanceText?: string;
     /** 2026-10-05, on request — the 0X engine's trade/submit
@@ -282,7 +292,7 @@ export interface MeritWalletProps {
     walletSession?: WalletSessionHost;
 }
 /**
- * The component. A host that passes `wallet` gets the lock screen, the lock button, the authentication type and the Wallet Security section from it (src/wallet/walletProps.tsx); everything else, and every
- * prop the host passes explicitly, is unchanged.
+ * The component. First-run setup replaces the wallet (a different component type, so the wallet's own state starts fresh when setup ends, the same as when the host used to swap it out);
+ * otherwise the wired wallet. The setup screen runs inside the same platform context (clipboard) as the wallet.
  */
-export default function MeritWallet(props: MeritWalletProps): React.FunctionComponentElement<React.ProviderProps<MeritPlatform>>;
+export default function MeritWallet(props: MeritWalletProps): React.FunctionComponentElement<MeritWalletProps> | React.FunctionComponentElement<React.ProviderProps<MeritPlatform>>;

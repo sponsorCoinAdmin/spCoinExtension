@@ -49,7 +49,7 @@
 
 'use client';
 
-import { walletColors } from '@sponsorcoin/spcoin-common/styles';
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import { ExchangeTradingPair, type ExchangeTradingPairProps } from '@sponsorcoin/spcoin-panels';
 import { TradingStationLayout, PACKAGE_BUILD, TabBodyMarker, ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
@@ -82,18 +82,7 @@ export default function TradingStationPanel({
     <button
       type="button"
       onClick={onSubmit}
-      style={{
-        boxSizing: 'border-box',
-        width: '100%',
-        borderRadius: 8,
-        border: 'none',
-        background: walletColors.panel,
-        color: walletColors.accentSoft,
-        fontSize: 12,
-        fontWeight: 600,
-        padding: '10px 0',
-        cursor: onSubmit ? 'pointer' : 'default',
-      }}
+      style={panelBoxStyle.submit(!!onSubmit)}
     >
       {submitLabel}
     </button>

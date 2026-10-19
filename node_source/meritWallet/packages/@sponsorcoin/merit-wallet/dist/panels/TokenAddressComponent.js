@@ -21,6 +21,7 @@
 // wiring TokenSelectDropDown's own web-app wrapper already owns.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { tokenAddressClass } from '@sponsorcoin/spcoin-common/styles';
 import { useState } from 'react';
 import { useCopyFeedback } from '../platform/useCopyFeedback';
 import { Copy, Check, ChevronDown } from 'lucide-react';
@@ -39,10 +40,7 @@ export default function TokenAddressComponent({ panelId = SP_COIN_DISPLAY.TOKEN_
             return;
         copy(address);
     };
-    return (_jsxs(_Fragment, { children: [headerVisible && (_jsxs("div", { className: "relative shrink-0 border-b border-slate-700/50 -mx-4 px-4 py-3 flex flex-col items-center", children: [_jsx("span", { className: "text-[19px] font-semibold text-[#5981F3]", children: blockchainName ? `${blockchainName} Network` : 'Network' }), (symbol || name) && (_jsxs("span", { className: "text-[14px] font-normal text-slate-400", children: [symbol, name ? `: ${name}` : ''] }))] })), _jsxs("div", { className: "shrink-0 border-b border-slate-700/50 -mx-4 px-4 py-2 flex items-center gap-2 text-sm text-slate-300/80", children: [_jsx("div", { className: "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#11162A]", children: icon }), _jsxs("div", { className: "flex min-w-0 flex-1 items-center gap-2 rounded-[22px] bg-[#243056] px-3 py-1 text-[15px] text-[#5981F3]", children: [_jsx("span", { className: "w-full truncate whitespace-nowrap text-center font-mono cursor-pointer", title: headerVisible ? 'Hide token info' : 'Show token info', onClick: () => setHeaderVisible((v) => !v), children: address || '—' }), _jsx("button", { type: "button", onClick: onSelectClick, className: "shrink-0 flex items-center justify-center rounded hover:bg-white/10 p-0.5", "aria-label": tokenListVisible ? 'Close token list' : 'Select token', children: _jsx(ChevronDown, { className: [
-                                        'h-4 w-4 text-slate-400 transition-transform duration-200',
-                                        tokenListVisible ? 'rotate-180' : '',
-                                    ].join(' ') }) })] }), _jsx("button", { type: "button", onClick: handleCopy, disabled: !address, className: "shrink-0 flex items-center justify-center rounded hover:bg-white/10 pl-0.5 pr-0 disabled:opacity-40", "aria-label": "Copy token contract address", title: "Copy token contract address", children: copied
-                            ? _jsx(Check, { className: "h-6 w-6 text-green-400" })
-                            : _jsx(Copy, { className: "h-6 w-6 text-slate-400" }) })] })] }));
+    return (_jsxs(_Fragment, { children: [headerVisible && (_jsxs("div", { className: tokenAddressClass.header, children: [_jsx("span", { className: tokenAddressClass.headerTitle, children: blockchainName ? `${blockchainName} Network` : 'Network' }), (symbol || name) && (_jsxs("span", { className: tokenAddressClass.headerSub, children: [symbol, name ? `: ${name}` : ''] }))] })), _jsxs("div", { className: tokenAddressClass.row, children: [_jsx("div", { className: tokenAddressClass.iconBox, children: icon }), _jsxs("div", { className: tokenAddressClass.pill, children: [_jsx("span", { className: tokenAddressClass.address, title: headerVisible ? 'Hide token info' : 'Show token info', onClick: () => setHeaderVisible((v) => !v), children: address || '—' }), _jsx("button", { type: "button", onClick: onSelectClick, className: tokenAddressClass.selectButton, "aria-label": tokenListVisible ? 'Close token list' : 'Select token', children: _jsx(ChevronDown, { className: tokenAddressClass.chevron(tokenListVisible) }) })] }), _jsx("button", { type: "button", onClick: handleCopy, disabled: !address, className: tokenAddressClass.copyButton, "aria-label": "Copy token contract address", title: "Copy token contract address", children: copied
+                            ? _jsx(Check, { className: tokenAddressClass.copied })
+                            : _jsx(Copy, { className: tokenAddressClass.copy }) })] })] }));
 }

@@ -4,13 +4,13 @@
 // re-encrypts the vault (the extension sends merit/vault/changePassword to its worker, which checks the old password again).
 'use client';
 
+import { formKitStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
 
-const BORDER = '#334155';
-const box: React.CSSProperties = { boxSizing: 'border-box', width: '100%', padding: 12, color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 };
-const field: React.CSSProperties = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: '1px solid ' + BORDER, background: '#0E111B', padding: '8px 12px', color: '#fff', font: 'inherit', outline: 'none' };
-const primary: React.CSSProperties = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: 0, background: '#5981F3', padding: '8px 16px', fontWeight: 600, color: '#fff', cursor: 'pointer', font: 'inherit' };
+const box = formKitStyle.box(12);
+const field = formKitStyle.input;
+const primary = formKitStyle.primary;
 
 /**
  * 2026-10-11 (docs/design/accountAuthDesign.txt 14.3, item V5): `note` is the host's own small print (the web's development keystore says that every account is re-encrypted); `title` and `confirmLabel`
@@ -27,7 +27,7 @@ export default function ChangePasswordPanel({ changePassword, onDone, note, titl
   if (changed) {
     return (
       <div id="WALLET_PASSWORD_CHANGED" style={box}>
-        <p style={{ margin: 0 }}>Your password was changed.</p>
+        <p style={formKitStyle.plain}>Your password was changed.</p>
         <button type="button" style={primary} onClick={onDone}>Done</button>
       </div>
     );
@@ -49,13 +49,13 @@ export default function ChangePasswordPanel({ changePassword, onDone, note, titl
           .finally(() => setBusy(false));
       }}
     >
-      <p style={{ margin: 0, fontWeight: 600 }}>{title}</p>
+      <p style={formKitStyle.heading}>{title}</p>
       <input type="password" autoComplete="current-password" placeholder="Current password" value={oldPw} onChange={(e) => setOldPw(e.target.value)} style={field} />
       <input type="password" autoComplete="new-password" placeholder="New password" value={newPw} onChange={(e) => setNewPw(e.target.value)} style={field} />
       <input type="password" autoComplete="new-password" placeholder="Confirm new password" value={confirm} onChange={(e) => setConfirm(e.target.value)} style={field} />
-      {error && <p style={{ color: '#f87171', fontSize: 12, margin: 0 }}>{error}</p>}
-      <button type="submit" disabled={busy || !oldPw} style={{ ...primary, opacity: busy || !oldPw ? 0.6 : 1 }}>{busy ? 'Changing…' : confirmLabel}</button>
-      {note && <p style={{ margin: 0, fontSize: 12, color: '#9ca3af' }}>{note}</p>}
+      {error && <p style={formKitStyle.error}>{error}</p>}
+      <button type="submit" disabled={busy || !oldPw} style={formKitStyle.primaryDim(busy || !oldPw)}>{busy ? 'Changing…' : confirmLabel}</button>
+      {note && <p style={formKitStyle.note}>{note}</p>}
     </form>
   );
 }

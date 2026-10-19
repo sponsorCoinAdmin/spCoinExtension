@@ -13,7 +13,7 @@
 
 'use client';
 
-import { walletColors, walletTints } from '@sponsorcoin/spcoin-common/styles';
+import { detailPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 
 export interface NetworkDetailPanelProps {
@@ -24,37 +24,11 @@ export interface NetworkDetailPanelProps {
   isTestnet?: boolean;
 }
 
-const ROW_LABEL_STYLE: React.CSSProperties = {
-  color: walletColors.textMuted,
-  fontSize: 10,
-  fontWeight: 700,
-  textTransform: 'uppercase',
-  letterSpacing: '0.04em',
-};
-
-const ROW_VALUE_STYLE: React.CSSProperties = {
-  color: walletColors.white,
-  fontSize: 12,
-  fontWeight: 500,
-  wordBreak: 'break-word',
-};
-
 function DetailRow({ label, value, zebra }: { label: string; value: React.ReactNode; zebra: boolean }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        padding: '8px 14px',
-        // Same rowA/rowB zebra values AssetListTable.tsx's own
-        // ASSET_LIST_ROW_BG_A/B use — same duplicated-literal reasoning as
-        // AccountDetailPanel.tsx/TokenDetailPanel.tsx's own identical row.
-        background: zebra ? walletTints.panelTint35 : walletTints.grayTint25,
-      }}
-    >
-      <span style={ROW_LABEL_STYLE}>{label}</span>
-      <span style={ROW_VALUE_STYLE}>{value}</span>
+    <div style={detailPanelStyle.row(zebra)}>
+      <span style={detailPanelStyle.label}>{label}</span>
+      <span style={detailPanelStyle.value}>{value}</span>
     </div>
   );
 }
@@ -68,39 +42,16 @@ export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestne
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: 0, flex: 1, flexDirection: 'column', overflow: 'hidden', padding: '3px 12px' }}>
-      <div
-        style={{
-          display: 'flex',
-          minHeight: 0,
-          flex: 1,
-          flexDirection: 'column',
-          overflow: 'hidden',
-          borderRadius: 20,
-          border: '1px solid #334155',
-          background: walletColors.background,
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '20px 14px 14px' }}>
-          <div
-            style={{
-              width: 96,
-              height: 96,
-              borderRadius: 16,
-              overflow: 'hidden',
-              background: walletColors.slateDark,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
+    <div style={detailPanelStyle.screen}>
+      <div style={detailPanelStyle.card}>
+        <div style={detailPanelStyle.logoRow}>
+          <div style={detailPanelStyle.logoBox}>
             {logoSrc ? (
-              <img src={logoSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={logoSrc} alt="" style={detailPanelStyle.logoContain} />
             ) : null}
           </div>
         </div>
-        <div style={{ minHeight: 0, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={detailPanelStyle.rows}>
           {rows.map((row, i) => (
             <DetailRow key={row.label} label={row.label} value={row.value} zebra={i % 2 === 0} />
           ))}

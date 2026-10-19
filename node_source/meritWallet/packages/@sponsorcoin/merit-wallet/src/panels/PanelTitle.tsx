@@ -22,7 +22,7 @@
 
 'use client';
 
-import { walletColors } from '@sponsorcoin/spcoin-common/styles';
+import { panelTitleStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { ArrowLeft, Menu } from 'lucide-react';
 
@@ -50,7 +50,6 @@ export interface PanelTitleProps {
 
 // IconButton's own width (see IconButton below) — the spacer must match it or
 // hiding one side would shift the centered title.
-const ICON_BUTTON_SIZE = 28;
 
 function IconButton({
   onClick,
@@ -72,19 +71,7 @@ function IconButton({
       title={ariaLabel}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex',
-        height: 28,
-        width: 28,
-        flexShrink: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
-        appearance: 'none',
-        border: 'none',
-        borderRadius: '9999px',
-        background: active || hovered ? walletColors.oneOffPanelLine : walletColors.oneOffPanelLineDark,
-        cursor: onClick ? 'pointer' : 'default',
-      }}
+      style={panelTitleStyle.iconButton({ active: !!active, hovered, clickable: !!onClick })}
     >
       {children}
     </button>
@@ -101,75 +88,24 @@ export default function PanelTitle({
 }: PanelTitleProps) {
   return (
     <div
-      style={{
-        display: 'flex',
-        width: '100%',
-        // 2026-09-12 fix: this row is the only header in the package that
-        // pairs an explicit `width: '100%'` with its own left/right
-        // padding — WalletHeader/WalletAccountHeader/AgentHeaderPanel's
-        // outer containers all leave width unset (a block box's default
-        // `auto` width already solves for content-width = container
-        // width minus padding, so it never overflows). With `width` set
-        // explicitly instead of `auto`, the default `content-box` sizing
-        // adds paddingLeft+paddingRight ON TOP of that 100%, so the row's
-        // actual border-box was 100% + 18px wide — 18px of it (mostly the
-        // menu button, the rightmost flex child) spilling past the
-        // panel's right edge, clipped by an ancestor's overflow:hidden.
-        // Invisible at full size in a wide panel; unmissable once the
-        // whole panel got scaled down and that fixed 18px became a much
-        // bigger fraction of a much smaller menu button (reported against
-        // the Chrome extension's narrow side panel). border-box makes
-        // padding count toward the 100% instead of adding to it, the
-        // standard fix for this exact box-sizing pitfall.
-        boxSizing: 'border-box',
-        userSelect: 'none',
-        alignItems: 'center',
-        gap: 6,
-        // 2026-10-13, on request: no divider line under the title on any panel (was borderBottom: '1px solid #21273a').
-        borderBottom: 'none',
-        // 2026-09-22, on direct request — 6px (was 10/8), matching the two
-        // header rows' own canonical left/right buffer (WalletHeader.tsx/
-        // WalletAccountHeader.tsx) for one continuous buffer top to
-        // bottom. Also the point this component became the web app's own
-        // real PANEL_TITLE too (see components/views/Headers/
-        // ActiveWalletPanelTitle.tsx's own header comment) — both apps
-        // now render through this one file.
-        paddingLeft: 6,
-        paddingRight: 6,
-        paddingTop: 3,
-        // 2026-10-16 (owner request): 2px of buffer INSIDE the title row, below the back and menu buttons (was 3). The 2px spacing to the tab bar stays: the tab row's own 2px top buffer (MenuTabHeaderBar.tsx).
-        paddingBottom: 2,
-      }}
+      style={panelTitleStyle.row}
     >
-      <div style={{ display: 'flex', flexShrink: 0, alignItems: 'center', width: hideBackButton ? ICON_BUTTON_SIZE : undefined }}>
+      <div style={panelTitleStyle.side(hideBackButton)}>
         {!hideBackButton && (
           <IconButton onClick={onBackClick} ariaLabel="Go back">
-            <ArrowLeft size={15} color="#91a5ff" strokeWidth={1.75} />
+            <ArrowLeft {...panelTitleStyle.icon} />
           </IconButton>
         )}
       </div>
       <h2
-        style={{
-          pointerEvents: 'none',
-          margin: 0,
-          minWidth: 0,
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          textAlign: 'center',
-          fontSize: 14,
-          fontWeight: 700,
-          lineHeight: 1.2,
-          color: walletColors.white,
-        }}
+        style={panelTitleStyle.title}
       >
         {title}
       </h2>
-      <div style={{ display: 'flex', flexShrink: 0, alignItems: 'center', width: hideMenuButton ? ICON_BUTTON_SIZE : undefined }}>
+      <div style={panelTitleStyle.side(hideMenuButton)}>
         {!hideMenuButton && (
           <IconButton onClick={onMenuClick} ariaLabel="Open wallet menu" active={menuOpen}>
-            <Menu size={15} color="#91a5ff" strokeWidth={1.75} />
+            <Menu {...panelTitleStyle.icon} />
           </IconButton>
         )}
       </div>

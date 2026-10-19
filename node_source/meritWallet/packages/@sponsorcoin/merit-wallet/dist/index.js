@@ -34,7 +34,6 @@ export { MERIT_RDNS, discoverWallets, findMeritWallet, createInjectedWalletApi }
 export { createQuoteClient, QuoteServiceError } from './swap/quoteClient';
 export { default as TokenPanel } from './TokenPanel';
 export { tokenDetailRows, CopyBtn } from './TokenSlotPanels';
-export { default as ConnectedPasswordPanel } from './ConnectedPasswordPanel';
 export { default as VaultAccountsPanel } from './VaultAccountsPanel';
 export { default as RecoveryPhraseScreen } from './RecoveryPhraseScreen';
 export { default as WalletOnboardingPanel } from './WalletOnboardingPanel';
@@ -75,13 +74,13 @@ export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownW
 export { connectAccount, disconnectAccount, ConnectChoiceRequired } from './auth/connect';
 export { createInjectedAuthenticator, translateProviderError } from './auth/injectedAuthenticator';
 export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritApproval, resolveMeritApproval, requestReauthentication, clearSettledMeritApproval, } from './approval/meritApproval';
+export { default as ApprovalResponder } from './approval/ApprovalResponder';
 export { buildApproverGroups, mergeWalletAccountEntries, createApproverController, connectNoticeText } from './wallet/approverAccounts';
 export { useApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, outcomeText, withApprovalNotice } from './auth/approvalWaiting';
-export { default as ApprovalWaitingNotice } from './auth/ApprovalWaitingNotice';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons } from './wallet/addTarget';
 export { createHardwareAuthenticator, HardwareError } from './auth/hardwareAuthenticator';

@@ -8,7 +8,7 @@ import { useState, useCallback } from 'react';
 import { parseUnits } from 'viem';
 import type { Address } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
+import { PANEL_GAP, panelPartClass, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import {
   describeEthersError,
   useApprovalPending,
@@ -137,7 +137,7 @@ export default function SendComponent() {
     // approach tried first was confirmed broken (the safelist pattern
     // meant to support it never actually worked; see twSettingConfig.ts's
     // own header comment for the full trace).
-    <div className="relative flex flex-1 flex-col" style={{ gap: PANEL_GAP }}>
+    <div className={panelPartClass.sendColumn} style={panelBoxStyle.gap(PANEL_GAP)}>
       <ComponentMarker path="components/views/RadioOverlayPanels/SendComponent.tsx" />
       <PanelGate panel={SP_COIN_DISPLAY.SEND_SELECT_PANEL}>
         <SendLayoutContainer amount={amount} onAmountChange={setAmount} />

@@ -5,6 +5,7 @@
 // the reason (shown disabled, docs/design/accountAuthDesign.txt section 17.2.7). Whatever is added is made the active account by the host's callback, never by this component (docs/design/accountAuthDesign.txt section 17.2.6: the app does not choose the active account).
 'use client';
 
+import { addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useRef, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
 import { usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
@@ -72,13 +73,10 @@ export const DEFAULT_CONNECT_UNAVAILABLE: Record<ConnectApproverEntry, string> =
   connectHardware: 'Available in the web app',
 };
 
-const primaryStyle: React.CSSProperties = { borderRadius: 8, border: 'none', padding: '9px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#5981F3', color: '#ffffff' };
-
 /** The connect screen says it is still waiting after this long (the wallet is probably locked); the host owns the hard limit. */
 export const CONNECT_SOFT_WAIT_MS = 60_000;
 
 const EMPTY_PROFILE: NewAccountProfile = { name: '', symbol: '', description: '', logo: null };
-const fieldStyle: React.CSSProperties = { background: '#0E111B', color: '#fff', border: '1px solid #334155', borderRadius: 6, padding: '6px 8px', fontSize: 12, width: '100%', boxSizing: 'border-box' };
 
 const KEY_FORMAT = /^0x[0-9a-fA-F]{64}$/;
 
@@ -281,12 +279,12 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12, color: '#fff' }}>
+    <div style={addAccountStyle.screen}>
       {menuVisible && target && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#cbd5e1' }}>
+        <div style={addAccountStyle.targetLine}>
           <span>Adding to</span>
           {targets.length > 1 ? (
-            <div style={{ marginLeft: 'auto', position: 'relative' }}>
+            <div style={addAccountStyle.targetPickerAnchor}>
               <WalletSelectDropDown
                 walletId={target.id}
                 displayName={target.name}
@@ -297,16 +295,16 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
                 collapseKey={target.id}
               />
               {targetPickerOpen && (
-                <div role="listbox" aria-label="Wallets that can add accounts" style={{ position: 'absolute', zIndex: 20, right: 0, top: '100%', minWidth: 220, padding: 4, border: '1px solid #334155', borderRadius: 8, background: '#0E111B' }}>
+                <div role="listbox" aria-label="Wallets that can add accounts" style={addAccountStyle.targetPickerList}>
                   {targets.map((option) => (
-                    <button key={option.id} type="button" role="option" aria-selected={option.id === target.id} onClick={() => { setPickedTarget(option.id); setTargetPickerOpen(false); }} style={{ display: 'block', width: '100%', padding: '7px 9px', border: 0, borderRadius: 5, background: option.id === target.id ? '#243056' : 'transparent', color: '#fff', textAlign: 'left', cursor: 'pointer', fontSize: 12 }}>
+                    <button key={option.id} type="button" role="option" aria-selected={option.id === target.id} onClick={() => { setPickedTarget(option.id); setTargetPickerOpen(false); }} style={addAccountStyle.targetOption(option.id === target.id)}>
                       {option.name}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-          ) : <strong style={{ color: '#fff' }}>{target.name}</strong>}
+          ) : <strong style={addAccountStyle.targetName}>{target.name}</strong>}
         </div>
       )}
       {menuVisible && (
@@ -367,22 +365,22 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         <HardwareDeviceMenu devices={host.hardwareDevices} busy={busy} error={error} onChoose={(id) => void run(() => host.connectHardwareDevice!(id))} />
       )}
       {flow.createAccountVisible && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 4px' }}>
-          <p style={{ margin: 0, fontSize: 12, color: '#cbd5e1' }}>Create a new account: a new address and private key, kept under this wallet.</p>
+        <div style={addAccountStyle.createBox}>
+          <p style={addAccountStyle.hint}>Create a new account: a new address and private key, kept under this wallet.</p>
           {host.createProfile && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {logoUrl ? <img src={logoUrl} alt="Account avatar preview" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', alignSelf: 'center' }} /> : null}
-              <label style={{ ...primaryStyle, textAlign: 'center', alignSelf: 'center' }}>
+            <div style={addAccountStyle.profileBox}>
+              {logoUrl ? <img src={logoUrl} alt="Account avatar preview" style={addAccountStyle.avatarPreview} /> : null}
+              <label style={addAccountStyle.pickImageLabel}>
                 Select Preview Image
-                <input type="file" accept="image/*" aria-label="Account avatar" style={{ display: 'none' }} onChange={(event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null }))} />
+                <input type="file" accept="image/*" aria-label="Account avatar" style={addAccountStyle.hiddenInput} onChange={(event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null }))} />
               </label>
-              <input aria-label="Account name" placeholder="Name" value={profile.name} onChange={(event) => setProfile((p) => ({ ...p, name: event.target.value }))} style={fieldStyle} />
-              <input aria-label="Account symbol" placeholder="Symbol" value={profile.symbol} onChange={(event) => setProfile((p) => ({ ...p, symbol: event.target.value }))} style={fieldStyle} />
-              <textarea aria-label="Account description" placeholder="Description" rows={3} value={profile.description} onChange={(event) => setProfile((p) => ({ ...p, description: event.target.value }))} style={{ ...fieldStyle, resize: 'vertical' }} />
+              <input aria-label="Account name" placeholder="Name" value={profile.name} onChange={(event) => setProfile((p) => ({ ...p, name: event.target.value }))} style={addAccountStyle.field} />
+              <input aria-label="Account symbol" placeholder="Symbol" value={profile.symbol} onChange={(event) => setProfile((p) => ({ ...p, symbol: event.target.value }))} style={addAccountStyle.field} />
+              <textarea aria-label="Account description" placeholder="Description" rows={3} value={profile.description} onChange={(event) => setProfile((p) => ({ ...p, description: event.target.value }))} style={addAccountStyle.fieldTall} />
             </div>
           )}
-          {error && <p style={{ margin: 0, fontSize: 12, color: '#fca5a5' }}>{error}</p>}
-          <button type="button" disabled={busy} onClick={() => void run(() => host.createAccount(target?.id, host.createProfile ? profile : undefined))} style={{ ...primaryStyle, opacity: busy ? 0.5 : 1 }}>
+          {error && <p style={addAccountStyle.error}>{error}</p>}
+          <button type="button" disabled={busy} onClick={() => void run(() => host.createAccount(target?.id, host.createProfile ? profile : undefined))} style={addAccountStyle.primaryDim(busy)}>
             {busy ? 'Creating…' : 'Create Account'}
           </button>
         </div>

@@ -6,14 +6,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { recoveryPhraseStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useCopyFeedback } from './platform/useCopyFeedback';
 import { NEW_PHRASE_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';
 
-const BLUE = '#5981F3';
-const BORDER = '#334155';
-const box: React.CSSProperties = { boxSizing: 'border-box', width: '100%', padding: '12px', color: '#fff', display: 'flex', flexDirection: 'column', gap: 8 };
-const primary: React.CSSProperties = { boxSizing: 'border-box', width: '100%', borderRadius: 8, border: 0, background: BLUE, padding: '8px 16px', fontWeight: 600, color: '#fff', cursor: 'pointer', font: 'inherit' };
-const muted: React.CSSProperties = { color: '#94a3b8', fontSize: 12, margin: 0 };
 
 export interface RecoveryPhraseScreenProps {
   /** The space-separated words, shown once. */
@@ -36,21 +32,21 @@ export default function RecoveryPhraseScreen({ recoveryPhrase, onContinue, autoH
     : 'The phrase is shown only now and is not stored, so it cannot be shown again later. Anyone who has it can take everything: keep it somewhere safe.';
   const words = phrase ? phrase.split(' ') : [];
   return (
-    <div id="WALLET_ONBOARDING_PHRASE" style={box}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <p style={{ margin: 0, fontWeight: 600 }}>Your Secret Recovery Phrase</p>
+    <div id="WALLET_ONBOARDING_PHRASE" style={recoveryPhraseStyle.box}>
+      <div style={recoveryPhraseStyle.titleRow}>
+        <p style={recoveryPhraseStyle.title}>Your Secret Recovery Phrase</p>
         {/* 2026-10-13 (owner request): the note about when the phrase is shown or hidden is an info icon at the top right of the title, not a block of text or a page of its own. */}
-        <button type="button" id="WALLET_ONBOARDING_PHRASE_INFO" aria-label="About the Secret Recovery Phrase" title={infoText} onClick={() => setInfoOpen((open) => !open)} style={{ background: 'none', border: 0, padding: 2, cursor: 'pointer', color: infoOpen ? '#8FA8FF' : '#94a3b8', display: 'flex' }}>
+        <button type="button" id="WALLET_ONBOARDING_PHRASE_INFO" aria-label="About the Secret Recovery Phrase" title={infoText} onClick={() => setInfoOpen((open) => !open)} style={recoveryPhraseStyle.iconButton(infoOpen ? walletPartClass.phraseIcon.open : walletPartClass.phraseIcon.idle)}>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
         </button>
       </div>
-      {infoOpen && <p id="WALLET_ONBOARDING_PHRASE_INFO_TEXT" style={muted}>{infoText}</p>}
-      <p style={muted}>Write these words down in order and keep them somewhere safe. They are the only way to get your accounts back, and anyone who has them can take everything. This is the only time they are shown automatically.</p>
-      {!phraseHidden && <ol style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, margin: 0, padding: 0, listStylePosition: 'inside', fontFamily: 'monospace', fontSize: 12 }}>
-        {words.map((w, i) => <li key={i} style={{ border: `1px solid ${BORDER}`, borderRadius: 6, padding: '4px 6px' }}>{w}</li>)}
+      {infoOpen && <p id="WALLET_ONBOARDING_PHRASE_INFO_TEXT" style={recoveryPhraseStyle.muted}>{infoText}</p>}
+      <p style={recoveryPhraseStyle.muted}>Write these words down in order and keep them somewhere safe. They are the only way to get your accounts back, and anyone who has them can take everything. This is the only time they are shown automatically.</p>
+      {!phraseHidden && <ol style={recoveryPhraseStyle.words}>
+        {words.map((w, i) => <li key={i} style={recoveryPhraseStyle.word}>{w}</li>)}
       </ol>}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1 }}>
+      <div style={recoveryPhraseStyle.saveRow}>
+        <label style={recoveryPhraseStyle.saveLabel}>
           <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} /> I have saved my Secret Recovery Phrase
         </label>
         <button
@@ -60,7 +56,7 @@ export default function RecoveryPhraseScreen({ recoveryPhrase, onContinue, autoH
           onClick={() => {
             copy(words.join(','));
           }}
-          style={{ background: 'none', border: 0, padding: 2, cursor: 'pointer', color: copied ? '#4ade80' : '#94a3b8', display: 'flex' }}
+          style={recoveryPhraseStyle.iconButton(copied ? walletPartClass.phraseIcon.copied : walletPartClass.phraseIcon.idle)}
         >
           {copied ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -69,7 +65,7 @@ export default function RecoveryPhraseScreen({ recoveryPhrase, onContinue, autoH
           )}
         </button>
       </div>
-      <button type="button" disabled={!saved && !phraseHidden} style={{ ...primary, opacity: saved || phraseHidden ? 1 : 0.5 }} onClick={() => { setPhrase(''); setPhraseHidden(false); onContinue(); }}>Continue</button>
+      <button type="button" disabled={!saved && !phraseHidden} style={recoveryPhraseStyle.primaryButton(saved || phraseHidden)} onClick={() => { setPhrase(''); setPhraseHidden(false); onContinue(); }}>Continue</button>
     </div>
   );
 }

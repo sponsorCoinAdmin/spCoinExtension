@@ -4,6 +4,7 @@
 // a file encrypted with it (a format name and a version, no plain key). Restoring is the first screen's job (WalletOnboardingPanel): a wallet that exists is never overwritten. A backend that cannot make one (the dev server, a phone) gets no section.
 'use client';
 
+import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useState } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
@@ -11,9 +12,6 @@ import PasswordPromptDialog from '../PasswordPromptDialog';
 import type { VaultCapability } from '../vault/vaultCapability';
 import type { Wallet } from './wallet';
 
-const note: React.CSSProperties = { fontSize: 11, color: '#94a3b8', margin: 0 };
-const ok: React.CSSProperties = { fontSize: 11, color: '#86efac', margin: 0 };
-const bad: React.CSSProperties = { fontSize: 11, color: '#fca5a5', margin: 0 };
 
 /** The file name a backup is saved under. */
 export const BACKUP_FILE_NAME = 'merit-wallet-backup.json';
@@ -36,13 +34,13 @@ export default function WalletBackupSection({ wallet }: { wallet: Wallet }) {
   if (!vault) return null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <p style={note}>A backup file holds every account of this wallet, encrypted with your password. Keep it somewhere safe: anyone with the file and the password can use the accounts.</p>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+    <div style={configSectionStyle.column(8)}>
+      <p style={configSectionStyle.note}>A backup file holds every account of this wallet, encrypted with your password. Keep it somewhere safe: anyone with the file and the password can use the accounts.</p>
+      <div style={configSectionStyle.buttonsWrap}>
         <SmallYellowButton onClick={() => { setMessage(undefined); setDialog('backup'); }}>Back up to a file</SmallYellowButton>
       </div>
-      <p style={note}>To restore a backup, remove this wallet first, then choose "Restore from a backup file" on the first screen: a wallet that already exists is never overwritten.</p>
-      {message ? <p style={message.good ? ok : bad}>{message.text}</p> : null}
+      <p style={configSectionStyle.note}>To restore a backup, remove this wallet first, then choose "Restore from a backup file" on the first screen: a wallet that already exists is never overwritten.</p>
+      {message ? <p style={message.good ? configSectionStyle.good : configSectionStyle.bad}>{message.text}</p> : null}
       {dialog === 'backup' ? (
         <PasswordPromptDialog
           title="Back up this wallet"

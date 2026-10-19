@@ -9,8 +9,9 @@
 // commit, exactly like the web app.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { HexAddressInput } from '@sponsorcoin/spcoin-panels';
 import { AssetPreviewRow } from '@sponsorcoin/spcoin-panels';
 export default function AddressPanel({ value, onChange, placeholder = 'Enter address', preview, }) {
-    return (_jsxs("div", { id: "AddressPanel", style: { display: 'flex', flexDirection: 'column', gap: 4, padding: 0 }, children: [_jsx(HexAddressInput, { inputValue: value, onChange: onChange, placeholder: placeholder }), preview ? _jsx(AssetPreviewRow, { ...preview }) : null] }));
+    return (_jsxs("div", { id: "AddressPanel", style: panelBoxStyle.addressStack, children: [_jsx(HexAddressInput, { inputValue: value, onChange: onChange, placeholder: placeholder }), preview ? _jsx(AssetPreviewRow, { ...preview }) : null] }));
 }

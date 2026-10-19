@@ -3,6 +3,7 @@
 // 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 18) -- the account editor's avatar preview and upload control, moved from the web app's CreateAccountAvatarPanel so both hosts show one editor.
 'use client';
 
+import { avatarPanelClass, avatarPreviewStyle, lockedSectionStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import DisconnectedControl from './DisconnectedControl';
@@ -349,56 +350,51 @@ export default function AccountAvatarPanel({
   return (
     <section
       ref={sectionRef}
-      className={`${panelMarginClass} ${avatarPanelBorderClass} order-1 flex ${fillParentHeight ? 'h-full' : 'h-auto'} w-full flex-col items-center justify-start pr-0 ${hasSelectedRow ? 'pt-0' : 'pt-4'} pb-0 pl-0`}
-      style={lockSectionHeight && sectionHeight ? { height: `${sectionHeight}px`, minHeight: `${sectionHeight}px` } : undefined}
+      className={avatarPanelClass.section(panelMarginClass, avatarPanelBorderClass, fillParentHeight, hasSelectedRow)}
+      style={lockSectionHeight && sectionHeight ? lockedSectionStyle(sectionHeight) : undefined}
     >
 {headingContent ? (
-        <div ref={headingRef} className="mb-0 w-full max-w-[56rem] px-6 pt-0 md:px-8">{headingContent}</div>
+        <div ref={headingRef} className={avatarPanelClass.headingContent}>{headingContent}</div>
       ) : (
         avatarHeading ? (
-          <h2 ref={headingRef as React.RefObject<HTMLHeadingElement>} className="mb-4 w-full max-w-[56rem] text-center text-lg font-semibold text-[#5981F3]">
+          <h2 ref={headingRef as React.RefObject<HTMLHeadingElement>} className={avatarPanelClass.heading}>
             {avatarHeading}
           </h2>
         ) : null
       )}
-      <div className={`flex ${fillParentHeight ? 'h-full' : 'h-auto'} w-full max-w-[56rem] flex-col items-center gap-0`}>
-        {selectedRowContent ? <div ref={selectedRowRef} className="w-full">{selectedRowContent}</div> : null}
-        <div ref={previewStageRef} className="flex min-h-0 w-full shrink-0 justify-center overflow-hidden">
+      <div className={avatarPanelClass.column(fillParentHeight)}>
+        {selectedRowContent ? <div ref={selectedRowRef} className={avatarPanelClass.selectedRow}>{selectedRowContent}</div> : null}
+        <div ref={previewStageRef} className={avatarPanelClass.stage}>
           {showImage ? (
             <div
-              className="mx-auto flex shrink-0 items-center justify-center overflow-hidden bg-[#0D1324] p-0"
-              style={{
-                width: `${previewSize}px`,
-                height: `${previewSize}px`,
-                maxWidth: '100%',
-                maxHeight: '100%',
-              }}
+              className={avatarPanelClass.previewBox}
+              style={avatarPreviewStyle(previewSize)}
             >
               {logoPreviewSrc ? (
                 <img
                   src={logoPreviewSrc}
                   alt="Account logo preview"
-                  className="h-full w-full object-contain"
+                  className={avatarPanelClass.previewImage}
                 />
               ) : (
-                <span className="text-sm text-slate-300">No logo found on server</span>
+                <span className={avatarPanelClass.noLogo}>No logo found on server</span>
               )}
             </div>
           ) : null}
         </div>
-        <div ref={controlsRef} className="-mt-px w-full shrink-0">
+        <div ref={controlsRef} className={avatarPanelClass.controls}>
           <input
             ref={logoFileInputRef}
             id="logoFileUpload"
             type="file"
             accept={acceptedInput}
-            className="hidden"
+            className={avatarPanelClass.hidden}
             aria-label="Account logo file upload"
             title="Select account logo file"
             onChange={onFileChange}
           />
           {showButton ? (
-            <div className="w-full">
+            <div className={avatarPanelClass.buttonWrap}>
               {!connected ? (
                 <DisconnectedControl
                   message="Wallet Connection Required"
@@ -409,17 +405,7 @@ export default function AccountAvatarPanel({
                   type="button"
                   aria-disabled={!connected}
                   disabled={!connected}
-                  className={`w-full rounded-b border border-white py-2 text-black transition-colors ${
-                    !isEditMode
-                      ? isUploadHovered
-                        ? 'bg-red-500 text-black'
-                        : 'bg-[#E5B94F] text-black'
-                      : inputLocked
-                      ? 'bg-red-500 text-black cursor-not-allowed'
-                      : isUploadHovered
-                      ? 'bg-green-500 text-black'
-                      : 'bg-[#E5B94F] text-black'
-                  }`}
+                  className={avatarPanelClass.uploadButton({ isEditMode, isUploadHovered, inputLocked })}
                   title={isLoading ? loadingInputMessage : previewButtonLabel}
                   onClick={() => {
                     if (!isEditMode || inputLocked) return;

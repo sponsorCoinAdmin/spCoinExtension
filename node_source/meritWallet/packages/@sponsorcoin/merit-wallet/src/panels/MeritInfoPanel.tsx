@@ -8,7 +8,7 @@
 
 'use client';
 
-import { walletColors } from '@sponsorcoin/spcoin-common/styles';
+import { plainPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 
 export interface MeritInfoRow {
@@ -29,16 +29,16 @@ const DEFAULT_ROWS: MeritInfoRow[] = [
 
 export default function MeritInfoPanel({ icon, rows = DEFAULT_ROWS }: MeritInfoPanelProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 12 }}>
-      {icon && <div style={{ width: '100%' }}>{icon}</div>}
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+    <div style={plainPanelStyle.infoBox}>
+      {icon && <div style={plainPanelStyle.infoIcon}>{icon}</div>}
+      <table style={plainPanelStyle.infoTable}>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.label} style={{ borderTop: '1px solid rgba(51,65,85,0.5)' }}>
-              <td style={{ padding: '6px 4px', color: walletColors.textMuted, fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+            <tr key={row.label} style={plainPanelStyle.infoRow}>
+              <td style={plainPanelStyle.infoLabel}>
                 {row.label}
               </td>
-              <td style={{ padding: '6px 4px', color: walletColors.textLight }}>{row.value}</td>
+              <td style={plainPanelStyle.infoValue}>{row.value}</td>
             </tr>
           ))}
         </tbody>

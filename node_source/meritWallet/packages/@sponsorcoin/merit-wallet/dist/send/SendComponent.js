@@ -7,7 +7,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useCallback } from 'react';
 import { parseUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { PANEL_GAP } from '@sponsorcoin/spcoin-common/styles';
+import { PANEL_GAP, panelPartClass, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { describeEthersError, useApprovalPending, useErrorMessage, useExchangeContext, useHostTransfer, useNativeToken, usePanelTree, useSendTokenContract, useSurfaceBalanceError, } from '@sponsorcoin/spcoin-exchange-engine';
 import { ComponentMarker, PanelGate, SendButton, SendLayoutContainer, useWalletTokenBalance } from '@sponsorcoin/spcoin-panels';
 import { buildSendReceipt } from '../receipt/transactionReceipts';
@@ -116,5 +116,5 @@ export default function SendComponent() {
     // approach tried first was confirmed broken (the safelist pattern
     // meant to support it never actually worked; see twSettingConfig.ts's
     // own header comment for the full trace).
-    _jsxs("div", { className: "relative flex flex-1 flex-col", style: { gap: PANEL_GAP }, children: [_jsx(ComponentMarker, { path: "components/views/RadioOverlayPanels/SendComponent.tsx" }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_SELECT_PANEL, children: _jsx(SendLayoutContainer, { amount: amount, onAmountChange: setAmount }) }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_BUTTON, children: _jsx(SendButton, { amount: amount, decimals: tokenDecimals, balanceRaw: balanceRaw, hasRecipient: toAddress.length > 0, symbol: tokenSymbol, isPending: isPending, approvalPending: approvalPending, onSend: handleSend }) })] }));
+    _jsxs("div", { className: panelPartClass.sendColumn, style: panelBoxStyle.gap(PANEL_GAP), children: [_jsx(ComponentMarker, { path: "components/views/RadioOverlayPanels/SendComponent.tsx" }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_SELECT_PANEL, children: _jsx(SendLayoutContainer, { amount: amount, onAmountChange: setAmount }) }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_BUTTON, children: _jsx(SendButton, { amount: amount, decimals: tokenDecimals, balanceRaw: balanceRaw, hasRecipient: toAddress.length > 0, symbol: tokenSymbol, isPending: isPending, approvalPending: approvalPending, onSend: handleSend }) })] }));
 }

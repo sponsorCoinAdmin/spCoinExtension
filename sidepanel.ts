@@ -8,17 +8,9 @@ import { isExternalAccount } from './src/externalAccounts';
 import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger';
 import { startDappApprovals } from './src/dappApprovals';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, VaultAccountsPanel, WalletOnboardingPanel, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
-import { PasswordPanel, type AssetListEntry, type ManageSponsorshipRole, type ManageSponsorshipRoleRow } from '@sponsorcoin/spcoin-panels';
+import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
+import { type AssetListEntry } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
-import {
-  readRecordValue,
-  formatAccountRecordAmount,
-  REWARD_ROLES,
-  REWARD_ROLE_CONFIG,
-  getPendingRewardsTotalFromRecord,
-  getAccountRecordPendingReward,
-} from '@sponsorcoin/spcoin-panels';
 import {
   ExchangeProviderCore,
   DisplayStackProvider,
@@ -519,7 +511,6 @@ async function renderWallet() {
     }
   };
   holdPortOpen();
-  // The wallet's own account screens (VaultAccountsPanel / WalletOnboardingPanel): opened from the account list's Add button.
   // The Swap tab's trade button (table row 22): price from Uniswap on-chain or the hosted 0x quote service, swap through the same executor as stake.
   // Editing the public profile of the wallet's own accounts (Account Details > Edit Profile): the hosted app's nonce / verify / save sequence, the account signing its challenge
   // with the vault behind the confirmation screen (a test account signs without it). After a save the details, header and list read the new values at once.
@@ -586,7 +577,6 @@ async function renderWallet() {
       await chrome.runtime.sendMessage({ type: 'merit/vault/wipe' });
       vaultRows = null;
       vaultRowsStale = true;
-      vaultScreen = null;
       walletSource = DISCONNECTED_WALLET_SOURCE;
       await vaultSession.refresh();
       render();
@@ -748,19 +738,12 @@ async function renderWallet() {
     if (wanted && walletSource.address?.toLowerCase() !== wanted.toLowerCase()) activateAccount(wanted);
     else render();
   }
-  let vaultScreen: 'accounts' | 'onboarding' | 'password' | null = null;
-  function closeVaultScreen() {
-    vaultScreen = null;
-    vaultRowsStale = true;
-    render();
-  }
   // Delete the wallet from this device (after a confirmation); the account list falls back to setup. Used by the lock screen's reset link and Config's Delete Account.
   function resetWallet() {
     if (!window.confirm('Reset this wallet? This deletes the wallet from this device. You can only get your accounts back with your Secret Recovery Phrase.')) return;
     void chrome.runtime.sendMessage({ type: 'merit/vault/wipe' }).then(() => {
       vaultRows = null;
       vaultRowsStale = true;
-      vaultScreen = null;
       return vaultSession.refresh();
     });
   }
@@ -780,12 +763,6 @@ async function renderWallet() {
         await loadVaultAccounts();
       })
       .catch((error: unknown) => alert(error instanceof Error ? error.message : 'The account could not be removed.'));
-  }
-  function openVaultScreen() {
-    void vaultStatus().then((status) => {
-      vaultScreen = status.initialized ? 'accounts' : 'onboarding';
-      render();
-    });
   }
   // 2026-10-03 — Merit Wallet Config tab state. Two halves with different
   // sources of truth, matching how the web app's own useMeritWalletConfig
@@ -867,32 +844,6 @@ async function renderWallet() {
       }
      | null = null;
 
-  // Phase B.2 — on-chain AccountStruct fetched via getAccountRecord through
-  // /api/spCoin/run-script. Populated when an account is activated (either
-  // directly for an unlocked account, or after the password unlock resolves
-  // for a locked one). Passed to MeritWallet as `accountRecord` so panels
-  // like ManageSponsorshipsPanel can render real on-chain data without
-  // needing their own run-script client wired up — this file's plain fetch()
-  // pattern with an absolute baseUrl resolves correctly from a
-  // chrome-extension:// origin, and the server's read-only CORS grant
-  // (exchangeContextCors.ts, MERIT_EXTENSION_ORIGIN) is already wired into
-  // run-script/route.ts's POST handler.
-  let   accountRecord: unknown = null;
-
-  // Phase B.2 — estimateOffChainTotalRewards result for the active account,
-  // fetched alongside getAccountRecord so panels like ManageSponsorshipsPanel
-  // have everything they need on account selection.
-   let rewardEstimate: unknown = null;
-
-   // 2026-09-27, Phase C — parsed reward display state for ManageSponsorshipsPanel.
-   // Derived from accountRecord + rewardEstimate in parseRewardDisplay().
-   let rewardTradingText = '';
-   let rewardStakedText = '';
-   let rewardPendingText = '';
-   let rewardTotalCoinsText = '';
-   let rewardRows: ManageSponsorshipRoleRow[] = [];
-   let rewardRoleLoading: Record<string, boolean> = {};
-
   function render() {
     if (requireVault && vaultSession.getState().phase === 'setup') onboardingOpen = true;
     const vaultPhase = vaultSession.getState().phase;
@@ -958,56 +909,8 @@ async function renderWallet() {
         // it needs to overlay regardless of which of those two is showing.
         React.createElement(TransactionConfirmOrchestrator),
         React.createElement(TransferApprovalHost),
-        // Phase B.2 Stage 2.c — PasswordPanel replaces MeritWallet
-        // entirely while a locked account's password is being requested,
-        // same shape as the web app's own PasswordGateOrchestrator
-        // (whole-wallet gate, not a modal-over-content overlay) — simpler
-        // to reason about for this first real wallet-source wiring than a
-        // layered overlay would be.
-        // 2026-10-08 (table rows 21 and 23): the wallet's own account screens, shown instead of the wallet body while open.
-        vaultScreen && vaultSession.getState().phase !== 'locked'
-          ? React.createElement(
-              'div',
-              { style: { display: 'flex', flexDirection: 'column', height: '100%', color: '#fff' } },
-              React.createElement(
-                'button',
-                { type: 'button', onClick: closeVaultScreen, style: { alignSelf: 'flex-start', margin: '8px 12px 0', background: 'none', border: 0, color: '#5981F3', cursor: 'pointer', font: 'inherit' } },
-                '← Back to wallet',
-              ),
-              vaultScreen === 'onboarding'
-                ? React.createElement(WalletOnboardingPanel, {
-                    createWallet: vaultOnboarding.createWallet,
-                    importWallet: vaultOnboarding.importWallet,
-                    restoreBackup: vaultOnboarding.restoreBackup,
-                    onDone: () => {
-                      void vaultSession.refresh().then(closeVaultScreen);
-                    },
-                  })
-                : React.createElement(VaultAccountsPanel, { api: vaultAccountsApi, onActiveChanged: (address: string) => activateAccount(address) }),
-            )
-          : requireVault && (vaultSession.getState().phase === 'setup' || onboardingOpen)
-          ? React.createElement(WalletOnboardingPanel, {
-              createWallet: vaultOnboarding.createWallet,
-              importWallet: vaultOnboarding.importWallet,
-                    restoreBackup: vaultOnboarding.restoreBackup,
-              // The panel stays up through the recovery-phrase step even though the vault already exists by then (phase is no longer 'setup').
-              onDone: () => {
-                // Close only after the status says a vault exists, or render() would re-open setup from the stale phase.
-                void vaultSession.refresh().then(() => {
-                  onboardingOpen = false;
-                  render();
-                });
-              },
-            })
-          : unlockPrompt
-          ? React.createElement(PasswordPanel, {
-              mode: 'unlock',
-              icon: React.createElement('img', { src: brandLogoUrl, alt: '', style: { width: '100%', maxWidth: 160, display: 'block', margin: '0 auto' } }),
-              errorText: unlockError,
-              submitting: unlocking,
-              onSubmit: (password: string) => void handleUnlockSubmit(password),
-            })
-          : React.createElement(MeritWalletHostView, {
+        // 2026-10-19 (docs/meritMigration.txt rows 27 / 28): this host draws no wallet screen. First-run setup (lock.onboarding) and the legacy unlock prompt (the component's own lock props) are data and functions the component draws itself.
+        React.createElement(MeritWalletHostView, {
             host: {
               layout: {
                 refreshToken: walletRefresh.getState().refreshToken,
@@ -1091,7 +994,6 @@ async function renderWallet() {
                 stakingHost,
               },
               selection: {
-                onAddAccount: openVaultScreen,
                 // the vault's rows are chosen through the derived list's connect; the old handler stays only for the (unlocked-keystore) fallback list
                 onAccountRowSelect: vaultRows ? undefined : handleAccountRowSelect,
                 onNetworkRowSelect: handleNetworkRowSelect,
@@ -1136,6 +1038,27 @@ async function renderWallet() {
                 // 2026-10-14: a site asked to connect (or sign) while the wallet is locked: say so on the login page, like MetaMask's "unlock to continue"; the connect page follows the login.
                 passwordNoticeText: lockedRequestNotice || undefined,
                 passwordIconSrc: brandLogoUrl,
+                // First-run setup: the component draws the "Set up your wallet" screen instead of the wallet while this is set (create a wallet, import by recovery phrase, restore a backup). It stays up through the recovery-phrase
+                // step even though the vault already exists by then (the phase is no longer 'setup').
+                onboarding:
+                  requireVault && (vaultSession.getState().phase === 'setup' || onboardingOpen)
+                    ? {
+                        createWallet: vaultOnboarding.createWallet,
+                        importWallet: vaultOnboarding.importWallet,
+                        restoreBackup: vaultOnboarding.restoreBackup,
+                        // Close only after the status says a vault exists, or render() would re-open setup from the stale phase.
+                        onDone: () => {
+                          void vaultSession.refresh().then(() => {
+                            onboardingOpen = false;
+                            render();
+                          });
+                        },
+                      }
+                    : undefined,
+                // The legacy keystore unlock (requireVault off): a locked account's password is being asked for; the component's own lock screen takes it.
+                ...(unlockPrompt
+                  ? { walletLocked: true, passwordMode: 'unlock' as const, passwordErrorText: unlockError, passwordSubmitting: unlocking, onPasswordSubmit: (password: string) => void handleUnlockSubmit(password) }
+                  : {}),
               },
               config: {
                 // 2026-10-13: the swap and agent wiring this block once said was still to come is done (the shared swap flow in src/swapHost.ts, the agent hydration in
@@ -1361,34 +1284,7 @@ async function renderWallet() {
   function activateAccount(accountId: string) {
     walletSource = { ...walletSource, address: accountId, isConnected: true };
     render();
-    void fetchAccountRecord(accountId);
   }
-
-  // Phase B.2 — fetches the on-chain AccountStruct for the active account
-  // via /api/spCoin/run-script. Best-effort: a failed fetch just leaves
-  // `accountRecord` as null; the panels that need real data degrade
-  // gracefully (same "undefined, not a real-but-empty" pattern this file's
-  // other data loaders already use). Uses the same baseUrl/chainId/rpcUrl
-  // constants every other hardhat-specific call in this file does.
-  async function fetchAccountRecord(address: string) {
-    accountRecord = null;
-    render();
-    try {
-      [accountRecord, rewardEstimate] = await Promise.all([
-        // Both straight from the contract's views (2026-10-09, row 25): the record is the getAccountRecord view, the estimate the client-side calculation.
-        chainRead('getAccountRecord', [{ key: 'Account Key', value: address }]),
-        estimateRewardsByMethod('estimateOffChainTotalRewards', { accountKey: address, read: chainRead }).catch((error) => {
-          console.error('Failed to load reward estimate:', error);
-          return null;
-        }),
-      ]);
-     } catch (error) {
-       console.error('Failed to load account record:', error);
-       accountRecord = null;
-     }
-     parseRewardDisplay();
-     render();
-   }
 
   async function handleUnlockSubmit(password: string) {
     if (!unlockPrompt) return;
@@ -1462,51 +1358,6 @@ async function renderWallet() {
     if (result.ok) void walletRefresh.run();
     return result.ok ? { ok: true, hash: result.hash, receipt: result.receipt as never } : { ok: false, message: result.message };
   }
-
-   // 2026-09-27, Phase C — parse accountRecord + rewardEstimate into the display
-   // strings + per-role rows that ManageSponsorshipsPanel expects. Uses the
-   // same helpers exported from @sponsorcoin/spcoin-panels (readRecordValue,
-   // formatAccountRecordAmount, getAccountRecordPendingReward, etc.) that the
-   // web app's own ManageSponsorshipsPanel.tsx uses — keeping this extension's
-   // parsing identical so rows look the same.
-   function parseRewardDisplay() {
-     if (!accountRecord) {
-       rewardTradingText = '';
-       rewardStakedText = '';
-       rewardPendingText = '';
-       rewardTotalCoinsText = '';
-       rewardRows = [];
-       return;
-     }
-      const rawBalance = readRecordValue(accountRecord, ['totalSpCoins', 'balanceOf']);
-      const rawStaked = readRecordValue(accountRecord, ['totalSpCoins', 'stakedBalance']);
-      const rawPending = getPendingRewardsTotalFromRecord(accountRecord);
-      rewardTradingText = formatAccountRecordAmount(rawBalance, 18);
-      rewardStakedText = formatAccountRecordAmount(rawStaked, 18);
-      rewardPendingText = formatAccountRecordAmount(rawPending, 18);
-      const toBigInt = (v: unknown): bigint => {
-        const s = String(v ?? '0').replace(/,/g, '');
-        try { return BigInt(s); } catch { return BigInt(0); }
-      };
-      rewardTotalCoinsText = formatAccountRecordAmount(
-        toBigInt(rawBalance) + toBigInt(rawStaked) + toBigInt(rawPending),
-        18,
-      );
-     // Per-role rows: amounts from the role-specific pendingRewards fields,
-     // availability from the role flag bits in accountRecord.
-     rewardRows = REWARD_ROLES.map((role) => {
-       const config = REWARD_ROLE_CONFIG[role];
-       const rawAmount = getAccountRecordPendingReward(accountRecord, role);
-       const roleFlag = readRecordValue(accountRecord, [config.roleFlag]);
-       const amount = rawAmount != null ? formatAccountRecordAmount(rawAmount, 18) : '0.0';
-       return {
-         role,
-         amount,
-         available: Boolean(roleFlag),
-         loading: !!rewardRoleLoading[role],
-       };
-     });
-   }
 
    // (The Rewards tab's estimate and claim run through rewardsHost above; the older per-button handlers that stood here were never wired and are gone.)
 

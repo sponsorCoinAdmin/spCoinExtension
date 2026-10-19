@@ -18,14 +18,9 @@
 // icon/symbol/address/click-handler it's handed.
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
+import { tokenWrapperStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useRef } from 'react';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
-const DEFAULT_WRAPPER_STYLE = {
-    position: 'absolute',
-    top: 12,
-    right: 20,
-    minWidth: 50,
-};
 export default function TokenSelectDropDown({ icon, hasEntity = false, address, symbol, name, label = 'Select Token', onSelectClick, onAddressClick, showChevron = false, showDisplay, addrPrePostSize = 4, showSymbol = false, showName = false, collapseKey, onExpandedChange, restrictRowClickToChevron = false, copyLabel = 'Copy token address', style, dataPanelRoot, panelGateId, panelGate, }) {
     // Guard against re-entrancy while a previous click is still settling —
     // real behavior (not just logging, see the original's own doc comment on
@@ -51,5 +46,5 @@ export default function TokenSelectDropDown({ icon, hasEntity = false, address, 
             ASSET_SELECT_DISPLAY.COPY |
             ASSET_SELECT_DISPLAY.ADDR_COMP |
             (showChevron ? ASSET_SELECT_DISPLAY.CHEVRON_DN : 0));
-    return (_jsx("div", { style: { ...DEFAULT_WRAPPER_STYLE, ...style }, "data-panel-root": dataPanelRoot, children: _jsx(AssetSelectDropDown, { rootId: "TokenSelectDropDown", hasEntity: hasEntity, icon: icon, symbol: symbol, name: name, address: address ?? '', placeholderLabel: label, copyLabel: copyLabel, showDisplay: resolvedShowDisplay, showSymbol: showSymbol, showName: showName, onRowClick: handleRowClick, onAddressClick: onAddressClick, restrictRowClickToChevron: restrictRowClickToChevron, addrPrePostSize: addrPrePostSize, panelGateId: panelGateId, panelGate: panelGate, collapseKey: collapseKey, onExpandedChange: onExpandedChange }) }));
+    return (_jsx("div", { style: tokenWrapperStyle(style), "data-panel-root": dataPanelRoot, children: _jsx(AssetSelectDropDown, { rootId: "TokenSelectDropDown", hasEntity: hasEntity, icon: icon, symbol: symbol, name: name, address: address ?? '', placeholderLabel: label, copyLabel: copyLabel, showDisplay: resolvedShowDisplay, showSymbol: showSymbol, showName: showName, onRowClick: handleRowClick, onAddressClick: onAddressClick, restrictRowClickToChevron: restrictRowClickToChevron, addrPrePostSize: addrPrePostSize, panelGateId: panelGateId, panelGate: panelGate, collapseKey: collapseKey, onExpandedChange: onExpandedChange }) }));
 }

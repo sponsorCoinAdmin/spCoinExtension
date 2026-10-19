@@ -21,6 +21,7 @@
 // hydrateActiveAccount.ts/accountsFeed.ts already established.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { infoPanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
@@ -56,7 +57,7 @@ export default function MeritInfoPanelReal({ panelId = SP_COIN_DISPLAY.MERIT_INF
         if (f.kind === 'url') {
             return {
                 label: f.label,
-                value: (_jsx("a", { href: f.value, target: "_blank", rel: "noopener noreferrer", className: "underline decoration-slate-400/60 underline-offset-2 hover:decoration-slate-200 break-all", children: f.value })),
+                value: (_jsx("a", { href: f.value, target: "_blank", rel: "noopener noreferrer", className: infoPanelClass.link, children: f.value })),
             };
         }
         return { label: f.label, value: f.value };
@@ -64,8 +65,8 @@ export default function MeritInfoPanelReal({ panelId = SP_COIN_DISPLAY.MERIT_INF
     if (info?.description || tabs.length) {
         rows.push({
             label: 'Description',
-            value: (_jsxs("div", { className: "flex flex-col gap-2", children: [info?.description ? _jsx("p", { className: "m-0", children: info.description }) : null, tabs.length ? (_jsx("ul", { className: "m-0 flex list-disc flex-col gap-1 pl-5", children: tabs.map((tab) => (_jsxs("li", { children: [_jsxs("span", { className: "font-semibold", children: [String(tab.key).toUpperCase(), ":"] }), ' ', tab.detail] }, tab.key))) })) : null] })),
+            value: (_jsxs("div", { className: infoPanelClass.column, children: [info?.description ? _jsx("p", { className: infoPanelClass.paragraph, children: info.description }) : null, tabs.length ? (_jsx("ul", { className: infoPanelClass.list, children: tabs.map((tab) => (_jsxs("li", { children: [_jsxs("span", { className: infoPanelClass.term, children: [String(tab.key).toUpperCase(), ":"] }), ' ', tab.detail] }, tab.key))) })) : null] })),
         });
     }
-    return (_jsx("div", { id: "MERIT_INFO_PANEL", children: _jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: `${baseUrl}/assets/miscellaneous/meritWallet.png?v=22`, logoAlt: "Merit Wallet", logoRoundedClassName: "", logoBackgroundClassName: "", logoContainerClassName: "py-[5px]", logoContainerSizeClassName: "w-full", logoSizeClassName: "w-[calc(100%-40px)] mx-auto" }) }));
+    return (_jsx("div", { id: "MERIT_INFO_PANEL", children: _jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: `${baseUrl}/assets/miscellaneous/meritWallet.png?v=22`, logoAlt: "Merit Wallet", logoRoundedClassName: walletPartClass.infoLogo.rounded, logoBackgroundClassName: walletPartClass.infoLogo.background, logoContainerClassName: walletPartClass.infoLogo.container, logoContainerSizeClassName: walletPartClass.infoLogo.containerSize, logoSizeClassName: walletPartClass.infoLogo.size }) }));
 }

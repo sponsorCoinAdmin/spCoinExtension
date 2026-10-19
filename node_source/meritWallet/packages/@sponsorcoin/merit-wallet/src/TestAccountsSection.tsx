@@ -6,6 +6,7 @@
 // encrypts them under the master key), the section asks for it in a small popup first.
 'use client';
 
+import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useState } from 'react';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
 import type { AuthenticationType} from './auth/authenticationType';
@@ -80,16 +81,16 @@ export default function TestAccountsSection({ api, authenticationType, onChanged
   const total = status?.total ?? 0;
 
   return (
-    <div id="TEST_ACCOUNTS_SECTION" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>
+    <div id="TEST_ACCOUNTS_SECTION" style={configSectionStyle.column(8)}>
+      <p style={configSectionStyle.testNote}>
         Hardhat&apos;s standard test accounts (their keys are public, so they can sign only on the local test chain). {status ? `${loaded} of ${total} are in the ${where}.` : ''}
       </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={configSectionStyle.buttonsCentered}>
         <WalletActionButton disabled={busy || (status !== null && loaded >= total)} onClick={() => start('load')}>Load</WalletActionButton>
         <WalletActionButton disabled={busy || loaded === 0} onClick={() => start('unload')}>Unload</WalletActionButton>
       </div>
-      {message && <p style={{ margin: 0, fontSize: 12, color: '#4ade80' }}>{message}</p>}
-      {error && <p style={{ margin: 0, fontSize: 12, color: '#f87171' }}>{error}</p>}
+      {message && <p style={configSectionStyle.testGood}>{message}</p>}
+      {error && <p style={configSectionStyle.testBad}>{error}</p>}
       {asking && (
         <PasswordPromptDialog
           title={asking === 'load' ? 'Load test accounts' : 'Unload test accounts'}

@@ -22,6 +22,7 @@
 
 'use client';
 
+import { infoPanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
@@ -79,7 +80,7 @@ export default function MeritInfoPanelReal({
             href={f.value}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline decoration-slate-400/60 underline-offset-2 hover:decoration-slate-200 break-all"
+            className={infoPanelClass.link}
           >
             {f.value}
           </a>
@@ -94,13 +95,13 @@ export default function MeritInfoPanelReal({
     rows.push({
       label: 'Description',
       value: (
-        <div className="flex flex-col gap-2">
-          {info?.description ? <p className="m-0">{info.description}</p> : null}
+        <div className={infoPanelClass.column}>
+          {info?.description ? <p className={infoPanelClass.paragraph}>{info.description}</p> : null}
           {tabs.length ? (
-            <ul className="m-0 flex list-disc flex-col gap-1 pl-5">
+            <ul className={infoPanelClass.list}>
               {tabs.map((tab) => (
                 <li key={tab.key}>
-                  <span className="font-semibold">{String(tab.key).toUpperCase()}:</span>{' '}
+                  <span className={infoPanelClass.term}>{String(tab.key).toUpperCase()}:</span>{' '}
                   {tab.detail}
                 </li>
               ))}
@@ -117,11 +118,11 @@ export default function MeritInfoPanelReal({
         rows={rows}
         logoURL={`${baseUrl}/assets/miscellaneous/meritWallet.png?v=22`}
         logoAlt="Merit Wallet"
-        logoRoundedClassName=""
-        logoBackgroundClassName=""
-        logoContainerClassName="py-[5px]"
-        logoContainerSizeClassName="w-full"
-        logoSizeClassName="w-[calc(100%-40px)] mx-auto"
+        logoRoundedClassName={walletPartClass.infoLogo.rounded}
+        logoBackgroundClassName={walletPartClass.infoLogo.background}
+        logoContainerClassName={walletPartClass.infoLogo.container}
+        logoContainerSizeClassName={walletPartClass.infoLogo.containerSize}
+        logoSizeClassName={walletPartClass.infoLogo.size}
       />
     </div>
   );

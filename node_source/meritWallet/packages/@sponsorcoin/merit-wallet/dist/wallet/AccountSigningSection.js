@@ -4,11 +4,10 @@
 // reached, and switches with one click when the account has more than one holder (5.6: instant, nothing copied or lost). An account with one holder just says who signs; with no account it says so.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useState } from 'react';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import { chooseSigner, readSigningChoices } from './accountSigning';
-const note = { fontSize: 11, color: '#94a3b8', margin: 0 };
-const warn = { fontSize: 11, color: '#fca5a5', margin: 0 };
 const STATE_TEXT = { ready: '', locked: 'locked', unreachable: 'not reachable' };
 export default function AccountSigningSection({ wallet, address }) {
     const [choices, setChoices] = useState(undefined);
@@ -23,9 +22,9 @@ export default function AccountSigningSection({ wallet, address }) {
         return wallet.onChange(() => void load());
     }, [wallet, load]);
     if (!address)
-        return _jsx("p", { style: note, children: "Select an account to see who signs for it." });
+        return _jsx("p", { style: configSectionStyle.note, children: "Select an account to see who signs for it." });
     if (!choices)
-        return _jsx("p", { style: note, children: "Reading who signs for this account..." });
+        return _jsx("p", { style: configSectionStyle.note, children: "Reading who signs for this account..." });
     const choose = async (id) => {
         setError('');
         try {
@@ -36,5 +35,5 @@ export default function AccountSigningSection({ wallet, address }) {
         }
     };
     const active = choices.holders.find((h) => h.isActive);
-    return (_jsxs("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 }, children: [_jsxs("p", { style: note, children: [active ? `${active.label} signs for this account${active.where ? ` (its keys are on ${active.where})` : ''}.` : 'No wallet holds this account here.', !choices.savedId && active ? ' This is the app default; you have not chosen one.' : ''] }), choices.holders.length > 1 ? (_jsx("div", { role: "radiogroup", "aria-label": "Who signs", style: { display: 'flex', flexDirection: 'column', gap: 6 }, children: choices.holders.map((holder) => (_jsxs("label", { style: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#fff', cursor: 'pointer' }, children: [_jsx("input", { type: "radio", name: "spcoin-account-signer", checked: holder.isActive, onChange: () => void choose(holder.id) }), _jsx("span", { children: holder.label }), holder.where ? _jsxs("span", { style: { color: '#94a3b8' }, children: ["(", holder.where, ")"] }) : null, holder.state !== 'ready' ? _jsx("span", { style: { color: '#fca5a5' }, children: STATE_TEXT[holder.state] }) : null] }, holder.id))) })) : null, choices.warning ? _jsx("p", { style: warn, children: choices.warning }) : null, error ? _jsx("p", { style: warn, children: error }) : null, choices.savedId ? (_jsx("div", { children: _jsx(SmallYellowButton, { onClick: () => void choose(undefined), children: "Use the app default" }) })) : null] }));
+    return (_jsxs("div", { style: configSectionStyle.column(8), children: [_jsxs("p", { style: configSectionStyle.note, children: [active ? `${active.label} signs for this account${active.where ? ` (its keys are on ${active.where})` : ''}.` : 'No wallet holds this account here.', !choices.savedId && active ? ' This is the app default; you have not chosen one.' : ''] }), choices.holders.length > 1 ? (_jsx("div", { role: "radiogroup", "aria-label": "Who signs", style: configSectionStyle.radioGroup, children: choices.holders.map((holder) => (_jsxs("label", { style: configSectionStyle.radioRow, children: [_jsx("input", { type: "radio", name: "spcoin-account-signer", checked: holder.isActive, onChange: () => void choose(holder.id) }), _jsx("span", { children: holder.label }), holder.where ? _jsxs("span", { style: configSectionStyle.muted, children: ["(", holder.where, ")"] }) : null, holder.state !== 'ready' ? _jsx("span", { style: configSectionStyle.warn, children: STATE_TEXT[holder.state] }) : null] }, holder.id))) })) : null, choices.warning ? _jsx("p", { style: configSectionStyle.bad, children: choices.warning }) : null, error ? _jsx("p", { style: configSectionStyle.bad, children: error }) : null, choices.savedId ? (_jsx("div", { children: _jsx(SmallYellowButton, { onClick: () => void choose(undefined), children: "Use the app default" }) })) : null] }));
 }

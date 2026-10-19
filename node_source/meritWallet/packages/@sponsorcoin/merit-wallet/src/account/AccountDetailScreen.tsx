@@ -6,6 +6,7 @@
 // shows the avatar and the table.
 'use client';
 
+import { accountDetailClass, accountDetailStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useRef } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
@@ -48,7 +49,6 @@ export function flagsForRole(role: AccountDetailRole | undefined): [SP_COIN_DISP
   return [SP_COIN_DISPLAY.ACCOUNT_LOGO, SP_COIN_DISPLAY.ACCOUNT_META_DATA];
 }
 
-const connectStyle: React.CSSProperties = { borderRadius: 8, border: 'none', padding: '9px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#5981F3', color: '#ffffff', width: '100%' };
 
 export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.ACTIVE_ACCOUNT, host }: { account: spCoinAccount | undefined; role?: AccountDetailRole; host: AccountDetailHost }) {
   const menuTabHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
@@ -88,14 +88,14 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
   const showKeyRow = !!reveal && (host.canReveal ? host.canReveal(address) : true);
   const avatarResizeSignal = [menuTabHeaderOpen, activeAccountHeaderOpen, role].join(':');
   return (
-    <div id="ACCOUNT_INFO" className="flex min-h-full shrink-0 flex-col bg-[#0b0e19]">
-      <form onSubmit={form.handleSubmit} className="flex flex-col">
+    <div id="ACCOUNT_INFO" className={accountDetailClass.screen}>
+      <form onSubmit={form.handleSubmit} className={accountDetailClass.form}>
         <div
           id="ACTIVE_ACCOUNT_BODY"
-          className={role === SP_COIN_DISPLAY.ACTIVE_ACCOUNT ? '-mx-4 -mb-[10px] flex flex-col gap-2 overflow-x-hidden rounded-b-[13px] px-4 pt-[2px] pb-0' : 'flex flex-col gap-2 overflow-x-hidden'}
+          className={walletPartClass.accountBody(role === SP_COIN_DISPLAY.ACTIVE_ACCOUNT)}
         >
           {logoVisible ? (
-            <div id="ACCOUNT_LOGO" className="shrink-0 overflow-visible">
+            <div id="ACCOUNT_LOGO" className={accountDetailClass.block}>
               <AccountAvatarPanel
                 panelMarginClass="mb-0 min-h-0"
                 avatarPanelBorderClass=""
@@ -116,7 +116,7 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
                 overflowMinPreviewSize={96}
                 maxPreviewSize={420}
                 minControlWidth={220}
-                uploadControlTextClassName="px-4 text-center text-sm font-bold"
+                uploadControlTextClassName={walletPartClass.uploadControlText}
                 previewSizeBuffer={0}
                 previewHeightBuffer={8}
                 sectionBottomBuffer={0}
@@ -128,7 +128,7 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
             </div>
           ) : null}
           {metaDataVisible ? (
-            <div id="ACCOUNT_META_DATA" className="shrink-0 overflow-visible">
+            <div id="ACCOUNT_META_DATA" className={accountDetailClass.block}>
               <AccountFormPanel
                 panelMarginClass="mb-0 !h-auto"
                 accountPanelBorderClass=""
@@ -161,7 +161,7 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
                 privateKeyRow={showKeyRow ? (style) => <AccountPrivateKeyRow address={address} reveal={reveal} idPrefix="account-component-" {...style} /> : undefined}
                 connectButton={
                   host.connectWallet ? (
-                    <button type="button" onClick={host.connectWallet} style={connectStyle}>Connect Wallet</button>
+                    <button type="button" onClick={host.connectWallet} style={accountDetailStyle.connect}>Connect Wallet</button>
                   ) : undefined
                 }
               />

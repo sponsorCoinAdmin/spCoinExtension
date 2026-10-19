@@ -11,6 +11,7 @@
 // account row is a simple avatar + "ROLE: symbol | name" + address line, since the web pill's click behaviour is web-only.
 'use client';
 
+import { messageRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import type { MessageAccountEntry, MessageTokenEntry } from '@sponsorcoin/spcoin-common/context';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -28,15 +29,15 @@ const ROLE_TO_MODE: Record<MessageAccountEntry['role'], typeof SP_COIN_DISPLAY.A
 function DefaultAccountRow({ entry }: { entry: MessageAccountEntry }) {
   const label = [entry.account.symbol, entry.account.name].filter(Boolean).join(' | ');
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-center gap-2">
-        <AccountAvatar account={entry.account} mode={ROLE_TO_MODE[entry.role]} roleLabel={entry.role} className="h-8 w-8 rounded-full object-cover" />
-        <span className="text-sm">
-          <span className="font-semibold">{entry.role}:</span> {label}
+    <div style={messageRowStyle.accountColumn}>
+      <div style={messageRowStyle.line}>
+        <AccountAvatar account={entry.account} mode={ROLE_TO_MODE[entry.role]} roleLabel={entry.role} className="" style={messageRowStyle.avatar} />
+        <span style={messageRowStyle.label}>
+          <span style={messageRowStyle.role}>{entry.role}:</span> {label}
         </span>
       </div>
-      <div className="pl-10 text-xs opacity-80 break-all">{String(entry.account.address ?? '')}</div>
-      {entry.detail && <div className="pl-10 text-xs opacity-80">{entry.detail}</div>}
+      <div style={messageRowStyle.address}>{String(entry.account.address ?? '')}</div>
+      {entry.detail && <div style={messageRowStyle.detail}>{entry.detail}</div>}
     </div>
   );
 }
@@ -44,15 +45,15 @@ function DefaultAccountRow({ entry }: { entry: MessageAccountEntry }) {
 /** The web app's MessageTokenRow, unchanged. */
 function DefaultTokenRow({ entry }: { entry: MessageTokenEntry }) {
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center gap-2">
-        <TokenLogo tokenContract={entry.token} className="h-8 w-8 rounded-full object-contain" />
-        <span className="text-sm">
-          <span className="font-semibold">{entry.label}:</span>{' '}
+    <div style={messageRowStyle.tokenColumn}>
+      <div style={messageRowStyle.line}>
+        <TokenLogo tokenContract={entry.token} className="" style={messageRowStyle.tokenLogo} />
+        <span style={messageRowStyle.label}>
+          <span style={messageRowStyle.role}>{entry.label}:</span>{' '}
           {[entry.token.symbol, entry.token.name].filter(Boolean).join(': ')}
         </span>
       </div>
-      {entry.detail && <div className="pl-10 text-xs opacity-80">{entry.detail}</div>}
+      {entry.detail && <div style={messageRowStyle.detail}>{entry.detail}</div>}
     </div>
   );
 }

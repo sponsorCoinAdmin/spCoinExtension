@@ -19,6 +19,7 @@
 
 'use client';
 
+import { plainPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import { walletColors, walletTints } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 
@@ -71,36 +72,19 @@ export default function MessagePanel({
   return (
     <div
       role={kind === 'error' ? 'alert' : 'status'}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minWidth: 0,
-        gap: 8,
-        width: '100%',
-        borderRadius: 12,
-        padding: 12,
-        border: `1px solid ${styles.border}`,
-        background: styles.bg,
-        color: styles.text,
-      }}
+      style={plainPanelStyle.message(styles)}
     >
       {resolvedTitle && (
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{resolvedTitle}</h3>
+        <h3 style={plainPanelStyle.messageTitle}>{resolvedTitle}</h3>
       )}
       <p
-        style={{
-          margin: 0,
-          fontSize: 12,
-          lineHeight: 1.5,
-          whiteSpace: wrap ? 'pre-wrap' : 'pre',
-          overflowWrap: wrap ? 'break-word' : undefined,
-        }}
+        style={plainPanelStyle.messageBody(wrap)}
       >
         {message}
       </p>
       {source && (
-        <div style={{ fontSize: 10, opacity: 0.8 }}>
-          <span style={{ fontWeight: 500 }}>Source:</span> {source}
+        <div style={plainPanelStyle.messageSource}>
+          <span style={plainPanelStyle.messageSourceLabel}>Source:</span> {source}
         </div>
       )}
     </div>

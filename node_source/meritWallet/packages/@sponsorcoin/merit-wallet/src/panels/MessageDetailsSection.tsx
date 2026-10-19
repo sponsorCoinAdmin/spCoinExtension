@@ -15,6 +15,7 @@
 // hasAccounts/hasTokens gating and layout order.
 'use client';
 
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import type { ReactNode } from 'react';
 import type { ErrorMessage, MessageAccountEntry, MessageTokenEntry } from '@sponsorcoin/spcoin-common/context';
 import MessageLabelValueRow from './MessageLabelValueRow';
@@ -39,7 +40,7 @@ export default function MessageDetailsSection({ errorMessage, renderAccountRow, 
   if (!hasAmount && !hasReason && !hasGasFee && !hasAccounts && !hasTokens) return null;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={panelPartClass.detailsColumn}>
       {hasAmount && <MessageLabelValueRow label={errorMessage!.amount!.label} value={errorMessage!.amount!.value} />}
       {hasReason && <MessageLabelValueRow label="Reason" value={errorMessage!.reason!} />}
       {hasGasFee && <MessageLabelValueRow label="Gas Fee" value={errorMessage!.gasFee!} />}

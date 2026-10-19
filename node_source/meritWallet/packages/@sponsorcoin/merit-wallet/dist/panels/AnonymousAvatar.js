@@ -18,9 +18,10 @@
 // this package.
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
 // Single source of truth: spcoin-feeds' ANONYMOUS_ACCOUNT_AVATAR_URL.
 export const ANONYMOUS_ACCOUNT_ICON_SRC = ANONYMOUS_ACCOUNT_AVATAR_URL;
 export default function AnonymousAvatar({ src = ANONYMOUS_ACCOUNT_ICON_SRC, alt = 'No account selected', }) {
-    return _jsx("img", { src: src, alt: alt, style: { width: '100%', height: '100%', objectFit: 'cover' } });
+    return _jsx("img", { src: src, alt: alt, style: panelBoxStyle.fitImage });
 }

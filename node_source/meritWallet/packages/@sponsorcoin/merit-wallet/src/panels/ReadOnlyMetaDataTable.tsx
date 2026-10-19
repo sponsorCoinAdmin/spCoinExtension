@@ -8,12 +8,8 @@
 
 import React from 'react';
 import { msTableTw } from '@sponsorcoin/spcoin-panels';
+import { metaTableClass } from '@sponsorcoin/spcoin-common/styles';
 
-const th = 'px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-300/80';
-const cell = 'px-3 py-3 text-sm align-middle';
-const zebraA = 'bg-[rgba(56,78,126,0.35)]';
-const zebraB = 'bg-[rgba(156,163,175,0.25)]';
-const tableGrid = 'grid grid-cols-[max-content_minmax(0,1fr)]';
 
 export interface MetaDataRow {
   label: string;
@@ -41,44 +37,44 @@ export default function ReadOnlyMetaDataTable({
   logoVisible = true,
   id,
   className = '',
-  logoBackgroundClassName = 'bg-[#11162A]',
-  logoContainerClassName = 'p-2 bg-[#0b0e19] border border-black rounded-xl',
-  logoRoundedClassName = 'rounded-full',
-  logoContainerSizeClassName = 'w-fit mx-auto',
-  logoSizeClassName = 'w-full max-w-[320px] aspect-square',
+  logoBackgroundClassName = metaTableClass.logoBackground,
+  logoContainerClassName = metaTableClass.logoContainer,
+  logoRoundedClassName = metaTableClass.logoRounded,
+  logoContainerSizeClassName = metaTableClass.logoContainerSize,
+  logoSizeClassName = metaTableClass.logoSize,
 }: ReadOnlyMetaDataTableProps) {
   return (
-    <div id={id} className={`flex flex-col gap-0 ${className}`}>
+    <div id={id} className={metaTableClass.root(className)}>
       {logoVisible && logoURL ? (
-        <div className={`flex justify-center items-center ${logoContainerSizeClassName} ${logoContainerClassName}`}>
+        <div className={metaTableClass.logoBox(logoContainerSizeClassName, logoContainerClassName)}>
           <img
             src={logoURL}
             alt={logoAlt}
-            className={`object-contain ${logoSizeClassName} ${logoRoundedClassName} ${logoBackgroundClassName}`}
+            className={metaTableClass.logoImage(logoSizeClassName, logoRoundedClassName, logoBackgroundClassName)}
           />
         </div>
       ) : null}
 
-      <div className="scrollbar-hide mb-4 mt-0 w-full min-w-0 overflow-x-hidden overflow-y-auto rounded-xl border border-black">
-        <div className={`w-full min-w-0 ${tableGrid}`}>
-          <div className="contents">
-            <div className={`${msTableTw.theadRow} ${th} whitespace-nowrap border-b border-black`}>
+      <div className={metaTableClass.frame}>
+        <div className={metaTableClass.gridBox(metaTableClass.grid)}>
+          <div className={metaTableClass.contents}>
+            <div className={metaTableClass.headCell(msTableTw.theadRow, metaTableClass.th, true)}>
               Field Name
             </div>
-            <div className={`${msTableTw.theadRow} ${th} border-b border-black`}>
+            <div className={metaTableClass.headCell(msTableTw.theadRow, metaTableClass.th, false)}>
               Value
             </div>
           </div>
 
           {rows.map(({ label, value }, index) => {
-            const zebra = index % 2 === 0 ? zebraA : zebraB;
+            const zebra = index % 2 === 0 ? metaTableClass.zebraA : metaTableClass.zebraB;
             const isLast = index === rows.length - 1;
             return (
-              <div className="contents" key={label}>
-                <div className={`${zebra} ${cell} whitespace-nowrap${isLast ? '' : ' border-b border-black'}`}>
+              <div className={metaTableClass.contents} key={label}>
+                <div className={metaTableClass.labelCell(zebra, metaTableClass.cell, isLast)}>
                   {label}
                 </div>
-                <div className={`${zebra} ${cell} min-w-0 break-all${isLast ? '' : ' border-b border-black'}`}>
+                <div className={metaTableClass.valueCell(zebra, metaTableClass.cell, isLast)}>
                   {value}
                 </div>
               </div>

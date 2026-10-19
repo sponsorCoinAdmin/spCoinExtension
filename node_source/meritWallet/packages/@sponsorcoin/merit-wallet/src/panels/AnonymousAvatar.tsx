@@ -19,6 +19,7 @@
 
 'use client';
 
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
 
@@ -34,5 +35,5 @@ export default function AnonymousAvatar({
   src = ANONYMOUS_ACCOUNT_ICON_SRC,
   alt = 'No account selected',
 }: AnonymousAvatarProps) {
-  return <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+  return <img src={src} alt={alt} style={panelBoxStyle.fitImage} />;
 }

@@ -61,10 +61,6 @@ export class WalletAccountError extends Error {
 
 export const HARDHAT_DEV_MNEMONIC = 'test test test test test test test test test test test junk';
 
-export function emptyWalletContents(): WalletVaultContents {
-  return { version: 1, imported: [], names: {} };
-}
-
 const lower = (a: string) => a.toLowerCase();
 
 /** Every Secret Recovery Phrase of the wallet, the first one first; `wallet` is its position (0 for the first). */

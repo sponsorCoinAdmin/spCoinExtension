@@ -777,6 +777,8 @@ export interface MeritWalletProps {
   configZeroXEngineVisible?: boolean;
   onConfig0xEngineChange?: (checked: boolean) => void;
   configResetPanelsContent?: React.ReactNode;
+  /** A host-supplied section shown last on the Config tab (the web app's dev-only shared-libraries sync/build control); the extension supplies none. */
+  configDevToolsContent?: React.ReactNode;
   configExtensionChannel?: MeritExtensionChannel;
   onConfigExtensionChannelChange?: (channel: MeritExtensionChannel) => void;
   configExtensionDownloadPath?: string;
@@ -896,6 +898,7 @@ function MeritWalletInner({
   configZeroXEngineVisible,
   onConfig0xEngineChange,
   configResetPanelsContent,
+  configDevToolsContent,
   configExtensionChannel,
   onConfigExtensionChannelChange,
   configExtensionDownloadPath,
@@ -1827,6 +1830,7 @@ function MeritWalletInner({
                 zeroXEngineVisible: configZeroXEngineVisible,
                 on0xEngineChange: onConfig0xEngineChange,
                 resetPanelsContent: configResetPanelsContent,
+                devToolsContent: configDevToolsContent,
                 extensionChannel: configExtensionChannel,
                 onExtensionChannelChange: onConfigExtensionChannelChange,
                 extensionDownloadPath: configExtensionDownloadPath,

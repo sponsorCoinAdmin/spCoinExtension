@@ -65,6 +65,26 @@ function isAddress(value: string): boolean {
   return /^0[xX][0-9a-fA-F]{40}$/.test(String(value ?? '').trim());
 }
 
+/** The form's fields from a stored account record (anything missing or of the wrong type becomes empty). */
+function accountFormDataFromRecord(record: AccountRegistryRecord): AccountFormData {
+  const networks = (record as any)?.recipientNetwork;
+  return {
+    name: typeof record.name === 'string' ? record.name : '',
+    symbol: typeof record.symbol === 'string' ? record.symbol : '',
+    email: typeof record.email === 'string' ? record.email : '',
+    website: typeof record.website === 'string' ? record.website : '',
+    description: typeof record.description === 'string' ? record.description : '',
+    recipientNetwork: Array.isArray(networks)
+      ? Array.from(new Set((networks as unknown[]).map((value) => Number(value)).filter((value) => Number.isFinite(value))))
+      : [],
+  };
+}
+
+/** The record's logo as an absolute URL (the default logo when it has none). */
+function recordLogoURL(record: AccountRegistryRecord): string {
+  return ensureAbsoluteAssetURL(String((record as any)?.logoURL ?? DEFAULT_ACCOUNT_LOGO_URL));
+}
+
 export function useAccountForm({ connected, activeAddress, targetAddress, initialLogoURL, sessionWithoutConnection = false, host }: UseAccountFormParams) {
   const [publicKey, setPublicKey] = useState<string>('');
   const [formData, setFormData] = useState<AccountFormData>({ ...EMPTY_FORM_DATA });
@@ -180,27 +200,9 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         })) as AccountRegistryRecord;
         if (signal?.aborted) return;
 
-        const resolvedLogoURL = ensureAbsoluteAssetURL(
-          String((record as any)?.logoURL ?? DEFAULT_ACCOUNT_LOGO_URL),
-        );
+        const resolvedLogoURL = recordLogoURL(record);
 
-        const loaded: AccountFormData = {
-          name: typeof record.name === 'string' ? record.name : '',
-          symbol: typeof record.symbol === 'string' ? record.symbol : '',
-          email: typeof record.email === 'string' ? record.email : '',
-          website: typeof record.website === 'string' ? record.website : '',
-          description:
-            typeof record.description === 'string' ? record.description : '',
-          recipientNetwork: Array.isArray((record as any)?.recipientNetwork)
-            ? Array.from(
-                new Set(
-                  ((record as any).recipientNetwork as unknown[])
-                    .map((value) => Number(value))
-                    .filter((value) => Number.isFinite(value)),
-                ),
-              )
-            : [],
-        };
+        const loaded = accountFormDataFromRecord(record);
 
         setPublicKey(normalizedAddress);
         setResolvedAccountAddress(normalizedAddress);
@@ -293,26 +295,8 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
       const record = (await loadAccountRecord(normalizedAddress, {
         forceRefresh: true,
       })) as AccountRegistryRecord;
-      const resolvedLogoURL = ensureAbsoluteAssetURL(
-        String((record as any)?.logoURL ?? DEFAULT_ACCOUNT_LOGO_URL),
-      );
-      const loaded: AccountFormData = {
-        name: typeof record.name === 'string' ? record.name : '',
-        symbol: typeof record.symbol === 'string' ? record.symbol : '',
-        email: typeof record.email === 'string' ? record.email : '',
-        website: typeof record.website === 'string' ? record.website : '',
-        description:
-          typeof record.description === 'string' ? record.description : '',
-        recipientNetwork: Array.isArray((record as any)?.recipientNetwork)
-          ? Array.from(
-              new Set(
-                ((record as any).recipientNetwork as unknown[])
-                  .map((value) => Number(value))
-                  .filter((value) => Number.isFinite(value)),
-              ),
-            )
-          : [],
-      };
+      const resolvedLogoURL = recordLogoURL(record);
+      const loaded = accountFormDataFromRecord(record);
 
       setPublicKey(normalizedAddress);
       setResolvedAccountAddress(normalizedAddress);

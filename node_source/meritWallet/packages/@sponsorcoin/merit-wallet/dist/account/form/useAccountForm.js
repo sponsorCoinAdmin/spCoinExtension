@@ -14,6 +14,24 @@ import { useAccountFormDerivedState } from './useAccountFormDerivedState';
 function isAddress(value) {
     return /^0[xX][0-9a-fA-F]{40}$/.test(String(value ?? '').trim());
 }
+/** The form's fields from a stored account record (anything missing or of the wrong type becomes empty). */
+function accountFormDataFromRecord(record) {
+    const networks = record?.recipientNetwork;
+    return {
+        name: typeof record.name === 'string' ? record.name : '',
+        symbol: typeof record.symbol === 'string' ? record.symbol : '',
+        email: typeof record.email === 'string' ? record.email : '',
+        website: typeof record.website === 'string' ? record.website : '',
+        description: typeof record.description === 'string' ? record.description : '',
+        recipientNetwork: Array.isArray(networks)
+            ? Array.from(new Set(networks.map((value) => Number(value)).filter((value) => Number.isFinite(value))))
+            : [],
+    };
+}
+/** The record's logo as an absolute URL (the default logo when it has none). */
+function recordLogoURL(record) {
+    return ensureAbsoluteAssetURL(String(record?.logoURL ?? DEFAULT_ACCOUNT_LOGO_URL));
+}
 export function useAccountForm({ connected, activeAddress, targetAddress, initialLogoURL, sessionWithoutConnection = false, host }) {
     const [publicKey, setPublicKey] = useState('');
     const [formData, setFormData] = useState({ ...EMPTY_FORM_DATA });
@@ -117,19 +135,8 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
             }));
             if (signal?.aborted)
                 return;
-            const resolvedLogoURL = ensureAbsoluteAssetURL(String(record?.logoURL ?? DEFAULT_ACCOUNT_LOGO_URL));
-            const loaded = {
-                name: typeof record.name === 'string' ? record.name : '',
-                symbol: typeof record.symbol === 'string' ? record.symbol : '',
-                email: typeof record.email === 'string' ? record.email : '',
-                website: typeof record.website === 'string' ? record.website : '',
-                description: typeof record.description === 'string' ? record.description : '',
-                recipientNetwork: Array.isArray(record?.recipientNetwork)
-                    ? Array.from(new Set(record.recipientNetwork
-                        .map((value) => Number(value))
-                        .filter((value) => Number.isFinite(value))))
-                    : [],
-            };
+            const resolvedLogoURL = recordLogoURL(record);
+            const loaded = accountFormDataFromRecord(record);
             setPublicKey(normalizedAddress);
             setResolvedAccountAddress(normalizedAddress);
             setAccountExists(true);
@@ -221,19 +228,8 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
             const record = (await loadAccountRecord(normalizedAddress, {
                 forceRefresh: true,
             }));
-            const resolvedLogoURL = ensureAbsoluteAssetURL(String(record?.logoURL ?? DEFAULT_ACCOUNT_LOGO_URL));
-            const loaded = {
-                name: typeof record.name === 'string' ? record.name : '',
-                symbol: typeof record.symbol === 'string' ? record.symbol : '',
-                email: typeof record.email === 'string' ? record.email : '',
-                website: typeof record.website === 'string' ? record.website : '',
-                description: typeof record.description === 'string' ? record.description : '',
-                recipientNetwork: Array.isArray(record?.recipientNetwork)
-                    ? Array.from(new Set(record.recipientNetwork
-                        .map((value) => Number(value))
-                        .filter((value) => Number.isFinite(value))))
-                    : [],
-            };
+            const resolvedLogoURL = recordLogoURL(record);
+            const loaded = accountFormDataFromRecord(record);
             setPublicKey(normalizedAddress);
             setResolvedAccountAddress(normalizedAddress);
             setAccountExists(true);

@@ -37,7 +37,6 @@ export declare class WalletAccountError extends Error {
     constructor(message: string);
 }
 export declare const HARDHAT_DEV_MNEMONIC = "test test test test test test test test test test test junk";
-export declare function emptyWalletContents(): WalletVaultContents;
 /** Normalise: trim, lower-case, single spaces. */
 export declare function normalizeMnemonic(mnemonic: string): string;
 /** BIP39 check: 12, 15, 18, 21 or 24 English words, each in the list, with a valid checksum. */

@@ -6,7 +6,8 @@
 // package, so the network info, token lists, role account lists and spCoin ABIs are still available when the hosted app cannot be reached
 // (the feeds ask the network first; fresh data wins). Import this file once at startup, before any feed is read.
 import { registerBundledFeeds, setFeedNetworkPolicy } from '@sponsorcoin/spcoin-feeds/shared';
-import { registerBundledFeeds as registerEngineBundledFeeds, registerNetworkData } from '@sponsorcoin/spcoin-exchange-engine';
+import { registerBundledFeeds as registerEngineBundledFeeds, registerNetworkData, registerLocalApi, resolveSpCoinDiskChainId } from '@sponsorcoin/spcoin-exchange-engine';
+import { createTokensApi, createBundledTokensStore } from '@sponsorcoin/spcoin-feeds/api';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import snapshot from '../node_source/spCoinData/packages/@sponsorcoin/spcoin-data/bundledFeedData.json';
 
@@ -44,6 +45,11 @@ registerNetworkData({
   ) as never,
   configuredNetworks: configured as unknown[],
 });
+
+// 2026-10-20 (docs/meritMigration.txt part 2, row 4): the token lists come from the SAME handler the web app serves at /api/spCoin/tokens (spcoin-feeds createTokensApi), run in this process with a store over the bundle. It decides which tokens a list holds, in what order (by address), and drops the ones with no record, so the receive list shows what the web's shows (before, the raw bundled list was used: an unnamed N/A token and the sample bad address appeared).
+const bundledTokensStore = createBundledTokensStore(data, { supportedChainIds: () => configured.map((n) => n.chainId), diskChainId: (chainId) => resolveSpCoinDiskChainId(chainId) });
+const bundledTokensApi = createTokensApi(bundledTokensStore);
+registerLocalApi('/api/spCoin/tokens', { get: bundledTokensApi.list, post: bundledTokensApi.batch });
 
 /** The bundled snapshot itself, for code that reads a file directly (the spCoin ABI and deployment map). */
 export const bundledFeedData = snapshot as Record<string, unknown>;

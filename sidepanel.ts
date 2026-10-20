@@ -38,7 +38,6 @@ import {
 } from './src/panelVisibilityStorage';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import { fetchAccountMetadata, getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
-import { fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/tokens';
 import { openOrFocusApp } from './src/openApp';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { registerExtensionEngineHosts } from './src/engineHosts';
@@ -64,7 +63,6 @@ import {
 } from './src/meritWalletConfigEngineStore';
 import { MeritWalletConfigBridge } from './src/MeritWalletConfigBridge';
 import { getCachedAccountIconDataUrl } from './src/accountIconCache';
-import { getCachedTokenIconDataUrl } from './src/tokenIconCache';
 import { chromeIconCacheStorage } from './src/chromeIconCacheStorage';
 import { loadExtensionAccountProfile } from './src/accountProfile';
 import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
@@ -829,21 +827,6 @@ async function renderWallet() {
         recipientNetwork?: number[];
       }
     | null = null;
-  // Same idea, for the token-list's own info icon (Select a Token) — see
-  // MeritWallet's own tokenDetail prop doc comment.
-  let tokenDetail:
-    | {
-        address: string;
-        logoSrc?: string;
-        name?: string;
-        symbol?: string;
-        decimals?: number;
-        website?: string;
-        explorer?: string;
-        description?: string;
-      }
-     | null = null;
-
   function render() {
     if (requireVault && vaultSession.getState().phase === 'setup') onboardingOpen = true;
     const vaultPhase = vaultSession.getState().phase;
@@ -1001,8 +984,6 @@ async function renderWallet() {
                 accountDetail,
                 accountDetailHost,
                 addAccountHost,
-                onTokenIconClick: (address: string) => void handleTokenIconClick(address),
-                tokenDetail,
               },
               actions: {
                 // Phase B.2 Stage 4 follow-up — the real SEND tab wiring.
@@ -1180,33 +1161,6 @@ async function renderWallet() {
       website: metadata?.website,
       description: metadata?.description,
       recipientNetwork: metadata?.recipientNetwork,
-    };
-    render();
-  }
-
-  // 2026-09-16, on request ("do the same for the info.png in the lists")
-  // — the token-list counterpart to handleAccountIconClick above, same
-  // two-step/two-render shape. fetchTokenByAddress is the same real
-  // /api/spCoin/tokens lookup buildTokenRows already uses for the list
-  // itself; getTokenLogoURL is the same disk-path convention (independent
-  // of whether a DB record exists) that fixed the earlier "not all images
-  // are displayed" bug.
-  async function handleTokenIconClick(address: string) {
-    tokenDetail = null;
-    render();
-    const [logoSrc, record] = await Promise.all([
-      getCachedTokenIconDataUrl(getTokenLogoURL(activeChainId, address), baseUrl),
-      fetchTokenByAddress(activeChainId, address, { baseUrl }).catch(() => null),
-    ]);
-    tokenDetail = {
-      address,
-      logoSrc,
-      name: record?.name,
-      symbol: record?.symbol,
-      decimals: record?.decimals,
-      website: record?.website,
-      explorer: record?.explorer,
-      description: record?.description,
     };
     render();
   }

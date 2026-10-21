@@ -185,3 +185,16 @@ export function buildUnstakeReceipt(input: {
     amount: { label: 'Unstaked spCoins', value: input.unstakedAmount },
   };
 }
+
+/** What a host got back from a send (a hash and, when it waited for the block, a receipt) as the result the wallet shows: the hash and the block, gas and status of the receipt, or a clear failure when the wallet gave no hash. */
+export function sendOutcomeToHostResult(
+  sent: { hash?: string; receipt?: { blockNumber?: bigint | number | string; gasUsed?: bigint | number | string; status?: number | null } | null } | null | undefined,
+): HostTransactionResult {
+  if (sent?.hash) return { ok: true, hash: sent.hash, receipt: sent.receipt ? { blockNumber: sent.receipt.blockNumber, gasUsed: sent.receipt.gasUsed, status: sent.receipt.status } : null };
+  return { ok: false, message: 'The wallet reported no transaction hash.' };
+}
+
+/** A send that threw, as the result the wallet shows (the error's own message, else a plain one). */
+export function sendFailureToHostResult(error: unknown): HostTransactionResult {
+  return { ok: false, message: error instanceof Error ? error.message : 'The send failed.' };
+}

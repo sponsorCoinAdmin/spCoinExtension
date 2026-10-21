@@ -61,3 +61,14 @@ export declare function buildUnstakeReceipt(input: {
     agent?: ReceiptProfile;
     rateKey?: string;
 }): ErrorMessage;
+/** What a host got back from a send (a hash and, when it waited for the block, a receipt) as the result the wallet shows: the hash and the block, gas and status of the receipt, or a clear failure when the wallet gave no hash. */
+export declare function sendOutcomeToHostResult(sent: {
+    hash?: string;
+    receipt?: {
+        blockNumber?: bigint | number | string;
+        gasUsed?: bigint | number | string;
+        status?: number | null;
+    } | null;
+} | null | undefined): HostTransactionResult;
+/** A send that threw, as the result the wallet shows (the error's own message, else a plain one). */
+export declare function sendFailureToHostResult(error: unknown): HostTransactionResult;

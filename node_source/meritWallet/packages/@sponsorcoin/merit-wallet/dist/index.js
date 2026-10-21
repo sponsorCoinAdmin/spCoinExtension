@@ -11,7 +11,7 @@ export { RADIO_PANEL_GROUPS_WITH_FALLBACKS, EMPTY_RADIO_PANEL_GROUPS } from './r
 export { WalletDataProvider, useWalletData } from './walletData';
 export { TokenBuyPanel, TokenSellPanel, TokenBuySwapPanel, TokenSellSwapPanel, TokenSendPanel } from './TokenSlotPanels';
 export { default as ConnectedMessagePanel } from './ConnectedMessagePanel';
-export { buildSendReceipt, buildStakeReceipt, toMessageAccount } from './receipt/transactionReceipts';
+export { buildSendReceipt, buildStakeReceipt, toMessageAccount, sendOutcomeToHostResult, sendFailureToHostResult } from './receipt/transactionReceipts';
 export { default as ConnectedNetworkPanel, networkElementFromRegistry, useLiveNetworkFromContext } from './ConnectedNetworkPanel';
 export { MERIT_WALLET_PROPS_ARE_ALL_CLASSIFIED } from './hostContract';
 export { VAULT_VERSION, VAULT_ALGORITHM, DEFAULT_PBKDF2_ITERATIONS, WrongPasswordError, createEncryptedVault, unlockEncryptedVault, deriveVaultKey, encryptWithKey, decryptWithKey, } from './vault/vaultCrypto';
@@ -27,7 +27,7 @@ export { createPhoneVault, createPhoneAuthenticator, PhoneAuthError } from './va
 export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACKUP_FORMAT } from './vault/vaultCapability';
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend, isNativePlaceholder } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';
-export { validateLogin, isLoginGateClosed, deriveLoginState } from './session/validateLogin';
+export { validateLogin, isLoginGateClosed, deriveLoginState, resolveLoginState } from './session/validateLogin';
 export { useWalletSession } from './session/walletSessionReact';
 export { readContractDirect, toRunScriptShape, createDirectReadStep } from './chain/directReads';
 export { MERIT_RDNS, discoverWallets, findMeritWallet, createInjectedWalletApi } from './provider/injectedWallet';
@@ -103,5 +103,5 @@ export { createPersistedPasswordStore } from './session/persistedPassword';
 export { createIndexedDbKeyProvider } from './session/indexedDbKey';
 export { createSyncTokenProvider, parseTokenExpiresAt, REFRESH_LEAD_MS } from './sync/syncToken';
 export { pushContextPatch } from './sync/pushContextPatch';
-export { reconcileChain } from './chain/chainReconcile';
+export { reconcileChain, decideWalletChainChanged } from './chain/chainReconcile';
 export { default as CopyIcon } from './account/form/CopyIcon';

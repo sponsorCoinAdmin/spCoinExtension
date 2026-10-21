@@ -43,3 +43,26 @@ export interface ChainReconcileHost {
     log(phase: string, payload: Record<string, unknown>, traceWorthy: boolean): void;
 }
 export declare function reconcileChain(input: ChainReconcileInput, refs: ChainReconcileRefs, host: ChainReconcileHost): void;
+export type WalletChainChangedDecision = {
+    kind: 'ignore';
+}
+/** The wallet moved to a chain the app does not support: keep the app's own choice, mirror the wallet's chain into the network record, and show this message. */
+ | {
+    kind: 'unsupported';
+    chainId: number;
+    message: string;
+}
+/** The wallet moved to a supported chain: adopt it as the app's chain (and mark the app connected when it was not). */
+ | {
+    kind: 'adopt';
+    chainId: number;
+    markConnected: boolean;
+};
+/** What the app does when the wallet itself reports a chain change (the raw `chainChanged` event), whether or not wagmi is connected. */
+export declare function decideWalletChainChanged(input: {
+    hexChainId: string;
+    appChainId: number;
+    appConnected: boolean;
+    supportedChainIds: ReadonlySet<number>;
+    chainLabel: (chainId: number) => string;
+}): WalletChainChangedDecision;

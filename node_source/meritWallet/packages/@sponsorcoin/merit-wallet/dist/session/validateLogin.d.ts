@@ -26,3 +26,14 @@ export declare function deriveLoginState(facts: {
     hasWalletPassword: boolean | null;
     isWalletLocked: boolean;
 }): LoginState;
+/**
+ * The login state the wallet publishes, in the order the web host applies the rules: a NEW wallet's recovery phrase that has not been acknowledged yet keeps the state LOGGED_OUT (the wallet stays on the login page, which shows the phrase) even though the password
+ * exists and the wallet is unlocked; the dev-only gate bypass reads as logged in, so every enforcement path stands down together; otherwise the facts decide (deriveLoginState).
+ */
+export declare function resolveLoginState(facts: {
+    pendingRecoveryPhrase: boolean;
+    devGateBypassed: boolean;
+    bootResolved: boolean;
+    hasWalletPassword: boolean | null;
+    isWalletLocked: boolean;
+}): LoginState;

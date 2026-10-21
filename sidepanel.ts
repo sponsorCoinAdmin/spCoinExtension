@@ -8,7 +8,7 @@ import { isExternalAccount } from './src/externalAccounts';
 import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger';
 import { startDappApprovals } from './src/dappApprovals';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
+import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
 import { persistedTimeoutMs } from '@sponsorcoin/merit-wallet';
 import { type AssetListEntry } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
@@ -1173,7 +1173,7 @@ async function renderWallet() {
     render();
     // The wallet shows the result card (MESSAGE_PANEL) from what is returned, the same one the web app shows after a send.
     if (result.ok) void walletRefresh.run();
-    return result.ok ? { ok: true, hash: result.hash, receipt: result.receipt as never } : { ok: false, message: result.message };
+    return result.ok ? sendOutcomeToHostResult({ hash: result.hash, receipt: result.receipt as never }) : { ok: false, message: result.message };
   }
 
    // (The Rewards tab's estimate and claim run through rewardsHost above; the older per-button handlers that stood here were never wired and are gone.)

@@ -28,7 +28,7 @@ export { WalletDataProvider, useWalletData } from './walletData';
 export type { WalletDataSource } from './walletData';
 export { TokenBuyPanel, TokenSellPanel, TokenBuySwapPanel, TokenSellSwapPanel, TokenSendPanel } from './TokenSlotPanels';
 export { default as ConnectedMessagePanel } from './ConnectedMessagePanel';
-export { buildSendReceipt, buildStakeReceipt, toMessageAccount } from './receipt/transactionReceipts';
+export { buildSendReceipt, buildStakeReceipt, toMessageAccount, sendOutcomeToHostResult, sendFailureToHostResult } from './receipt/transactionReceipts';
 export type { HostTransactionResult, ReceiptProfile } from './receipt/transactionReceipts';
 export type { ConnectedMessagePanelProps } from './ConnectedMessagePanel';
 export { default as ConnectedNetworkPanel, networkElementFromRegistry, useLiveNetworkFromContext } from './ConnectedNetworkPanel';
@@ -64,7 +64,7 @@ export { createLocalVault, VaultError, MIN_PASSWORD_LENGTH, MIN_PIN_LENGTH, BACK
 export { parseDecimalToWei, encodeErc20Transfer, prepareTransfer, executeSend, isNativePlaceholder } from './send/sendTransfer';
 export type { PreparedTransaction, PrepareResult, TransferParams, SendRequest, SendOutcome, SendTransport, ExecuteSendParams, SendResult } from './send/sendTransfer';
 export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWalletPassword, createWalletSession } from './session/walletSession';
-export { validateLogin, isLoginGateClosed, deriveLoginState } from './session/validateLogin';
+export { validateLogin, isLoginGateClosed, deriveLoginState, resolveLoginState } from './session/validateLogin';
 export type { LoginState, LoginRequestKind, LoginRequirement, ValidateLoginInput } from './session/validateLogin';
 export type { WalletSessionPhase, WalletPasswordMode, WalletSessionStatus, WalletSessionAdapter, WalletSessionState, PasswordSubmitResult, WalletSessionController } from './session/walletSession';
 export { useWalletSession } from './session/walletSessionReact';
@@ -189,5 +189,5 @@ export { createPersistedPasswordStore, type PersistedPasswordBackend, type Persi
 export { createIndexedDbKeyProvider, type IndexedDbKeyOptions } from './session/indexedDbKey';
 export { createSyncTokenProvider, parseTokenExpiresAt, REFRESH_LEAD_MS, type SyncTokenHost, type SyncTokenProvider, type SyncSignerRequest, type EnsureSyncTokenParams } from './sync/syncToken';
 export { pushContextPatch, type PushHost, type PushHooks, type PushPlan } from './sync/pushContextPatch';
-export { reconcileChain, type ChainReconcileInput, type ChainReconcileRefs, type ChainReconcileHost, type SwitchPhase } from './chain/chainReconcile';
+export { reconcileChain, decideWalletChainChanged, type WalletChainChangedDecision, type ChainReconcileInput, type ChainReconcileRefs, type ChainReconcileHost, type SwitchPhase } from './chain/chainReconcile';
 export { default as CopyIcon } from './account/form/CopyIcon';

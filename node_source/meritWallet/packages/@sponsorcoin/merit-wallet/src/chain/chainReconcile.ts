@@ -185,3 +185,34 @@ export function reconcileChain(input: ChainReconcileInput, refs: ChainReconcileR
   refs.prevAppChainId.current = appChainId;
   refs.prevWalletConnected.current = walletConnected;
 }
+
+export type WalletChainChangedDecision =
+  | { kind: 'ignore' }
+  /** The wallet moved to a chain the app does not support: keep the app's own choice, mirror the wallet's chain into the network record, and show this message. */
+  | { kind: 'unsupported'; chainId: number; message: string }
+  /** The wallet moved to a supported chain: adopt it as the app's chain (and mark the app connected when it was not). */
+  | { kind: 'adopt'; chainId: number; markConnected: boolean };
+
+/** What the app does when the wallet itself reports a chain change (the raw `chainChanged` event), whether or not wagmi is connected. */
+export function decideWalletChainChanged(input: {
+  hexChainId: string;
+  appChainId: number;
+  appConnected: boolean;
+  supportedChainIds: ReadonlySet<number>;
+  chainLabel: (chainId: number) => string;
+}): WalletChainChangedDecision {
+  const nextId = Number.parseInt(String(input.hexChainId), 16);
+  if (!Number.isFinite(nextId) || nextId <= 0) return { kind: 'ignore' };
+  if (!input.supportedChainIds.has(nextId)) {
+    const walletName = input.chainLabel(nextId);
+    const appName = input.chainLabel(input.appChainId);
+    const message =
+      `Unsuported  Network ${walletName}(${nextId})\n` +
+      `\n` +
+      `WARNING: Networks not in sync\n` +
+      `Metamask Network: ${walletName} chainId: ${nextId}\n` +
+      `Spoonsor Coin Network: ${appName} appChainId: ${input.appChainId}\n`;
+    return { kind: 'unsupported', chainId: nextId, message };
+  }
+  return { kind: 'adopt', chainId: nextId, markConnected: !input.appConnected };
+}

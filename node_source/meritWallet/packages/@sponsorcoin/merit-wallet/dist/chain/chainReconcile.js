@@ -120,3 +120,20 @@ export function reconcileChain(input, refs, host) {
     refs.prevAppChainId.current = appChainId;
     refs.prevWalletConnected.current = walletConnected;
 }
+/** What the app does when the wallet itself reports a chain change (the raw `chainChanged` event), whether or not wagmi is connected. */
+export function decideWalletChainChanged(input) {
+    const nextId = Number.parseInt(String(input.hexChainId), 16);
+    if (!Number.isFinite(nextId) || nextId <= 0)
+        return { kind: 'ignore' };
+    if (!input.supportedChainIds.has(nextId)) {
+        const walletName = input.chainLabel(nextId);
+        const appName = input.chainLabel(input.appChainId);
+        const message = `Unsuported  Network ${walletName}(${nextId})\n` +
+            `\n` +
+            `WARNING: Networks not in sync\n` +
+            `Metamask Network: ${walletName} chainId: ${nextId}\n` +
+            `Spoonsor Coin Network: ${appName} appChainId: ${input.appChainId}\n`;
+        return { kind: 'unsupported', chainId: nextId, message };
+    }
+    return { kind: 'adopt', chainId: nextId, markConnected: !input.appConnected };
+}

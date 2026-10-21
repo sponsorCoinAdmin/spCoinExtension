@@ -42,3 +42,14 @@ export function deriveLoginState(facts) {
         return 'UNKNOWN';
     return facts.hasWalletPassword === true && !facts.isWalletLocked ? 'LOGGED_IN' : 'LOGGED_OUT';
 }
+/**
+ * The login state the wallet publishes, in the order the web host applies the rules: a NEW wallet's recovery phrase that has not been acknowledged yet keeps the state LOGGED_OUT (the wallet stays on the login page, which shows the phrase) even though the password
+ * exists and the wallet is unlocked; the dev-only gate bypass reads as logged in, so every enforcement path stands down together; otherwise the facts decide (deriveLoginState).
+ */
+export function resolveLoginState(facts) {
+    if (facts.pendingRecoveryPhrase)
+        return 'LOGGED_OUT';
+    if (facts.devGateBypassed)
+        return 'LOGGED_IN';
+    return deriveLoginState(facts);
+}

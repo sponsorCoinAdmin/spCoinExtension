@@ -17,6 +17,7 @@ import {
   DevAccountOnRealChainError,
   LocalSigner,
   VaultSession,
+  MIN_PASSWORD_LENGTH,
   WalletAccountError,
   WalletAccounts,
   WrongPasswordError,
@@ -151,7 +152,7 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
       case 'merit/vault/status':
         return snapshot();
       case 'merit/vault/create':
-        if (typeof request.password !== 'string' || request.password.length < 8) return { ok: false, error: 'invalid-request', message: 'Password must be at least 8 characters.' };
+        if (typeof request.password !== 'string' || request.password.length < MIN_PASSWORD_LENGTH) return { ok: false, error: 'invalid-request', message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
         {
           const created = await createWallet(session, request.password, request.mnemonic === undefined ? {} : { mnemonic: request.mnemonic });
           return snapshot({ mnemonic: created.mnemonic, active: created.address });
@@ -164,7 +165,7 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
         session.lock();
         return snapshot();
       case 'merit/vault/changePassword':
-        if (typeof request.newPassword !== 'string' || request.newPassword.length < 8) return { ok: false, error: 'invalid-request', message: 'Password must be at least 8 characters.' };
+        if (typeof request.newPassword !== 'string' || request.newPassword.length < MIN_PASSWORD_LENGTH) return { ok: false, error: 'invalid-request', message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
         await session.changePassword(request.oldPassword, request.newPassword);
         return snapshot();
       case 'merit/vault/setAutoLock':

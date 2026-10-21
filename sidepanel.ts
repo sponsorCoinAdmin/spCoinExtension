@@ -86,18 +86,7 @@ import { parseAbi } from 'viem';
 // 2026-10-13 (docs/connectionDesign.txt item 12): bring a Ledger the person granted earlier back after a reload (no prompt).
 restoreLedger();
 
-// 2026-09-22, Phase B.2 Stage 4 follow-up — the real Hardhat/HH_BASE RPC
-// URL, same value the web app itself uses for this exact chain id
-// (public/assets/blockchains/31337/defaultNetworkSettings.json's own
-// networkHeader.rpcUrl) — a stable public HTTPS proxy, not a
-// localhost-only address, so it resolves from this extension too. Checked
-// directly rather than assumed: LiteExchangeProvider's default boot
-// context has rpcUrl: '' (Stage 13.a's own deliberate "not needed yet"
-// scope cut) — this constant is what closes that gap for the one real
-// caller (handleSendSubmit below) that now needs it. Already public — this
-// exact string is served today from that same static JSON file, not a
-// secret newly exposed here.
-const MERIT_WALLET_HARDHAT_RPC_URL = 'https://rpc.sponsorcoin.org/f5b4d4b4a2614a540189b979d068639c3fd44bbb1dfcdb5a';
+// docs/meritMigration.txt row 27: the Hardhat RPC is the wallet's network registry's (src/chainRpc.ts), the one place it is written; this file had its own copy of the URL and of the V0 spCoin address.
 
 // 2026-10-03 — token balance reader for every balance row (see src/fetchBalance.ts). 2026-10-08 (row 5): one reader per chain, chosen by
 // the ACTIVE network instead of always the Hardhat proxy (src/chainRpc.ts names the endpoints). Each reader is built once and cached so
@@ -151,12 +140,6 @@ const resolveAssetAddress: ReturnType<typeof makeResolveAssetAddress> = (...args
   return resolver(...args);
 };
 
-// spCoin contract address for the Hardhat chain — the same V0 fallback the
-// web app uses (components/views/TradingStationPanel/StakingStatusPanel.tsx's
-// FALLBACK_SPONSOR_COIN_ADDRESS), since the extension has no ExchangeContext
-// activeTokens.activeSpCoinAddress to read from yet (Phase B.2 Stage 2 — see
-// exchangeContextTypes.ts). This is the deployed spCoin V0 on Hardhat 31337.
-const SPOIN_HARDHAT_CONTRACT_ADDRESS = '0x0E9166c03194E40eE84532e9A659abcE40ab1724';
 
 // 2026-10-07 — the REAL active spCoin address, read from the web app's saved ExchangeContext
 // (GET /api/exchangeContext?key=<account> -> apiCoreSyncedMembers.activeTokens.activeSpCoinAddress). The V0
@@ -168,9 +151,9 @@ loadSpCoinDeploymentMap(bundledFeedData['/resources/data/networks/spCoinDeployme
 let activeSpCoinAddress: string | undefined = getPreferredSpCoinContractAddress(activeChainId);
 let activeSpCoinLoadedFor = '';
 const NO_SPCOIN_ADDRESS = '0x0000000000000000000000000000000000000000';
-const spCoinAddress = (): string => activeSpCoinAddress ?? (activeChainId === MERIT_WALLET_HARDHAT_CHAIN_ID ? SPOIN_HARDHAT_CONTRACT_ADDRESS : NO_SPCOIN_ADDRESS);
+const spCoinAddress = (): string => activeSpCoinAddress ?? NO_SPCOIN_ADDRESS;
 /** The RPC of a chain (default: the active one): the registry's, and for Hardhat the proxy above when the registry has none. No RPC means no reads for that chain. */
-const chainRpcUrl = (chainId: number = activeChainId): string => rpcUrlForChain(chainId) ?? (chainId === MERIT_WALLET_HARDHAT_CHAIN_ID ? MERIT_WALLET_HARDHAT_RPC_URL : '');
+const chainRpcUrl = (chainId: number = activeChainId): string => rpcUrlForChain(chainId) ?? '';
 let spCoinContractCache: { key: string; value: never } | undefined;
 const spCoinContractNow = (): never => {
   const key = `${activeChainId}|${spCoinAddress()}`;

@@ -13,6 +13,7 @@ import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from './PasswordPromptDialog';
 import { useActiveAccountProfile } from './swap/activeAccountProfile';
 import { SECRET_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';
+import { toDisplayAddress } from '@sponsorcoin/spcoin-panels';
 function RevealRow({ title, hint, dialogTitle, dialogMessage, disabled, reveal, }) {
     const [asking, setAsking] = useState(false);
     const [secret, setSecret] = useState('');
@@ -40,5 +41,5 @@ export default function WalletSecuritySection({ api }) {
     const profile = useActiveAccountProfile();
     const address = profile?.address ?? '';
     const who = [profile?.symbol, profile?.name].filter(Boolean).join(' | ');
-    return (_jsxs("div", { style: configSectionStyle.column(14), children: [_jsx(RevealRow, { title: "Security \u2014 Reveal Private Key", hint: address ? `${who ? `${who} — ` : ''}${address}` : 'Select an account first.', dialogTitle: "Reveal Private Key", dialogMessage: "Anyone with this key controls the account. Enter your wallet password to continue.", disabled: !address, reveal: (password) => api.revealPrivateKey(password, address) }), api.revealPhrase && (_jsx(RevealRow, { title: "Security \u2014 Reveal Secret Recovery Phrase", hint: "The phrase restores every account of this wallet.", dialogTitle: "Reveal Secret Recovery Phrase", dialogMessage: "Anyone with this phrase controls every account. Enter your wallet password to continue.", reveal: (password) => api.revealPhrase(password) }))] }));
+    return (_jsxs("div", { style: configSectionStyle.column(14), children: [_jsx(RevealRow, { title: "Security \u2014 Reveal Private Key", hint: address ? `${who ? `${who} — ` : ''}${toDisplayAddress(address)}` : 'Select an account first.', dialogTitle: "Reveal Private Key", dialogMessage: "Anyone with this key controls the account. Enter your wallet password to continue.", disabled: !address, reveal: (password) => api.revealPrivateKey(password, address) }), api.revealPhrase && (_jsx(RevealRow, { title: "Security \u2014 Reveal Secret Recovery Phrase", hint: "The phrase restores every account of this wallet.", dialogTitle: "Reveal Secret Recovery Phrase", dialogMessage: "Anyone with this phrase controls every account. Enter your wallet password to continue.", reveal: (password) => api.revealPhrase(password) }))] }));
 }

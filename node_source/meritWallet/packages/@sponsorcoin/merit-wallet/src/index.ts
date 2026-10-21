@@ -12,13 +12,17 @@ export type { ConnectedAgentSelectDropDownProps } from './AgentSelectDropDown';
 export {
   DEFAULT_WALLET_CONFIG,
   sanitizeWalletConfig,
+  parseMeritWalletStored,
+  clampPersistedPasswordTimeoutHours,
+  persistedTimeoutMs,
+  isIdleLockDue,
   passwordDescriptionFor,
   syncDescriptionFor,
   extensionDownloadPathFor,
   createWalletConfig,
   useWalletConfig,
 } from './walletConfig';
-export type { MeritWalletConfigState, WalletConfigAdapter, WalletConfigController } from './walletConfig';
+export type { MeritWalletConfigState, MeritWalletStored, WalletConfigAdapter, WalletConfigController } from './walletConfig';
 export { RADIO_PANEL_GROUPS_WITH_FALLBACKS, EMPTY_RADIO_PANEL_GROUPS } from './radioPanelGroups';
 export { WalletDataProvider, useWalletData } from './walletData';
 export type { WalletDataSource } from './walletData';
@@ -178,3 +182,12 @@ export type {
 } from './injectableComponentTypes';
 export { ConnectedTradeButton } from './trade/tradeHost';
 export type { TradeHost } from './trade/tradeHost';
+export { buildNextActiveAccount, applyNetworkSelection, planSyncPush, type SelectedAccountInput, type CurrentActiveAccount, type ActiveAccountDeps, type SyncPushPlan } from './session/activeAccountCore';
+export { useMeritApprovalLifecycle, shouldClearSettled, isNewApprovalRequest, SETTLING_FALLBACK_MS, type ApprovalLifecycleHost } from './approval/approvalLifecycle';
+export { createBalanceReader, type BalanceClient, type BalanceQuery } from './balance/createBalanceReader';
+export { createPersistedPasswordStore, type PersistedPasswordBackend, type PersistedPasswordBlob, type PersistedPasswordStore } from './session/persistedPassword';
+export { createIndexedDbKeyProvider, type IndexedDbKeyOptions } from './session/indexedDbKey';
+export { createSyncTokenProvider, parseTokenExpiresAt, REFRESH_LEAD_MS, type SyncTokenHost, type SyncTokenProvider, type SyncSignerRequest, type EnsureSyncTokenParams } from './sync/syncToken';
+export { pushContextPatch, type PushHost, type PushHooks, type PushPlan } from './sync/pushContextPatch';
+export { reconcileChain, type ChainReconcileInput, type ChainReconcileRefs, type ChainReconcileHost, type SwitchPhase } from './chain/chainReconcile';
+export { default as CopyIcon } from './account/form/CopyIcon';

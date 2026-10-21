@@ -192,18 +192,9 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     async (signal?: AbortSignal) => {
       if (!initialAccountAddress) return;
       setIsLoadingAccount(true);
-      try {
-        const normalizedAddress = initialAccountAddress;
-        const record = (await loadAccountRecord(normalizedAddress, {
-          forceRefresh: true,
-          signal,
-        })) as AccountRegistryRecord;
-        if (signal?.aborted) return;
-
-        const resolvedLogoURL = recordLogoURL(record);
-
+      const normalizedAddress = initialAccountAddress;
+      const apply = (record: AccountRegistryRecord) => {
         const loaded = accountFormDataFromRecord(record);
-
         setPublicKey(normalizedAddress);
         setResolvedAccountAddress(normalizedAddress);
         setAccountExists(true);
@@ -211,7 +202,32 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         setBaselineData(loaded);
         setErrors({});
         setLogoFile(null);
-        setServerLogoURL(withCacheBust(resolvedLogoURL));
+        setServerLogoURL(withCacheBust(recordLogoURL(record)));
+      };
+      try {
+        // docs/meritMigration.txt row 37: show what is already known AT ONCE. The header loaded this account into the registry, so a cached read resolves immediately; the forced read below then refreshes it in the background and updates the form only if it comes back different
+        // (it used to wait for the network alone, which on the web is queued behind a dozen other calls for 10 to 25 seconds).
+        let shownKey: string | null = null;
+        try {
+          const cached = (await loadAccountRecord(normalizedAddress, { signal })) as AccountRegistryRecord;
+          if (signal?.aborted) return;
+          apply(cached);
+          shownKey = JSON.stringify(accountFormDataFromRecord(cached));
+          setIsLoadingAccount(false);
+        } catch {
+          // nothing cached and the network read failed: the forced read below decides
+        }
+        const record = (await loadAccountRecord(normalizedAddress, { forceRefresh: true, signal })) as AccountRegistryRecord;
+        if (signal?.aborted) return;
+        if (shownKey === null) {
+          apply(record);
+        } else if (JSON.stringify(accountFormDataFromRecord(record)) !== shownKey) {
+          // the refresh differs from what was shown: update it, but never over what the user has typed in the meantime (the form is editable while the refresh is pending)
+          const fresh = accountFormDataFromRecord(record);
+          setFormData((current) => (JSON.stringify(current) === shownKey ? fresh : current));
+          setBaselineData(fresh);
+          setServerLogoURL(withCacheBust(recordLogoURL(record)));
+        }
       } catch {
         if (!signal?.aborted) {
           setPublicKey(initialAccountAddress);
@@ -232,12 +248,13 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     [initialAccountAddress],
   );
 
+  // A public profile is READ without a signed-in session: only editing and saving need one (connected still controls that). The load used to wait for the session, which on the web arrives last.
   useEffect(() => {
-    if (!isAuthSessionAvailable || !initialAccountAddress) return;
+    if (!initialAccountAddress) return;
     const abortController = new AbortController();
     void hydrateAccount(abortController.signal);
     return () => abortController.abort();
-  }, [hydrateAccount, initialAccountAddress, isAuthSessionAvailable]);
+  }, [hydrateAccount, initialAccountAddress]);
 
   useCacheRefreshHandler(
     useCallback(() => hydrateAccount(), [hydrateAccount]),

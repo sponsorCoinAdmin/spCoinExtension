@@ -1,3 +1,5 @@
+import { parseDecimalToWei } from '@sponsorcoin/spcoin-common';
+export { parseDecimalToWei };
 export declare function isNativePlaceholder(address: string | undefined): boolean;
 export interface PreparedTransaction {
     to: string;
@@ -23,8 +25,6 @@ export interface TransferParams {
     /** Plain decimal string from the amount field. */
     amount: string;
 }
-/** "1.5" at 18 decimals -> 1500000000000000000n. null for anything that is not a plain non-negative decimal, or has too many places. */
-export declare function parseDecimalToWei(amount: string, decimals: number): bigint | null;
 /** ERC20 transfer(address,uint256) calldata: selector a9059cbb + 32-byte address + 32-byte amount. */
 export declare function encodeErc20Transfer(to: string, amountWei: bigint): string;
 /** Validate and turn the form into the transaction to send. */

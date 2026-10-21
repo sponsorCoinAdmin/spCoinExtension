@@ -14,33 +14,9 @@
 import { messageRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import type { MessageAccountEntry, MessageTokenEntry } from '@sponsorcoin/spcoin-common/context';
-import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { useExchangeContext } from '@sponsorcoin/spcoin-exchange-engine';
-import { AccountAvatar, TokenLogo } from '@sponsorcoin/spcoin-panels';
+import { MessageAccountRow, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { MessagePanelReal } from './panels';
-
-const ROLE_TO_MODE: Record<MessageAccountEntry['role'], typeof SP_COIN_DISPLAY.ACTIVE_ACCOUNT | typeof SP_COIN_DISPLAY.SPONSOR_ACCOUNT | typeof SP_COIN_DISPLAY.RECIPIENT_ACCOUNT | typeof SP_COIN_DISPLAY.AGENT_ACCOUNT> = {
-  SPONSOR: SP_COIN_DISPLAY.SPONSOR_ACCOUNT,
-  RECIPIENT: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT,
-  AGENT: SP_COIN_DISPLAY.AGENT_ACCOUNT,
-  ACCOUNT: SP_COIN_DISPLAY.ACTIVE_ACCOUNT,
-};
-
-function DefaultAccountRow({ entry }: { entry: MessageAccountEntry }) {
-  const label = [entry.account.symbol, entry.account.name].filter(Boolean).join(' | ');
-  return (
-    <div style={messageRowStyle.accountColumn}>
-      <div style={messageRowStyle.line}>
-        <AccountAvatar account={entry.account} mode={ROLE_TO_MODE[entry.role]} roleLabel={entry.role} className="" style={messageRowStyle.avatar} />
-        <span style={messageRowStyle.label}>
-          <span style={messageRowStyle.role}>{entry.role}:</span> {label}
-        </span>
-      </div>
-      <div style={messageRowStyle.address}>{String(entry.account.address ?? '')}</div>
-      {entry.detail && <div style={messageRowStyle.detail}>{entry.detail}</div>}
-    </div>
-  );
-}
 
 /** The web app's MessageTokenRow, unchanged. */
 function DefaultTokenRow({ entry }: { entry: MessageTokenEntry }) {
@@ -68,7 +44,7 @@ export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow
   return (
     <MessagePanelReal
       errorMessage={errorMessage}
-      renderAccountRow={renderAccountRow ?? ((entry, i) => <DefaultAccountRow key={`${entry.role}-${i}`} entry={entry} />)}
+      renderAccountRow={renderAccountRow ?? ((entry, i) => <MessageAccountRow key={`${entry.role}-${i}`} entry={entry} />)}
       renderTokenRow={renderTokenRow ?? ((entry, i) => <DefaultTokenRow key={`token-${i}`} entry={entry} />)}
     />
   );

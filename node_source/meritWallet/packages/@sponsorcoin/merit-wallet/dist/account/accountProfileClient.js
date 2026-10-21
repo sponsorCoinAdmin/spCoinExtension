@@ -11,10 +11,7 @@
 // the server, which is how the web app enforces "you can only edit your own account". No host imports; tested with a fake fetch (test/accountProfile.test.mjs).
 import { trimProfile, validateProfile } from './profileForm';
 import { signInForToken } from './signIn';
-async function failure(response, fallback) {
-    const payload = (await response.json().catch(() => ({})));
-    return new Error(payload.error || payload.details || fallback);
-}
+import { responseFailure } from './responseFailure';
 function normalize(address) {
     return `0x${String(address).replace(/^0[xX]/, '').toLowerCase()}`;
 }
@@ -38,13 +35,13 @@ export async function saveAccountProfile(params) {
             body: JSON.stringify({ address: params.address.trim(), ...fields, recipientNetwork: params.recipientNetwork ?? [] }),
         });
         if (!response.ok)
-            throw await failure(response, 'Failed to save account.json');
+            throw await responseFailure(response, 'Failed to save account.json');
     }
     if (params.logo) {
         const form = new FormData();
         form.append('file', params.logo, 'avatar.png');
         const response = await f(`${accountUrl}?target=logo`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: form });
         if (!response.ok)
-            throw await failure(response, 'Failed to save avatar.png');
+            throw await responseFailure(response, 'Failed to save avatar.png');
     }
 }

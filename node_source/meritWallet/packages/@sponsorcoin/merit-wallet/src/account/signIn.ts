@@ -6,6 +6,7 @@
 // wallet): this function only needs "sign this message", so it works for every one of them.
 import { AuthenticatorError } from '../auth/authenticator';
 import type { Wallet } from '../wallet/wallet';
+import { responseFailure } from './responseFailure';
 
 export interface SignInParams {
   /** The hosted app's origin; '' (the default) is the page's own origin. */
@@ -16,17 +17,12 @@ export interface SignInParams {
   fetchImpl?: typeof fetch;
 }
 
-async function failure(response: Response, fallback: string): Promise<Error> {
-  const payload = (await response.json().catch(() => ({}))) as { error?: string; details?: string };
-  return new Error(payload.error || payload.details || fallback);
-}
-
 /** The challenge, the signature and the token: resolves with the bearer token. */
 export async function signInForToken({ baseUrl = '', address, signMessage, fetchImpl }: SignInParams): Promise<string> {
   const f = fetchImpl ?? fetch;
   const nonceResponse = await f(`${baseUrl}/api/spCoin/auth/nonce`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address }) });
   if (!nonceResponse.ok) {
-    const error = await failure(nonceResponse, `Nonce request failed (HTTP ${nonceResponse.status})`);
+    const error = await responseFailure(nonceResponse, `Nonce request failed (HTTP ${nonceResponse.status})`);
     // a server that gave no reason of its own: say what its status means
     const hint = nonceResponse.status === 429 ? 'Too many auth attempts. Please wait and try again.' : nonceResponse.status === 503 ? 'Server auth is not configured.' : '';
     throw new Error(hint && error.message.startsWith('Nonce request failed') ? hint : error.message);
@@ -40,7 +36,7 @@ export async function signInForToken({ baseUrl = '', address, signMessage, fetch
   if (!signature) throw new Error('Signature request rejected');
 
   const verifyResponse = await f(`${baseUrl}/api/spCoin/auth/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ address, nonce, signature }) });
-  if (!verifyResponse.ok) throw await failure(verifyResponse, 'Signature verification failed');
+  if (!verifyResponse.ok) throw await responseFailure(verifyResponse, 'Signature verification failed');
   const token = String(((await verifyResponse.json()) as { token?: string }).token ?? '');
   if (!token) throw new Error('Missing auth token');
   return token;

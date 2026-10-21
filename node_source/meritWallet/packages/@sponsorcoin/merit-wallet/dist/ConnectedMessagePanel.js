@@ -12,25 +12,14 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { messageRowStyle } from '@sponsorcoin/spcoin-common/styles';
-import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { useExchangeContext } from '@sponsorcoin/spcoin-exchange-engine';
-import { AccountAvatar, TokenLogo } from '@sponsorcoin/spcoin-panels';
+import { MessageAccountRow, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { MessagePanelReal } from './panels';
-const ROLE_TO_MODE = {
-    SPONSOR: SP_COIN_DISPLAY.SPONSOR_ACCOUNT,
-    RECIPIENT: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT,
-    AGENT: SP_COIN_DISPLAY.AGENT_ACCOUNT,
-    ACCOUNT: SP_COIN_DISPLAY.ACTIVE_ACCOUNT,
-};
-function DefaultAccountRow({ entry }) {
-    const label = [entry.account.symbol, entry.account.name].filter(Boolean).join(' | ');
-    return (_jsxs("div", { style: messageRowStyle.accountColumn, children: [_jsxs("div", { style: messageRowStyle.line, children: [_jsx(AccountAvatar, { account: entry.account, mode: ROLE_TO_MODE[entry.role], roleLabel: entry.role, className: "", style: messageRowStyle.avatar }), _jsxs("span", { style: messageRowStyle.label, children: [_jsxs("span", { style: messageRowStyle.role, children: [entry.role, ":"] }), " ", label] })] }), _jsx("div", { style: messageRowStyle.address, children: String(entry.account.address ?? '') }), entry.detail && _jsx("div", { style: messageRowStyle.detail, children: entry.detail })] }));
-}
 /** The web app's MessageTokenRow, unchanged. */
 function DefaultTokenRow({ entry }) {
     return (_jsxs("div", { style: messageRowStyle.tokenColumn, children: [_jsxs("div", { style: messageRowStyle.line, children: [_jsx(TokenLogo, { tokenContract: entry.token, className: "", style: messageRowStyle.tokenLogo }), _jsxs("span", { style: messageRowStyle.label, children: [_jsxs("span", { style: messageRowStyle.role, children: [entry.label, ":"] }), ' ', [entry.token.symbol, entry.token.name].filter(Boolean).join(': ')] })] }), entry.detail && _jsx("div", { style: messageRowStyle.detail, children: entry.detail })] }));
 }
 export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow }) {
     const { errorMessage } = useExchangeContext();
-    return (_jsx(MessagePanelReal, { errorMessage: errorMessage, renderAccountRow: renderAccountRow ?? ((entry, i) => _jsx(DefaultAccountRow, { entry: entry }, `${entry.role}-${i}`)), renderTokenRow: renderTokenRow ?? ((entry, i) => _jsx(DefaultTokenRow, { entry: entry }, `token-${i}`)) }));
+    return (_jsx(MessagePanelReal, { errorMessage: errorMessage, renderAccountRow: renderAccountRow ?? ((entry, i) => _jsx(MessageAccountRow, { entry: entry }, `${entry.role}-${i}`)), renderTokenRow: renderTokenRow ?? ((entry, i) => _jsx(DefaultTokenRow, { entry: entry }, `token-${i}`)) }));
 }

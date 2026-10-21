@@ -70,6 +70,7 @@ import { useApprovalMessagePanel } from './auth/useApprovalMessagePanel';
 import type { ApproverHost } from './wallet/approverAccounts';
 import { walletName, type AuthenticatorId } from './auth/authenticator';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
+import { fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/tokens';
 import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildRecipientRows as selfFetchRecipientRows, buildAllAccountRows as selfFetchAllAccountRows, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, type MenuTabKey, WalletRadioPanels, TradingStationPanel, SendTabPanel, AddressPanel, TokenDetailPanel, NetworkDetailPanel, type MeritWalletNetworkRow } from './panels';
 // Panel visibility in this component goes through exactly one engine:
 // @sponsorcoin/spcoin-exchange-engine's panelStore, read via PanelGate /
@@ -1420,6 +1421,37 @@ function MeritWalletInner({
   // Same idea, for the token-list's own info icon (Select a Token).
   const [tokenDetailAddress, setTokenDetailAddress] = useState<string | null>(null);
   const tokenDetailVisible = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
+  // 2026-10-20 (docs/meritMigration.txt part 2, row 4): the token detail is loaded HERE, the same in every app. The extension used to load it in its own host code and the web never did (its token detail stayed on "Loading..." for ever). A host may still pass `tokenDetail` for the address that is open and it wins; otherwise this loads the record through the feeds package (the hosted API, or the bundled one when the host has no server) and the logo by its URL.
+  const detailChainId = Number(chainId ?? roleContext?.apiCoreSyncedMembers?.network?.appChainId ?? 0);
+  const [selfTokenDetail, setSelfTokenDetail] = useState<NonNullable<typeof tokenDetail> | null>(null);
+  useEffect(() => {
+    if (!tokenDetailVisible || !tokenDetailAddress || !detailChainId) {
+      setSelfTokenDetail(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setSelfTokenDetail(null);
+    const logoSrc = getTokenLogoURL(detailChainId, tokenDetailAddress);
+    void fetchTokenByAddress(detailChainId, tokenDetailAddress, { baseUrl: baseUrl ?? '' })
+      .then((record) => {
+        if (cancelled) return;
+        const data = (record ?? {}) as Record<string, unknown> & { data?: Record<string, unknown> };
+        const f = (data.data ?? data) as Record<string, unknown>;
+        setSelfTokenDetail({
+          address: tokenDetailAddress,
+          logoSrc,
+          name: f.name as string | undefined,
+          symbol: f.symbol as string | undefined,
+          decimals: f.decimals as number | undefined,
+          website: f.website as string | undefined,
+          explorer: f.explorer as string | undefined,
+          description: f.description as string | undefined,
+        });
+      })
+      .catch(() => { if (!cancelled) setSelfTokenDetail({ address: tokenDetailAddress, logoSrc }); });
+    return () => { cancelled = true; };
+  }, [tokenDetailVisible, tokenDetailAddress, detailChainId, baseUrl]);
+  const effectiveTokenDetail = tokenDetail && tokenDetail.address === tokenDetailAddress ? tokenDetail : selfTokenDetail;
   // Same idea, for the network-list's own icon (Select Network) — see
   // onNetworkIconClick's own doc comment for why this one needs no
   // separate "detail" data prop from the caller.
@@ -2223,6 +2255,15 @@ function MeritWalletInner({
       const gatedTabBody = React.createElement(PanelGate, { panel: TAB_PANEL_IDS[activeTab], children: tabBody });
 
   // 2026-10-10: the shared Add a Wallet/Account flow (the host's addAccountHost), shown over the wallet like the profile editor.
+  // docs/meritMigration.txt row 19 (found by the deep walk, 2026-10-20, in BOTH apps): backing out of the Add a Wallet/Account screens left the tab's title over a BLANK body. "Add a Wallet" closes the account-list overlay and then opens the add flow, so when the flow is
+  // popped there is no invoker for the panel tree to restore and no radio panel is visible; clicking the tab you are already on does nothing by rule (handleTabClick), so the blank stayed until another tab was chosen.
+  // When the add flow has CLOSED (checked after the pop is applied: calling openPanel in the same tick as the pop raced with it and made the first tap on Go back do nothing), the active tab's own panel is shown again.
+  const prevAddFlowTopRef = useRef(addFlowTop);
+  useEffect(() => {
+    const wasOpen = prevAddFlowTopRef.current != null;
+    prevAddFlowTopRef.current = addFlowTop;
+    if (wasOpen && addFlowTop == null) openPanel(TAB_PANEL_IDS[activeTab], 'MeritWallet:addFlowRestoreTab');
+  }, [addFlowTop]);
   const addAccountOverlay = addFlowTop != null && addAccountHost
     ? React.createElement(AddAccountFlow, { host: addAccountHost, wallet, activeAddress: activeAccountAddress, nativeWalletId, walletConnection, onDisconnectWallet, onDone: () => closePanel(addFlowTop, 'MeritWallet:addAccountFlow:done') })
     : null;
@@ -2256,15 +2297,15 @@ function MeritWalletInner({
         address: tokenDetailAddress,
         // Same "only trust it once it answers the current address" gate
         // as accountDetailOverlay above.
-        ...(tokenDetail?.address === tokenDetailAddress
+        ...(effectiveTokenDetail && effectiveTokenDetail.address === tokenDetailAddress
           ? {
-              logoSrc: tokenDetail.logoSrc,
-              name: tokenDetail.name,
-              symbol: tokenDetail.symbol,
-              decimals: tokenDetail.decimals,
-              website: tokenDetail.website,
-              explorer: tokenDetail.explorer,
-              description: tokenDetail.description,
+              logoSrc: effectiveTokenDetail.logoSrc,
+              name: effectiveTokenDetail.name,
+              symbol: effectiveTokenDetail.symbol,
+              decimals: effectiveTokenDetail.decimals,
+              website: effectiveTokenDetail.website,
+              explorer: effectiveTokenDetail.explorer,
+              description: effectiveTokenDetail.description,
               loading: false,
             }
           : { loading: true }),

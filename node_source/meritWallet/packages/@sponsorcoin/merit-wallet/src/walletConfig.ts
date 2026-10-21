@@ -44,7 +44,7 @@ export const DEFAULT_WALLET_CONFIG: MeritWalletConfigState = {
   persistedPasswordTimeoutHours: 1,
 };
 
-const PASSWORD_MODES: readonly MeritWalletPasswordMode[] = ['appRequired', 'firstApproved', 'methodRequired', 'persisted'];
+const PASSWORD_MODES: readonly MeritWalletPasswordMode[] = ['appRequired', 'firstApproved', 'methodRequired', 'disabled', 'persisted'];
 const SYNC_MODES: readonly ApplicationSyncMode[] = ['authorize', 'enable', 'disable'];
 const LOCATIONS: readonly MeritWalletLocation[] = ['CENTER', 'FIXED', 'FLOATING', 'SPLIT_PANE', 'STICK_TO_TOP'];
 const EXTENSION_CHANNELS: readonly MeritExtensionChannel[] = ['test', 'prod'];
@@ -55,9 +55,36 @@ function pickEnum<T extends string>(value: unknown, allowed: readonly T[], fallb
 function pickBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === 'boolean' ? value : fallback;
 }
+/** The persisted-password time limit in hours, kept between 1 minute and 24 hours; a value that is not a finite number is 1 hour. The ONE clamp: the Config picker, the stored config, the persisted password and the idle timer all call it (docs/meritMigration.txt row 21). */
+export function clampPersistedPasswordTimeoutHours(hours: number): number {
+  if (!Number.isFinite(hours)) return 1;
+  return Math.min(24, Math.max(1 / 60, hours));
+}
+/** The idle limit in milliseconds for a time limit in hours: whole minutes, never under one minute or over 24 hours (docs/meritMigration.txt row 24: the web's idle timer, now the one rule). */
+export function persistedTimeoutMs(hours: number): number {
+  return Math.round(clampPersistedPasswordTimeoutHours(hours) * 60) * 60_000;
+}
+/** True when the wallet has been idle for at least its time limit and should lock. */
+export function isIdleLockDue(msSinceLastUse: number, hours: number): boolean {
+  return msSinceLastUse >= persistedTimeoutMs(hours);
+}
 function pickHours(value: unknown, fallback: number): number {
   const n = Number(value);
-  return Number.isFinite(n) ? Math.min(24, Math.max(1 / 60, n)) : fallback;
+  return Number.isFinite(n) ? clampPersistedPasswordTimeoutHours(n) : fallback;
+}
+
+/** A passwordMode saved before the 2026-08-23 rename: 'require' became 'appRequired', 'skipGate' became 'methodRequired'. Any other value passes through to the list check. */
+function migratePasswordMode(value: unknown): unknown {
+  if (value === 'require') return 'appRequired';
+  if (value === 'skipGate') return 'methodRequired';
+  return value;
+}
+/** The sync choice: a current syncMode wins; otherwise the two boolean flags older versions saved (docs/meritMigration.txt row 22: the web app's migration, now the one every host runs). */
+function migrateSyncMode(raw: Record<string, unknown>, fallback: ApplicationSyncMode): ApplicationSyncMode {
+  if (typeof raw.syncMode === 'string' && (SYNC_MODES as readonly string[]).includes(raw.syncMode)) return raw.syncMode as ApplicationSyncMode;
+  if (raw.syncDisabled === true) return 'disable';
+  if (raw.syncAuthorizationRequired === true) return 'authorize';
+  return fallback;
 }
 
 /** Turns whatever a host read from storage into a valid config (unknown or missing fields fall back to the defaults). */
@@ -65,16 +92,37 @@ export function sanitizeWalletConfig(value: unknown): MeritWalletConfigState {
   const raw = (value ?? {}) as Partial<Record<keyof MeritWalletConfigState, unknown>>;
   const d = DEFAULT_WALLET_CONFIG;
   return {
-    passwordMode: pickEnum(raw.passwordMode, PASSWORD_MODES, d.passwordMode),
+    passwordMode: pickEnum(migratePasswordMode(raw.passwordMode), PASSWORD_MODES, d.passwordMode),
     mandatorySecurity: pickBoolean(raw.mandatorySecurity, d.mandatorySecurity),
     mandatoryApproval: pickBoolean(raw.mandatoryApproval, d.mandatoryApproval),
-    syncMode: pickEnum(raw.syncMode, SYNC_MODES, d.syncMode),
+    syncMode: migrateSyncMode(raw as Record<string, unknown>, d.syncMode),
     location: pickEnum(raw.location, LOCATIONS, d.location),
     showBackgroundPage: pickBoolean(raw.showBackgroundPage, d.showBackgroundPage),
     modalMode: pickBoolean(raw.modalMode, d.modalMode),
     extensionChannel: pickEnum(raw.extensionChannel, EXTENSION_CHANNELS, d.extensionChannel),
     persistedPasswordTimeoutHours: pickHours(raw.persistedPasswordTimeoutHours, d.persistedPasswordTimeoutHours),
   };
+}
+
+/** What the web app keeps under its one storage key: whether the wallet is open, and its config. */
+export interface MeritWalletStored {
+  active: boolean;
+  config: MeritWalletConfigState;
+}
+
+/** The stored text (the web app's localStorage value, null when nothing is saved) as a valid record: nothing saved, not JSON or not an object gives the defaults; a field that is missing or invalid takes its default. */
+export function parseMeritWalletStored(text: string | null | undefined): MeritWalletStored {
+  const fresh: MeritWalletStored = { active: false, config: { ...DEFAULT_WALLET_CONFIG } };
+  if (!text) return fresh;
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (typeof parsed !== 'object' || parsed === null) return fresh;
+    const record = parsed as Record<string, unknown>;
+    const config = typeof record.config === 'object' && record.config !== null ? record.config : {};
+    return { active: record.active === true, config: sanitizeWalletConfig(config) };
+  } catch {
+    return fresh;
+  }
 }
 
 // Descriptions shown under the options. Text copied verbatim from lib/spCoinWallet/useMeritWalletConfig.tsx (the web app).

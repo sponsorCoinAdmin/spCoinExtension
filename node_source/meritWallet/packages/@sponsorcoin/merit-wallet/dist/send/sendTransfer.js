@@ -4,28 +4,14 @@
 // useHardhatAwareTransfer encoding (ethers Contract) and the extension's sendNative.ts (hand-rolled encoding): the same validation, the same
 // amount-to-wei conversion, the same native / ERC20 split, and the same ERC20 transfer calldata. The only thing that differs per host is the
 // TRANSPORT: how a prepared transaction is signed and broadcast (web: the connected signer; extension: the vault's LocalSigner behind its
-// approval screen). No React, no host imports: pure functions plus the transport interface.
+// approval screen). No React, no host imports (only spcoin-common's pure parseDecimalToWei): pure functions plus the transport interface.
+import { parseDecimalToWei } from '@sponsorcoin/spcoin-common';
+export { parseDecimalToWei };
 const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 /** The placeholder address token lists use for the chain's native coin: a send of it is a plain value transfer, not an ERC20 call. */
 const NATIVE_PLACEHOLDER = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 export function isNativePlaceholder(address) {
     return String(address ?? '').trim().toLowerCase() === NATIVE_PLACEHOLDER;
-}
-/** "1.5" at 18 decimals -> 1500000000000000000n. null for anything that is not a plain non-negative decimal, or has too many places. */
-export function parseDecimalToWei(amount, decimals) {
-    const trimmed = String(amount ?? '').trim();
-    if (!trimmed || !/^\d*\.?\d*$/.test(trimmed) || trimmed === '.')
-        return null;
-    const [wholeRaw, fracRaw = ''] = trimmed.split('.');
-    if (fracRaw.length > decimals)
-        return null;
-    const fracPadded = fracRaw.padEnd(decimals, '0');
-    try {
-        return BigInt(wholeRaw || '0') * 10n ** BigInt(decimals) + (fracPadded ? BigInt(fracPadded) : 0n);
-    }
-    catch {
-        return null;
-    }
 }
 /** ERC20 transfer(address,uint256) calldata: selector a9059cbb + 32-byte address + 32-byte amount. */
 export function encodeErc20Transfer(to, amountWei) {

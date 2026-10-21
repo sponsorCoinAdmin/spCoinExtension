@@ -9,7 +9,7 @@ import React from 'react';
 import { timeLimitStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ScrollableDropdown } from '@sponsorcoin/spcoin-panels';
 import type { ApplicationSyncMode, MeritExtensionChannel, MeritWalletLocation, MeritWalletPasswordMode } from '@sponsorcoin/spcoin-panels';
-import { extensionDownloadPathFor, passwordDescriptionFor, syncDescriptionFor, useWalletConfig, type WalletConfigAdapter } from './walletConfig';
+import { clampPersistedPasswordTimeoutHours, extensionDownloadPathFor, passwordDescriptionFor, syncDescriptionFor, useWalletConfig, type WalletConfigAdapter } from './walletConfig';
 
 export const HOUR_OPTIONS = Array.from({ length: 25 }, (_, h) => h); // 0-24
 export const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, m) => m); // 0-59
@@ -23,7 +23,7 @@ export function splitPersistedTimeout(hours: number): { hours: number; minutes: 
 /** The two picker values back to hours: a missing number counts as 0, and the result stays between one minute and 24 hours. */
 export function joinPersistedTimeout(hours: number, minutes: number): number {
   const raw = (Number.isFinite(hours) ? hours : 0) + (Number.isFinite(minutes) ? minutes : 0) / 60;
-  return Math.min(24, Math.max(1 / 60, raw));
+  return clampPersistedPasswordTimeoutHours(raw);
 }
 
 /** The Time Limit picker (hours and minutes) under the Persisted password option. Drawn by the component from the host's hours value (the data) and change callback (the action). */

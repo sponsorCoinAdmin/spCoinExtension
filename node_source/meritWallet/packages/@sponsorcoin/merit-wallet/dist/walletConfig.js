@@ -23,7 +23,7 @@ export const DEFAULT_WALLET_CONFIG = {
     extensionChannel: 'prod',
     persistedPasswordTimeoutHours: 1,
 };
-const PASSWORD_MODES = ['appRequired', 'firstApproved', 'methodRequired', 'persisted'];
+const PASSWORD_MODES = ['appRequired', 'firstApproved', 'methodRequired', 'disabled', 'persisted'];
 const SYNC_MODES = ['authorize', 'enable', 'disable'];
 const LOCATIONS = ['CENTER', 'FIXED', 'FLOATING', 'SPLIT_PANE', 'STICK_TO_TOP'];
 const EXTENSION_CHANNELS = ['test', 'prod'];
@@ -33,25 +33,74 @@ function pickEnum(value, allowed, fallback) {
 function pickBoolean(value, fallback) {
     return typeof value === 'boolean' ? value : fallback;
 }
+/** The persisted-password time limit in hours, kept between 1 minute and 24 hours; a value that is not a finite number is 1 hour. The ONE clamp: the Config picker, the stored config, the persisted password and the idle timer all call it (docs/meritMigration.txt row 21). */
+export function clampPersistedPasswordTimeoutHours(hours) {
+    if (!Number.isFinite(hours))
+        return 1;
+    return Math.min(24, Math.max(1 / 60, hours));
+}
+/** The idle limit in milliseconds for a time limit in hours: whole minutes, never under one minute or over 24 hours (docs/meritMigration.txt row 24: the web's idle timer, now the one rule). */
+export function persistedTimeoutMs(hours) {
+    return Math.round(clampPersistedPasswordTimeoutHours(hours) * 60) * 60000;
+}
+/** True when the wallet has been idle for at least its time limit and should lock. */
+export function isIdleLockDue(msSinceLastUse, hours) {
+    return msSinceLastUse >= persistedTimeoutMs(hours);
+}
 function pickHours(value, fallback) {
     const n = Number(value);
-    return Number.isFinite(n) ? Math.min(24, Math.max(1 / 60, n)) : fallback;
+    return Number.isFinite(n) ? clampPersistedPasswordTimeoutHours(n) : fallback;
+}
+/** A passwordMode saved before the 2026-08-23 rename: 'require' became 'appRequired', 'skipGate' became 'methodRequired'. Any other value passes through to the list check. */
+function migratePasswordMode(value) {
+    if (value === 'require')
+        return 'appRequired';
+    if (value === 'skipGate')
+        return 'methodRequired';
+    return value;
+}
+/** The sync choice: a current syncMode wins; otherwise the two boolean flags older versions saved (docs/meritMigration.txt row 22: the web app's migration, now the one every host runs). */
+function migrateSyncMode(raw, fallback) {
+    if (typeof raw.syncMode === 'string' && SYNC_MODES.includes(raw.syncMode))
+        return raw.syncMode;
+    if (raw.syncDisabled === true)
+        return 'disable';
+    if (raw.syncAuthorizationRequired === true)
+        return 'authorize';
+    return fallback;
 }
 /** Turns whatever a host read from storage into a valid config (unknown or missing fields fall back to the defaults). */
 export function sanitizeWalletConfig(value) {
     const raw = (value ?? {});
     const d = DEFAULT_WALLET_CONFIG;
     return {
-        passwordMode: pickEnum(raw.passwordMode, PASSWORD_MODES, d.passwordMode),
+        passwordMode: pickEnum(migratePasswordMode(raw.passwordMode), PASSWORD_MODES, d.passwordMode),
         mandatorySecurity: pickBoolean(raw.mandatorySecurity, d.mandatorySecurity),
         mandatoryApproval: pickBoolean(raw.mandatoryApproval, d.mandatoryApproval),
-        syncMode: pickEnum(raw.syncMode, SYNC_MODES, d.syncMode),
+        syncMode: migrateSyncMode(raw, d.syncMode),
         location: pickEnum(raw.location, LOCATIONS, d.location),
         showBackgroundPage: pickBoolean(raw.showBackgroundPage, d.showBackgroundPage),
         modalMode: pickBoolean(raw.modalMode, d.modalMode),
         extensionChannel: pickEnum(raw.extensionChannel, EXTENSION_CHANNELS, d.extensionChannel),
         persistedPasswordTimeoutHours: pickHours(raw.persistedPasswordTimeoutHours, d.persistedPasswordTimeoutHours),
     };
+}
+/** The stored text (the web app's localStorage value, null when nothing is saved) as a valid record: nothing saved, not JSON or not an object gives the defaults; a field that is missing or invalid takes its default. */
+export function parseMeritWalletStored(text) {
+    const fresh = { active: false, config: { ...DEFAULT_WALLET_CONFIG } };
+    if (!text)
+        return fresh;
+    try {
+        const parsed = JSON.parse(text);
+        if (typeof parsed !== 'object' || parsed === null)
+            return fresh;
+        const record = parsed;
+        const config = typeof record.config === 'object' && record.config !== null ? record.config : {};
+        return { active: record.active === true, config: sanitizeWalletConfig(config) };
+    }
+    catch {
+        return fresh;
+    }
 }
 // Descriptions shown under the options. Text copied verbatim from lib/spCoinWallet/useMeritWalletConfig.tsx (the web app).
 export function passwordDescriptionFor(mode) {

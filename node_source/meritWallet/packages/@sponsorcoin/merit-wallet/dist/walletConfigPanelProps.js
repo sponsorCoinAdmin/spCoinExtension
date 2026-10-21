@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { timeLimitStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ScrollableDropdown } from '@sponsorcoin/spcoin-panels';
-import { extensionDownloadPathFor, passwordDescriptionFor, syncDescriptionFor, useWalletConfig } from './walletConfig';
+import { clampPersistedPasswordTimeoutHours, extensionDownloadPathFor, passwordDescriptionFor, syncDescriptionFor, useWalletConfig } from './walletConfig';
 export const HOUR_OPTIONS = Array.from({ length: 25 }, (_, h) => h); // 0-24
 export const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, m) => m); // 0-59
 /** A persisted-password time limit in hours as the two numbers the pickers show (hours 0-24, minutes 0-59 of the remainder). */
@@ -12,7 +12,7 @@ export function splitPersistedTimeout(hours) {
 /** The two picker values back to hours: a missing number counts as 0, and the result stays between one minute and 24 hours. */
 export function joinPersistedTimeout(hours, minutes) {
     const raw = (Number.isFinite(hours) ? hours : 0) + (Number.isFinite(minutes) ? minutes : 0) / 60;
-    return Math.min(24, Math.max(1 / 60, raw));
+    return clampPersistedPasswordTimeoutHours(raw);
 }
 /** The Time Limit picker (hours and minutes) under the Persisted password option. Drawn by the component from the host's hours value (the data) and change callback (the action). */
 export function PersistedTimeoutPicker({ hours, onChange }) {

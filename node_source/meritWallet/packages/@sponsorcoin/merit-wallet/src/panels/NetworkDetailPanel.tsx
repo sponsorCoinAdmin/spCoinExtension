@@ -15,6 +15,7 @@
 
 import { detailPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
+import DetailRow from './DetailRow';
 
 export interface NetworkDetailPanelProps {
   id: string;
@@ -22,15 +23,6 @@ export interface NetworkDetailPanelProps {
   name?: string;
   symbol?: string;
   isTestnet?: boolean;
-}
-
-function DetailRow({ label, value, zebra }: { label: string; value: React.ReactNode; zebra: boolean }) {
-  return (
-    <div style={detailPanelStyle.row(zebra)}>
-      <span style={detailPanelStyle.label}>{label}</span>
-      <span style={detailPanelStyle.value}>{value}</span>
-    </div>
-  );
 }
 
 export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }: NetworkDetailPanelProps) {

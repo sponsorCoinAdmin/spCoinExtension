@@ -6,7 +6,7 @@
 export { default as MeritWallet } from './MeritWallet';
 export { createWalletRefresh, useWalletRefresh } from './walletRefresh';
 export { default as ConnectedAgentSelectDropDown } from './AgentSelectDropDown';
-export { DEFAULT_WALLET_CONFIG, sanitizeWalletConfig, passwordDescriptionFor, syncDescriptionFor, extensionDownloadPathFor, createWalletConfig, useWalletConfig, } from './walletConfig';
+export { DEFAULT_WALLET_CONFIG, sanitizeWalletConfig, parseMeritWalletStored, clampPersistedPasswordTimeoutHours, persistedTimeoutMs, isIdleLockDue, passwordDescriptionFor, syncDescriptionFor, extensionDownloadPathFor, createWalletConfig, useWalletConfig, } from './walletConfig';
 export { RADIO_PANEL_GROUPS_WITH_FALLBACKS, EMPTY_RADIO_PANEL_GROUPS } from './radioPanelGroups';
 export { WalletDataProvider, useWalletData } from './walletData';
 export { TokenBuyPanel, TokenSellPanel, TokenBuySwapPanel, TokenSellSwapPanel, TokenSendPanel } from './TokenSlotPanels';
@@ -96,3 +96,12 @@ export { accountDetailHostFromProfile } from './account/accountDetailHostFromPro
 export { default as ConnectedWalletConfig } from './config/ConnectedWalletConfig';
 export { default as ConnectedSponsorPanel } from './sponsor/ConnectedSponsorPanel';
 export { ConnectedTradeButton } from './trade/tradeHost';
+export { buildNextActiveAccount, applyNetworkSelection, planSyncPush } from './session/activeAccountCore';
+export { useMeritApprovalLifecycle, shouldClearSettled, isNewApprovalRequest, SETTLING_FALLBACK_MS } from './approval/approvalLifecycle';
+export { createBalanceReader } from './balance/createBalanceReader';
+export { createPersistedPasswordStore } from './session/persistedPassword';
+export { createIndexedDbKeyProvider } from './session/indexedDbKey';
+export { createSyncTokenProvider, parseTokenExpiresAt, REFRESH_LEAD_MS } from './sync/syncToken';
+export { pushContextPatch } from './sync/pushContextPatch';
+export { reconcileChain } from './chain/chainReconcile';
+export { default as CopyIcon } from './account/form/CopyIcon';

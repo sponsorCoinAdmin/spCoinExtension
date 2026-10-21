@@ -11,6 +11,7 @@
 // the server, which is how the web app enforces "you can only edit your own account". No host imports; tested with a fake fetch (test/accountProfile.test.mjs).
 import { trimProfile, validateProfile, type ProfileFormData } from './profileForm';
 import { signInForToken } from './signIn';
+import { responseFailure } from './responseFailure';
 
 export interface SaveAccountProfileParams {
   baseUrl: string;
@@ -27,11 +28,6 @@ export interface SaveAccountProfileParams {
   /** Sign the server's challenge with the account (personal_sign); throw a readable message on rejection. */
   signMessage(message: string): Promise<string>;
   fetchImpl?: typeof fetch;
-}
-
-async function failure(response: Response, fallback: string): Promise<Error> {
-  const payload = (await response.json().catch(() => ({}))) as { error?: string; details?: string };
-  return new Error(payload.error || payload.details || fallback);
 }
 
 function normalize(address: string): string {
@@ -57,12 +53,12 @@ export async function saveAccountProfile(params: SaveAccountProfileParams): Prom
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ address: params.address.trim(), ...fields, recipientNetwork: params.recipientNetwork ?? [] }),
     });
-    if (!response.ok) throw await failure(response, 'Failed to save account.json');
+    if (!response.ok) throw await responseFailure(response, 'Failed to save account.json');
   }
   if (params.logo) {
     const form = new FormData();
     form.append('file', params.logo, 'avatar.png');
     const response = await f(`${accountUrl}?target=logo`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: form });
-    if (!response.ok) throw await failure(response, 'Failed to save avatar.png');
+    if (!response.ok) throw await responseFailure(response, 'Failed to save avatar.png');
   }
 }

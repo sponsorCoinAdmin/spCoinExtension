@@ -13,9 +13,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { detailPanelStyle } from '@sponsorcoin/spcoin-common/styles';
-function DetailRow({ label, value, zebra }) {
-    return (_jsxs("div", { style: detailPanelStyle.row(zebra), children: [_jsx("span", { style: detailPanelStyle.label, children: label }), _jsx("span", { style: detailPanelStyle.value, children: value })] }));
-}
+import DetailRow from './DetailRow';
 export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }) {
     const rows = [
         { label: 'Network Id', value: id },

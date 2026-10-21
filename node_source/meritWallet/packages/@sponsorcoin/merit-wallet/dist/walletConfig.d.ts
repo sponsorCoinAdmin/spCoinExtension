@@ -13,8 +13,21 @@ export interface MeritWalletConfigState {
 }
 /** The defaults the web app starts a fresh wallet with (components/wallet/lib/meritWalletStorage.ts DEFAULT_MERIT_WALLET_LS.config). */
 export declare const DEFAULT_WALLET_CONFIG: MeritWalletConfigState;
+/** The persisted-password time limit in hours, kept between 1 minute and 24 hours; a value that is not a finite number is 1 hour. The ONE clamp: the Config picker, the stored config, the persisted password and the idle timer all call it (docs/meritMigration.txt row 21). */
+export declare function clampPersistedPasswordTimeoutHours(hours: number): number;
+/** The idle limit in milliseconds for a time limit in hours: whole minutes, never under one minute or over 24 hours (docs/meritMigration.txt row 24: the web's idle timer, now the one rule). */
+export declare function persistedTimeoutMs(hours: number): number;
+/** True when the wallet has been idle for at least its time limit and should lock. */
+export declare function isIdleLockDue(msSinceLastUse: number, hours: number): boolean;
 /** Turns whatever a host read from storage into a valid config (unknown or missing fields fall back to the defaults). */
 export declare function sanitizeWalletConfig(value: unknown): MeritWalletConfigState;
+/** What the web app keeps under its one storage key: whether the wallet is open, and its config. */
+export interface MeritWalletStored {
+    active: boolean;
+    config: MeritWalletConfigState;
+}
+/** The stored text (the web app's localStorage value, null when nothing is saved) as a valid record: nothing saved, not JSON or not an object gives the defaults; a field that is missing or invalid takes its default. */
+export declare function parseMeritWalletStored(text: string | null | undefined): MeritWalletStored;
 export declare function passwordDescriptionFor(mode: MeritWalletPasswordMode): string;
 export declare function syncDescriptionFor(mode: ApplicationSyncMode): string;
 export declare function extensionDownloadPathFor(channel: MeritExtensionChannel): string;

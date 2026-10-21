@@ -13,6 +13,7 @@ import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from './PasswordPromptDialog';
 import { useActiveAccountProfile } from './swap/activeAccountProfile';
 import { SECRET_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';
+import { toDisplayAddress } from '@sponsorcoin/spcoin-panels';
 
 export interface WalletSecurityApi {
   /** Resolve with the account's private key; throw a readable message for a wrong password. */
@@ -100,7 +101,7 @@ export default function WalletSecuritySection({ api }: { api: WalletSecurityApi 
     <div style={configSectionStyle.column(14)}>
       <RevealRow
         title="Security — Reveal Private Key"
-        hint={address ? `${who ? `${who} — ` : ''}${address}` : 'Select an account first.'}
+        hint={address ? `${who ? `${who} — ` : ''}${toDisplayAddress(address)}` : 'Select an account first.'}
         dialogTitle="Reveal Private Key"
         dialogMessage="Anyone with this key controls the account. Enter your wallet password to continue."
         disabled={!address}

@@ -30,7 +30,6 @@ export default function AccountAvatarPanel({ trace, panelMarginClass, avatarPane
         if (!section || !stage || !controls || typeof ResizeObserver === 'undefined')
             return;
         let animationFrame = 0;
-        const transitionTimers = [];
         const getSizingAncestors = () => {
             const ancestors = [];
             let current = section.parentElement;
@@ -178,13 +177,8 @@ export default function AccountAvatarPanel({ trace, panelMarginClass, avatarPane
             window.cancelAnimationFrame(animationFrame);
             animationFrame = window.requestAnimationFrame(updatePreviewSize);
         };
-        const scheduleTransitionUpdates = () => {
-            scheduleUpdate();
-            transitionTimers.push(window.setTimeout(scheduleUpdate, 60));
-            transitionTimers.push(window.setTimeout(scheduleUpdate, 140));
-            transitionTimers.push(window.setTimeout(scheduleUpdate, 260));
-            transitionTimers.push(window.setTimeout(scheduleUpdate, 420));
-        };
+        // docs/meritMigration.txt row 37: re-measure when the layout says it changed (the ResizeObserver on the section, its ancestors and the stage, and transitionend), not on four guessed delays after it (60, 140, 260, 420 ms).
+        const scheduleTransitionUpdates = scheduleUpdate;
         const getObservedLayoutElements = () => {
             const elements = new Set([section, stage, controls]);
             const boundary = sizingBoundarySelector
@@ -222,7 +216,6 @@ export default function AccountAvatarPanel({ trace, panelMarginClass, avatarPane
             window.removeEventListener('resize', scheduleTransitionUpdates);
             window.visualViewport?.removeEventListener('resize', scheduleTransitionUpdates);
             window.cancelAnimationFrame(animationFrame);
-            transitionTimers.forEach((timer) => window.clearTimeout(timer));
         };
     }, [
         lockSectionHeight,

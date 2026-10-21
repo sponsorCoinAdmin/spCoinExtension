@@ -23,6 +23,7 @@ import {
   loadSpCoinDeploymentMap,
   setHostApiBase,
   disableHostApi,
+  setSpCoinReadStep,
   getPreferredSpCoinContractAddress,
   fetchServerActiveSpCoin,
   type ExchangeContextWalletSource,
@@ -301,6 +302,8 @@ async function renderWallet() {
   currentBaseUrl = baseUrl;
   // 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 2, capability "api"): the hosted app's origin, registered once for every library that reads the hosted API.
   disableHostApi();
+  // docs/meritMigrationFinal.txt row I2: the engine's sponsor reads (isSponsor, getAccountRecord, the keys and rate lists) go through this extension's own read step, which reads the chain itself; without this they asked the web app's run-script route
+  setSpCoinReadStep((params, method, args) => runSpCoinReadStep(params, method, args ?? []));
   // 2026-10-11 (row 13): the engine's trade hooks, registered once so the shared Sponsor panel can run here.
   registerExtensionEngineHosts();
   // 2026-09-21, Path A — DisplayStackProvider's own storage contract is

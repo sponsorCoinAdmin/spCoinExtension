@@ -53,7 +53,7 @@ import { extensionTradeHost } from './src/tradeHost';
 
 // 2026-10-11 (row 13): the shared panels' hooks (quotes, balances) read through React Query; one client for the side panel.
 const queryClient = new QueryClient();
-import { readOpenTarget, writeOpenTarget, urlForOpenTarget, type OpenTarget } from './src/openTargetStorage';
+import { readOpenTarget, writeOpenTarget, type OpenTarget } from './src/openTargetStorage';
 import { readMeritWalletUiState, writeMeritWalletUiState } from './src/meritWalletUiStorage';
 import {
   readMeritWalletConfigState,
@@ -847,8 +847,9 @@ async function renderWallet() {
                 onOpenTargetChange: (target: OpenTarget) => void writeOpenTarget(target),
               },
               data: {
-                // 2026-10-13: where the wallet asset files (public/assets/wallets: the wallet pill, the wallet list, the wallet panel) are served from: the web app the Local / Prod toggle points at.
-                walletAssetBaseUrl: urlForOpenTarget(openTarget),
+                // The wallet brand assets are bundled in deploy/assets/wallets. Resolve them
+                // from this extension so its wallet list and details need no web app origin.
+                walletAssetBaseUrl: chrome.runtime.getURL(''),
                 // The host's real active account; '' means none selected, so the header reads "Select Account".
                 activeAccountAddress: walletSource.address ?? '',
                 // 2026-10-11 (authenticationDesign.txt section 15.7, W1): the wallet (its backends behind one object); the lock screen, the lock button, the authentication type and the Wallet Security section come from it.

@@ -9,6 +9,7 @@ import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger'
 import { startDappApprovals } from './src/dappApprovals';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
 import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
+import { persistedTimeoutMs } from '@sponsorcoin/merit-wallet';
 import { type AssetListEntry } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
@@ -23,6 +24,7 @@ import {
   setHostApiBase,
   disableHostApi,
   getPreferredSpCoinContractAddress,
+  fetchServerActiveSpCoin,
   type ExchangeContextWalletSource,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import {
@@ -69,7 +71,7 @@ import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
 import { TransactionConfirmOrchestrator } from './src/TransactionConfirmOrchestrator';
 import { TransferApprovalHost } from './src/TransferApprovalHost';
 import { sendNativeMerit } from './src/sendNative';
-import { allowLegacySigning, signMessageWithVault } from './src/localSigning';
+import { signMessageWithVault } from './src/localSigning';
 import { encodeFunctionData } from 'viem';
 import { runSpCoinReadStep } from './src/runSpCoinReadStep';
 import { buildMeritTradeExecutorContext } from './src/tradeExecutorMerit';
@@ -183,20 +185,9 @@ function setActiveChain(next: number): void {
   activeSpCoinLoadedFor = '';
 }
 
-async function loadActiveSpCoinAddress(baseUrl: string, account: string): Promise<string | undefined> {
-  // 2026-10-11: the bundled snapshot of the server's activeSpCoin.json answers first, and the hosted app is not asked when there is none (no base).
-  const bundled = (bundledFeedData as Record<string, { address?: unknown } | undefined>)[`/api/spCoin/lab/networks/${activeChainId}/activeSpCoin`];
-  if (typeof bundled?.address === 'string' && /^0x[0-9a-fA-F]{40}$/.test(bundled.address)) return bundled.address;
-  if (!baseUrl) return undefined;
-  try {
-    const response = await fetch(`${baseUrl}/api/exchangeContext?key=${encodeURIComponent(account.toLowerCase())}`);
-    if (!response.ok) return undefined;
-    const body = await response.json();
-    const address = body?.apiCoreSyncedMembers?.activeTokens?.activeSpCoinAddress?.address;
-    return typeof address === 'string' && /^0x[0-9a-fA-F]{40}$/.test(address) ? address : undefined;
-  } catch {
-    return undefined;
-  }
+async function loadActiveSpCoinAddress(): Promise<string | undefined> {
+  // docs/meritMigration.txt row 36: the engine's loader answers from the bundled snapshot (src/bundledFeeds.ts registers the route). The branch that read the hosted app's /api/exchangeContext is gone: baseUrl is the empty string, so it could never run.
+  return fetchServerActiveSpCoin(activeChainId);
 }
 
 // Initial ExchangeContextWalletSource, disconnected — a plain object, not
@@ -217,68 +208,6 @@ const DISCONNECTED_WALLET_SOURCE: ExchangeContextWalletSource = {
 // fetchAccountGroups copy still marked the FIRST account active, which made the header show an account nobody had selected.
 // The active account is now the host's activeAccountAddress (walletSource.address) and the active network is activeChainId.
 
-// 2026-09-18, Phase B.2 Stage 2.c — spcoin-feeds' own KeystoreAccountEntry
-// (accountsFeed.ts) deliberately mirrors toClientSafeKeyStoreEntries'
-// client-safe shape MINUS isLocked/encryptedKey — those are keystore
-// internals, not part of that package's own "public account list" concern.
-// Fetched separately here, directly against the same testAccounts route
-// (CORS-enabled for GET only, Stage 2.a), to know which accounts need a
-// password before `unlockMeritWalletAccount` below is worth prompting for.
-interface RawTestAccountEntry {
-  address?: unknown;
-  isLocked?: unknown;
-  hasPrivateKey?: unknown;
-}
-
-async function fetchKeystoreLockStatus(baseUrl: string): Promise<Map<string, boolean>> {
-  const lockStatus = new Map<string, boolean>();
-  if (!baseUrl) return lockStatus;
-  try {
-    const response = await fetch(`${baseUrl}/api/spCoin/lab/networks/${activeChainId}/testAccounts`);
-    if (!response.ok) return lockStatus;
-    const entries = (await response.json()) as RawTestAccountEntry[];
-    if (!Array.isArray(entries)) return lockStatus;
-    for (const entry of entries) {
-      const address = typeof entry?.address === 'string' ? entry.address.trim().toLowerCase() : '';
-      if (!address) continue;
-      lockStatus.set(address, Boolean(entry?.isLocked));
-    }
-  } catch (error) {
-    // A locked-status lookup failing just means every account is treated
-    // as "not locked" (handleAccountRowSelect's own `?? false` below) —
-    // the unlock prompt simply won't show; not a hard failure for the
-    // rest of the wallet UI.
-    console.error('Failed to load Merit Wallet keystore lock status:', error);
-  }
-  return lockStatus;
-}
-
-// 2026-09-18, Phase B.2 Stage 2.c — POSTs to the same unlock route the web
-// app's own PasswordGateOrchestrator flow uses (app/api/spCoin/meritConnect/
-// unlock/route.ts), now cross-origin-trusted for this extension's pinned
-// origin (Stage 2.b's meritConnectExtensionAuth.ts). Returns only an
-// opaque, short-lived capability token — the private key itself never
-// reaches this file, same guarantee the web app's own flow has.
-async function unlockMeritWalletAccount(
-  baseUrl: string,
-  address: string,
-  password: string,
-): Promise<{ ok: true; token: string } | { ok: false; message: string }> {
-  try {
-    const response = await fetch(`${baseUrl}/api/spCoin/meritConnect/unlock`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chainId: activeChainId, address, password }),
-    });
-    const payload = (await response.json().catch(() => ({}))) as { ok?: boolean; token?: string; message?: string };
-    if (!response.ok || !payload.ok || !payload.token) {
-      return { ok: false, message: payload.message || 'Unlock failed.' };
-    }
-    return { ok: true, token: payload.token };
-  } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : String(error) };
-  }
-}
 
 // 2026-09-29, stage 8 of spcoin-nextjs-front-end's docs/meritWalletConvergence.txt — withAssetIcons/buildRecipientRows/buildTokenRows
 // removed from here: MeritWallet self-fetches tokenRows/recipientRows (and, since 2026-10-08, accountGroups/networkRows too).
@@ -425,6 +354,10 @@ async function renderWallet() {
   // the vault (setup) is not forced on anyone until the hosted-app accounts are retired (table row 23).
   type VaultReply = { ok: boolean; initialized?: boolean; unlocked?: boolean; mnemonic?: string; error?: string; message?: string };
   const vaultCall = (message: unknown) => chrome.runtime.sendMessage(message) as Promise<VaultReply>;
+  // docs/meritMigration.txt row 21: the Config Time Limit IS the vault's auto-lock time. It used to be stored and shown but never applied here, so the vault locked after its built-in 15 minutes whatever the picker said.
+  // The worker keeps the minutes it is given and applies them again after a restart (src/walletBackground.ts).
+  const applyTimeLimit = (hours: number) => { void vaultCall({ type: 'merit/vault/setAutoLock', minutes: persistedTimeoutMs(hours) / 60_000 }).catch(() => undefined); };
+  applyTimeLimit(persistedConfig.persistedPasswordTimeoutHours);
   const vaultSession = createWalletSession(
     {
       status: async () => {
@@ -476,8 +409,7 @@ async function renderWallet() {
   const walletRefresh = createWalletRefresh(
     {
       reload: async () => {
-        // The lock status belongs to the hosted app's keystore accounts, which only exist when the vault is not required (2026-10-09, row 25: no request to the web app in the default vault mode).
-        lockStatusByAddress = requireVault ? new Map() : await fetchKeystoreLockStatus(baseUrl);
+        // nothing to reload: the lock status belonged to the retired hosted-app keystore accounts (docs/meritMigration.txt row 36)
       },
     },
     () => render(),
@@ -618,7 +550,7 @@ async function renderWallet() {
       const from = walletSource.address;
       if (!from) throw new Error('Select and activate an account first.');
       const data = encodeFunctionData({ abi: SPOIN_STAKE_ABI, functionName: method, args: args as never });
-      const context = buildMeritTradeExecutorContext({ baseUrl, rpcUrl: chainRpcUrl() }, { address: from, isConnected: true, chainId: activeChainId });
+      const context = buildMeritTradeExecutorContext({ rpcUrl: chainRpcUrl() }, { address: from, isConnected: true, chainId: activeChainId });
       const result = await context.executor.execute({
         to: spCoinAddress(),
         data,
@@ -669,18 +601,9 @@ async function renderWallet() {
     },
     onClaimed: () => void walletRefresh.run(),
   };
-  // Setup is required (the wallet is unusable until a vault exists, MetaMask's onboarding) only when this storage flag is set; until the hosted-app
-  // accounts are retired it stays off, so an extension without a vault keeps working as before.
-  let requireVault = true;
   let onboardingOpen = false;
-  void chrome.storage.local.get('spcoin_merit_require_vault').then((stored) => {
-    // 2026-10-08: the vault is the wallet by default (MetaMask). Only an explicit false keeps the old hosted-account path.
-    requireVault = stored.spcoin_merit_require_vault !== false;
-    allowLegacySigning(!requireVault);
-    render();
-  });
 
-  // The accounts of the unlocked vault feed the account list and the active account (the hosted-app accounts are only used when requireVault is false).
+  // The accounts of the unlocked vault feed the account list and the active account.
   let vaultRows: Array<{ address: string; name: string }> | null = null;
   let vaultActive: string | undefined;
   // 2026-10-12 (docs/connectionDesign.txt item 9): the active account when it is one MetaMask shared with the extension (not in the vault); kept so a reload brings it back. A vault pick clears it.
@@ -783,6 +706,9 @@ async function renderWallet() {
             console.error('Failed to persist Merit Wallet config:', error);
           },
         ),
+      onChange: (patch, next) => {
+        if (patch.persistedPasswordTimeoutHours !== undefined) applyTimeLimit(next.persistedPasswordTimeoutHours);
+      },
     },
     () => render(),
   );
@@ -791,20 +717,6 @@ async function renderWallet() {
   // variable, mutated then render() called" shape as every other piece of
   // state in this file (walletSource, activeChainId, etc.), not React state.
   let walletSource: ExchangeContextWalletSource = DISCONNECTED_WALLET_SOURCE;
-  let lockStatusByAddress = new Map<string, boolean>();
-  // The single currently-unlocked account's capability token (one at a
-  // time, matching walletSource's own single-active-address model — Merit
-  // Wallet Stage 2.c doesn't support switching between two simultaneously
-  // unlocked accounts, same "unlock once, one active session" shape as
-  // walletSource.address itself). Not currently consumed anywhere yet
-  // (Stage 3/4's job — sign/hydration) but kept here, address-scoped, so
-  // this stage's own re-select doesn't immediately re-prompt for a
-  // password it just successfully entered.
-  let unlockToken: string | null = null;
-  let unlockTokenAddress: string | null = null;
-  let unlockPrompt: { address: string } | null = null;
-  let unlockError: string | undefined;
-  let unlocking = false;
   // Phase B.2 Stage 4 follow-up — the SEND tab's real, controlled amount
   // field (MeritWallet.tsx's own sendAmount/onSendAmountChange props, this
   // session) and busy flag while a real send is in flight.
@@ -828,7 +740,7 @@ async function renderWallet() {
       }
     | null = null;
   function render() {
-    if (requireVault && vaultSession.getState().phase === 'setup') onboardingOpen = true;
+    if (vaultSession.getState().phase === 'setup') onboardingOpen = true;
     const vaultPhase = vaultSession.getState().phase;
     if (vaultPhase === 'unlocked' && vaultRowsStale) {
       vaultRowsStale = false;
@@ -841,7 +753,7 @@ async function renderWallet() {
     const loadKey = `${baseUrl}|${walletSource.address ?? ''}`;
     if (walletSource.address && loadKey !== activeSpCoinLoadedFor) {
       activeSpCoinLoadedFor = loadKey;
-      void loadActiveSpCoinAddress(baseUrl, walletSource.address).then((address) => {
+      void loadActiveSpCoinAddress().then((address) => {
         if (address && address !== activeSpCoinAddress) {
           activeSpCoinAddress = address;
           render();
@@ -1022,7 +934,7 @@ async function renderWallet() {
                 // First-run setup: the component draws the "Set up your wallet" screen instead of the wallet while this is set (create a wallet, import by recovery phrase, restore a backup). It stays up through the recovery-phrase
                 // step even though the vault already exists by then (the phase is no longer 'setup').
                 onboarding:
-                  requireVault && (vaultSession.getState().phase === 'setup' || onboardingOpen)
+                  (vaultSession.getState().phase === 'setup' || onboardingOpen)
                     ? {
                         createWallet: vaultOnboarding.createWallet,
                         importWallet: vaultOnboarding.importWallet,
@@ -1036,10 +948,6 @@ async function renderWallet() {
                         },
                       }
                     : undefined,
-                // The legacy keystore unlock (requireVault off): a locked account's password is being asked for; the component's own lock screen takes it.
-                ...(unlockPrompt
-                  ? { walletLocked: true, passwordMode: 'unlock' as const, passwordErrorText: unlockError, passwordSubmitting: unlocking, onPasswordSubmit: (password: string) => void handleUnlockSubmit(password) }
-                  : {}),
               },
               config: {
                 // 2026-10-13: the swap and agent wiring this block once said was still to come is done (the shared swap flow in src/swapHost.ts, the agent hydration in
@@ -1048,7 +956,7 @@ async function renderWallet() {
                 // ManageSponsorshipsPanel. Display strings parsed from
                 // accountRecord via parseRewardDisplay(); claim callbacks use the
                 // extension's executeClaimTransaction adapter (viem encodeFunctionData
-                // + TradeExecutor/meritSign pipeline); estimate callbacks use the
+                // + TradeExecutor pipeline); estimate callbacks use the
                 // extension's estimateOffChainRewards client (spcoin_rread via
                 // /api/spCoin/run-script, already CORS-trusted cross-origin).
                  // 2026-10-04 — the REWARDS/PENDING tab props
@@ -1219,17 +1127,6 @@ async function renderWallet() {
       });
       return;
     }
-    const address = accountId.trim().toLowerCase();
-    const isLocked = lockStatusByAddress.get(address) ?? false;
-    const alreadyUnlocked = unlockTokenAddress === address;
-
-    if (isLocked && !alreadyUnlocked) {
-      unlockPrompt = { address: accountId };
-      unlockError = undefined;
-      render();
-      return;
-    }
-
     activateAccount(accountId);
   }
 
@@ -1240,34 +1137,12 @@ async function renderWallet() {
     render();
   }
 
-  async function handleUnlockSubmit(password: string) {
-    if (!unlockPrompt) return;
-    unlocking = true;
-    unlockError = undefined;
-    render();
-
-    const address = unlockPrompt.address;
-    const result = await unlockMeritWalletAccount(baseUrl, address, password);
-
-    unlocking = false;
-    if (!result.ok) {
-      unlockError = result.message;
-      render();
-      return;
-    }
-
-    unlockToken = result.token;
-    unlockTokenAddress = address.trim().toLowerCase();
-    unlockPrompt = null;
-    unlockError = undefined;
-    activateAccount(address);
-  }
 
   // Phase B.2 Stage 4 follow-up ("build actual trading functionality...
   // do it") — the first real trade-execution flow in the extension.
   // Native-currency only (see sendNative.ts's own header comment for why
   // an ERC20 tokenAddress is rejected rather than guessed at). Approval
-  // gating (TransactionConfirmPanel) happens inside signAndSendMeritTransaction
+  // gating (TransactionConfirmPanel) happens inside the authenticator's sendTransaction
   // itself — this function's own job is just resolving the real params
   // (active address, cached unlock token if this account is locked, the
   // real Hardhat rpcUrl) and reporting the outcome.
@@ -1292,7 +1167,6 @@ async function renderWallet() {
     const network = listConfiguredNetworks({ showTestNets: true }).find((row) => row.chainId === activeChainId);
     const result = await sendNativeMerit({
       useVault,
-      baseUrl,
       chainId: activeChainId,
       rpcUrl: chainRpcUrl(),
       from,
@@ -1302,7 +1176,6 @@ async function renderWallet() {
        decimals: params.decimals,
        tokenSymbol: params.tokenSymbol,
        nativeSymbol: network?.symbol ?? 'ETH',
-      unlockToken: unlockTokenAddress === from.trim().toLowerCase() ? (unlockToken ?? undefined) : undefined,
     });
 
     sendBusy = false;
@@ -1337,7 +1210,6 @@ async function renderWallet() {
   // tokenRows/recipientRows no longer fetched here either — MeritWallet's
   // own self-fetch (chainId/baseUrl props, wired into the render call above)
   // handles their first fetch itself once chainId is set.
-  lockStatusByAddress = requireVault ? new Map() : await fetchKeystoreLockStatus(baseUrl);
   render();
 }
 

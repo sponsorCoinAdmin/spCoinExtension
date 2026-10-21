@@ -4,22 +4,11 @@
 // trade executor (stake, approve, swap, claim). The vault in the background worker queues the request (merit/signing/*); this file shows the
 // extension's existing always-explicit confirmation screen and then tells the worker to approve or reject what it queued.
 import { requestSignApproval, type PendingSignRequest } from './pendingSignRequestStore';
-import { clearPendingSignRequest } from './meritSign';
+import { clearPendingSignRequest } from './pendingSignRequestStore';
 
 type WorkerReply = { ok: boolean; hash?: string; signature?: string; error?: string; message?: string; accounts?: Array<{ address: string; devOrigin?: boolean }>; pending?: Array<{ id: string }> };
 const worker = (message: unknown) => chrome.runtime.sendMessage(message) as Promise<WorkerReply>;
 
-/**
- * The hosted app's signing route (the pre-vault path) refuses requests from the extension ("Cross-origin signing requests are not allowed"). With the vault as the
- * wallet (the default) it must not be used as a silent fallback: a locked wallet or an account that is not in it gets a clear message instead.
- */
-let legacySigningAllowed = false;
-export function allowLegacySigning(allowed: boolean): void {
-  legacySigningAllowed = allowed;
-}
-export function isLegacySigningAllowed(): boolean {
-  return legacySigningAllowed;
-}
 export async function vaultUnavailableMessage(): Promise<string> {
   const status = (await worker({ type: 'merit/vault/status' }).catch(() => undefined)) as (WorkerReply & { initialized?: boolean; unlocked?: boolean }) | undefined;
   if (status?.ok && status.initialized && !status.unlocked) return 'The wallet is locked. Unlock it and try again.';

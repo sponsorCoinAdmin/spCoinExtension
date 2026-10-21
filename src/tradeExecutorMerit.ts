@@ -1,10 +1,9 @@
 // File: src/tradeExecutorMerit.ts
 // Extension's TradeExecutor implementation (2026-09-26, Phase 4).
 //
-// Wraps meritSign.ts's signAndSendMeritTransaction — the extension's
-// approval-gated POST to /api/spCoin/meritConnect/sign. This is the
-// production counterpart to the web app's tradeExecutorEthers.ts (ethers
-// Signer path).
+// Signs through the vault / the authenticators (src/localVaultAuthenticator.ts), behind the confirmation screen. This is the
+// production counterpart to the web app's tradeExecutorEthers.ts (ethers Signer path). (The hosted-app signing route it used to fall
+// back to was removed with docs/meritMigration.txt row 36.)
 //
 // The portable swap/stake/approve logic in @sponsorcoin/spcoin-onchain
 // (re-exported via @sponsorcoin/spcoin-exchange-engine) calls
@@ -18,19 +17,13 @@ import type {
   TradeExecutorContext,
   TradeExecutorAccount,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import {
-  signAndSendMeritTransaction,
-  type SignAndSendMeritTransactionParams,
-} from './meritSign';
 import type { PendingSignRequestAccountEntry, PendingSignRequestTokenEntry } from './pendingSignRequestStore';
-import { ethCall, isLegacySigningAllowed, isVaultAccount, vaultUnavailableMessage, waitForReceipt } from './localSigning';
+import { ethCall, isVaultAccount, vaultUnavailableMessage, waitForReceipt } from './localSigning';
 import { localVaultAuthenticator } from './localVaultAuthenticator';
 import { authenticatorFor, isExternalAccount } from './externalAccounts';
 
 export interface MeritTradeExecutorParams {
-  /** Base URL for the Merit Wallet API (e.g. chrome-extension://xxx or https://spcoin.app). */
-  baseUrl: string;
-  /** RPC URL — required by the Merit sign route, not resolved internally. */
+  /** RPC URL: used when a call does not carry its own. */
   rpcUrl: string;
   /** 2026-10-08 (table row 14): the signing account. When it belongs to the unlocked vault, execute() signs locally in the worker (src/localSigning.ts). */
   from?: string;
@@ -81,33 +74,8 @@ export function createMeritTradeExecutor(params: MeritTradeExecutorParams): Trad
         const receipt = await waitForReceipt(rpcUrl || params.rpcUrl, hash);
         return { transactionHash: hash, receipt };
       }
-      if (!isLegacySigningAllowed()) throw new Error(await vaultUnavailableMessage());
-      const signParams: SignAndSendMeritTransactionParams = {
-        baseUrl: params.baseUrl,
-        chainId,
-        rpcUrl: rpcUrl || params.rpcUrl,
-        from: params.from ?? '',
-        to,
-        data,
-        value: value !== undefined ? BigInt(value).toString() : undefined,
-        title: display?.title ?? display?.label ?? 'Transaction',
-        message: display?.label,
-        contractAddress: display?.contractAddress,
-        accounts: display?.accounts as PendingSignRequestAccountEntry[] | undefined,
-        tokens: display?.tokens as PendingSignRequestTokenEntry[] | undefined,
-        amount: amountEntry ? { label: amountEntry.label, value: amountEntry.value } : undefined,
-      };
-
-      const result = await signAndSendMeritTransaction(signParams);
-
-      if (!result.ok) {
-        throw new Error(result.message);
-      }
-
-      return {
-        transactionHash: result.hash,
-        receipt: result.receipt,
-      };
+      // an account that is not in the wallet cannot sign here
+      throw new Error(await vaultUnavailableMessage());
     },
 
     async call({ to, data, rpcUrl }): Promise<string> {

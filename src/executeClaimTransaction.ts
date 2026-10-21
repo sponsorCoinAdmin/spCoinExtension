@@ -1,6 +1,6 @@
 // File: src/executeClaimTransaction.ts
 // Extension-side claim execution: the shared executeClaimTransactionCore (@sponsorcoin/spcoin-onchain: the claimOnChain* ABI, the calldata and the confirmation copy) with the extension's TradeExecutor, which the vault
-// signs locally behind the confirmation screen (tradeExecutorMerit.ts, meritSign.ts). This file only builds that context.
+// signs locally behind the confirmation screen (tradeExecutorMerit.ts). This file only builds that context.
 import type { Abi } from 'viem';
 import { executeClaimTransactionCore, CLAIM_METHODS, SPOIN_CLAIM_ABI, type ClaimMethod, type ExecuteClaimTransactionResult } from '@sponsorcoin/spcoin-onchain';
 import type { TradeExecutorContext, TradeExecutorAccount } from '@sponsorcoin/spcoin-exchange-engine';
@@ -29,6 +29,6 @@ export interface ExecuteClaimTransactionParams {
 }
 
 export async function executeClaimTransaction({ baseUrl, rpcUrl, accountKey, method, abi, contractAddress, chainId, fromAddress, onConfirmed }: ExecuteClaimTransactionParams): Promise<ExecuteClaimTransactionResult> {
-  const context: TradeExecutorContext = buildMeritTradeExecutorContext({ baseUrl, rpcUrl }, { address: fromAddress, isConnected: Boolean(fromAddress), chainId } as TradeExecutorAccount);
+  const context: TradeExecutorContext = buildMeritTradeExecutorContext({ rpcUrl }, { address: fromAddress, isConnected: Boolean(fromAddress), chainId } as TradeExecutorAccount);
   return executeClaimTransactionCore({ accountKey, method, contractAddress, chainId, rpcUrl, fromAddress, context, abi, onConfirmed });
 }

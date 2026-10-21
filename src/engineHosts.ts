@@ -58,7 +58,7 @@ export function useExtensionSwapFunctions(): ReturnType<typeof useSwapFunctions>
   const params: UseSwapFunctionsParams = {
     buildTradeExecutorContext: async (_display, chainId, rpcUrl) => {
       const from = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim();
-      return buildMeritTradeExecutorContext({ baseUrl: '', rpcUrl, from }, { address: from, isConnected: Boolean(from), chainId });
+      return buildMeritTradeExecutorContext({ rpcUrl, from }, { address: from, isConnected: Boolean(from), chainId });
     },
     activeSpCoinAddress,
     sponsorQuote,

@@ -32,6 +32,8 @@ import { rpcUrlForChain } from './chainRpc';
 
 const VAULT_KEY = 'spcoin_merit_vault';
 const SESSION_KEY = 'spcoin_merit_vault_session';
+/** The auto-lock minutes the side panel last applied (the Config Time Limit): kept so a worker Chrome stopped and restarted does not fall back to the built-in default. */
+const AUTO_LOCK_KEY = 'spcoin_merit_vault_autolock_minutes';
 /** Default idle time before the wallet locks itself, in minutes (changeable with merit/vault/setAutoLock). */
 const DEFAULT_AUTO_LOCK_MINUTES = 15;
 
@@ -112,8 +114,14 @@ const session = new VaultSession<WalletVaultContents>({
   autoLockMs: DEFAULT_AUTO_LOCK_MINUTES * 60_000,
 });
 
+// docs/meritMigration.txt row 21: the Config Time Limit is the auto-lock time. Apply the saved one BEFORE restoring, because the restore checks the session against the auto-lock time.
+const savedAutoLock: Promise<void> = chrome.storage.local.get(AUTO_LOCK_KEY).then((stored) => {
+  const minutes = stored[AUTO_LOCK_KEY];
+  if (typeof minutes === 'number' && Number.isFinite(minutes) && minutes >= 0) session.setAutoLockMs(minutes * 60_000);
+}).catch(() => undefined);
+
 // After a worker restart: come back unlocked if the session is still inside the auto-lock time. Requests wait for this to settle.
-const ready: Promise<boolean> = session.restore().catch(() => false);
+const ready: Promise<boolean> = savedAutoLock.then(() => session.restore()).catch(() => false);
 
 const accounts = new WalletAccounts(session);
 const approvals = new ApprovalController();
@@ -162,6 +170,7 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
       case 'merit/vault/setAutoLock':
         if (typeof request.minutes !== 'number' || !Number.isFinite(request.minutes) || request.minutes < 0) return { ok: false, error: 'invalid-request' };
         session.setAutoLockMs(request.minutes * 60_000);
+        void chrome.storage.local.set({ [AUTO_LOCK_KEY]: request.minutes });
         return snapshot();
       case 'merit/vault/verifyPassword':
         if (typeof request.password !== 'string' || !request.password) return { ok: false, error: 'invalid-request' };

@@ -8,27 +8,11 @@
 //
 // The returned function must keep a stable identity: MeritWallet re-fetches
 // whenever the prop changes, so build it once at module scope.
-import { createPublicClient, erc20Abi, http, type Address } from 'viem';
+import { createPublicClient, http } from 'viem';
+import { createBalanceReader, type BalanceClient } from '@sponsorcoin/merit-wallet';
 
+// docs/meritMigration.txt row 27: the reads are merit-wallet's createBalanceReader (the same one the web app uses); this file only supplies a viem client for the chain's RPC.
 export function makeFetchBalance(rpcUrl: string) {
   const client = createPublicClient({ transport: http(rpcUrl) });
-  return async ({
-    tokenAddress,
-    accountAddress,
-  }: {
-    tokenAddress?: string;
-    accountAddress: string;
-  }): Promise<bigint | undefined> => {
-    // No tokenAddress means the native token (MeritWallet resolves the 0xEeee…
-    // sentinel to undefined before calling).
-    if (!tokenAddress) {
-      return client.getBalance({ address: accountAddress as Address });
-    }
-    return client.readContract({
-      address: tokenAddress as Address,
-      abi: erc20Abi,
-      functionName: 'balanceOf',
-      args: [accountAddress as Address],
-    });
-  };
+  return createBalanceReader(() => client as unknown as BalanceClient);
 }

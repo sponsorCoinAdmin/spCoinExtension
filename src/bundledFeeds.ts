@@ -50,6 +50,11 @@ registerNetworkData({
 const bundledTokensStore = createBundledTokensStore(data, { supportedChainIds: () => configured.map((n) => n.chainId), diskChainId: (chainId) => resolveSpCoinDiskChainId(chainId) });
 const bundledTokensApi = createTokensApi(bundledTokensStore);
 registerLocalApi('/api/spCoin/tokens', { get: bundledTokensApi.list, post: bundledTokensApi.batch });
+// 2026-10-20 (docs/meritMigration.txt row 27): the active spCoin of each chain, the record the web app serves at /api/spCoin/lab/networks/<chainId>/activeSpCoin. The engine's fetchServerActiveSpCoin asks the in-process API first, so the extension no longer carries its own lookup.
+for (const { chainId } of configured) {
+  const record = data[`/api/spCoin/lab/networks/${chainId}/activeSpCoin`];
+  if (record && typeof record === 'object') registerLocalApi(`/api/spCoin/lab/networks/${chainId}/activeSpCoin`, { get: async () => ({ status: 200, body: record }) });
+}
 
 /** The bundled snapshot itself, for code that reads a file directly (the spCoin ABI and deployment map). */
 export const bundledFeedData = snapshot as Record<string, unknown>;

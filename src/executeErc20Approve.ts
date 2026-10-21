@@ -2,7 +2,7 @@
 // Extension-side ERC20 approve adapter (2026-09-28, Phase C).
 //
 // Thin wrapper around the portable executeErc20Approve from
-// @sponsorcoin/spcoin-onchain, wiring the extension's TradeExecutor (meritSign.ts).
+// @sponsorcoin/spcoin-onchain, wiring the extension's TradeExecutor (tradeExecutorMerit.ts).
 // This is the extension counterpart to the web app's
 // lib/spCoin/executeErc20Approve.ts — same pattern, different
 // TradeExecutor context builder.
@@ -42,7 +42,7 @@ export async function executeErc20Approve({
   };
 
   const context: TradeExecutorContext = buildMeritTradeExecutorContext(
-    { baseUrl, rpcUrl },
+    { rpcUrl },
     account,
   );
 

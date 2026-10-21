@@ -3,7 +3,7 @@
 //
 // Thin wrapper around the portable executeUniswapV3Swap from
 // @sponsorcoin/spcoin-onchain (re-exported via @sponsorcoin/spcoin-exchange-
-// engine), wiring the extension's TradeExecutor (meritSign.ts). This is the
+// engine), wiring the extension's TradeExecutor (tradeExecutorMerit.ts). This is the
 // extension counterpart to the web app's
 // lib/uniswap/executeUniswapV3Swap.ts — same pattern, different
 // TradeExecutor context builder.
@@ -58,7 +58,7 @@ export async function executeUniswapV3Swap({
   };
 
   const context: TradeExecutorContext = buildMeritTradeExecutorContext(
-    { baseUrl, rpcUrl },
+    { rpcUrl },
     account,
   );
 

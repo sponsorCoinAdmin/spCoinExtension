@@ -5,7 +5,7 @@
 // confirmation screen for each one, one at a time, and then tells the worker to approve or reject it. Nothing happens to a request until the user
 // answers here. Requests wait while the wallet is locked and are shown right after it is unlocked.
 import { requestSignApproval, type PendingSignRequest } from './pendingSignRequestStore';
-import { clearPendingSignRequest } from './meritSign';
+import { clearPendingSignRequest } from './pendingSignRequestStore';
 import { requestTransferApproval } from './transferApprovalStore';
 
 interface PendingItem {

@@ -11,9 +11,11 @@
 // the web app's own localStorage even if it wanted to reuse it, different
 // origin entirely).
 
-import type {
-  ExchangeContextStorageExtensions,
-  ExchangeContextWriteExtensions,
+import {
+  serializeWithBigInt,
+  deserializeWithBigInt,
+  type ExchangeContextStorageExtensions,
+  type ExchangeContextWriteExtensions,
 } from '@sponsorcoin/spcoin-exchange-engine';
 
 import { migrateDefaultOnPanelList } from './panelVisibilityStorage';
@@ -33,17 +35,9 @@ const STORAGE_KEY = 'spcoin_exchange_context';
 // finished booting. Stored as a BigInt-safe JSON STRING instead of a raw
 // object — chrome.storage.local happily stores a string — round-tripped
 // back to real BigInt values on read via the matching reviver below.
-const BIGINT_MARKER = '__bigint__:';
-
-function stringifyWithBigInt(value: unknown): string {
-  return JSON.stringify(value, (_key, v) => (typeof v === 'bigint' ? `${BIGINT_MARKER}${v.toString()}` : v));
-}
-
-function parseWithBigInt(json: string): unknown {
-  return JSON.parse(json, (_key, v) =>
-    typeof v === 'string' && v.startsWith(BIGINT_MARKER) ? BigInt(v.slice(BIGINT_MARKER.length)) : v,
-  );
-}
+// docs/meritMigration.txt row 38: the BigInt codec is the engine's (it also reads the "__bigint__:123" marker this file used to write, so a saved context survives the change)
+const stringifyWithBigInt = (value: unknown): string => serializeWithBigInt(value);
+const parseWithBigInt = (json: string): unknown => deserializeWithBigInt(json);
 
 async function readExchangeContext(): Promise<unknown | undefined> {
   try {

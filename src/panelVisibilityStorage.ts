@@ -19,10 +19,16 @@
 import {
   panelStore,
   setPanelVisibilityPersistence,
+  parsePanelVisibilitySnapshot,
+  parseMigrationMarkers,
+  applyDefaultOnToSnapshot,
+  applyDefaultOnToList,
+  parseLegacyDisplayPanels,
+  mergePanelVisibility,
   type PanelVisibilitySnapshot,
 } from '@sponsorcoin/spcoin-exchange-engine';
 
-import { PANEL_DEFS, SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
+import { PANEL_DEFS } from '@sponsorcoin/spcoin-common/panels';
 
 const STORAGE_KEY = 'spcoin_panel_visibility';
 
@@ -34,9 +40,7 @@ const LEGACY_CONTEXT_KEY = 'spcoin_exchange_context';
 // saved snapshot below already holds the old `false`, and boot only seeds panels that are ABSENT. So each bump
 // is applied once here, then recorded so a user who later hides the panel on purpose keeps it hidden.
 const MIGRATIONS_KEY = 'spcoin_panel_visibility_migrations';
-const DEFAULT_ON_MIGRATIONS: ReadonlyArray<{ name: string; panels: readonly number[] }> = [
-  { name: '2026-10-05:zero-x-trade-button-on', panels: [SP_COIN_DISPLAY.ZERO_X_TRADE_BUTTON] },
-];
+// (the default-on list itself and the rules that apply it are the engine's shared ones, docs/meritMigration.txt row 38; this file only reads and writes chrome.storage)
 
 // The extension keeps the panel tree in TWO saved places that both feed boot: this snapshot AND the saved
 // ExchangeContext's displayPanels list (exchangeContextStorage.ts) — and the tree wins at boot, so a bump must
@@ -47,23 +51,10 @@ export async function migrateDefaultOnPanelList(
   const markerKey = `${MIGRATIONS_KEY}:tree`;
   try {
     const stored = await chrome.storage.local.get(markerKey);
-    const raw = stored[markerKey];
-    const done = new Set<string>(Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : []);
-    const before = done.size;
-    let changed = false;
-    for (const migration of DEFAULT_ON_MIGRATIONS) {
-      if (done.has(migration.name)) continue;
-      for (const entry of list) {
-        const id = Number(entry.panel ?? entry.id);
-        if (migration.panels.includes(id) && entry.visible === false) {
-          entry.visible = true;
-          changed = true;
-        }
-      }
-      done.add(migration.name);
-    }
-    if (done.size !== before) await chrome.storage.local.set({ [markerKey]: [...done] });
-    return changed;
+    const done = parseMigrationMarkers(stored[markerKey]);
+    const { listChanged, markersChanged } = applyDefaultOnToList(list, done);
+    if (markersChanged) await chrome.storage.local.set({ [markerKey]: [...done] });
+    return listChanged;
   } catch (error) {
     console.error('Failed to apply panel default-on migrations to the saved tree:', error);
     return false;
@@ -73,22 +64,10 @@ export async function migrateDefaultOnPanelList(
 async function applyDefaultOnMigrations(snapshot: PanelVisibilitySnapshot): Promise<PanelVisibilitySnapshot> {
   try {
     const stored = await chrome.storage.local.get(MIGRATIONS_KEY);
-    const raw = stored[MIGRATIONS_KEY];
-    const done = new Set<string>(Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : []);
-    const before = done.size;
-    let changed = false;
-    for (const migration of DEFAULT_ON_MIGRATIONS) {
-      if (done.has(migration.name)) continue;
-      for (const id of migration.panels) {
-        if (snapshot[String(id)] === false) {
-          snapshot[String(id)] = true;
-          changed = true;
-        }
-      }
-      done.add(migration.name);
-    }
-    if (changed || done.size !== before) {
-      await chrome.storage.local.set({ [MIGRATIONS_KEY]: [...done], ...(changed ? { [STORAGE_KEY]: snapshot } : {}) });
+    const done = parseMigrationMarkers(stored[MIGRATIONS_KEY]);
+    const { snapshotChanged, markersChanged } = applyDefaultOnToSnapshot(snapshot, done);
+    if (snapshotChanged || markersChanged) {
+      await chrome.storage.local.set({ [MIGRATIONS_KEY]: [...done], ...(snapshotChanged ? { [STORAGE_KEY]: snapshot } : {}) });
     }
   } catch (error) {
     console.error('Failed to apply panel default-on migrations:', error);
@@ -99,16 +78,8 @@ async function applyDefaultOnMigrations(snapshot: PanelVisibilitySnapshot): Prom
 export async function readPanelVisibilityRaw(): Promise<PanelVisibilitySnapshot | null> {
   try {
     const stored = await chrome.storage.local.get(STORAGE_KEY);
-    const value = stored[STORAGE_KEY];
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-    const out: PanelVisibilitySnapshot = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (typeof v !== 'boolean') return null;
-      const id = Number(k);
-      if (!Number.isFinite(id)) return null;
-      out[String(id)] = v;
-    }
-    return await applyDefaultOnMigrations(out);
+    const snapshot = parsePanelVisibilitySnapshot(stored[STORAGE_KEY]);
+    return snapshot ? await applyDefaultOnMigrations(snapshot) : null;
   } catch (error) {
     console.error('Failed to read persisted panel visibility:', error);
     return null;
@@ -119,21 +90,10 @@ async function readLegacyDisplayPanelsForMigration(): Promise<[number, boolean][
   try {
     const stored = await chrome.storage.local.get(LEGACY_CONTEXT_KEY);
     const raw = stored[LEGACY_CONTEXT_KEY];
-    // The legacy blob is stored as a STRING (BigInt-safe codec —
-    // exchangeContextStorage.ts's stringifyWithBigInt), not as an object.
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    const list = parsed?.apiCoreSyncedMembers?.displayPanels;
-    if (!Array.isArray(list) || list.length === 0) return [];
-    const out: [number, boolean][] = [];
-    for (const e of list) {
-      const id = Number(e?.id ?? e?.panel ?? e?.displayTypeId);
-      if (!Number.isFinite(id)) continue;
-      out.push([id, !!e?.visible]);
-    }
-    return out;
+    // The legacy blob is stored as a STRING (BigInt-safe codec — exchangeContextStorage.ts's stringifyWithBigInt), not as an object.
+    return parseLegacyDisplayPanels(typeof raw === 'string' ? JSON.parse(raw) : raw);
   } catch {
-    // A legacy blob written before the BigInt codec, or corrupted, is not a
-    // reason to fail the panel boot — fall through to defaults.
+    // A legacy blob written before the BigInt codec, or corrupted, is not a reason to fail the panel boot — fall through to defaults.
     return [];
   }
 }
@@ -177,18 +137,11 @@ export function bootstrapPanelVisibility(
   // gates, and the extension looked nothing like the web app's default setup.
   // Defaults go underneath; persisted (or, on migration, legacy) values win, so
   // a panel the user actually closed stays closed.
-  const merged = new Map<number, boolean>(
+  const merged = mergePanelVisibility(
     PANEL_DEFS.map((d) => [Number(d.id), !!d.defaultVisible] as const),
+    persisted,
+    legacyEntries,
   );
-  if (persisted) {
-    for (const [k, v] of Object.entries(persisted)) merged.set(Number(k), v);
-  } else {
-    // Stage D's one-time migration read: no panel key yet, but the user's
-    // existing layout is in the legacy ExchangeContext blob. Layer it over the
-    // defaults so they don't lose their current panel state on this build's
-    // first boot.
-    for (const [id, v] of legacyEntries) merged.set(id, v);
-  }
   panelStore.hydrate(merged);
 }
 

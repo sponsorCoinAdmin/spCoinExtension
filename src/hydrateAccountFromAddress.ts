@@ -16,7 +16,7 @@
 
 import type { Address } from 'viem';
 import { isAddress } from 'viem';
-import { fetchAccountMetadata, getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
+import { loadExtensionAccountProfile } from './accountProfile';
 import { defaultMissingImage } from '@sponsorcoin/spcoin-exchange-engine';
 
 import type { HydratedAgent } from '@sponsorcoin/spcoin-panels';
@@ -34,13 +34,12 @@ export async function hydrateAccountFromAddress(
     return undefined;
   }
 
-  const metadata = await fetchAccountMetadata(addr as Address, { baseUrl: opts.baseUrl }).catch(() => null);
-  const logoURL = `${opts.baseUrl}${getAccountAvatarURL(addr as Address)}`;
-
+  // docs/meritMigration.txt row 38: the metadata read and the avatar URL are loadExtensionAccountProfile's (this file used to repeat both)
+  const profile = await loadExtensionAccountProfile(addr, opts.baseUrl);
   return {
     address: addr,
-    name: metadata?.name,
-    symbol: metadata?.symbol,
-    logoURL,
+    name: profile.name,
+    symbol: profile.symbol,
+    logoURL: profile.logoURL ?? '',
   };
 }

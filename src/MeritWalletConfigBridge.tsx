@@ -1,27 +1,21 @@
 import { useEffect } from 'react';
-import { useSetPanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
-import { ENGINE_PANEL_PAIRS, registerEngineSetters } from './meritWalletConfigEngineStore';
+import { useExchangeEngineSync } from '@sponsorcoin/spcoin-exchange-engine';
+import { registerEngineSetters } from './meritWalletConfigEngineStore';
 
 export interface MeritWalletConfigBridgeProps {
   onEngineVisibilityChange: () => void;
 }
 
 export function MeritWalletConfigBridge({ onEngineVisibilityChange }: MeritWalletConfigBridgeProps) {
-  const setPanelVisible = useSetPanelVisible();
+  // docs/meritMigration.txt row 38: which panels an engine toggle turns on and off is the engine's useExchangeEngineSync, the same hook the web's Config tab uses (this file used to keep its own list of the panel pairs)
+  const { applyUniswapEngine, apply0xEngine } = useExchangeEngineSync();
 
   useEffect(() => {
-    const apply = (engine: keyof typeof ENGINE_PANEL_PAIRS, checked: boolean) => {
-      for (const panel of ENGINE_PANEL_PAIRS[engine]) {
-        setPanelVisible(panel, checked, `WalletConfig:${engine}EngineChange`);
-      }
-      onEngineVisibilityChange();
-    };
-
     return registerEngineSetters({
-      setUniswapEngine: (checked) => apply('uniswap', checked),
-      setZeroXEngine: (checked) => apply('zeroX', checked),
+      setUniswapEngine: (checked) => { applyUniswapEngine(checked, 'WalletConfig:uniswapEngineChange'); onEngineVisibilityChange(); },
+      setZeroXEngine: (checked) => { apply0xEngine(checked, 'WalletConfig:zeroXEngineChange'); onEngineVisibilityChange(); },
     });
-  }, [setPanelVisible, onEngineVisibilityChange]);
+  }, [applyUniswapEngine, apply0xEngine, onEngineVisibilityChange]);
 
   return null;
 }

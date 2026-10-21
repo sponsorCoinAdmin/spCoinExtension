@@ -26,6 +26,10 @@ import {
   getPreferredSpCoinContractAddress,
   fetchServerActiveSpCoin,
   type ExchangeContextWalletSource,
+  collectRefreshAddresses,
+  invalidateSponsorReadCaches,
+  invalidateSponsoredAmount,
+  invalidateAllStakedFromSponsors,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import {
   extensionExchangeContextStorageExtensions,
@@ -391,6 +395,9 @@ async function renderWallet() {
 
   const walletRefresh = createWalletRefresh(
     {
+      // docs/meritMigration.txt row 28: Refresh drops the cached sponsored and staked totals of the active account, the same engine function the web's Refresh runs (it used to leave them, so an old total could stay on screen). The access module's own read cache
+      // is the web server's; the extension has none.
+      invalidate: () => invalidateSponsorReadCaches(collectRefreshAddresses({ activeAccount: { address: walletSource.address } }), { invalidateSponsoredAmount, invalidateAllStakedFromSponsors }),
       reload: async () => {
         // nothing to reload: the lock status belonged to the retired hosted-app keystore accounts (docs/meritMigration.txt row 36)
       },

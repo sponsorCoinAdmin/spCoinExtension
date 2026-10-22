@@ -5,5 +5,6 @@ export interface UseWalletSessionResult extends WalletSessionState {
     refresh: () => Promise<void>;
     lock: () => Promise<void>;
     dismissRecoveryPhrase: () => void;
+    setBootRestorePending: (pending: boolean) => void;
 }
 export declare function useWalletSession(adapter: WalletSessionAdapter): UseWalletSessionResult;

@@ -5,6 +5,8 @@ export declare const MIN_WALLET_PASSWORD_LENGTH = 8;
 export interface WalletSessionStatus {
     initialized: boolean;
     unlocked: boolean;
+    /** Hold boot completion while the host restores its persisted credential. */
+    bootRestorePending?: boolean;
 }
 export interface WalletSessionAdapter {
     /** The current state, or null when it cannot be read yet. */
@@ -21,6 +23,12 @@ export interface WalletSessionState {
     phase: WalletSessionPhase;
     error: string;
     submitting: boolean;
+    /** True after the host's first status read settles, including a failed read. */
+    bootStatusResolved: boolean;
+    /** A host may hold boot resolution while a persisted credential restore runs. */
+    bootRestorePending: boolean;
+    /** The login gate may act only after status and any boot restore have settled. */
+    bootResolved: boolean;
     /** Set right after a wallet is created, until the user confirms they saved it. */
     recoveryPhrase?: string;
 }
@@ -45,5 +53,6 @@ export interface WalletSessionController {
     submit: (password: string, confirmPassword: string) => Promise<void>;
     lock: () => Promise<void>;
     dismissRecoveryPhrase: () => void;
+    setBootRestorePending: (pending: boolean) => void;
 }
 export declare function createWalletSession(adapter: WalletSessionAdapter, onChange?: () => void): WalletSessionController;

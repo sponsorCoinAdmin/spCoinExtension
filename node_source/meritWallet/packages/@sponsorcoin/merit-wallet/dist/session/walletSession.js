@@ -43,19 +43,21 @@ export async function submitWalletPassword(phase, adapter, password, confirmPass
     }
 }
 export function createWalletSession(adapter, onChange = () => undefined) {
-    let state = { phase: 'checking', error: '', submitting: false };
+    let state = { phase: 'checking', error: '', submitting: false, bootStatusResolved: false, bootRestorePending: false, bootResolved: false };
     const set = (patch) => {
         state = { ...state, ...patch };
+        state.bootResolved = state.bootStatusResolved && !state.bootRestorePending;
         onChange();
     };
     return {
         getState: () => state,
         async refresh() {
             try {
-                set({ phase: phaseFromStatus(await adapter.status()) });
+                const status = await adapter.status();
+                set({ phase: phaseFromStatus(status), bootStatusResolved: true, ...(status ? { bootRestorePending: status.bootRestorePending ?? false } : {}) });
             }
             catch {
-                set({ phase: 'checking' });
+                set({ phase: 'checking', bootStatusResolved: true });
             }
         },
         async submit(password, confirmPassword) {
@@ -78,6 +80,9 @@ export function createWalletSession(adapter, onChange = () => undefined) {
         },
         dismissRecoveryPhrase() {
             set({ recoveryPhrase: undefined });
+        },
+        setBootRestorePending(pending) {
+            set({ bootRestorePending: pending });
         },
     };
 }

@@ -11,6 +11,7 @@ export interface UseWalletSessionResult extends WalletSessionState {
   refresh: () => Promise<void>;
   lock: () => Promise<void>;
   dismissRecoveryPhrase: () => void;
+  setBootRestorePending: (pending: boolean) => void;
 }
 
 export function useWalletSession(adapter: WalletSessionAdapter): UseWalletSessionResult {
@@ -18,7 +19,7 @@ export function useWalletSession(adapter: WalletSessionAdapter): UseWalletSessio
   adapterRef.current = adapter;
   const mountedRef = useRef(true);
   const controllerRef = useRef<WalletSessionController | null>(null);
-  const [state, setState] = useState<WalletSessionState>({ phase: 'checking', error: '', submitting: false });
+  const [state, setState] = useState<WalletSessionState>({ phase: 'checking', error: '', submitting: false, bootStatusResolved: false, bootRestorePending: false, bootResolved: false });
   if (!controllerRef.current) {
     controllerRef.current = createWalletSession(
       {
@@ -47,5 +48,6 @@ export function useWalletSession(adapter: WalletSessionAdapter): UseWalletSessio
     refresh: controller.refresh,
     lock: controller.lock,
     dismissRecoveryPhrase: controller.dismissRecoveryPhrase,
+    setBootRestorePending: controller.setBootRestorePending,
   };
 }

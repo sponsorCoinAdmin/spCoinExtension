@@ -16,6 +16,8 @@ export const MIN_WALLET_PASSWORD_LENGTH = 8;
 export interface WalletSessionStatus {
   initialized: boolean;
   unlocked: boolean;
+  /** Hold boot completion while the host restores its persisted credential. */
+  bootRestorePending?: boolean;
 }
 
 export interface WalletSessionAdapter {
@@ -32,6 +34,12 @@ export interface WalletSessionState {
   phase: WalletSessionPhase;
   error: string;
   submitting: boolean;
+  /** True after the host's first status read settles, including a failed read. */
+  bootStatusResolved: boolean;
+  /** A host may hold boot resolution while a persisted credential restore runs. */
+  bootRestorePending: boolean;
+  /** The login gate may act only after status and any boot restore have settled. */
+  bootResolved: boolean;
   /** Set right after a wallet is created, until the user confirms they saved it. */
   recoveryPhrase?: string;
 }
@@ -82,21 +90,24 @@ export interface WalletSessionController {
   submit: (password: string, confirmPassword: string) => Promise<void>;
   lock: () => Promise<void>;
   dismissRecoveryPhrase: () => void;
+  setBootRestorePending: (pending: boolean) => void;
 }
 
 export function createWalletSession(adapter: WalletSessionAdapter, onChange: () => void = () => undefined): WalletSessionController {
-  let state: WalletSessionState = { phase: 'checking', error: '', submitting: false };
+  let state: WalletSessionState = { phase: 'checking', error: '', submitting: false, bootStatusResolved: false, bootRestorePending: false, bootResolved: false };
   const set = (patch: Partial<WalletSessionState>) => {
     state = { ...state, ...patch };
+    state.bootResolved = state.bootStatusResolved && !state.bootRestorePending;
     onChange();
   };
   return {
     getState: () => state,
     async refresh() {
       try {
-        set({ phase: phaseFromStatus(await adapter.status()) });
+        const status = await adapter.status();
+        set({ phase: phaseFromStatus(status), bootStatusResolved: true, ...(status ? { bootRestorePending: status.bootRestorePending ?? false } : {}) });
       } catch {
-        set({ phase: 'checking' });
+        set({ phase: 'checking', bootStatusResolved: true });
       }
     },
     async submit(password, confirmPassword) {
@@ -117,6 +128,9 @@ export function createWalletSession(adapter: WalletSessionAdapter, onChange: () 
     },
     dismissRecoveryPhrase() {
       set({ recoveryPhrase: undefined });
+    },
+    setBootRestorePending(pending) {
+      set({ bootRestorePending: pending });
     },
   };
 }

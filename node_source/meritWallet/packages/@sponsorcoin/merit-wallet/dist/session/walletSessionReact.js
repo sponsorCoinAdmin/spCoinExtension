@@ -9,7 +9,7 @@ export function useWalletSession(adapter) {
     adapterRef.current = adapter;
     const mountedRef = useRef(true);
     const controllerRef = useRef(null);
-    const [state, setState] = useState({ phase: 'checking', error: '', submitting: false });
+    const [state, setState] = useState({ phase: 'checking', error: '', submitting: false, bootStatusResolved: false, bootRestorePending: false, bootResolved: false });
     if (!controllerRef.current) {
         controllerRef.current = createWalletSession({
             status: () => adapterRef.current.status(),
@@ -36,5 +36,6 @@ export function useWalletSession(adapter) {
         refresh: controller.refresh,
         lock: controller.lock,
         dismissRecoveryPhrase: controller.dismissRecoveryPhrase,
+        setBootRestorePending: controller.setBootRestorePending,
     };
 }

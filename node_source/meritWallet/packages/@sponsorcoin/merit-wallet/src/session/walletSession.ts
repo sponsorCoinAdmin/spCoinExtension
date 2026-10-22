@@ -105,7 +105,8 @@ export function createWalletSession(adapter: WalletSessionAdapter, onChange: () 
     async refresh() {
       try {
         const status = await adapter.status();
-        set({ phase: phaseFromStatus(status), bootStatusResolved: true, ...(status ? { bootRestorePending: status.bootRestorePending ?? false } : {}) });
+        // an unlocked wallet has nothing left to restore: a pending flag must never outlive an unlock (the login screen would wait on it forever)
+        set({ phase: phaseFromStatus(status), bootStatusResolved: true, ...(status ? { bootRestorePending: status.unlocked ? false : (status.bootRestorePending ?? false) } : {}) });
       } catch {
         set({ phase: 'checking', bootStatusResolved: true });
       }
@@ -119,7 +120,7 @@ export function createWalletSession(adapter: WalletSessionAdapter, onChange: () 
         return;
       }
       // A new wallet keeps its recovery phrase until the user confirms; either way it is now unlocked.
-      set({ submitting: false, phase: 'unlocked', error: '', ...(result.recoveryPhrase ? { recoveryPhrase: result.recoveryPhrase } : {}) });
+      set({ submitting: false, phase: 'unlocked', error: '', bootRestorePending: false, ...(result.recoveryPhrase ? { recoveryPhrase: result.recoveryPhrase } : {}) });
     },
     async lock() {
       if (!adapter.lock) return;

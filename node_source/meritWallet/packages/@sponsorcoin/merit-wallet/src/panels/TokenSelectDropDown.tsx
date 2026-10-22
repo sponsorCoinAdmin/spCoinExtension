@@ -28,6 +28,12 @@ export interface TokenSelectDropDownProps {
    *  resolves this (TokenLogo), same convention as every other promoted
    *  dropdown's icon prop. */
   icon?: React.ReactNode;
+  /**
+   * 2026-10-22 (owner request): the image shown in the icon slot when NO token is selected yet (`icon` omitted) — AssetSelectDropDown's own optional
+   * parameter, passed through here. Omit for its own default, spcoin-feeds' MISSING_ASSET_ICON_URL (QuestionRed.png), the same placeholder every other
+   * promoted dropdown falls back to (AccountSelectDropDown's own equivalent is ANONYMOUS_ACCOUNT_AVATAR_URL).
+   */
+  defaultIconSrc?: string;
   hasEntity?: boolean;
   address?: string;
   symbol?: string;
@@ -72,6 +78,7 @@ export interface TokenSelectDropDownProps {
 
 export default function TokenSelectDropDown({
   icon,
+  defaultIconSrc,
   hasEntity = false,
   address,
   symbol,
@@ -129,6 +136,9 @@ export default function TokenSelectDropDown({
         rootId="TokenSelectDropDown"
         hasEntity={hasEntity}
         icon={icon}
+        // 2026-10-22 (owner report): the default (question-mark) icon shows even before a token is picked, instead of an empty slot.
+        {...(defaultIconSrc ? { defaultIconSrc } : {})}
+        showIconWhenEmpty
         symbol={symbol}
         name={name}
         address={address ?? ''}

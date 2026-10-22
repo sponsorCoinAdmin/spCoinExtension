@@ -29,6 +29,13 @@ export interface MeritPlatform {
   onVisibilityChange(listener: () => void): () => void;
   /** The wallet's window came back to the front (an extension may have been installed meanwhile): the lists refresh. Returns the unsubscribe function. */
   onForeground(listener: () => void): () => void;
+  /**
+   * 2026-10-22 (owner report: "the Delete Permanently button does not work"): where a full-screen dialog (DeleteWalletDialog, PasswordPromptDialog, the Reset Password card) should portal to, so
+   * it escapes an ancestor's CSS transform/overflow/stacking context instead of being trapped inside it (the web app's floating wallet positions itself with a transform, which silently
+   * reparents a `position: fixed` descendant and let other content paint over the dialog's buttons). A real DOM host returns document.body; null renders the dialog in place (no such nesting, or
+   * no portal target on this platform).
+   */
+  portalContainer(): Element | null;
 }
 
 /** What a component reads: the host's platform, or the DOM one when the host gave none (the web app and the extension give none). */

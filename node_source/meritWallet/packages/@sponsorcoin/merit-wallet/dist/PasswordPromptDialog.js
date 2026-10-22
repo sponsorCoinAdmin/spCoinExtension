@@ -6,6 +6,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useState } from 'react';
+import DialogPortal from './DialogPortal';
 export default function PasswordPromptDialog({ title, message, confirmLabel, onConfirm, onClose, }) {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -23,10 +24,10 @@ export default function PasswordPromptDialog({ title, message, confirmLabel, onC
         })
             .finally(() => setBusy(false));
     };
-    return (_jsx("div", { role: "dialog", "aria-modal": "true", style: dialogStyle.backdrop, children: _jsxs("div", { style: dialogStyle.formCard, children: [_jsx("p", { style: dialogStyle.title, children: title }), _jsx("p", { style: dialogStyle.message, children: message }), _jsx("input", { type: "password", autoFocus: true, autoComplete: "current-password", placeholder: "Wallet password", value: password, onChange: (e) => setPassword(e.target.value), onKeyDown: (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            submit();
-                        }
-                    }, style: dialogStyle.input }), error && _jsx("p", { style: dialogStyle.error, children: error }), _jsx("button", { type: "button", onClick: submit, disabled: busy || !password, style: dialogStyle.primaryButton(busy || !password), children: busy ? 'Working…' : confirmLabel }), _jsx("button", { type: "button", onClick: onClose, style: dialogStyle.cancelButton, children: "Cancel" })] }) }));
+    return (_jsx(DialogPortal, { children: _jsx("div", { role: "dialog", "aria-modal": "true", style: dialogStyle.backdrop, children: _jsxs("div", { style: dialogStyle.formCard, children: [_jsx("p", { style: dialogStyle.title, children: title }), _jsx("p", { style: dialogStyle.message, children: message }), _jsx("input", { type: "password", autoFocus: true, autoComplete: "current-password", placeholder: "Wallet password", value: password, onChange: (e) => setPassword(e.target.value), onKeyDown: (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                submit();
+                            }
+                        }, style: dialogStyle.input }), error && _jsx("p", { style: dialogStyle.error, children: error }), _jsx("button", { type: "button", onClick: submit, disabled: busy || !password, style: dialogStyle.primaryButton(busy || !password), children: busy ? 'Working…' : confirmLabel }), _jsx("button", { type: "button", onClick: onClose, style: dialogStyle.cancelButton, children: "Cancel" })] }) }) }));
 }

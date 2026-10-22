@@ -7,6 +7,7 @@ import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import ChangePasswordPanel from '../ChangePasswordPanel';
 import DeleteWalletDialog from '../DeleteWalletDialog';
+import DialogPortal from '../DialogPortal';
 import type { WalletSessionHost } from '../walletSessionHost';
 
 export type WalletSessionDialog = 'password' | 'delete' | null;
@@ -28,6 +29,7 @@ export function sessionConfigHandlers(
 export default function WalletSessionDialogs({ dialog, onClose, session }: { dialog: WalletSessionDialog; onClose(): void; session: WalletSessionHost | undefined }) {
   if (dialog === 'password' && session?.changePassword) {
     return (
+      <DialogPortal>
       <div role="dialog" aria-modal="true" style={dialogStyle.backdrop}>
         <div style={dialogStyle.card}>
           <ChangePasswordPanel title="Reset password" confirmLabel="Update Password" note={session.changePasswordNote} changePassword={session.changePassword} onDone={onClose} />
@@ -36,6 +38,7 @@ export default function WalletSessionDialogs({ dialog, onClose, session }: { dia
           </div>
         </div>
       </div>
+      </DialogPortal>
     );
   }
   if (dialog === 'delete' && session?.deleteWallet) {

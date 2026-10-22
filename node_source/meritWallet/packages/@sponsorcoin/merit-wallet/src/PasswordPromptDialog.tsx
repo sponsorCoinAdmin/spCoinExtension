@@ -6,6 +6,7 @@
 
 import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
+import DialogPortal from './DialogPortal';
 
 export default function PasswordPromptDialog({
   title,
@@ -37,6 +38,7 @@ export default function PasswordPromptDialog({
       .finally(() => setBusy(false));
   };
   return (
+    <DialogPortal>
     <div
       role="dialog"
       aria-modal="true"
@@ -71,5 +73,6 @@ export default function PasswordPromptDialog({
         </button>
       </div>
     </div>
+    </DialogPortal>
   );
 }

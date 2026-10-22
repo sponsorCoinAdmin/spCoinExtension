@@ -6,6 +6,7 @@
 
 import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
+import DialogPortal from './DialogPortal';
 
 /**
  * 2026-10-11 (docs/design/accountAuthDesign.txt 14.3, item V5): `warning` carries the host's wording for what is lost (the default says the wallet is removed from this device); `title` and `confirmLabel` keep a
@@ -16,6 +17,7 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return (
+    <DialogPortal>
     <div
       id="DELETE_WALLET_DIALOG"
       role="dialog"
@@ -59,5 +61,6 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
         {footnote && <p style={dialogStyle.footnote}>{footnote}</p>}
       </form>
     </div>
+    </DialogPortal>
   );
 }

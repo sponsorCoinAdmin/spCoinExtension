@@ -49,4 +49,5 @@ export const domPlatform: MeritPlatform = {
     window.addEventListener('focus', listener);
     return () => window.removeEventListener('focus', listener);
   },
+  portalContainer: () => (typeof document === 'undefined' ? null : document.body),
 };

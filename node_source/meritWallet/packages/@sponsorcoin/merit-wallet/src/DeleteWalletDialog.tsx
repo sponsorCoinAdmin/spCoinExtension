@@ -4,9 +4,11 @@
 // the password is right. Host-independent: the host supplies confirmDelete(password), which throws a readable message for a wrong password.
 //
 // 2026-10-22 (owner request): the submit button itself carries the whole state (see dialogStyle.deleteConfirmButton's own doc comment) -- blue
-// "Password Required" while empty, green with the host's confirmLabel once something is typed, a quick double red/green flash on a wrong password,
-// then solid red with the server's own message for a few seconds before it reverts on its own. A wrong password is kept, not cleared (the same
-// rule the login screen follows), so a typo can be fixed instead of retyped. An eye icon toggles the field between masked and plain text.
+// "Password Required" while empty, still blue with the host's confirmLabel once something is typed (nothing here can know the password is RIGHT
+// before the server says so, so typing alone never turns it green), a quick double red/blue flash on a wrong password then solid red with the
+// server's own message for a few seconds before it reverts on its own, and green only once the server actually confirms the password and the
+// delete succeeds. A wrong password is kept, not cleared (the same rule the login screen follows), so a typo can be fixed instead of retyped. An
+// eye icon toggles the field between masked and plain text.
 'use client';
 
 import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
@@ -30,6 +32,8 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
   const [flashOn, setFlashOn] = useState(false);
   const [errorSettled, setErrorSettled] = useState(false);
   const [busy, setBusy] = useState(false);
+  // only the server knows whether the password is right: green appears here, and only here, once confirmDelete actually resolves.
+  const [success, setSuccess] = useState(false);
 
   // one failed submit runs the flash, then the solid error, then clears itself -- a SECOND failure (even with the identical message) must restart the
   // whole sequence, which is why this keys off a nonce rather than the error text (two equal strings would not re-trigger a dependent effect).
@@ -56,8 +60,8 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
     };
   }, [errorNonce]);
 
-  const variant: 'empty' | 'ready' | 'flash' | 'error' = error ? (errorSettled ? 'error' : 'flash') : password ? 'ready' : 'empty';
-  const label = busy ? 'Deleting…' : error ? error : password ? confirmLabel : 'Password Required';
+  const variant: 'empty' | 'typed' | 'flash' | 'error' | 'success' = success ? 'success' : error ? (errorSettled ? 'error' : 'flash') : password ? 'typed' : 'empty';
+  const label = success ? 'Deleted' : busy ? 'Deleting…' : error ? error : password ? confirmLabel : 'Password Required';
 
   return (
     <DialogPortal>
@@ -74,6 +78,7 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
           setBusy(true);
           setError('');
           confirmDelete(password)
+            .then(() => setSuccess(true))
             .catch((err: unknown) => {
               setError(err instanceof Error ? err.message : 'The wallet could not be deleted.');
               setErrorNonce((n) => n + 1);

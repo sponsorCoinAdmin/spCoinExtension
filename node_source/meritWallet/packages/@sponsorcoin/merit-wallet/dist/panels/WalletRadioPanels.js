@@ -12,7 +12,7 @@
 // engine), so a consumer's WALLET_RADIO_PANELS visibility reads from the
 // literal same code the Web App's own equivalent already used, not a
 // second implementation. No @/-aliased imports, no Tailwind dependency —
-// RADIO_PANEL_BUFFER applied via inline style (@sponsorcoin/spcoin-common/
+// its own frame applied via inline style (@sponsorcoin/spcoin-common/
 // styles), same reasoning as every other dynamic value in this package: a
 // Tailwind class built from a JS constant has no guarantee of ever
 // compiling to real CSS (confirmed, the hard way, on the Web App side —
@@ -50,8 +50,14 @@
 // the default so the body is never blank. This re-checks on every change
 // to either value, not just on mount, so it holds as a standing invariant.
 //
-// Deliberately scoped to JUST the visibility read + RADIO_PANEL_BUFFER's
-// horizontal padding — NOT flex/scroll sizing. The two real consumers wrap
+// 2026-10-24 (owner request, same day) — radioFrame (the production frame,
+// side buffer of the wallet + 4px below, panelBoxStyle in spcoin-common)
+// swapped for radioDebugFrame here: yellow background, 4px on all four
+// sides, a visual debug marker for live-testing the behavior above — not a
+// production style, see that style's own comment for how to revert it.
+//
+// Deliberately scoped to JUST the visibility read + its own frame's
+// padding — NOT flex/scroll sizing. The two real consumers wrap
 // this differently for that, and neither wrapping is wrong, just
 // structurally different: the Web App's own `components/views/Headers/
 // WalletRadioPanels.tsx` (a thin wrapper around this component) owns its
@@ -67,7 +73,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { useEffect } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { RADIO_PANEL_BUFFER, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { usePanelVisible, usePanelTree, useActiveRadioPanel } from '@sponsorcoin/spcoin-exchange-engine';
 export default function WalletRadioPanels({ children, activeRadioPanel }) {
     const visible = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
@@ -81,5 +87,5 @@ export default function WalletRadioPanels({ children, activeRadioPanel }) {
             openPanel(SP_COIN_DISPLAY.MERIT_INFO_PANEL, 'WalletRadioPanels:activeRadioPanel:default');
         }
     }, [activeRadioPanel, currentlyActive, openPanel]);
-    return (_jsx("div", { "data-panel": SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS], "data-visible": visible ? 'true' : 'false', style: panelBoxStyle.radioSlide(visible), children: _jsx("div", { style: panelBoxStyle.radioFrame(RADIO_PANEL_BUFFER), children: children }) }));
+    return (_jsx("div", { "data-panel": SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS], "data-visible": visible ? 'true' : 'false', style: panelBoxStyle.radioSlide(visible), children: _jsx("div", { style: panelBoxStyle.radioDebugFrame, children: children }) }));
 }

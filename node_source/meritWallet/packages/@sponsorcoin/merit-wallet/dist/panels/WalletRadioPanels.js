@@ -28,6 +28,15 @@
 // panel tree) — this just makes the component itself capable of
 // collapsing smoothly once something does.
 //
+// 2026-10-24 (owner request, same day) — `activeRadioPanel`: an optional
+// MAIN_RADIO_OVERLAY_PANELS member a caller can pass to make THAT the open
+// radio panel. Fires openPanel whenever the prop is supplied and changes
+// (includes first mount, if already set then) — same openPanel a caller
+// would reach for directly via usePanelTree(), just reachable as a prop
+// here instead, for a caller that wants "show WALLET_RADIO_PANELS with X
+// already active" as one call rather than two (open the panel, then also
+// handle WALLET_RADIO_PANELS' own visibility separately).
+//
 // Deliberately scoped to JUST the visibility read + RADIO_PANEL_BUFFER's
 // horizontal padding — NOT flex/scroll sizing. The two real consumers wrap
 // this differently for that, and neither wrapping is wrong, just
@@ -43,10 +52,17 @@
 // piece look more "shared" than it actually needs to be.
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
+import { useEffect } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { RADIO_PANEL_BUFFER, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
-export default function WalletRadioPanels({ children }) {
+import { usePanelVisible, usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
+export default function WalletRadioPanels({ children, activeRadioPanel }) {
     const visible = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
+    const { openPanel } = usePanelTree();
+    useEffect(() => {
+        if (activeRadioPanel != null) {
+            openPanel(activeRadioPanel, 'WalletRadioPanels:activeRadioPanel');
+        }
+    }, [activeRadioPanel, openPanel]);
     return (_jsx("div", { "data-panel": SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS], "data-visible": visible ? 'true' : 'false', style: panelBoxStyle.radioSlide(visible), children: _jsx("div", { style: panelBoxStyle.radioFrame(RADIO_PANEL_BUFFER), children: children }) }));
 }

@@ -7,21 +7,31 @@
 // for the investigation that motivated pulling this out as real shared
 // code instead of two independently-hand-synced copies.
 //
-// Gated via this package's own PanelGate (bound to the real, shared
-// @sponsorcoin/spcoin-exchange-engine — see that file's own "Path A"
-// header comment), so a consumer's WALLET_RADIO_PANELS visibility reads
-// from the literal same code the Web App's own equivalent already used,
-// not a second implementation. No @/-aliased imports, no Tailwind
-// dependency — RADIO_PANEL_BUFFER applied via inline style
-// (@sponsorcoin/spcoin-common/styles), same reasoning as every other
-// dynamic value in this package: a Tailwind class built from a JS
-// constant has no guarantee of ever compiling to real CSS (confirmed,
-// the hard way, on the Web App side — see that same doc).
+// Reads WALLET_RADIO_PANELS' own visibility directly via this package's
+// usePanelVisible (bound to the real, shared @sponsorcoin/spcoin-exchange-
+// engine), so a consumer's WALLET_RADIO_PANELS visibility reads from the
+// literal same code the Web App's own equivalent already used, not a
+// second implementation. No @/-aliased imports, no Tailwind dependency —
+// RADIO_PANEL_BUFFER applied via inline style (@sponsorcoin/spcoin-common/
+// styles), same reasoning as every other dynamic value in this package: a
+// Tailwind class built from a JS constant has no guarantee of ever
+// compiling to real CSS (confirmed, the hard way, on the Web App side —
+// see that same doc).
 //
-// Deliberately scoped to JUST the gate + RADIO_PANEL_BUFFER's horizontal
-// padding — NOT flex/scroll sizing. The two real consumers wrap this
-// differently for that, and neither wrapping is wrong, just structurally
-// different: the Web App's own `components/views/Headers/
+// 2026-10-24 (owner request) — converted from a PanelGate-gated hard
+// mount/unmount to a collapsible component: children stay mounted and the
+// wrapper animates shut via panelBoxStyle.radioSlide (same maxHeight/
+// opacity technique MenuTabHeaderBar's own TabRow already uses for its
+// collapse), instead of PanelGate's instant, unanimated remove-from-DOM.
+// Closing WALLET_RADIO_PANELS is not wired to any visible control yet
+// (nothing currently calls closePanel/openPanel on it outside the debug
+// panel tree) — this just makes the component itself capable of
+// collapsing smoothly once something does.
+//
+// Deliberately scoped to JUST the visibility read + RADIO_PANEL_BUFFER's
+// horizontal padding — NOT flex/scroll sizing. The two real consumers wrap
+// this differently for that, and neither wrapping is wrong, just
+// structurally different: the Web App's own `components/views/Headers/
 // WalletRadioPanels.tsx` (a thin wrapper around this component) owns its
 // own scrollbar-hide/flex-1/overflow-y-auto shell, because its own
 // `MenuTabHeaderBar.tsx` is a bare Fragment with no shell of its own.
@@ -35,7 +45,8 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { RADIO_PANEL_BUFFER, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 export default function WalletRadioPanels({ children }) {
-    return (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_RADIO_PANELS, children: _jsx("div", { style: panelBoxStyle.radioFrame(RADIO_PANEL_BUFFER), children: children }) }));
+    const visible = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
+    return (_jsx("div", { "data-panel": SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS], "data-visible": visible ? 'true' : 'false', style: panelBoxStyle.radioSlide(visible), children: _jsx("div", { style: panelBoxStyle.radioFrame(RADIO_PANEL_BUFFER), children: children }) }));
 }

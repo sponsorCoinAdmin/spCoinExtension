@@ -38,7 +38,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAddress } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
-import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, panelStore, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useEnforceRadioPanelContainers, useAgentAccount, useActiveAccount, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, panelStore, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useEnforceRadioPanelContainers, useAgentAccount, useActiveAccount, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext } from './platform/platform';
@@ -531,6 +531,25 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     if (derivedTab)
         lastKnownTabRef.current = derivedTab;
     const activeTab = derivedTab ?? lastKnownTabRef.current;
+    // 2026-10-24 (owner report, screenshots): the TAB STRIP's own highlight
+    // must NOT use activeTab above — that intentionally keeps remembering the
+    // last real tab for list/detail restoration (listByTabRef/detailByTabRef,
+    // gatedTabBody), which is right for THOSE, but wrong for what the tab
+    // strip visually shows: "if the associated Tab Panel is on top of the
+    // [real navigation] stack, then it is highlighted. if not, it is not" —
+    // the owner's own rule, confirmed across 7 screenshots (Swap stayed
+    // highlighted with MERIT_INFO_PANEL covering the body and
+    // TRADING_STATION_PANEL buried under WALLET_CONFIG_PANEL in the stack;
+    // Config stayed highlighted with ASSET_SELECT_LIST_PANEL — the network
+    // selector, opened from the header, not the Config tab itself — on top).
+    // displayStackIds (useDisplayStack, real React state, re-renders on every
+    // push/pop) is the actual navigation stack; its own last entry is "what
+    // is really on top" -- TAB_KEY_BY_PANEL_ID[that] is the tab to highlight,
+    // or null for none, with NO lastKnownTabRef-style fallback (that fallback
+    // is exactly the bug: it remembers a tab that is no longer on top).
+    const { displayStackIds } = useDisplayStack();
+    const topOfStackId = displayStackIds.length > 0 ? displayStackIds[displayStackIds.length - 1] : undefined;
+    const highlightedTab = topOfStackId != null ? TAB_KEY_BY_PANEL_ID[topOfStackId] ?? null : null;
     // The list owns its picker destination in the engine's parameter store;
     // this component keeps no duplicate slot state. The panel tree still owns visibility.
     const activeListModeLocal = React.useSyncExternalStore(activeListPanelStore.subscribe, activeListPanelStore.getWalletListSelectionSlot, () => null);
@@ -1761,7 +1780,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                         ? () => closePanel(addFlowTop, 'NAV_POP:MeritWallet:addFlowBack')
                                                         : activeListMode
                                                             ? () => setActiveList(null)
-                                                            : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: activeTab, onTabClick: handleTabClick, children: [showWalletSelect && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: body })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] })), _jsx(ApprovalResponder, { host: approvalHost })] }) }) }) }));
+                                                            : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: body })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] })), _jsx(ApprovalResponder, { host: approvalHost })] }) }) }) }));
 }
 let warnedNoAccountSource = false;
 /**

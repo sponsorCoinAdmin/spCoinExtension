@@ -50,6 +50,6 @@ export default function MenuTabHeaderBar({ open = true, activeTab = 'SWAP', onTa
     // parent leaves this shrunk to content height, and the inner
     // scrollable div below never gets a bounded height to scroll within.
     _jsxs("div", { style: menuTabStyle.frame, children: [_jsx(TabRow, { open: open, activeTab: activeTab, onTabClick: onTabClick, disabled: disabled, disabledTitle: disabledTitle }), children && (_jsx("div", { className: panelPartClass.menuTabBody, 
-                // 2026-10-16 (owner request): 2px of buffer between the bottom of the MENU_TAB_HEADER_BAR (its divider) and whatever radio panel is on screen (TRADING_STATION_PANEL, SEND_PANEL, ...). The tabs themselves stay flush on the divider.
+                // 2026-10-16 (owner request), raised to 4px 2026-10-24 (owner correction) — the buffer between the bottom of the MENU_TAB_HEADER_BAR (its divider) and whatever radio panel is on screen (TRADING_STATION_PANEL, SEND_PANEL, ADDRESS_PANEL, ...). The tabs themselves stay flush on the divider.
                 style: menuTabStyle.body, children: children }))] }));
 }

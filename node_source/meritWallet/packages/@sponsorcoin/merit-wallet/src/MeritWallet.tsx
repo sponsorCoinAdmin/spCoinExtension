@@ -62,6 +62,7 @@ import {
   activeListPanelStore,
   type WalletListSelectionSlot,
   panelTreeTrace,
+  useDisplayStack,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
@@ -1192,6 +1193,25 @@ function MeritWalletInner({
     activeMainOverlay != null ? TAB_KEY_BY_PANEL_ID[activeMainOverlay] : undefined;
   if (derivedTab) lastKnownTabRef.current = derivedTab;
   const activeTab: MenuTabKey = derivedTab ?? lastKnownTabRef.current;
+  // 2026-10-24 (owner report, screenshots): the TAB STRIP's own highlight
+  // must NOT use activeTab above — that intentionally keeps remembering the
+  // last real tab for list/detail restoration (listByTabRef/detailByTabRef,
+  // gatedTabBody), which is right for THOSE, but wrong for what the tab
+  // strip visually shows: "if the associated Tab Panel is on top of the
+  // [real navigation] stack, then it is highlighted. if not, it is not" —
+  // the owner's own rule, confirmed across 7 screenshots (Swap stayed
+  // highlighted with MERIT_INFO_PANEL covering the body and
+  // TRADING_STATION_PANEL buried under WALLET_CONFIG_PANEL in the stack;
+  // Config stayed highlighted with ASSET_SELECT_LIST_PANEL — the network
+  // selector, opened from the header, not the Config tab itself — on top).
+  // displayStackIds (useDisplayStack, real React state, re-renders on every
+  // push/pop) is the actual navigation stack; its own last entry is "what
+  // is really on top" -- TAB_KEY_BY_PANEL_ID[that] is the tab to highlight,
+  // or null for none, with NO lastKnownTabRef-style fallback (that fallback
+  // is exactly the bug: it remembers a tab that is no longer on top).
+  const { displayStackIds } = useDisplayStack();
+  const topOfStackId = displayStackIds.length > 0 ? displayStackIds[displayStackIds.length - 1] : undefined;
+  const highlightedTab: MenuTabKey | null = topOfStackId != null ? TAB_KEY_BY_PANEL_ID[topOfStackId] ?? null : null;
   // The list owns its picker destination in the engine's parameter store;
   // this component keeps no duplicate slot state. The panel tree still owns visibility.
   const activeListModeLocal = React.useSyncExternalStore(
@@ -2605,7 +2625,7 @@ function MeritWalletInner({
         {/* 2026-10-12 (accountAuthDesign row 11): while another wallet is deciding on a request, one neutral line says so (nothing shows when nothing is pending). 2026-10-13: it is OUTSIDE the tab header bar, so it also shows over the lock screen, and it
             also says how a request just ended ("Merit extension did not approve: User rejected the request."). */}
         {/* 2026-10-14 (owner request): the waiting / did-not-approve notice is a MESSAGE_PANEL message (useApprovalMessagePanel, called above), not a line over the wallet. */}
-        <MenuTabHeaderBar open={menuTabHeaderVisible && !passwordPanelShowing} activeTab={activeTab} onTabClick={handleTabClick}>
+        <MenuTabHeaderBar open={menuTabHeaderVisible && !passwordPanelShowing} activeTab={highlightedTab} onTabClick={handleTabClick}>
           {/* 2026-09-22 — `body` (whichever of tabBody/listOverlay/the
               three detail overlays is currently active — see that
               variable's own definition above) now renders through the

@@ -37,6 +37,19 @@
 // already active" as one call rather than two (open the panel, then also
 // handle WALLET_RADIO_PANELS' own visibility separately).
 //
+// 2026-10-24 (owner clarification, same day) — omitting activeRadioPanel
+// sets nothing BY ITSELF; it is not a disguised "open MERIT_INFO_PANEL"
+// default. Separately, though: MAIN_RADIO_OVERLAY_PANELS deliberately has
+// no fallbackPanel of its own (panelGroups.ts — "all ten being closed is
+// a valid state"), so WITHOUT this, a caller that never sets
+// activeRadioPanel and whose last-open radio panel got closed some other
+// way would show a genuinely blank body. useActiveRadioPanel() (the same
+// "is anything in the group currently open" read PanelListSelectWrapper.tsx
+// already uses) answers that here: whenever it reports undefined AND no
+// explicit activeRadioPanel override is in play, MERIT_INFO_PANEL opens as
+// the default so the body is never blank. This re-checks on every change
+// to either value, not just on mount, so it holds as a standing invariant.
+//
 // Deliberately scoped to JUST the visibility read + RADIO_PANEL_BUFFER's
 // horizontal padding — NOT flex/scroll sizing. The two real consumers wrap
 // this differently for that, and neither wrapping is wrong, just
@@ -56,7 +69,7 @@
 import React, { useEffect } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { RADIO_PANEL_BUFFER, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { usePanelVisible, usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelVisible, usePanelTree, useActiveRadioPanel } from '@sponsorcoin/spcoin-exchange-engine';
 
 // 2026-09-30 — this panel's own internal bottom buffer (distinct from
 // PANEL_GAP, the 2px buffer BETWEEN panels used elsewhere in this
@@ -70,20 +83,25 @@ export interface WalletRadioPanelsProps {
   children: React.ReactNode;
   /** Optional: a MAIN_RADIO_OVERLAY_PANELS member to open (openPanel) when
    *  supplied — makes it the active radio panel. Fires on mount if already
-   *  set, and again every time the value changes. Omit for a caller that
-   *  manages the active radio panel itself. */
+   *  set, and again every time the value changes. Omitting it sets nothing
+   *  by itself — but if NO radio panel is active at all (the group has no
+   *  fallbackPanel of its own), MERIT_INFO_PANEL opens as the default so
+   *  the body is never blank. */
   activeRadioPanel?: SP_COIN_DISPLAY;
 }
 
 export default function WalletRadioPanels({ children, activeRadioPanel }: WalletRadioPanelsProps) {
   const visible = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
   const { openPanel } = usePanelTree();
+  const currentlyActive = useActiveRadioPanel();
 
   useEffect(() => {
     if (activeRadioPanel != null) {
       openPanel(activeRadioPanel, 'WalletRadioPanels:activeRadioPanel');
+    } else if (currentlyActive == null) {
+      openPanel(SP_COIN_DISPLAY.MERIT_INFO_PANEL, 'WalletRadioPanels:activeRadioPanel:default');
     }
-  }, [activeRadioPanel, openPanel]);
+  }, [activeRadioPanel, currentlyActive, openPanel]);
 
   return (
     <div

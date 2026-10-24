@@ -37,6 +37,19 @@
 // already active" as one call rather than two (open the panel, then also
 // handle WALLET_RADIO_PANELS' own visibility separately).
 //
+// 2026-10-24 (owner clarification, same day) — omitting activeRadioPanel
+// sets nothing BY ITSELF; it is not a disguised "open MERIT_INFO_PANEL"
+// default. Separately, though: MAIN_RADIO_OVERLAY_PANELS deliberately has
+// no fallbackPanel of its own (panelGroups.ts — "all ten being closed is
+// a valid state"), so WITHOUT this, a caller that never sets
+// activeRadioPanel and whose last-open radio panel got closed some other
+// way would show a genuinely blank body. useActiveRadioPanel() (the same
+// "is anything in the group currently open" read PanelListSelectWrapper.tsx
+// already uses) answers that here: whenever it reports undefined AND no
+// explicit activeRadioPanel override is in play, MERIT_INFO_PANEL opens as
+// the default so the body is never blank. This re-checks on every change
+// to either value, not just on mount, so it holds as a standing invariant.
+//
 // Deliberately scoped to JUST the visibility read + RADIO_PANEL_BUFFER's
 // horizontal padding — NOT flex/scroll sizing. The two real consumers wrap
 // this differently for that, and neither wrapping is wrong, just
@@ -55,14 +68,18 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { useEffect } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { RADIO_PANEL_BUFFER, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { usePanelVisible, usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelVisible, usePanelTree, useActiveRadioPanel } from '@sponsorcoin/spcoin-exchange-engine';
 export default function WalletRadioPanels({ children, activeRadioPanel }) {
     const visible = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
     const { openPanel } = usePanelTree();
+    const currentlyActive = useActiveRadioPanel();
     useEffect(() => {
         if (activeRadioPanel != null) {
             openPanel(activeRadioPanel, 'WalletRadioPanels:activeRadioPanel');
         }
-    }, [activeRadioPanel, openPanel]);
+        else if (currentlyActive == null) {
+            openPanel(SP_COIN_DISPLAY.MERIT_INFO_PANEL, 'WalletRadioPanels:activeRadioPanel:default');
+        }
+    }, [activeRadioPanel, currentlyActive, openPanel]);
     return (_jsx("div", { "data-panel": SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS], "data-visible": visible ? 'true' : 'false', style: panelBoxStyle.radioSlide(visible), children: _jsx("div", { style: panelBoxStyle.radioFrame(RADIO_PANEL_BUFFER), children: children }) }));
 }

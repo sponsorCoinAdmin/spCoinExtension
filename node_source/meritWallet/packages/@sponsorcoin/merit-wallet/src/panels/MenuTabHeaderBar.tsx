@@ -189,28 +189,24 @@ export default function MenuTabHeaderBar({
         disabled={disabled}
         disabledTitle={disabledTitle}
       />
-      {/* The scrollable body — matches the real app's WalletRadioPanels
-          (a sibling of AccountPanelTabBar there, folded into this
-          component here): flex:1/minHeight:0 lets it claim exactly the
-          space left over after the fixed tab row above, overflow-y:auto
-          scrolls ONLY this region, overflow-x:hidden per the same CSS-
-          spec gotcha documented on the extension's own #content-scroll
-          (one axis set non-`visible` silently makes the other `auto`
-          too). Not tied to `open` — in the real app the body's own
-          visibility (WALLET_RADIO_PANELS) is independent of the tab strip's
-          collapse state (MENU_TAB_HEADER_BAR), so it doesn't collapse
-          away when the tab row above it does either.
-          scrollbarWidth/msOverflowStyle + the .spcoinMenuTabBodyScroll
-          ::-webkit-scrollbar rule (in TabRow's own <style> above) hide the
-          visible bar — confirmed the real WalletRadioPanels.tsx uses the
-          exact same pairing (`flex-1 overflow-y-auto` + its own
-          `scrollbar-hide` class): it scrolls exactly like this, it just
-          never shows a visible bar doing it. Missing this (not a layout
-          bug) was the actual cause of "the extension shows a scrollbar
-          the web page doesn't" — both genuinely scroll the same way. */}
+      {/* The body wrapper — flex column, flex:1/minHeight:0 so it claims
+          the space left over after the fixed tab row above, same as
+          always. 2026-10-24 (owner correction) — no longer the SCROLLING
+          region itself: that, and the .spcoinMenuTabBodyScroll scrollbar-
+          hide class, moved onto WALLET_RADIO_PANELS' own box
+          (WalletRadioPanels.tsx's radioSlide div) — the owner's own
+          correction that WALLET_RADIO_PANELS should be the scroll panel
+          itself, not something an ancestor does on its behalf, so its own
+          bottom margin lands outside the scrolled content instead of
+          inside it (see panelBoxStyle.radioSlide's own comment for why
+          that distinction matters). This div is now just a plain flex
+          column + the top buffer below; not tied to `open` — in the real
+          app the body's own visibility (WALLET_RADIO_PANELS) is
+          independent of the tab strip's collapse state
+          (MENU_TAB_HEADER_BAR), so it doesn't collapse away when the tab
+          row above it does either. */}
       {children && (
         <div
-          className={panelPartClass.menuTabBody}
           // 2026-10-16 (owner request), raised to 4px 2026-10-24 (owner correction) — the buffer between the bottom of the MENU_TAB_HEADER_BAR (its divider) and whatever radio panel is on screen (TRADING_STATION_PANEL, SEND_PANEL, ADDRESS_PANEL, ...). The tabs themselves stay flush on the divider.
           style={menuTabStyle.body}
         >

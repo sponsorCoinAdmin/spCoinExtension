@@ -56,25 +56,30 @@
 // sides, a visual debug marker for live-testing the behavior above — not a
 // production style, see that style's own comment for how to revert it.
 //
-// Deliberately scoped to JUST the visibility read + its own frame's
-// padding — NOT flex/scroll sizing. The two real consumers wrap
-// this differently for that, and neither wrapping is wrong, just
-// structurally different: the Web App's own `components/views/Headers/
-// WalletRadioPanels.tsx` (a thin wrapper around this component) owns its
-// own scrollbar-hide/flex-1/overflow-y-auto shell, because its own
-// `MenuTabHeaderBar.tsx` is a bare Fragment with no shell of its own.
-// This package's own `MenuTabHeaderBar.tsx` already wraps its `children`
-// in exactly that same kind of scroll box internally — a second one here
-// would just be redundant nesting. Trying to force both apps onto one
-// identical DOM shape here would mean changing one of the two apps'
-// already-working, unrelated layout structure just to make this one
-// piece look more "shared" than it actually needs to be.
+// 2026-10-24 (owner correction, same day) — DOES now own its own flex/
+// scroll sizing (radioSlide: flex:1/minHeight:0/overflowY:auto), reversing
+// the "deliberately NOT flex/scroll sizing" split this file used to
+// describe. The owner's own correction: WALLET_RADIO_PANELS should be the
+// scroll panel itself, with its own real external margin (marginBottom on
+// radioSlide) marking its boundary from MERIT_WALLET's own frame — not an
+// ancestor (MenuTabHeaderBar's own body wrapper) scrolling on its behalf
+// with WALLET_RADIO_PANELS' content buried inside the scrolled area (a
+// scrolled-away child's own margin is unreliable there, a known Chromium
+// quirk — see panelBoxStyle.radioDebugFrame's own comment). The
+// .spcoinMenuTabBodyScroll scrollbar-hide class moved here too, onto the
+// actual scrolling element, matching where the rule's own ::-webkit-
+// scrollbar selector needs to land to do anything.
+//
+// This still leaves MenuTabHeaderBar.tsx owning the flex column ABOVE this
+// (TabRow + the plain body wrapper div, now non-scrolling, that gives this
+// component its bounded height to flex:1 against) — the split is now "who
+// scrolls," not "who sizes," between the two files.
 
 'use client';
 
 import React, { useEffect } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
+import { panelBoxStyle, panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { usePanelVisible, usePanelTree, useActiveRadioPanel } from '@sponsorcoin/spcoin-exchange-engine';
 
 // 2026-09-30 — this panel's own internal bottom buffer (distinct from
@@ -113,6 +118,7 @@ export default function WalletRadioPanels({ children, activeRadioPanel }: Wallet
     <div
       data-panel={SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS]}
       data-visible={visible ? 'true' : 'false'}
+      className={panelPartClass.menuTabBody}
       style={panelBoxStyle.radioSlide(visible)}
     >
       <div

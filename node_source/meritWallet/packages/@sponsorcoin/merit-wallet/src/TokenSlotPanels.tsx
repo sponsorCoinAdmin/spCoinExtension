@@ -13,7 +13,7 @@ import React, { useEffect, useState } from 'react';
 import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
-import { useExchangeContext, usePanelVisible, defaultMissingImage } from '@sponsorcoin/spcoin-exchange-engine';
+import { useExchangeContext, usePanelVisible, defaultStaticImage } from '@sponsorcoin/spcoin-exchange-engine';
 import { getTokenMetaData } from '@sponsorcoin/spcoin-panels';
 import { ReadOnlyMetaDataTable } from './panels';
 import { useWalletData } from './walletData';
@@ -146,7 +146,7 @@ function TokenContractDetailPanel({
       {metaDataVisible && (
         <ReadOnlyMetaDataTable
           rows={rows}
-          logoURL={logoURL || defaultMissingImage}
+          logoURL={logoURL || defaultStaticImage}
           logoAlt={name}
           logoVisible={logoVisible}
         />

@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import {
-  defaultMissingImage,
+  defaultStaticImage,
   panelTreeOpenSourceStore,
   useBuyTokenContract,
   useExchangeContext,
@@ -39,7 +39,7 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
   const vTokenPanel = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
   const vTokenMetaData = usePanelVisible(SP_COIN_DISPLAY.TOKEN_META_DATA);
   const vTokenLogo = usePanelVisible(SP_COIN_DISPLAY.TOKEN_LOGO);
-  // Specifically "is TOKEN_PANEL's own nested token picker open on top of it", not the shared ASSET_LIST_SELECT_PANEL (the list container every
+  // Specifically "is TOKEN_PANEL's own nested token picker open on top of it", not the shared ASSET_SELECT_LIST_PANEL (the list container every
   // list renders through). isTopOfStack tells a stacked picker apart from a list merely left open behind this panel.
   const vTokenList = usePanelVisible(SP_COIN_DISPLAY.REMOTE_TOKEN_LIST);
 
@@ -133,7 +133,7 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
     <div id="TOKEN_PANEL">
       {isPreviewMode && <div id="TOKEN_META_DATA_PREVIEW" className={panelPartClass.hidden} aria-hidden="true" />}
       {(isPreviewMode || vTokenMetaData) && (
-        <ReadOnlyMetaDataTable rows={tokenDetailRows(resolvedContract)} logoURL={logoURL || defaultMissingImage} logoAlt={name} logoVisible={vTokenLogo} />
+        <ReadOnlyMetaDataTable rows={tokenDetailRows(resolvedContract)} logoURL={logoURL || defaultStaticImage} logoAlt={name} logoVisible={vTokenLogo} />
       )}
     </div>
   );

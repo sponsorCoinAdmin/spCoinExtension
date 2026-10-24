@@ -33,15 +33,15 @@ export type HostUiState = Pick<
 /** Data the host supplies or lets the component fetch itself (chainId + baseUrl + storage turn the self-fetch on). */
 export type HostData = Pick<
   MeritWalletProps,
-  | 'networkRows' | 'accountGroups' | 'tokenRows' | 'recipientRows' | 'chainId' | 'baseUrl' | 'storage'
+  | 'networkRows' | 'accountGroups' | 'tokenRows' | 'chainId' | 'baseUrl' | 'storage'
   | 'activeAccountName' | 'activeAccountSymbol' | 'activeAccountLogoURL'
-  | 'wallet' | 'walletDerives' | 'approverHost' | 'accountListNotice' | 'activeWalletName' | 'activeWalletId' | 'nativeWalletId' | 'walletConnection' | 'onDisconnectWallet' | 'showWalletSelect' | 'walletAssetBaseUrl' | 'resolveAssetAddress' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'rewardsExtras' | 'stakingHost' | 'activeAccountAddress'
+  | 'wallet' | 'walletDerives' | 'approverHost' | 'accountListNotice' | 'activeWalletName' | 'activeWalletId' | 'nativeWalletId' | 'walletConnection' | 'onDisconnectWallet' | 'showWalletSelect' | 'walletAssetBaseUrl' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'rewardsExtras' | 'stakingHost' | 'activeAccountAddress'
 >;
 
 /** What the host does when the user picks or inspects a row. */
 export type HostSelection = Pick<
   MeritWalletProps,
-  | 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'accountDetail' | 'accountDetailHost' | 'addAccountHost' | 'onTokenIconClick' | 'tokenDetail'
+  | 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'accountDetail' | 'accountDetailHost' | 'addAccountHost' | 'tokenDetail'
   | 'onNetworkIconClick'
 >;
 

@@ -26,6 +26,7 @@ import { infoPanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styl
 import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { STATIC_MERIT_BADGE_ICON_URL } from '@sponsorcoin/spcoin-feeds/shared';
 import ReadOnlyMetaDataTable from './ReadOnlyMetaDataTable';
 import { getMeritInfoMetaData, type MeritTabInfo } from '@sponsorcoin/spcoin-panels';
 
@@ -116,7 +117,7 @@ export default function MeritInfoPanelReal({
     <div id="MERIT_INFO_PANEL">
       <ReadOnlyMetaDataTable
         rows={rows}
-        logoURL={`${baseUrl}/assets/miscellaneous/meritWallet.png?v=22`}
+        logoURL={`${baseUrl}${STATIC_MERIT_BADGE_ICON_URL}`}
         logoAlt="Merit Wallet"
         logoRoundedClassName={walletPartClass.infoLogo.rounded}
         logoBackgroundClassName={walletPartClass.infoLogo.background}

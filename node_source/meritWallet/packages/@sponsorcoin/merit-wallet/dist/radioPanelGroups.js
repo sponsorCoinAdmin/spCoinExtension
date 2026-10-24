@@ -41,6 +41,21 @@ export const RADIO_PANEL_GROUPS_WITH_FALLBACKS = RADIO_PANEL_GROUPS.map((group) 
     if (group.name === 'ASSET_RADIO_PANELS') {
         return { ...group, container: SP_COIN_DISPLAY.ASSET_RADIO_PANELS };
     }
+    // 2026-10-23 (docs/meritFixes.txt §15-16, live report: popping
+    // ASSET_SELECT_LIST_PANEL off the display stack left NETWORK_LIST still
+    // showing) — same shape as ASSET_RADIO_PANELS above: ACTIVE_LIST_PANEL_MODES'
+    // own members (NETWORK_LIST, LOCAL_ACCOUNT_WALLET_LIST, REMOTE_TOKEN_LIST,
+    // etc.) were never force-closed when their container closed by some path
+    // other than openActiveListPanel's own "open the new mode, close whichever
+    // other one was open" step — a stale true then outlived its own container,
+    // not just in this component's own rendering (AssetSelectListPanel's
+    // activeChild prop is independently immune to that, see
+    // useActiveListPanelChild's own doc comment) but in every OTHER direct
+    // reader of these six flags (TokenPanel.tsx's tokenListCoversThisPanel
+    // gate already had a documented bug from exactly this shape once before).
+    if (group.name === 'ACTIVE_LIST_PANEL_MODES') {
+        return { ...group, container: SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL };
+    }
     if (group.name === 'STAKED_SP_COIN_PANEL_MODES') {
         return { ...group, fallbackPanel: SP_COIN_DISPLAY.STAKED_RECIPIENT_SELECT_DROP_DOWN };
     }

@@ -25,6 +25,7 @@ import { infoPanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styl
 import { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { STATIC_MERIT_BADGE_ICON_URL } from '@sponsorcoin/spcoin-feeds/shared';
 import ReadOnlyMetaDataTable from './ReadOnlyMetaDataTable';
 import { getMeritInfoMetaData } from '@sponsorcoin/spcoin-panels';
 export default function MeritInfoPanelReal({ panelId = SP_COIN_DISPLAY.MERIT_INFO_PANEL, baseUrl = '', }) {
@@ -68,5 +69,5 @@ export default function MeritInfoPanelReal({ panelId = SP_COIN_DISPLAY.MERIT_INF
             value: (_jsxs("div", { className: infoPanelClass.column, children: [info?.description ? _jsx("p", { className: infoPanelClass.paragraph, children: info.description }) : null, tabs.length ? (_jsx("ul", { className: infoPanelClass.list, children: tabs.map((tab) => (_jsxs("li", { children: [_jsxs("span", { className: infoPanelClass.term, children: [String(tab.key).toUpperCase(), ":"] }), ' ', tab.detail] }, tab.key))) })) : null] })),
         });
     }
-    return (_jsx("div", { id: "MERIT_INFO_PANEL", children: _jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: `${baseUrl}/assets/miscellaneous/meritWallet.png?v=22`, logoAlt: "Merit Wallet", logoRoundedClassName: walletPartClass.infoLogo.rounded, logoBackgroundClassName: walletPartClass.infoLogo.background, logoContainerClassName: walletPartClass.infoLogo.container, logoContainerSizeClassName: walletPartClass.infoLogo.containerSize, logoSizeClassName: walletPartClass.infoLogo.size }) }));
+    return (_jsx("div", { id: "MERIT_INFO_PANEL", children: _jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: `${baseUrl}${STATIC_MERIT_BADGE_ICON_URL}`, logoAlt: "Merit Wallet", logoRoundedClassName: walletPartClass.infoLogo.rounded, logoBackgroundClassName: walletPartClass.infoLogo.background, logoContainerClassName: walletPartClass.infoLogo.container, logoContainerSizeClassName: walletPartClass.infoLogo.containerSize, logoSizeClassName: walletPartClass.infoLogo.size }) }));
 }

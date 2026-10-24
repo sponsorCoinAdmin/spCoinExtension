@@ -16,7 +16,7 @@ import { tokenRowClass, tokenRowStyle, walletPartClass } from '@sponsorcoin/spco
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CopyBtn } from './TokenSlotPanels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { defaultMissingImage, previewNetworkStore, useExchangeContext, usePanelVisible, usePreviewNetworkChainId, } from '@sponsorcoin/spcoin-exchange-engine';
+import { defaultStaticImage, previewNetworkStore, useExchangeContext, usePanelVisible, usePreviewNetworkChainId, } from '@sponsorcoin/spcoin-exchange-engine';
 import { getNetworkConfiguration } from '@sponsorcoin/spcoin-feeds/networks';
 import { getNetworkMetaData } from '@sponsorcoin/spcoin-panels';
 import { ReadOnlyMetaDataTable } from './panels';
@@ -115,7 +115,7 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
         }
         return { label: f.label, value: f.value };
     });
-    return (_jsx("div", { id: "NETWORK_PANEL", children: vNetworkMetaData && (_jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: logoURL || defaultMissingImage, logoAlt: name, logoVisible: vNetworkLogo, 
+    return (_jsx("div", { id: "NETWORK_PANEL", children: vNetworkMetaData && (_jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: logoURL || defaultStaticImage, logoAlt: name, logoVisible: vNetworkLogo, 
             // Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind
             // them and no card frame around them (unlike token and account logos).
             logoBackgroundClassName: walletPartClass.networkLogo.background, logoContainerClassName: walletPartClass.networkLogo.container })) }));

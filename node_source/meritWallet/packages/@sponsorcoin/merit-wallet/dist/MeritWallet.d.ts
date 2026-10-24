@@ -17,17 +17,9 @@ import { type AccountDetailHost } from './account/AccountDetailScreen';
 import { type WalletOnboardingPanelProps } from './WalletOnboardingPanel';
 import { type SponsorStakingHost } from './sponsor/ConnectedSponsorStakingList';
 import { type HostTransactionResult } from './receipt/transactionReceipts';
-import { type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-exchange-engine';
 import type { AuthenticationType } from './auth/authenticationType';
 export type { MeritWalletNetworkRow };
 export interface MeritWalletProps {
-    /**
-     * 2026-10-05 — resolves an address typed into a list's ADDRESS_PANEL that is NOT in the
-     * rows already loaded (on-chain token lookup / account hydration). The host builds it
-     * from the engine's resolveAssetEntry with its own RPC client; omit it and such an
-     * address just shows "not in this list". `peerAddress` is the other side's token (duplicate guard).
-     */
-    resolveAssetAddress?: (address: string, kind: AssetEntryKind, peerAddress?: string) => Promise<AssetEntryResult>;
     /** Docked (full-height, square corners, no right border — a split-pane
      *  layout) vs. floating/dialog (rounded corners, capped height). Default
      *  false. */
@@ -74,7 +66,6 @@ export interface MeritWalletProps {
     networkRows?: MeritWalletNetworkRow[];
     accountGroups?: AccountListGroup[];
     tokenRows?: AssetListEntry[];
-    recipientRows?: AssetListEntry[];
     /** 2026-10-09 -- turns the Rewards tab live (Trading / Staked / Pending with estimate and claim, Auto Refresh), the same card and data hook the web app runs. Omit for the static table. */
     rewardsHost?: RewardsHost;
     /** What the host adds around the Rewards card: a shared Auto Refresh store, the Deposit Account row's starting address, a refresh registration hook and a trace sink (all data or functions). */
@@ -124,7 +115,6 @@ export interface MeritWalletProps {
     accountDetailHost?: AccountDetailHost;
     /** 2026-10-10 (docs/design/accountAuthDesign.txt section 17 item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
     addAccountHost?: AddAccountHost;
-    onTokenIconClick?: (address: string) => void;
     tokenDetail?: {
         address: string;
         logoSrc?: string;

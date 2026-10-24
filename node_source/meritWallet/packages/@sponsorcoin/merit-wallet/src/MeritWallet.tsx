@@ -44,6 +44,8 @@ import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import {
   usePanelTree,
   usePanelVisible,
+  useOpenActiveListPanel,
+  useActiveListPanelChild,
   panelStore,
   useEnforceRadioPanelGroups,
   useEnforcePanelAncestorVisibility,
@@ -59,8 +61,9 @@ import {
   useBuyAmount,
   activeListPanelStore,
   type WalletListSelectionSlot,
+  panelTreeTrace,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import { ActiveListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AssetListTable, type AssetListEntry, AccountListCard, type AccountListGroup, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, type AssetPreviewRowProps } from '@sponsorcoin/spcoin-panels';
+import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, type MeritPlatform } from './platform/platform';
@@ -71,7 +74,7 @@ import type { ApproverHost } from './wallet/approverAccounts';
 import { walletName, type AuthenticatorId } from './auth/authenticator';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
 import { fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/tokens';
-import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildRecipientRows as selfFetchRecipientRows, buildAllAccountRows as selfFetchAllAccountRows, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, type MenuTabKey, WalletRadioPanels, TradingStationPanel, SendTabPanel, AddressPanel, TokenDetailPanel, NetworkDetailPanel, type MeritWalletNetworkRow } from './panels';
+import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, type MenuTabKey, WalletRadioPanels, TradingStationPanel, SendTabPanel, TokenDetailPanel, NetworkDetailPanel, MeritInfoPanelReal, type MeritWalletNetworkRow } from './panels';
 // Panel visibility in this component goes through exactly one engine:
 // @sponsorcoin/spcoin-exchange-engine's panelStore, read via PanelGate /
 // usePanelVisible. The package's own separate store (panelState.ts) was
@@ -96,7 +99,7 @@ import { isNativePlaceholder } from './send/sendTransfer';
 import { useTransactionReceipt } from './receipt/useTransactionReceipt';
 import { ActiveAccountProfileContext } from './swap/activeAccountProfile';
 import ConnectedAgentSelectDropDown from './AgentSelectDropDown';
-import { classifyAddressText, useNativeToken, type AssetEntryKind, type AssetEntryResult } from '@sponsorcoin/spcoin-exchange-engine';
+import { useNativeToken } from '@sponsorcoin/spcoin-exchange-engine';
 
 // 2026-09-30, Stage B (real trade wiring) — a minimal, dependency-free
 // decimal-string -> bigint parser for the SWAP tab's amount inputs. No
@@ -197,6 +200,11 @@ type ActiveListMode = WalletListSelectionSlot | null;
 // recipient picker. Preserved here as two distinct private ids
 // (MERIT_WALLET_SEND_RECIPIENT_LIST_OVERLAY vs.
 // MERIT_WALLET_SPONSOR_RECIPIENT_LIST_OVERLAY) for the same reason.
+// Both since retired (2026-10-23, docs/meritFixes.txt §13-14) — neither
+// name exists in the enum anymore; sendRecipient now opens the real
+// REMOTE_ACCOUNT_SEND_LIST, sponsorRecipient's own mode was removed
+// earlier still (2026-10-11) when the Sponsor tab moved onto
+// REMOTE_ACCOUNT_RECIPIENT_LIST directly.
 // 2026-10-03 — token/account feeds return lowercase addresses, while the web
 // app shows EIP-55 checksummed ones (0xEe…EEeE vs 0xee…eeee for the very same
 // token). Normalize once, where a pick is committed, so every slot displays the
@@ -210,48 +218,34 @@ function toChecksumAddress(address?: string): string | undefined {
   }
 }
 
+// 2026-10-22/23, owner investigation (docs/meritFixes.txt) — attempted
+// switching all six modes to the real shared ids at once; found Merit
+// Wallet already mounts AssetSelectListPanel internally (sharedListHost)
+// for the Sponsor tab's own shared-id pickers, and its render-priority
+// chain picks sharedListHost over this component's own listOverlay
+// whenever ASSET_SELECT_LIST_PANEL is visible — so switching these modes
+// to real, properly-nested ids without also unifying the two renderers
+// would blank Merit's own network/account/token screens, not just risk a
+// cross-page collision. Reverted, then redone one mode at a time instead,
+// each verified live before the next: sellToken/buyToken/sendToken first
+// (REMOTE_TOKEN_LIST, see paramsForMode's own doc comment below for the
+// mechanism and the stale-closure bug found along the way), confirmed
+// live; then this round, sendRecipient/account/network, completing the
+// set — all six now open through openActiveListPanel (see setActiveList
+// below), not a bare openPanel(). account/network additionally needed
+// AssetSelectListPanel to gain a host-rendered branch (renderAccountManagement/
+// renderNetworkList below) since, unlike the other four, nothing in
+// AssetSelectListPanel renders LOCAL_ACCOUNT_WALLET_LIST/NETWORK_LIST through
+// PanelListSelectWrapper — those need the host's own wallet/network data,
+// not a generic feed.
 const LIST_PANEL_ID_FOR_MODE: Record<Exclude<ActiveListMode, null>, SP_COIN_DISPLAY> = {
-  sellToken: SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
-  buyToken: SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
-  sendToken: SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
-  sendRecipient: SP_COIN_DISPLAY.MERIT_WALLET_SEND_RECIPIENT_LIST_OVERLAY,
-  account: SP_COIN_DISPLAY.MERIT_WALLET_ACCOUNT_LIST_OVERLAY,
-  network: SP_COIN_DISPLAY.MERIT_WALLET_NETWORK_LIST_OVERLAY,
+  sellToken: SP_COIN_DISPLAY.REMOTE_TOKEN_LIST,
+  buyToken: SP_COIN_DISPLAY.REMOTE_TOKEN_LIST,
+  sendToken: SP_COIN_DISPLAY.REMOTE_TOKEN_LIST,
+  sendRecipient: SP_COIN_DISPLAY.REMOTE_ACCOUNT_SEND_LIST,
+  account: SP_COIN_DISPLAY.LOCAL_ACCOUNT_WALLET_LIST,
+  network: SP_COIN_DISPLAY.NETWORK_LIST,
 };
-// Every real id ANY mode above can open — used to unconditionally close
-// whichever one was actually open, without this component needing to
-// separately track "which real id is currently open" alongside
-// activeListMode itself (closePanel on an already-closed panel is a
-// no-op, so closing all of these is safe, not wasteful in any way that
-// matters).
-//
-// 2026-09-30 — these are now Merit Wallet's own private
-// MERIT_WALLET_*_LIST_OVERLAY ids (flat roots, no parent/children — see
-// spCoinDisplay.ts's own doc comment), not the real app's shared
-// REMOTE_TOKEN_LIST/ACTIVE_LIST_PANEL family. Since nothing else in the
-// tree declares them as a child, opening one no longer auto-reveals any
-// ancestor (useEnforcePanelAncestorVisibility.ts has nothing to walk up
-// to) — the explicit ACTIVE_LIST_PANEL/ASSET_LIST_SELECT_PANEL closes
-// this function used to need right after this loop are gone for the same
-// reason: there is no shared ancestor left for Merit Wallet to leave
-// stuck open.
-const ALL_LIST_PANEL_IDS: readonly SP_COIN_DISPLAY[] = [
-  SP_COIN_DISPLAY.MERIT_WALLET_TOKEN_LIST_OVERLAY,
-  SP_COIN_DISPLAY.MERIT_WALLET_SEND_RECIPIENT_LIST_OVERLAY,
-  SP_COIN_DISPLAY.MERIT_WALLET_ACCOUNT_LIST_OVERLAY,
-  SP_COIN_DISPLAY.MERIT_WALLET_NETWORK_LIST_OVERLAY,
-];
-
-// Static sample rows — this package has no real feed to query (see
-// AssetListTable.tsx's own "placeholder, not logic" doc comment); a
-// representative, clearly-fake set is enough to prove the shared list
-// shape renders and scrolls correctly, same "representative state by
-// default" treatment ManageSponsorshipsPanel/RewardRow already use.
-const SAMPLE_TOKEN_ROWS: AssetListEntry[] = [
-  { id: '0xeeee', symbol: 'ETH', name: 'Ethereum', address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' },
-  { id: '0xspcoinv0', symbol: 'SPCOIN_V0', name: 'Sponsor Coin V0', address: '0xf3405e01f11d9d7841b4dc61f13a9834c88a5e1b' },
-  { id: '0xweth', symbol: 'WETH', name: 'Wrapped Ether', address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
-];
 
 // Sample groups for AccountListCard.tsx (LOCAL_ACCOUNT_WALLET_LIST) — same
 // "Doggie | Hot Dog" example already used elsewhere in this file's own
@@ -288,13 +282,6 @@ const SAMPLE_NETWORK_ROWS: NetworkListEntry[] = [
 export type { MeritWalletNetworkRow };
 
 export interface MeritWalletProps {
-  /**
-   * 2026-10-05 — resolves an address typed into a list's ADDRESS_PANEL that is NOT in the
-   * rows already loaded (on-chain token lookup / account hydration). The host builds it
-   * from the engine's resolveAssetEntry with its own RPC client; omit it and such an
-   * address just shows "not in this list". `peerAddress` is the other side's token (duplicate guard).
-   */
-  resolveAssetAddress?: (address: string, kind: AssetEntryKind, peerAddress?: string) => Promise<AssetEntryResult>;
   /** Docked (full-height, square corners, no right border — a split-pane
    *  layout) vs. floating/dialog (rounded corners, capped height). Default
    *  false. */
@@ -383,18 +370,12 @@ export interface MeritWalletProps {
   // reuse accountGroups' own accounts (see effectiveAccountGroups below),
   // which already carry real icons once a caller supplies real accountGroups.
   tokenRows?: AssetListEntry[];
-  // 2026-09-16, on live report ("I think the selection lists are different
-  // in the web site vs the extension") — Send/Sponsor's own recipient
-  // picker used to silently fall back to flatAccountRows (the WALLET's
-  // own accounts — HH_BASE_1..19), the same fallback this file's own
-  // comment right below already flags as a placeholder. The real app's
-  // Send/Sponsor recipient picker reads a genuinely different, chain-
-  // scoped directory (FEED_TYPE.REMOTE_RECIPIENT_ACCOUNTS — real
-  // sponsor-selected causes, e.g. "FREE | Born Free USA"), confirmed live
-  // by comparing the two side by side. Optional and additive: omit to
-  // keep today's flatAccountRows fallback for a consumer with no real
-  // recipient feed of its own yet.
-  recipientRows?: AssetListEntry[];
+  // 2026-10-23 — recipientRows removed: its only purpose was seeding
+  // Merit's own sendRecipient list rendering (FEED_TYPE.REMOTE_RECIPIENT_
+  // ACCOUNTS), already replaced by the shared package's own
+  // PanelListSelectWrapper/REMOTE_ACCOUNT_SEND_LIST feed (docs/
+  // meritFixes.txt §12) — nothing in this file reads a resolved recipient
+  // list anymore.
   /** 2026-10-09 -- turns the Rewards tab live (Trading / Staked / Pending with estimate and claim, Auto Refresh), the same card and data hook the web app runs. Omit for the static table. */
   rewardsHost?: RewardsHost;
   /** What the host adds around the Rewards card: a shared Auto Refresh store, the Deposit Account row's starting address, a refresh registration hook and a trace sink (all data or functions). */
@@ -414,7 +395,7 @@ export interface MeritWalletProps {
   // "please fetch real data yourself" (via @sponsorcoin/spcoin-feeds,
   // generalized from spCoinExtension's own already-proven fetch logic —
   // see meritWalletDataFetch.ts's own doc comment): whichever of
-  // networkRows/accountGroups/tokenRows/recipientRows above the caller did
+  // networkRows/accountGroups/tokenRows above the caller did
   // NOT also supply explicitly gets self-fetched instead of falling back to
   // SAMPLE_*. Omit chainId entirely and nothing here changes — same
   // placeholder-or-explicit-prop behavior as before this existed. A caller
@@ -503,11 +484,17 @@ export interface MeritWalletProps {
   // that file's own doc comment); this is the same icon-click-opens-a-
   // detail-view mechanism as onAccountIconClick/accountDetail above,
   // applied to every list row's own (i) info button instead of just the
-  // header avatar. Token rows (Select a Token) get onTokenIconClick/
-  // tokenDetail; account-shaped rows (Active Account Selection/Select
+  // header avatar. Account-shaped rows (Active Account Selection/Select
   // Recipient/Select Agent) reuse onAccountIconClick/accountDetail
   // unchanged, since they're the same entity shape.
-  onTokenIconClick?: (address: string) => void;
+  // 2026-10-23 — onTokenIconClick (the token-row equivalent) removed:
+  // its only caller was Merit's own "Select a Token" list rendering,
+  // which this same date's redesign (docs/meritFixes.txt §11) replaced
+  // with the shared package's generic PanelListSelectWrapper — nothing
+  // calls this anymore. `tokenDetail` itself stays: a host can still
+  // directly drive the token-detail screen by supplying it alongside its
+  // own TOKEN_PANEL visibility management, independent of this component's
+  // own (now-removed) row-click wiring.
   tokenDetail?: {
     address: string;
     logoSrc?: string;
@@ -519,7 +506,7 @@ export interface MeritWalletProps {
     description?: string;
   } | null;
   // 2026-09-16, same request, network list's own equivalent — but unlike
-  // onTokenIconClick/onAccountIconClick above, this does NOT fire from
+  // onAccountIconClick above, this does NOT fire from
   // Select Network's own list rows (2026-09-17, on live report: a list
   // row's icon commits that row, same as every other list in this file —
   // see the network row mapping's own doc comment below for why the
@@ -800,7 +787,6 @@ export interface MeritWalletProps {
 // package for hosts that want the reward-aware list.
 
 function MeritWalletInner({
-  resolveAssetAddress,
   docked = false,
   fullWidth = false,
   onClose,
@@ -829,7 +815,6 @@ function MeritWalletInner({
   walletAssetBaseUrl,
   wallet,
   tokenRows,
-  recipientRows,
   rewardsHost,
   rewardsExtras,
   stakingHost,
@@ -848,7 +833,6 @@ function MeritWalletInner({
   onAccountIconClick,
   onAddAccount,
   accountDetail,
-  onTokenIconClick,
   tokenDetail,
   onNetworkIconClick,
   sendAmount,
@@ -925,6 +909,17 @@ function MeritWalletInner({
 
     setPanelVisible: setRealPanelVisible,
   } = usePanelTree();
+  // 2026-10-23, owner investigation (docs/meritFixes.txt) — the sell/buy/
+  // send token pickers now open through the SAME mechanism Group 2's
+  // pickers (Sell/BuySelectPanelLayoutContainer.tsx, AgentSelectDropDown.tsx,
+  // RecipientSelectDropDown.tsx) already use successfully, instead of the
+  // raw openPanel()+local activeListMode path every other mode still uses.
+  // openActiveListPanel explicitly opens ASSET_SELECT_LIST_PANEL/
+  // ACTIVE_LIST_PANEL/the mode flag together (no reliance on a reactive
+  // ancestor-auto-reveal hook) and stashes the params sharedListHost's own
+  // PanelListSelectWrapper reads — the thing a bare enum swap alone did not
+  // supply, confirmed live (REMOTE_TOKEN_LIST alone opened nothing at all).
+  const { openActiveListPanel, closeActiveListPanel } = useOpenActiveListPanel();
   // 2026-10-09: result cards for Send / Sponsor. The active account's profile is filled in once the account rows are resolved (further down), and read at
   // the moment a result arrives.
   const showReceipt = useTransactionReceipt();
@@ -933,7 +928,7 @@ function MeritWalletInner({
   // panels but they did not close in the GUI... each gate should be
   // directly connected to its associated panel"). Confirmed by reading the
   // real web app's TradingStationPanel: SELL_SELECT_PANEL/ZERO_X_SELECT_
-  // PANEL/CONFIG_SLIPPAGE_PANEL/SWAP_ARROW_BUTTON are independent panel-
+  // PANEL/ZERO_X_CONFIG_SLIPPAGE_PANEL/SWAP_ARROW_BUTTON are independent panel-
   // tree nodes gated via usePanelTree().isVisible(ID) there — none of them
   // touch wagmi, so they're safe to gate directly here too, the same way
   // STAKING_CONTROLLER_PANEL already is elsewhere in this file. Root cause
@@ -965,7 +960,7 @@ function MeritWalletInner({
   // buyLabel/onCogClick from useBuySelectPanelProps
   // (BuySelectPanelLayoutContainer.tsx: the label mirrors
   // SlippageComponent.tsx's !isSell/plain=false branch; the cog
-  // is the buy row's only entry point into CONFIG_SLIPPAGE_PANEL).
+  // is the buy row's only entry point into ZERO_X_CONFIG_SLIPPAGE_PANEL).
   // This component's SWAP-tab composition never supplied either,
   // so the shared pair fell back to its plain 'You Receive:'
   // default with no cog. Both are computed here now — same
@@ -974,17 +969,17 @@ function MeritWalletInner({
   // { bps: 200, percentage: 2, percentageString: '2.00%' }), so
   // percentageString needs no fallback.
   const [tradeDirection] = useTradeDirection();
-  const slippageCogVisible = usePanelVisible(SP_COIN_DISPLAY.CONFIG_SLIPPAGE_PANEL);
+  const slippageCogVisible = usePanelVisible(SP_COIN_DISPLAY.ZERO_X_CONFIG_SLIPPAGE_PANEL);
   const handleSlippageCog = useCallback(() => {
     if (slippageCogVisible) {
-      closePanel(SP_COIN_DISPLAY.CONFIG_SLIPPAGE_PANEL, 'MeritWallet:slippageCog:close');
+      closePanel(SP_COIN_DISPLAY.ZERO_X_CONFIG_SLIPPAGE_PANEL, 'MeritWallet:slippageCog:close');
     } else {
-      openPanel(SP_COIN_DISPLAY.CONFIG_SLIPPAGE_PANEL, 'MeritWallet:slippageCog:open');
+      openPanel(SP_COIN_DISPLAY.ZERO_X_CONFIG_SLIPPAGE_PANEL, 'MeritWallet:slippageCog:open');
     }
   }, [slippageCogVisible, openPanel, closePanel]);
   const buyLabel =
     tradeDirection === TRADE_DIRECTION.SELL_EXACT_OUT
-      ? `You Receive ± ${slippage.percentageString}`
+      ? `You Receive (Zero X) ± ${slippage.percentageString}`
       : 'You Receive:';
   // 2026-09-30, real bug fix (sweep after the same class of bug was
   // confirmed live in the web app's UniSelectPanel/index.tsx, in THIS
@@ -1014,6 +1009,14 @@ function MeritWalletInner({
     if (!first) onMenuOpenChange?.(menuTabHeaderVisible);
   }, [menuTabHeaderVisible, onMenuOpenChange]);
   const panelTreeVisible = usePanelVisible(SP_COIN_DISPLAY.PANEL_TREE_PANEL);
+  // 2026-10-23 (owner report: MERIT_INFO_PANEL shows empty) — this flag and
+  // meritInfoOverlay below were lost when WalletOverlayHost.tsx (which used
+  // to render `slots.meritInfoPanel ?? <MeritInfoPanelReal />` for this
+  // exact panel) was deleted 2026-10-18 ("the web runs on the component's
+  // own body (overlay host and nine panels deleted)") — every OTHER
+  // full-body overlay it hosted (panelTreeOverlay among them) was ported
+  // into this component's own body at the same time; this one was missed.
+  const meritInfoVisible = usePanelVisible(SP_COIN_DISPLAY.MERIT_INFO_PANEL);
   const messageVisible = usePanelVisible(SP_COIN_DISPLAY.MESSAGE_PANEL);
   // 2026-10-13: where the wallet asset files are served from, for the pill, the list and the panel alike (a host on another origin, the extension, passes the web app's address)
   if (walletAssetBaseUrl !== undefined) setWalletAssetBaseUrl(walletAssetBaseUrl); // set while rendering (an idempotent module setting), so the children's first render already reads it
@@ -1067,14 +1070,8 @@ function MeritWalletInner({
   const [selfFetchedNetworkRows, setSelfFetchedNetworkRows] = useState<MeritWalletNetworkRow[] | undefined>(undefined);
   const [selfFetchedAccountGroups, setSelfFetchedAccountGroups] = useState<AccountListGroup[] | undefined>(undefined);
   const [selfFetchedTokenRows, setSelfFetchedTokenRows] = useState<AssetListEntry[] | undefined>(undefined);
-  // false until the token self-fetch has finished (rows or failure): until then the pickers must not show the placeholder rows as if they were the real list.
-  const [tokenFetchSettled, setTokenFetchSettled] = useState(false);
-  const [selfFetchedRecipientRows, setSelfFetchedRecipientRows] = useState<AssetListEntry[] | undefined>(undefined);
-  // 2026-10-03 — Send's recipient picker lists every known account, not the
-  // chain's recipient directory (see buildAllAccountRows' doc comment).
-  const [selfFetchedAllAccountRows, setSelfFetchedAllAccountRows] = useState<AssetListEntry[] | undefined>(undefined);
 
-  // Only fetches whichever of the 4 the caller did NOT already supply
+  // Only fetches whichever of the 3 the caller did NOT already supply
   // explicitly (checked once, at effect-run time — an explicit prop always
   // wins, self-fetch never overwrites it). Re-runs if chainId/baseUrl
   // change (e.g. the host's own wallet switches networks) OR refreshToken
@@ -1109,28 +1106,18 @@ function MeritWalletInner({
         .catch((error) => console.error('MeritWallet: failed to self-fetch account groups:', error));
     }
     if (tokenRows === undefined) {
-      setTokenFetchSettled(false);
       // another chain's rows must not stay up while this chain's list loads
       if (tokenRowsChainRef.current !== undefined && tokenRowsChainRef.current !== chainId) setSelfFetchedTokenRows(undefined);
       tokenRowsChainRef.current = chainId;
       void selfFetchTokenRows(chainId, resolvedBaseUrl, caches, forceRefresh)
-        .then((rows) => { if (!cancelled) { setSelfFetchedTokenRows(rows); setTokenFetchSettled(true); } })
-        .catch((error) => { console.error('MeritWallet: failed to self-fetch token rows:', error); if (!cancelled) setTokenFetchSettled(true); });
+        .then((rows) => { if (!cancelled) setSelfFetchedTokenRows(rows); })
+        .catch((error) => console.error('MeritWallet: failed to self-fetch token rows:', error));
     }
-    if (recipientRows === undefined) {
-      void selfFetchRecipientRows(chainId, resolvedBaseUrl, caches, forceRefresh)
-        .then((rows) => { if (!cancelled) setSelfFetchedRecipientRows(rows); })
-        .catch((error) => console.error('MeritWallet: failed to self-fetch recipient rows:', error));
-    }
-    void selfFetchAllAccountRows(resolvedBaseUrl, caches, forceRefresh)
-      .then((rows) => { if (!cancelled) setSelfFetchedAllAccountRows(rows); })
-      .catch((error) => console.error('MeritWallet: failed to self-fetch all-account rows:', error));
-
     return () => {
       cancelled = true;
     };
-    // Deliberately NOT depending on networkRows/accountGroups/tokenRows/
-    // recipientRows themselves — those are "did the caller supply this at
+    // Deliberately NOT depending on networkRows/accountGroups/tokenRows
+    // themselves — those are "did the caller supply this at
     // all" checks meant to run once per chainId/baseUrl/refreshToken
     // change, not on every render; including them would refetch every
     // time self-fetched state itself changes (an infinite loop for
@@ -1141,7 +1128,7 @@ function MeritWalletInner({
   }, [chainId, baseUrl, refreshToken]);
 
   // Layering: explicit prop > self-fetched > (existing SAMPLE_* fallback,
-  // applied further down at each of these 4's own point of use, unchanged).
+  // applied further down at each of these 3's own point of use, unchanged).
   const resolvedNetworkRows = networkRows ?? selfFetchedNetworkRows;
   const fetchedAccountGroups = accountGroups ?? selfFetchedAccountGroups;
   const resolvedAccountGroups = useMemo(() => {
@@ -1153,11 +1140,10 @@ function MeritWalletInner({
     }));
   }, [fetchedAccountGroups, activeAccountAddress]);
   const resolvedTokenRows = tokenRows ?? selfFetchedTokenRows;
-  const resolvedRecipientRows = recipientRows ?? selfFetchedRecipientRows;
 
   const [openTarget, setOpenTarget] = useState<OpenTarget>(initialOpenTarget ?? 'prod');
   // 2026-09-21, Path A — REAL BUG caught and fixed before shipping, not
-  // hypothetical: `ASSET_LIST_SELECT_PANEL` (the list overlay's real
+  // hypothetical: `ASSET_SELECT_LIST_PANEL` (the list overlay's real
   // parent) is a `MAIN_RADIO_OVERLAY_PANELS` sibling of every trade-tab
   // panel (confirmed by reading `panelTreeCallbacks.ts`'s own `openPanel`
   // directly — opening any `ACTIVE_LIST_PANEL` child walks `PARENT_OF` up
@@ -1213,28 +1199,55 @@ function MeritWalletInner({
     activeListPanelStore.getWalletListSelectionSlot,
     () => null,
   );
-  // 2026-10-05 — the ADDRESS_PANEL's typed value for the open token/recipient list.
-  // Cleared whenever the list changes or closes (setActiveList below).
-  const [addressInput, setAddressInput] = useState('');
-  // What the host's resolver made of the typed address (only for addresses NOT in the loaded
-  // rows). `result: null` = lookup in flight. See the effect below buildAddressBar.
-  const [entryResolution, setEntryResolution] = useState<{ address: string; result: AssetEntryResult | null } | null>(null);
-  const addressRowsRef = useRef<ReadonlyArray<{ address?: string }>>([]);
   const listPanelIdFor = (mode: Exclude<ActiveListMode, null>): SP_COIN_DISPLAY =>
     LIST_PANEL_ID_FOR_MODE[mode];
-  const accountListTreeOpen = usePanelVisible(listPanelIdFor('account'));
-  const networkListTreeOpen = usePanelVisible(listPanelIdFor('network'));
+  // 2026-10-23 (docs/meritFixes.txt §15-16) — the single source of truth for
+  // "which ACTIVE_LIST_PANEL_MODES member is really active right now,"
+  // already ANDed against ASSET_SELECT_LIST_PANEL's own visibility (see
+  // useActiveListPanelChild's own doc comment for why that AND-gate, not an
+  // effect-based reset, is what actually closes this bug). Used both here
+  // (replacing the old accountListTreeOpen/networkListTreeOpen fallback,
+  // which read the two leaky child flags directly) and below, for
+  // sharedListHost — one read, two consumers, so they can never disagree.
+  const activeChild = useActiveListPanelChild();
   // The wallet's own list overlays are not radio members: the tab stays the main overlay while one is open, and the list the person just opened must show.
-  const activeListMode: ActiveListMode = activeListModeLocal ?? (accountListTreeOpen ? 'account' : networkListTreeOpen ? 'network' : null);
+  const activeListMode: ActiveListMode =
+    activeListModeLocal ??
+    (activeChild === SP_COIN_DISPLAY.LOCAL_ACCOUNT_WALLET_LIST
+      ? 'account'
+      : activeChild === SP_COIN_DISPLAY.NETWORK_LIST
+        ? 'network'
+        : null);
+  // 2026-10-23 — all six modes now open through openActiveListPanel (see
+  // paramsForMode below), not a bare openPanel(): openPanel(childId) alone
+  // never actually opens ASSET_SELECT_LIST_PANEL (a MAIN_RADIO_OVERLAY_PANELS
+  // member — useEnforcePanelAncestorVisibility.ts deliberately stops its
+  // ancestor-reveal walk before those), so sharedListHost's own
+  // PanelListSelectWrapper / host-rendered branches never actually showed.
+  // paramsForMode is defined further down (after the state/handlers it
+  // closes over), but that's fine — this function isn't CALLED until some
+  // later click, well after this render (and paramsForMode's own
+  // definition) has completed.
   const setActiveList = (mode: ActiveListMode) => {
-    setAddressInput('');
     if (mode) {
       activeListPanelStore.setWalletListSelectionSlot(mode);
-      openPanel(listPanelIdFor(mode), 'MeritWallet:setActiveList');
+      openActiveListPanel(paramsForMode(mode), 'MeritWallet:setActiveList', listPanelIdFor(mode));
     } else {
       activeListPanelStore.setWalletListSelectionSlot(null);
-      for (const id of ALL_LIST_PANEL_IDS) closePanel(id, 'MeritWallet:setActiveList:close');
-      if (panelStore.isVisible(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL)) closePanel(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL, 'NAV_POP:MeritWallet:setActiveList:close');
+      // 2026-10-23 — was a hand-rolled partial close (just
+      // activeListPanelStore.clear() + closing ASSET_SELECT_LIST_PANEL
+      // itself), which never closed the specific ACTIVE_LIST_PANEL_MODES
+      // child that was actually open (e.g. NETWORK_LIST) — the exact root
+      // cause of the "pop the stack, content stays visible" bug (docs/
+      // meritFixes.txt §15-16). closeActiveListPanel already does this
+      // correctly (closes whichever mode is open, then ACTIVE_LIST_PANEL,
+      // then this panel, then clears the store) — same call Group 2's own
+      // pickers already use to close. The AND-gated useActiveListPanelChild
+      // hook makes every reader of activeChild immune to a stale child flag
+      // regardless, but other direct readers of these six flags (e.g.
+      // TokenPanel.tsx) are not — this is the real fix, not a belt-and-
+      // suspenders extra.
+      closeActiveListPanel('NAV_POP:MeritWallet:setActiveList:close');
     }
   };
   // A header chevron TOGGLES its list: down opens it (pushes the display stack), up closes it (pops it). Open = the local mode OR the tree flag of the list id (a host may have opened it through the tree).
@@ -1291,9 +1304,11 @@ function MeritWalletInner({
   const sendTokenEntry: PickedEntry = selections.sendToken ?? nativeSendEntry;
   // 2026-10-11 (row 13): a list the shared panels opened through the panel tree (pay token, recipient, agent); the host's listHost renders it.
   useApprovalMessagePanel();
-  const panelTreeListOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL);
-  // The lists the shared panels open through the panel tree (pay token, recipient, agent): the component draws them in every app.
-  const sharedListHost = React.createElement(ActiveListPanelHost, { walletChrome: true });
+  const panelTreeListOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL);
+  // sharedListHost itself (it needs renderNetworkList/renderAccountManagement,
+  // defined further down near where they used to live as listOverlay's own
+  // 'account'/'network' branches) is declared below, after those two
+  // functions — see its own doc comment there.
   // 2026-10-13 (owner request): the wallet pill belongs to the Add a Wallet/Account menu (ADD_WALLET_ACCOUNT: Create Account, Import, Connect), where it picks the wallet the account is added to, and to the wallet list
   // it opens (REMOTE_WALLET_LIST). It is NOT on the account list itself or on the tab pages.
   const addMenuVisible = usePanelVisible(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT);
@@ -1469,10 +1484,13 @@ function MeritWalletInner({
     setAccountDetailAddress(address);
     openPanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'MeritWallet:openAccountDetail');
   };
-  const openTokenDetail = (address: string) => {
-    setTokenDetailAddress(address);
-    openPanel(SP_COIN_DISPLAY.TOKEN_PANEL, 'MeritWallet:openTokenDetail');
-  };
+  // 2026-10-23 — openTokenDetail (the token-row equivalent of
+  // openAccountDetail/openNetworkDetail below) removed: its only caller was
+  // Merit's own "Select a Token" list rendering, replaced by the shared
+  // package's generic PanelListSelectWrapper (docs/meritFixes.txt §11).
+  // TOKEN_PANEL/tokenDetailVisible/setTokenDetailAddress stay — a host can
+  // still drive the token-detail screen directly (see tokenDetail's own
+  // doc comment on MeritWalletProps).
   const openNetworkDetail = (id: string) => {
     setNetworkDetailId(id);
     openPanel(SP_COIN_DISPLAY.NETWORK_PANEL, 'MeritWallet:openNetworkDetail');
@@ -1490,7 +1508,37 @@ function MeritWalletInner({
   // record was selected and can be cleared when leaving the detail screen.
   const handleTabClick = (tab: MenuTabKey) => {
     // Owner rule (docs 8.5.10): selecting the tab you are on changes nothing (what is open over it stays); selecting another tab goes through validateTab (openPanel routes tabs there), and what was open over the tab you leave stays on the stack, to come back with it.
-    if (tab === activeTab) return;
+    // 2026-10-24 (owner report, trace-log confirmed: clicking Swap right
+    // after opening MERIT_INFO_PANEL produced NO openPanel call at all,
+    // unlike every other tab click) -- MERIT_INFO_PANEL/PANEL_TREE_PANEL
+    // are GLOBAL overlays (the header title / the Config tab's debug
+    // link), not a list or detail genuinely covering whichever tab was
+    // last active. activeTab's own derivation (see its doc comment above
+    // derivedTab/lastKnownTabRef) falls back to the last real tab for
+    // EITHER case alike, since TAB_KEY_BY_PANEL_ID has no entry for a
+    // non-tab panel either way -- correct for a covering list/detail (the
+    // tab IS still the real content underneath, re-clicking it should do
+    // nothing), wrong for these two (nothing tab-related is happening
+    // while they're up, so re-clicking the tab you were on before them is
+    // a REAL transition, not a no-op).
+    const onGlobalOverlay =
+      activeMainOverlay === SP_COIN_DISPLAY.MERIT_INFO_PANEL ||
+      activeMainOverlay === SP_COIN_DISPLAY.PANEL_TREE_PANEL;
+    const willNoOp = tab === activeTab && !onGlobalOverlay;
+    // 2026-10-24 -- handleTabClick itself never logged anything, so the only
+    // evidence a click was silently no-op'd was the ABSENCE of any
+    // panelTreeCallbacks:openPanel entry right after it, which is exactly
+    // how the onGlobalOverlay bug above was tracked down from a pasted
+    // trace log. Always-on, every click, so a future repro of this class of
+    // bug shows up directly instead of by omission.
+    panelTreeTrace('MeritWallet:handleTabClick', {
+      tab,
+      activeTab,
+      activeMainOverlay: activeMainOverlay != null ? SP_COIN_DISPLAY[activeMainOverlay] : null,
+      onGlobalOverlay,
+      willNoOp,
+    });
+    if (willNoOp) return;
     openPanel(TAB_PANEL_IDS[tab], 'MeritWallet:handleTabClick');
     // A list opened over a tab stays with that tab (docs 8.5.10): leaving the tab closes the list's overlay for the tab just chosen and remembers which list it was, and coming back to the tab reopens it with its picker destination.
     listByTabRef.current[activeTab] = activeListMode;
@@ -1504,7 +1552,6 @@ function MeritWalletInner({
     // What was on TOP when the tab was left is on top again (a detail opened over a list returns over it): reopening an entry already on the stack trims to it, it does not push a copy.
     if (restoreDetail) openPanel(restoreDetail, 'MeritWallet:restoreDetail');
     // A detail stays with its tab like a list does (docs 8.5.10): its panel flag stays on the stack, so the record it shows is KEPT here and cleared only when the detail's panel closes (the effect below).
-    setAddressInput('');
   };
   // The selected detail record is data tied to its panel: it goes when the panel closes, not when the tab changes.
   useEffect(() => { if (!accountDetailVisible) setAccountDetailAddress(null); }, [accountDetailVisible]);
@@ -1618,61 +1665,86 @@ function MeritWalletInner({
   // popover). onSelect closes it the same way a real row pick would.
   const closeListOverlay = () => setActiveList(null);
 
-  // 2026-09-16 — the actual "commit this pick" step (see PickableSlot's
-  // own doc comment above for the full report/reasoning). Reads
-  // activeListMode BEFORE closing the overlay — closeListOverlay only
-  // schedules the state update, it doesn't mutate this render's own
-  // `activeListMode` binding, so capturing it first (implicitly, by
-  // reading it in this same synchronous call) is safe and correct.
-  const commitSelection = (pickedRow: {
-    symbol?: string;
-    name?: string;
-    address?: string;
-    iconSrc?: string;
-    decimals?: number;
-  }) => {
-    const row = { ...pickedRow, address: toChecksumAddress(pickedRow.address) };
-    const slot = activeListMode as PickableSlot | null;
-    closeListOverlay();
-    if (!slot) return;
+  // 2026-10-23 — commitSelection (the "commit this pick" step PickableSlot's
+  // own doc comment above describes) removed: its only callers were
+  // buildAddressBar's own typed-address-entry preview rows, already removed
+  // alongside it (docs/meritFixes.txt §15-16) — paramsForMode below already
+  // inlines the equivalent commit logic per mode, keyed on `mode` itself
+  // rather than this function's activeListMode-read (see that function's
+  // own doc comment for why that distinction mattered, a real stale-closure
+  // bug once).
 
-    // 2026-09-30 — sell/buy picks now write the real shared ExchangeContext
-    // (see sellTokenContract's own doc comment near usePanelTree() above)
-    // instead of this component's own local `selections` state, so every
-    // other consumer of the same context (the web app's own main Swap tab,
-    // the real balance fetch, future Uniswap/0x quote wiring) sees the pick
-    // immediately. Every other slot (send/sponsor tokens+recipients) stays
-    // on local `selections` — genuinely Merit-Wallet-only picks with no
-    // real ExchangeContext counterpart today. balance defaults to 0n here,
-    // same as liteProvider.tsx's own makeMinimalAccountFallback — real
-    // balance display is the caller-supplied sellBalanceText/buyBalanceText
-    // prop, not this field.
-    if (slot === 'sellToken' || slot === 'buyToken') {
-      const contract: TokenContract | undefined = row.address
-        ? {
-            address: row.address as TokenContract['address'],
-            symbol: row.symbol,
-            name: row.name,
-            decimals: row.decimals,
-            logoURL: row.iconSrc,
-            balance: BigInt(0),
+  // 2026-10-23, owner investigation (docs/meritFixes.txt §11-12) — what
+  // setActiveList hands to openActiveListPanel for each mode. sellToken/
+  // buyToken/sendToken went first (see the stale-closure bug writeup this
+  // function's own history carried, now folded in below): onCommit is
+  // built HERE, in the same render as the click that opens the list, and
+  // a pick fires much later against whichever closure was captured at
+  // that moment — so it must not read anything that only becomes correct
+  // after a re-render (activeListMode, read via the external
+  // activeListPanelStore, is exactly that kind of value; `mode`, this
+  // function's own parameter, is not — it's fixed for the whole call).
+  // That's why every branch below reads `mode` directly instead of
+  // routing through commitSelection's activeListMode inference.
+  // account/network return null: they're host-rendered
+  // (renderAccountManagement/renderNetworkList below, via
+  // AssetSelectListPanel's own host-callback props) and read no feed
+  // params at all — the params object exists only for modes that render
+  // through the package's generic PanelListSelectWrapper.
+  const paramsForMode = (mode: Exclude<ActiveListMode, null>) => {
+    if (mode === 'sellToken' || mode === 'buyToken' || mode === 'sendToken') {
+      return {
+        feedType: FEED_TYPE.REMOTE_TOKEN_LIST,
+        onCommit: (asset: TokenContract | spCoinAccount) => {
+          const token = asset as TokenContract;
+          const address = toChecksumAddress(token.address as unknown as string);
+          if (mode === 'sellToken' || mode === 'buyToken') {
+            const contract: TokenContract | undefined = address
+              ? {
+                  address: address as TokenContract['address'],
+                  symbol: token.symbol,
+                  name: token.name,
+                  decimals: token.decimals,
+                  logoURL: token.logoURL,
+                  balance: BigInt(0),
+                }
+              : undefined;
+            if (mode === 'sellToken') setSellTokenContract(contract);
+            else setBuyTokenContract(contract);
+          } else {
+            setSelections((prev) => ({
+              ...prev,
+              [mode]: {
+                symbol: token.symbol,
+                name: token.name,
+                address,
+                iconSrc: token.logoURL,
+                decimals: token.decimals,
+              },
+            }));
           }
-        : undefined;
-      if (slot === 'sellToken') setSellTokenContract(contract);
-      else setBuyTokenContract(contract);
-      return;
+          closeListOverlay();
+        },
+        selectOnLogoClick: true,
+      };
     }
-
-    setSelections((prev) => ({
-      ...prev,
-      [slot]: {
-        symbol: row.symbol,
-        name: row.name,
-        address: row.address,
-        iconSrc: row.iconSrc,
-        decimals: row.decimals,
-      },
-    }));
+    if (mode === 'sendRecipient') {
+      return {
+        // sendRecipient's own real id (REMOTE_ACCOUNT_SEND_LIST) has a matching FEED_TYPE member exactly.
+        feedType: FEED_TYPE.REMOTE_ACCOUNT_SEND_LIST,
+        onCommit: (asset: TokenContract | spCoinAccount) => {
+          const account = asset as spCoinAccount;
+          const address = toChecksumAddress(account.address as unknown as string);
+          setSelections((prev) => ({
+            ...prev,
+            sendRecipient: { symbol: account.symbol, name: account.name, address, iconSrc: account.logoURL },
+          }));
+          closeListOverlay();
+        },
+      };
+    }
+    // account | network
+    return null;
   };
 
   const iconFromSrc = (src?: string) =>
@@ -1697,10 +1769,11 @@ function MeritWalletInner({
           onBuyTokenClick: () => setActiveList('buyToken'),
           sellSymbol: sellTokenContract?.symbol,
           sellAddress: sellTokenContract?.address,
-          sellIcon: iconFromSrc(sellTokenContract?.logoURL),
+          // 2026-10-22 (owner report): iconFromSrc returned undefined with no token picked, leaving the pill's icon slot empty — TokenLogo renders unconditionally and falls back to STATIC_ASSET_ICON_URL on its own, matching the Uniswap row's own pill (UniSelectPanelWithSwap, fed by BuySelectPanelLayoutContainer's identical fix).
+          sellIcon: React.createElement(TokenLogo, { tokenContract: sellTokenContract, style: fitImageStyle }),
           buySymbol: buyTokenContract?.symbol,
           buyAddress: buyTokenContract?.address,
-          buyIcon: iconFromSrc(buyTokenContract?.logoURL),
+          buyIcon: React.createElement(TokenLogo, { tokenContract: buyTokenContract, style: fitImageStyle }),
           // 2026-09-30 — real amount input + real balance reads, see their
           // own doc comment above (near sellAmountText's declaration).
           sellAmount: sellAmountText,
@@ -1724,7 +1797,7 @@ function MeritWalletInner({
           buyVisible: zeroXVisible,
           arrowVisible: swapArrowVisible,
           // ConfigSlippagePanel is already fully self-gating (checks its
-          // own usePanelVisible(CONFIG_SLIPPAGE_PANEL) internally, renders
+          // own usePanelVisible(ZERO_X_CONFIG_SLIPPAGE_PANEL) internally, renders
           // null when hidden) — no extra visibility check needed here.
           buyPrefixContent: React.createElement(ConfigSlippagePanel, {
             bps: slippage.bps,
@@ -1757,7 +1830,14 @@ function MeritWalletInner({
             sendTokenIcon: iconFromSrc(sendTokenEntry.iconSrc),
             recipientSymbol: selections.sendRecipient?.symbol,
             recipientAddress: selections.sendRecipient?.address,
-            recipientIcon: iconFromSrc(selections.sendRecipient?.iconSrc),
+            // 2026-10-22 (owner report): iconFromSrc returned undefined with no recipient picked, leaving the pill's icon slot empty — AccountAvatar renders unconditionally and falls back to ANONYMOUS_ACCOUNT_AVATAR_URL on its own, matching every other account-style pill.
+            recipientIcon: React.createElement(AccountAvatar, {
+              logoURL: selections.sendRecipient?.iconSrc,
+              symbol: selections.sendRecipient?.symbol,
+              name: selections.sendRecipient?.name,
+              address: selections.sendRecipient?.address,
+              style: fitImageStyle,
+            }),
             // 2026-09-22, Phase B.2 Stage 4 follow-up — real amount input +
             // submit wiring (see MeritWalletProps.onSendSubmit's own doc
             // comment for why tokenAddress/decimals aren't fully resolved
@@ -1941,23 +2021,18 @@ function MeritWalletInner({
       ? ({ ...listedActive, name: activeAccountName || listedActive.name, symbol: activeAccountSymbol || listedActive.symbol, iconSrc: activeAccountLogoURL || listedActive.iconSrc, icon: listedActive.icon ?? hostActiveEntry.icon } as typeof listedActive)
       : listedActive ?? hostActiveEntry;
   activeProfileRef.current = activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined;
-  // While the first self-fetch is still running (and no rows were passed in), the picker lists nothing and says it is loading, instead of showing the three placeholder rows and then
-  // swapping in the real list (and its logos) the next time it is opened. The placeholders only appear after a fetch that failed.
-  const tokenRowsLoading = tokenRows === undefined && resolvedTokenRows === undefined && !tokenFetchSettled;
-  const effectiveTokenRows = resolvedTokenRows ?? (tokenRowsLoading ? [] : SAMPLE_TOKEN_ROWS);
-
-  // 2026-09-24, ASSET_LIST_SELECT_PANEL real container (on request, after
+  // 2026-09-24, ASSET_SELECT_LIST_PANEL real container (on request, after
   // discussion) — this whole block used to jump straight from
   // `activeListMode` to AssetListTable/AccountListRewardsPanel/
   // NetworkListTable with no intermediate container representing the real,
-  // distinct ASSET_LIST_SELECT_PANEL (38) panel id that sits between
+  // distinct ASSET_SELECT_LIST_PANEL (38) panel id that sits between
   // ACTIVE_LIST_PANEL and its content children in panelRegistry.ts — a
   // flattened structure that didn't match the real panel-tree hierarchy.
   // Every branch below now routes its existing, unchanged content through
   // the package's own real AssetListSelectPanel shell as `listContent`
   // instead of rendering it directly. Deliberately NOT a cosmetic-only
   // change even though none of these feed types trigger the shell's
-  // address-bar/manage-view behavior today (same as the ASSET_LIST_SELECT_PANEL
+  // address-bar/manage-view behavior today (same as the ASSET_SELECT_LIST_PANEL
   // investigation earlier this session found) — the point is giving the
   // extension a REAL, shared container matching the actual architecture, so
   // a future platform (iPhone/Android, per appSplitDevelopmentTime.md) reuses
@@ -1966,289 +2041,176 @@ function MeritWalletInner({
   // `manageContent` stay omitted (no ADDRESS_PANEL/manage-view concept exists
   // in the extension yet) — safe, since the shell's own render guard
   // requires both `showAddressBar` AND a supplied `addressBar` node.
-  // 2026-10-05 — ADDRESS_PANEL for the extension's list overlays, the same
-  // shared pieces (AddressPanel = HexAddressInput + AssetPreviewRow) the web app
-  // draws. Entering an address NEVER leaves the list: a full address that is in
-  // the rows already loaded shows as a preview row, and clicking that row commits
-  // it (commitSelection), exactly like the web app. An address that isn't in the
-  // list shows a red "not in this list" row — resolving unknown addresses
-  // on-chain is the web app's validation FSM, not ported yet.
-  const buildAddressBar = (
-    rows: ReadonlyArray<{ symbol?: string; name?: string; address?: string; iconSrc?: string; decimals?: number }>,
-    kind: 'token' | 'account',
-    onInfo: (address: string) => void,
-  ) => {
-    const typed = addressInput.trim();
-    let preview: AssetPreviewRowProps | null = null;
-    if (typed) {
-      const isFull = /^0x[0-9a-fA-F]{40}$/.test(typed);
-      const isPartial = /^(0|0x[0-9a-fA-F]{0,39})$/i.test(typed);
-      if (isFull) {
-        const hit = rows.find((r) => r.address?.toLowerCase() === typed.toLowerCase());
-        const resolved = entryResolution && entryResolution.address.toLowerCase() === typed.toLowerCase() ? entryResolution : null;
-        preview = hit
-          ? {
-              icon: iconFromSrc(hit.iconSrc),
-              symbol: hit.symbol,
-              name: hit.name,
-              address: hit.address,
-              onSelect: () => commitSelection(hit),
-              infoIconSrc,
-              onInfoClick: hit.address ? () => onInfo(hit.address!) : undefined,
-            }
-          : resolveAssetAddress
-            ? resolved?.result
-              ? resolved.result.status === 'ok'
-                ? {
-                    icon: iconFromSrc(resolved.result.asset.logoURL),
-                    symbol: resolved.result.asset.symbol,
-                    name: resolved.result.asset.name,
-                    address: resolved.result.asset.address,
-                    onSelect: () =>
-                      commitSelection({
-                        symbol: resolved.result?.status === 'ok' ? resolved.result.asset.symbol : undefined,
-                        name: resolved.result?.status === 'ok' ? resolved.result.asset.name : undefined,
-                        address: typed,
-                        iconSrc: resolved.result?.status === 'ok' ? resolved.result.asset.logoURL : undefined,
-                        decimals: resolved.result?.status === 'ok' ? resolved.result.asset.decimals : undefined,
-                      }),
-                  }
-                : {
-                    tone: 'error',
-                    icon: undefined,
-                    name: 'message' in resolved.result ? resolved.result.message : 'Address not available',
-                    address: typed,
-                  }
-              : { icon: undefined, name: 'Looking up address…', address: typed }
-            : {
-                tone: 'error',
-                icon: undefined,
-                name: kind === 'token' ? 'Token not in this list' : 'Account not in this list',
-                address: typed,
-              };
-      } else if (!isPartial) {
-        preview = { tone: 'error', icon: undefined, name: 'Invalid address', address: '' };
-      }
-    }
-    return React.createElement(AddressPanel, { value: addressInput, onChange: setAddressInput, preview });
-  };
-  const recipientListRows =
-    (activeListMode === 'sendRecipient' ? selfFetchedAllAccountRows : undefined) ??
-    resolvedRecipientRows ??
-    flatAccountRows;
+  // 2026-10-23 — buildAddressBar (the ADDRESS_PANEL typed-address-entry
+  // mechanism this comment used to describe, for sellToken/buyToken/
+  // sendToken/sendRecipient's own rows) removed along with
+  // resolveAssetAddress/entryResolution/addressRowsRef/addressInput: its
+  // only callers were those same four modes' old Merit-local list
+  // rendering, already replaced by the shared package's own
+  // PanelListSelectWrapper (docs/meritFixes.txt §11-12), which has its own
+  // equivalent typed-entry handling — nothing in this file needs this
+  // apparatus anymore. account/network never used it (no addressBar prop
+  // on their own AssetListSelectPanel calls below).
 
-  addressRowsRef.current =
-    activeListMode === 'sendRecipient' ? recipientListRows : effectiveTokenRows;
-  // Resolve a full address that isn't in the loaded rows (host-supplied; see resolveAssetAddress).
-  // The rows ref is read, not depended on, so a list refresh doesn't re-run the lookup.
-  useEffect(() => {
-    const typed = addressInput.trim();
-    if (!resolveAssetAddress || !activeListMode || classifyAddressText(typed) !== 'ok') {
-      setEntryResolution(null);
-      return;
-    }
-    if (addressRowsRef.current.some((r) => r.address?.toLowerCase() === typed.toLowerCase())) {
-      setEntryResolution(null);
-      return;
-    }
-    let cancelled = false;
-    setEntryResolution({ address: typed, result: null });
-    const kind: AssetEntryKind = activeListMode === 'sendRecipient' ? 'account' : 'token';
-    const peer =
-      activeListMode === 'sellToken'
-        ? buyTokenContract?.address
-        : activeListMode === 'buyToken'
-          ? sellTokenContract?.address
-          : undefined;
-    resolveAssetAddress(typed, kind, peer ? String(peer) : undefined)
-      .then((result) => {
-        if (!cancelled) setEntryResolution({ address: typed, result });
-      })
-      .catch((error: unknown) => {
-        if (!cancelled)
-          setEntryResolution({
-            address: typed,
-            result: { status: 'error', message: error instanceof Error ? error.message : 'Lookup failed' },
-          });
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [addressInput, activeListMode, resolveAssetAddress]);
-
-  const listOverlay =
-    activeListMode === 'sellToken' ||
-    activeListMode === 'buyToken' ||
-    activeListMode === 'sendToken'
-      ? React.createElement(AssetListSelectPanel, {
-          containerType: SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL,
-          feedType: FEED_TYPE.REMOTE_TOKEN_LIST,
-          addressBar: buildAddressBar(effectiveTokenRows, 'token', (address) => {
-            openTokenDetail(address);
-            onTokenIconClick?.(address);
-          }),
-          listContent: React.createElement(AssetListTable, {
-            rows: effectiveTokenRows.map((row) => ({
-              ...row,
-              onSelect: () => commitSelection(row),
-              infoIconSrc,
-              onInfoClick: row.address
-                ? () => {
-                    openTokenDetail(row.address!);
-                    onTokenIconClick?.(row.address!);
-                  }
-                : undefined,
-            })),
-            metaLabel: tokenRowsLoading ? 'Token Meta (loading...)' : 'Token Meta',
-          }),
-        })
-      : activeListMode === 'sendRecipient'
-        ? React.createElement(AssetListSelectPanel, {
-            containerType: SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL,
-            // sendRecipient's own real id (REMOTE_ACCOUNT_SEND_LIST) has a matching FEED_TYPE member exactly.
-            feedType: FEED_TYPE.REMOTE_ACCOUNT_SEND_LIST,
-            addressBar: buildAddressBar(recipientListRows, 'account', (address) => {
-              openAccountDetail(address);
-              onAccountIconClick?.(address);
-            }),
-            listContent: React.createElement(AssetListTable, {
-              // Prefers the caller's own real recipient directory
-              // (recipientRows — see that prop's own doc comment) once
-              // supplied; falls back to the wallet's own accounts
-              // (flatAccountRows) only for a consumer with no real
-              // recipient feed of its own yet, same "placeholder until a
-              // real feed exists" treatment every other fallback in this
-              // file already has.
-              // Send lists every known account (the web's REMOTE_ACCOUNT_SEND_LIST).
-              rows: recipientListRows.map((row) => ({
-                ...row,
-                onSelect: () => commitSelection(row),
-                infoIconSrc,
-                onInfoClick: row.address
-                  ? () => {
-                      openAccountDetail(row.address!);
-                      onAccountIconClick?.(row.address!);
-                    }
-                  : undefined,
-              })),
-              metaLabel: 'Account Meta',
-            }),
-          })
-        : activeListMode === 'account'
-          ? (() => {
-              // 2026-09-24, ACCOUNT_LIST_REWARDS_PANEL EXT wiring (minimal
-              // bar, matching AGENT_HEADER_PANEL's own precedent) — swaps
-              // the plain AccountListCard for the reward-aware shell so the
-              // component is actually reachable in the extension. See
-              // accountEntryToSpCoinAccount's own doc comment for the type
-              // bridge; onPickAccount/onClaimRewards stay unwired (no real
-              // on-chain reward-discovery feed exists in the extension yet
-              // — see docs/npmMigrationDesign.md's own dated entry on that
-              // real, separately-scoped gap).
-              // 2026-10-03, on request ("the web app has the correct list") —
-              // this branch rendered AccountListRewardsPanel (the reward-aware
-              // card list), while the web app's own header account pill opens
-              // LOCAL_ACCOUNT_WALLET_LIST ("Active Account Selection": Merit
-              // Wallet/MetaMask groups, ACTIVE badge, Add a Wallet/Account).
-              // AccountListCard is this package's pixel-copied portable version
-              // of exactly that screen (see its header comment), so both apps
-              // now show the same list from the same account groups.
-              return React.createElement(AssetListSelectPanel, {
-                containerType: SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL,
-                // WALLET_ACCOUNTS is the closest real match — its own doc
-                // comment in enums.ts: "Local wallet account list (all known
-                // accounts)... Used by the Send flow's recipient picker."
-                feedType: FEED_TYPE.WALLET_ACCOUNTS,
-                listContent: React.createElement(AccountListCard, {
-                  groups: effectiveAccountGroups.map((group) => ({
-                    ...group,
-                    accounts: group.accounts.map((account) => ({
-                      ...account,
-                      onSelect: () => {
-                        // a connect that fails keeps the list open so its banner (accountListNotice) is seen; anything else closes it as before
-                        const result = onAccountRowSelect?.(account.id, group.id);
-                        if (result instanceof Promise) void result.then((ok) => { if (ok !== false) closeListOverlay(); });
-                        else if (result === false) return;
-                        else closeListOverlay();
-                      },
-                      onInfoClick: account.address
-                        ? () => {
-                            openAccountDetail(account.address!);
-                            onAccountIconClick?.(account.address!);
-                          }
-                        : undefined,
-                    })),
-                  })),
-                  infoIconSrc,
-                  errorMessage: accountListNotice,
-                  onAddWalletAccount: addAccountHost ? () => {
-                    closeListOverlay();
-                    openPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:openAddWalletAccount');
-                  } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
-                }),
-              });
-            })()
-          : activeListMode === 'network'
-            ? React.createElement(AssetListSelectPanel, {
-                containerType: SP_COIN_DISPLAY.ASSET_LIST_SELECT_PANEL,
-                // No real FEED_TYPE concept exists for a network list — this
-                // enum has no NETWORK_LIST member. WALLET_ACCOUNTS reused as
-                // a safe inert placeholder: it's not a MANAGE_* value, so
-                // isManageView stays false regardless (same as every other
-                // branch here), the only thing feedType actually gates.
-                feedType: FEED_TYPE.WALLET_ACCOUNTS,
-                listContent: React.createElement(NetworkListTable, {
-                rows: visibleNetworkRows.map((row) => ({
-                  ...row,
-                  // NetworkListRow's own AssetSelectDropDown gates its whole
-                  // symbol/name display on `hasEntity={!!address}` (a
-                  // TokenListRow/AccountListRow-ism this row shape
-                  // inherited). Corrected 2026-09-16: this used to fabricate
-                  // a fake native-currency placeholder address to satisfy
-                  // that gate — wrong, per the real app's own
-                  // NetworkSelectDropDown.tsx (`address={isRow ?
-                  // \`NetworkId : ${numericCurrentId}\` : triggerLabel}`),
-                  // which feeds a literal "NetworkId : $id" label into this
-                  // exact slot instead of a real/fake address. Matches that
-                  // exactly now — real per-chain data, not a fabricated
-                  // stand-in.
-                  address: `NetworkId : ${row.id}`,
-                  icon: row.iconSrc
-                    ? React.createElement('img', {
-                        src: row.iconSrc,
-                        alt: '',
-                        style: fitImageStyle,
-                      })
-                    : undefined,
-                  onSelect: () => {
-                    closeListOverlay();
-                    onNetworkRowSelect?.(row.id);
-                  },
-                  // 2026-09-17, on live report ("selecting the network.png in
-                  // any row is supposed to return the network... but instead
-                  // opens NETWORK_PANEL for every row") — was wired to
-                  // setNetworkDetailId (open the detail panel), on the belief
-                  // this row's own right-side auth-toggle slot leaves no room
-                  // for a separate info button, so the icon should fill that
-                  // role instead (see NetworkListRow.tsx's own doc comment).
-                  // That reasoning didn't match how every OTHER list row in
-                  // this file actually behaves: Token/Recipient/Account rows
-                  // never wire onIconClick as a detail-opener at the list
-                  // level at all (only their TRIGGER pill's own icon does,
-                  // once something is already active — see
-                  // activeNetworkRow's onIconClick below) — a list row's
-                  // icon commits, same as clicking the rest of the row, with
-                  // no onIconClick override needed since AssetSelectDropDown
-                  // already falls the click through to onRowClick when
-                  // onIconClick is omitted. Simply not overriding it here
-                  // makes network rows consistent with every other list.
-                })),
-                  showTestNets,
-                  onToggleShowTestNets: () => setShowTestNets((prev) => !prev),
-                }),
+  // 2026-10-23 — sellToken/buyToken/sendToken/sendRecipient used to render
+  // here too (Merit's own AssetListSelectPanel+AssetListTable, fed by
+  // effectiveTokenRows/recipientListRows). Now that those four modes open
+  // the real REMOTE_TOKEN_LIST/REMOTE_ACCOUNT_SEND_LIST ids via
+  // openActiveListPanel (see paramsForMode above), ASSET_SELECT_LIST_PANEL
+  // is already visible by the time this component would pick a branch, so
+  // the body chain's own `activeChild != null ? sharedListHost : null` wins
+  // before `listOverlay` is even consulted — those branches could never
+  // render again, so they're removed rather than left as dead code.
+  //
+  // account/network keep a listOverlay fallback (reusing these same two
+  // render functions, so there is only ever one copy of this JSX), but its
+  // trigger narrowed with §15-16's redesign: `activeListMode`'s own
+  // 'account'/'network' derivation now comes from activeChild (AND-gated
+  // against ASSET_SELECT_LIST_PANEL's own visibility, see
+  // useActiveListPanelChild's doc comment), not from reading
+  // LOCAL_ACCOUNT_WALLET_LIST/NETWORK_LIST's raw flags directly the way it
+  // used to. That means a host that set only the child flag without also
+  // opening ASSET_SELECT_LIST_PANEL itself (the literal "opened it through
+  // the tree" edge case this fallback was first built for) no longer
+  // surfaces here either — activeListMode stays null, same as
+  // sharedListHost staying closed. Acceptable: §12's own investigation
+  // already established nothing in this codebase actually sets these flags
+  // that way today: a `grep` for every direct setPanelVisible/openPanel
+  // call against these two ids turned up only setActiveList/toggleList/
+  // openAccountList, so this edge case was defensive, not real. What this
+  // fallback still legitimately covers: a parent-tree state restore (e.g.
+  // a persisted panel-tree snapshot opening ASSET_SELECT_LIST_PANEL +
+  // NETWORK_LIST together on reload) racing ahead of this component's own
+  // render on first mount.
+  const renderAccountManagement = () =>
+    // 2026-09-24, ACCOUNT_LIST_REWARDS_PANEL EXT wiring (minimal
+    // bar, matching AGENT_HEADER_PANEL's own precedent) — swaps
+    // the plain AccountListCard for the reward-aware shell so the
+    // component is actually reachable in the extension. See
+    // accountEntryToSpCoinAccount's own doc comment for the type
+    // bridge; onPickAccount/onClaimRewards stay unwired (no real
+    // on-chain reward-discovery feed exists in the extension yet
+    // — see docs/npmMigrationDesign.md's own dated entry on that
+    // real, separately-scoped gap).
+    // 2026-10-03, on request ("the web app has the correct list") —
+    // this branch rendered AccountListRewardsPanel (the reward-aware
+    // card list), while the web app's own header account pill opens
+    // LOCAL_ACCOUNT_WALLET_LIST ("Active Account Selection": Merit
+    // Wallet/MetaMask groups, ACTIVE badge, Add a Wallet/Account).
+    // AccountListCard is this package's pixel-copied portable version
+    // of exactly that screen (see its header comment), so both apps
+    // now show the same list from the same account groups.
+    React.createElement(AssetListSelectPanel, {
+      containerType: SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL,
+      // WALLET_ACCOUNTS is the closest real match — its own doc
+      // comment in enums.ts: "Local wallet account list (all known
+      // accounts)... Used by the Send flow's recipient picker."
+      feedType: FEED_TYPE.WALLET_ACCOUNTS,
+      listContent: React.createElement(AccountListCard, {
+        groups: effectiveAccountGroups.map((group) => ({
+          ...group,
+          accounts: group.accounts.map((account) => ({
+            ...account,
+            onSelect: () => {
+              // a connect that fails keeps the list open so its banner (accountListNotice) is seen; anything else closes it as before
+              const result = onAccountRowSelect?.(account.id, group.id);
+              if (result instanceof Promise) void result.then((ok) => { if (ok !== false) closeListOverlay(); });
+              else if (result === false) return;
+              else closeListOverlay();
+            },
+            onInfoClick: account.address
+              ? () => {
+                  openAccountDetail(account.address!);
+                  onAccountIconClick?.(account.address!);
+                }
+              : undefined,
+          })),
+        })),
+        infoIconSrc,
+        errorMessage: accountListNotice,
+        onAddWalletAccount: addAccountHost ? () => {
+          closeListOverlay();
+          openPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:openAddWalletAccount');
+        } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
+      }),
+    });
+  const renderNetworkList = () =>
+    React.createElement(AssetListSelectPanel, {
+      containerType: SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL,
+      // No real FEED_TYPE concept exists for a network list — this
+      // enum has no NETWORK_LIST member. WALLET_ACCOUNTS reused as
+      // a safe inert placeholder: it's not a MANAGE_* value, so
+      // isManageView stays false regardless (same as every other
+      // branch here), the only thing feedType actually gates.
+      feedType: FEED_TYPE.WALLET_ACCOUNTS,
+      listContent: React.createElement(NetworkListTable, {
+        rows: visibleNetworkRows.map((row) => ({
+          ...row,
+          // NetworkListRow's own AssetSelectDropDown gates its whole
+          // symbol/name display on `hasEntity={!!address}` (a
+          // TokenListRow/AccountListRow-ism this row shape
+          // inherited). Corrected 2026-09-16: this used to fabricate
+          // a fake native-currency placeholder address to satisfy
+          // that gate — wrong, per the real app's own
+          // NetworkSelectDropDown.tsx (`address={isRow ?
+          // \`NetworkId : ${numericCurrentId}\` : triggerLabel}`),
+          // which feeds a literal "NetworkId : $id" label into this
+          // exact slot instead of a real/fake address. Matches that
+          // exactly now — real per-chain data, not a fabricated
+          // stand-in.
+          address: `NetworkId : ${row.id}`,
+          icon: row.iconSrc
+            ? React.createElement('img', {
+                src: row.iconSrc,
+                alt: '',
+                style: fitImageStyle,
               })
-            : null;
+            : undefined,
+          onSelect: () => {
+            closeListOverlay();
+            onNetworkRowSelect?.(row.id);
+          },
+          // 2026-09-17, on live report ("selecting the network.png in
+          // any row is supposed to return the network... but instead
+          // opens NETWORK_PANEL for every row") — was wired to
+          // setNetworkDetailId (open the detail panel), on the belief
+          // this row's own right-side auth-toggle slot leaves no room
+          // for a separate info button, so the icon should fill that
+          // role instead (see NetworkListRow.tsx's own doc comment).
+          // That reasoning didn't match how every OTHER list row in
+          // this file actually behaves: Token/Recipient/Account rows
+          // never wire onIconClick as a detail-opener at the list
+          // level at all (only their TRIGGER pill's own icon does,
+          // once something is already active — see
+          // activeNetworkRow's onIconClick below) — a list row's
+          // icon commits, same as clicking the rest of the row, with
+          // no onIconClick override needed since AssetSelectDropDown
+          // already falls the click through to onRowClick when
+          // onIconClick is omitted. Simply not overriding it here
+          // makes network rows consistent with every other list.
+        })),
+        showTestNets,
+        onToggleShowTestNets: () => setShowTestNets((prev) => !prev),
+      }),
+    });
+  // Declared here, not near activeChild above, because it needs
+  // renderNetworkList/renderAccountManagement (just defined) in scope —
+  // see that earlier declaration site's own doc comment. activeChild itself
+  // was already computed early (so activeListMode could derive from the
+  // same single read) — passed straight through as AssetSelectListPanel's
+  // one parameter, not re-read here.
+  const sharedListHost = React.createElement(AssetSelectListPanelHost, {
+    activeChild,
+    walletChrome: true,
+    renderNetworkList,
+    renderAccountManagement,
+  });
+  const listOverlay =
+    activeListMode === 'account'
+      ? renderAccountManagement()
+      : activeListMode === 'network'
+        ? renderNetworkList()
+        : null;
 
       // PanelGate's props type requires `children` as a prop, so createElement's children argument does not type-check here
       // eslint-disable-next-line react/no-children-prop
@@ -2376,6 +2338,25 @@ function MeritWalletInner({
   // while it is the showing member, exactly like the other full-body overlays.
   const panelTreeOverlay = panelTreeVisible ? React.createElement(PanelTreePanel) : null;
 
+  // 2026-10-23 — MERIT_INFO_PANEL is PANEL_TREE_PANEL's own sibling in the
+  // same MAIN_RADIO_OVERLAY_PANELS radio group (the "Merit Wallet" header
+  // title opens it, WalletHeader.tsx's handleTitleClick) — same "replaces
+  // the body while showing" treatment. See meritInfoVisible's own doc
+  // comment above for why this was missing.
+  // 2026-10-24 (owner report: the extension's own About panel showed
+  // "N/A" for every field, the web app's showed real data) — baseUrl was
+  // left at its default ('', same-origin relative), exactly the
+  // portability wrinkle MeritInfoPanelReal.tsx's own header comment
+  // already flagged: a relative fetch of /assets/miscellaneous/
+  // meritInfo.json resolves fine for the web app but not from the
+  // extension's chrome-extension:// origin. walletAssetBaseUrl already
+  // exists and is passed to WalletPanel/WalletSelectDropDownHosted below
+  // for this exact reason ("a host on another origin, the extension,
+  // passes the web app's address") — just never wired to this panel too.
+  const meritInfoOverlay = meritInfoVisible
+    ? React.createElement(MeritInfoPanelReal, { baseUrl: walletAssetBaseUrl })
+    : null;
+
   // 2026-10-09 -- the result card of a swap (Success / error, from the shared runUniswapSwap flow). The web app shows MESSAGE_PANEL through its
   // overlayHost; a host without one (the extension) gets it here, in place of the body, until the user closes it.
   const messageOverlay = messageVisible ? React.createElement(ConnectedMessagePanel) : null;
@@ -2383,8 +2364,16 @@ function MeritWalletInner({
   // 2026-10-13 (owner request): WALLET_PANEL, the active wallet's account.json. The web app shows it through its overlayHost (walletPanel slot); a host without one (the extension) gets it here, in place of the body.
   const walletPanelOverlay = walletPanelVisible ? React.createElement(WalletPanel, { walletId: activeWalletId, baseUrl: walletAssetBaseUrl, showLogo: walletLogoVisible, showMetaData: walletMetaDataVisible }) : null;
 
+  // 2026-10-23 — gated on `activeChild != null`, not the coarser
+  // panelTreeListOpen (= ASSET_SELECT_LIST_PANEL's own flag alone): the two
+  // can genuinely disagree (parent open, no child flag actually set is a
+  // real transient state), and sharedListHost is a React element — always
+  // truthy as a VALUE even when it will render null internally — so gating
+  // on the less precise flag would let this `??` chain stop here with
+  // nothing on screen instead of correctly falling through to listOverlay/
+  // gatedTabBody.
   const body =
-    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (panelTreeListOpen ? sharedListHost : null) ?? listOverlay ?? gatedTabBody;
+    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? meritInfoOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (activeChild != null ? sharedListHost : null) ?? listOverlay ?? gatedTabBody;
 
   // Matches the real app's own per-tab titles (useActiveWalletPanelTitle.tsx,
   // its `sponsorshipPanelVisible`/`tradingTabVisible`/`sendTabVisible`/
@@ -2409,6 +2398,8 @@ function MeritWalletInner({
     ? 'Add Wallet Account'
     : panelTreeVisible
     ? 'Panel Tree'
+    : meritInfoVisible
+    ? 'About Merit Wallet'
     : accountDetailVisible
     ? 'Account Details'
     : tokenDetailVisible

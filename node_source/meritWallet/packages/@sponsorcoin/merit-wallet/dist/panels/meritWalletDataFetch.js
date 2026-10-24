@@ -15,8 +15,11 @@
 // (fetchKeystoreLockStatus, unlockMeritWalletAccount, sign/stake/claim/swap)
 // are that extension's own transaction-execution/keystore code, a separate
 // concern — not ported here. This file only builds the read-only list rows
-// MeritWalletProps' own networkRows/accountGroups/tokenRows/recipientRows
-// already accept.
+// MeritWalletProps' own networkRows/accountGroups/tokenRows already accept.
+// (buildRecipientRows/buildAllAccountRows below are no longer called from
+// MeritWallet.tsx itself — recipientRows was removed 2026-10-23, docs/
+// meritFixes.txt §15-16 — but stay exported here since this package's own
+// public API may still have external consumers.)
 import { listConfiguredNetworks, fetchNetworkIconBlob, } from '@sponsorcoin/spcoin-feeds/networks';
 import { fetchAccountListGroups, fetchAccountRoleList, fetchAccountAvatarBlob, getAccountAvatarURL, } from '@sponsorcoin/spcoin-feeds/accounts';
 import { fetchTokenList, getTokenLogoURL, fetchTokenIconBlob, } from '@sponsorcoin/spcoin-feeds/tokens';

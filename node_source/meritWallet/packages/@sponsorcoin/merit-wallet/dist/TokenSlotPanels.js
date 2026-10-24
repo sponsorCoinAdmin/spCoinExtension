@@ -12,7 +12,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
 import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { useExchangeContext, usePanelVisible, defaultMissingImage } from '@sponsorcoin/spcoin-exchange-engine';
+import { useExchangeContext, usePanelVisible, defaultStaticImage } from '@sponsorcoin/spcoin-exchange-engine';
 import { getTokenMetaData } from '@sponsorcoin/spcoin-panels';
 import { ReadOnlyMetaDataTable } from './panels';
 import { useWalletData } from './walletData';
@@ -78,7 +78,7 @@ function TokenContractDetailPanel({ containerId, panelVisible, metaDataVisible, 
     const logoURL = (displayContract.logoURL ?? '').toString().trim();
     const name = (displayContract.name ?? '').toString().trim();
     const rows = tokenDetailRows(displayContract);
-    return (_jsx("div", { id: containerId, children: metaDataVisible && (_jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: logoURL || defaultMissingImage, logoAlt: name, logoVisible: logoVisible })) }));
+    return (_jsx("div", { id: containerId, children: metaDataVisible && (_jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: logoURL || defaultStaticImage, logoAlt: name, logoVisible: logoVisible })) }));
 }
 function TokenSlotDetailPanel({ panelEnum, metaDataEnum, logoEnum, containerId, tokenContract, emptyTitle }) {
     const panelVisible = usePanelVisible(panelEnum);

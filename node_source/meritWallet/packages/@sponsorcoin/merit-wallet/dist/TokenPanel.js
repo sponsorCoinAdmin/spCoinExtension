@@ -12,7 +12,7 @@ import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { defaultMissingImage, panelTreeOpenSourceStore, useBuyTokenContract, useExchangeContext, usePanelTree, usePanelTreeOpenSource, usePanelVisible, usePreviewTokenContract, usePreviewTokenSource, useSellTokenContract, } from '@sponsorcoin/spcoin-exchange-engine';
+import { defaultStaticImage, panelTreeOpenSourceStore, useBuyTokenContract, useExchangeContext, usePanelTree, usePanelTreeOpenSource, usePanelVisible, usePreviewTokenContract, usePreviewTokenSource, useSellTokenContract, } from '@sponsorcoin/spcoin-exchange-engine';
 import { ReadOnlyMetaDataTable } from './panels';
 import { tokenDetailRows } from './TokenSlotPanels';
 import { useWalletData } from './walletData';
@@ -26,7 +26,7 @@ export default function TokenPanel(_props) {
     const vTokenPanel = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
     const vTokenMetaData = usePanelVisible(SP_COIN_DISPLAY.TOKEN_META_DATA);
     const vTokenLogo = usePanelVisible(SP_COIN_DISPLAY.TOKEN_LOGO);
-    // Specifically "is TOKEN_PANEL's own nested token picker open on top of it", not the shared ASSET_LIST_SELECT_PANEL (the list container every
+    // Specifically "is TOKEN_PANEL's own nested token picker open on top of it", not the shared ASSET_SELECT_LIST_PANEL (the list container every
     // list renders through). isTopOfStack tells a stacked picker apart from a list merely left open behind this panel.
     const vTokenList = usePanelVisible(SP_COIN_DISPLAY.REMOTE_TOKEN_LIST);
     const { closePanel, isTopOfStack } = usePanelTree();
@@ -106,5 +106,5 @@ export default function TokenPanel(_props) {
     const resolvedContract = displayContract ?? tokenContract;
     const logoURL = (resolvedContract.logoURL ?? '').toString().trim();
     const name = (resolvedContract.name ?? '').toString().trim();
-    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), (isPreviewMode || vTokenMetaData) && (_jsx(ReadOnlyMetaDataTable, { rows: tokenDetailRows(resolvedContract), logoURL: logoURL || defaultMissingImage, logoAlt: name, logoVisible: vTokenLogo }))] }));
+    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), (isPreviewMode || vTokenMetaData) && (_jsx(ReadOnlyMetaDataTable, { rows: tokenDetailRows(resolvedContract), logoURL: logoURL || defaultStaticImage, logoAlt: name, logoVisible: vTokenLogo }))] }));
 }

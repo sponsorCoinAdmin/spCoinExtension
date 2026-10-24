@@ -18,7 +18,7 @@ import { CopyBtn } from './TokenSlotPanels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { NetworkElement } from '@sponsorcoin/spcoin-common/context';
 import {
-  defaultMissingImage,
+  defaultStaticImage,
   previewNetworkStore,
   useExchangeContext,
   usePanelVisible,
@@ -173,7 +173,7 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
       {vNetworkMetaData && (
         <ReadOnlyMetaDataTable
           rows={rows}
-          logoURL={logoURL || defaultMissingImage}
+          logoURL={logoURL || defaultStaticImage}
           logoAlt={name}
           logoVisible={vNetworkLogo}
           // Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind

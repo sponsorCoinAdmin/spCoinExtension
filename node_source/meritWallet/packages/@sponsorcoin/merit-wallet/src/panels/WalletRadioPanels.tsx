@@ -44,7 +44,7 @@ import { PanelGate } from '@sponsorcoin/spcoin-panels';
 // package). Corrected same day: first set to PANEL_GAP (2px) on a live
 // report that actually meant this panel specifically, then explicitly
 // raised to 4px once the reporter clarified — e.g. the spacing from
-// UNISWAP_TRADE_BUTTON down to WALLET_RADIO_PANELS' own bottom edge
+// UNI_TRADE_BUTTON down to WALLET_RADIO_PANELS' own bottom edge
 // should read as 4px, not 2px.
 
 export interface WalletRadioPanelsProps {

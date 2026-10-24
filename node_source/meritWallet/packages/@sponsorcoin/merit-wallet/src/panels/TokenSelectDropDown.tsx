@@ -30,7 +30,7 @@ export interface TokenSelectDropDownProps {
   icon?: React.ReactNode;
   /**
    * 2026-10-22 (owner request): the image shown in the icon slot when NO token is selected yet (`icon` omitted) — AssetSelectDropDown's own optional
-   * parameter, passed through here. Omit for its own default, spcoin-feeds' MISSING_ASSET_ICON_URL (QuestionRed.png), the same placeholder every other
+   * parameter, passed through here. Omit for its own default, spcoin-feeds' STATIC_ASSET_ICON_URL (QuestionRed.png), the same placeholder every other
    * promoted dropdown falls back to (AccountSelectDropDown's own equivalent is ANONYMOUS_ACCOUNT_AVATAR_URL).
    */
   defaultIconSrc?: string;

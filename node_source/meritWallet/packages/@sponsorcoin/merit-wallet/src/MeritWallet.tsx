@@ -2451,12 +2451,7 @@ function MeritWalletInner({
     {/* 2026-10-09: connect mode is derived from "no active account"; every action button below turns into a Connect button that opens the account list. */}
     <WalletConnectProvider hasAccount={!!String(activeAccountAddress ?? '').trim()} openAccountList={() => setActiveList('account')}>
     <ActiveAccountProfileContext.Provider value={activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined}>
-    {/* 2026-10-24 (owner request) — background overridden to green here, at
-        the call site, as a visual debug marker for MERIT_WALLET's own real
-        frame boundary (comparing it against WALLET_RADIO_PANELS' own yellow
-        radioDebugFrame below). walletFrameStyle.frame itself is untouched —
-        this is a one-line revert (drop the `background: 'green'` override). */}
-    <div className={walletFrameClassName} style={{ ...walletFrameStyle.frame(fullWidth, docked), background: 'green' }}>
+    <div className={walletFrameClassName} style={walletFrameStyle.frame(fullWidth, docked)}>
       <style>{walletFrameCss}</style>
       {/* 2026-10-13 (owner request): the login / create-account page has its OWN grey header (LOGIN_HEADER): a text title and the close button, nothing else.
           While it shows, the network header and the account header below are not rendered. */}

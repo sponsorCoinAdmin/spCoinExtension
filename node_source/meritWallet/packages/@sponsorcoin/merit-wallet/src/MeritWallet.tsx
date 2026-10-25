@@ -1563,11 +1563,38 @@ function MeritWalletInner({
     // A list opened over a tab stays with that tab (docs 8.5.10): leaving the tab closes the list's overlay for the tab just chosen and remembers which list it was, and coming back to the tab reopens it with its picker destination.
     listByTabRef.current[activeTab] = activeListMode;
     detailByTabRef.current[activeTab] = accountDetailVisible ? SP_COIN_DISPLAY.ACCOUNT_PANEL : tokenDetailVisible ? SP_COIN_DISPLAY.TOKEN_PANEL : networkDetailVisible ? SP_COIN_DISPLAY.NETWORK_PANEL : null;
-    setActiveList(null);
+    // 2026-10-26 (owner report, trace-confirmed: selecting Swap while
+    // "Active Account Selection" was open landed on Send, not Swap) --
+    // inlined instead of plain setActiveList(null): that calls
+    // closeActiveListPanel without `keepContainer`, which also closes
+    // ASSET_SELECT_LIST_PANEL -- a MAIN_RADIO_OVERLAY_PANELS member whose
+    // own close reads the displayStack to decide what to restore. The
+    // openPanel(tab) call just above already popped it off the stack and
+    // atomically showed `tab` (validateTab's own pushRule), but that write
+    // and this close are each deferred to their own queueMicrotask and
+    // never batch (schedule(), panelTreeDebug.ts) -- closeActiveListPanel's
+    // own read can still see the PRE-switch stack and "restore" whatever
+    // was on top of IT instead, stomping the tab selection. `keepContainer`
+    // skips that specific close: openPanel(tab) above already handled
+    // ASSET_SELECT_LIST_PANEL correctly, so there is nothing left for
+    // closeActiveListPanel to do for it here.
+    activeListPanelStore.setWalletListSelectionSlot(null);
+    closeActiveListPanel('NAV_POP:MeritWallet:handleTabClick:tabSwitch', { keepContainer: true });
     const restoreList = listByTabRef.current[tab];
     const restoreDetail = detailByTabRef.current[tab];
     listByTabRef.current[tab] = null;
     detailByTabRef.current[tab] = null;
+    // 2026-10-26 (diagnostic, owner report: selecting Swap while "Active
+    // Account Selection" was open landed on Send, not Swap) -- the one trace
+    // line above fires BEFORE restoreList/restoreDetail are even computed,
+    // so a prior pasted log couldn't show whether either of the two calls
+    // below actually fired, or what they fired with. Logged here, right
+    // before they run, so the next capture does.
+    panelTreeTrace('MeritWallet:handleTabClick:restore', {
+      tab,
+      restoreList,
+      restoreDetail: restoreDetail != null ? SP_COIN_DISPLAY[restoreDetail] : null,
+    });
     if (restoreList) setActiveList(restoreList);
     // What was on TOP when the tab was left is on top again (a detail opened over a list returns over it): reopening an entry already on the stack trims to it, it does not push a copy.
     if (restoreDetail) openPanel(restoreDetail, 'MeritWallet:restoreDetail');

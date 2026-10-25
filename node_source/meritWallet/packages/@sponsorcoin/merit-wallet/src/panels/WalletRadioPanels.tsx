@@ -74,6 +74,20 @@
 // (TabRow + the plain body wrapper div, now non-scrolling, that gives this
 // component its bounded height to flex:1 against) — the split is now "who
 // scrolls," not "who sizes," between the two files.
+//
+// 2026-10-24 (owner correction, same day) — three nested divs now, not two:
+// radioSlide (sizing/collapse/external margin, never scrolls) > radioDebugFrame
+// (the rounded, yellow-background frame, never scrolls either) >
+// radioScrollBody (NEW — plain, unstyled, this is what actually scrolls
+// {children}). Owner's own correction: "regardless of scroll position, I
+// want all 4 corners rounded" — with radioDebugFrame itself scrolling (the
+// two-div version), its own rounded top/bottom edges scrolled away with the
+// rest of its content, visible only at the very start/end of a long list.
+// Splitting scrolling out to its own innermost, unstyled div keeps the
+// rounded frame stationary on screen at all times, with content clipped to
+// it throughout — the normal shape of a rounded card with an internal
+// scroll region. The .spcoinMenuTabBodyScroll class is on radioScrollBody
+// now (the actual scrolling element), not radioSlide.
 
 'use client';
 
@@ -118,13 +132,17 @@ export default function WalletRadioPanels({ children, activeRadioPanel }: Wallet
     <div
       data-panel={SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS]}
       data-visible={visible ? 'true' : 'false'}
-      className={panelPartClass.menuTabBody}
       style={panelBoxStyle.radioSlide(visible)}
     >
       <div
         style={panelBoxStyle.radioDebugFrame}
       >
-        {children}
+        <div
+          className={panelPartClass.menuTabBody}
+          style={panelBoxStyle.radioScrollBody}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

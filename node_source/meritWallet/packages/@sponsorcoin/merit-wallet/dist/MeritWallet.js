@@ -523,19 +523,15 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // afterward — this component's own rendering stays correct regardless
     // (via the ref), which is what a user actually sees.
     const lastKnownTabRef = useRef(initialActiveTab ?? 'SWAP');
-    // The list (and its picker destination) that was open over each tab when the person left it.
-    const listByTabRef = useRef({});
-    // The detail screen that was on top over each tab when the person left it.
-    const detailByTabRef = useRef({});
     const derivedTab = activeMainOverlay != null ? TAB_KEY_BY_PANEL_ID[activeMainOverlay] : undefined;
     if (derivedTab)
         lastKnownTabRef.current = derivedTab;
     const activeTab = derivedTab ?? lastKnownTabRef.current;
     // 2026-10-24 (owner report, screenshots): the TAB STRIP's own highlight
     // must NOT use activeTab above — that intentionally keeps remembering the
-    // last real tab for list/detail restoration (listByTabRef/detailByTabRef,
-    // gatedTabBody), which is right for THOSE, but wrong for what the tab
-    // strip visually shows: "if the associated Tab Panel is on top of the
+    // last real tab for gatedTabBody (which tab's own content renders while a
+    // list/detail covers it), which is right for THAT, but wrong for what the
+    // tab strip visually shows: "if the associated Tab Panel is on top of the
     // [real navigation] stack, then it is highlighted. if not, it is not" —
     // the owner's own rule, confirmed across 7 screenshots (Swap stayed
     // highlighted with MERIT_INFO_PANEL covering the body and
@@ -826,11 +822,24 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const configResetPassword = sessionHandlers.onResetPassword;
     const configDeleteAccount = sessionHandlers.onDeleteAccount;
     const configDeleteWallet = sessionHandlers.onDeleteWallet;
-    // List visibility and its destination stay on the display stack across a
-    // tab switch. Detail visibility is tree-owned; these ids only retain which
-    // record was selected and can be cleared when leaving the detail screen.
     const handleTabClick = (tab) => {
-        // Owner rule (docs 8.5.10): selecting the tab you are on changes nothing (what is open over it stays); selecting another tab goes through validateTab (openPanel routes tabs there), and what was open over the tab you leave stays on the stack, to come back with it.
+        // Owner rule (2026-10-26): a tab click is ONLY the plain displayStack
+        // push/pop rule (pushRule, usePanelTree.ts's validateTab) -- nothing
+        // else. This used to also remember and restore whatever list/detail
+        // was open over each tab (docs 8.5.10, 2026-10-16, via
+        // listByTabRef/detailByTabRef below) -- removed after three straight
+        // bugs traced back to behavior layered on TOP of the plain pop/push
+        // rule, never the rule itself (confirmed correct by hand-trace every
+        // time): the old "tab section" stack design, then
+        // closeActiveListPanel's own stale restore, then this remember-and-
+        // reopen feature itself re-pushing a list moments after validateTab
+        // had already popped it off correctly -- confirmed live, Swap still
+        // "remembered" an account list opened much earlier in a long session
+        // and reopened it on every later click, with the memory never going
+        // stale. Selecting a tab you're already on still changes nothing
+        // (what's open over it stays, untouched, since this function returns
+        // before doing anything) -- that half of the owner rule is unchanged.
+        //
         // 2026-10-24 (owner report, trace-log confirmed: clicking Swap right
         // after opening MERIT_INFO_PANEL produced NO openPanel call at all,
         // unlike every other tab click) -- MERIT_INFO_PANEL/PANEL_TREE_PANEL
@@ -863,47 +872,18 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         if (willNoOp)
             return;
         openPanel(TAB_PANEL_IDS[tab], 'MeritWallet:handleTabClick');
-        // A list opened over a tab stays with that tab (docs 8.5.10): leaving the tab closes the list's overlay for the tab just chosen and remembers which list it was, and coming back to the tab reopens it with its picker destination.
-        listByTabRef.current[activeTab] = activeListMode;
-        detailByTabRef.current[activeTab] = accountDetailVisible ? SP_COIN_DISPLAY.ACCOUNT_PANEL : tokenDetailVisible ? SP_COIN_DISPLAY.TOKEN_PANEL : networkDetailVisible ? SP_COIN_DISPLAY.NETWORK_PANEL : null;
-        // 2026-10-26 (owner report, trace-confirmed: selecting Swap while
-        // "Active Account Selection" was open landed on Send, not Swap) --
-        // inlined instead of plain setActiveList(null): that calls
-        // closeActiveListPanel without `keepContainer`, which also closes
-        // ASSET_SELECT_LIST_PANEL -- a MAIN_RADIO_OVERLAY_PANELS member whose
-        // own close reads the displayStack to decide what to restore. The
-        // openPanel(tab) call just above already popped it off the stack and
-        // atomically showed `tab` (validateTab's own pushRule), but that write
-        // and this close are each deferred to their own queueMicrotask and
-        // never batch (schedule(), panelTreeDebug.ts) -- closeActiveListPanel's
-        // own read can still see the PRE-switch stack and "restore" whatever
-        // was on top of IT instead, stomping the tab selection. `keepContainer`
-        // skips that specific close: openPanel(tab) above already handled
-        // ASSET_SELECT_LIST_PANEL correctly, so there is nothing left for
-        // closeActiveListPanel to do for it here.
+        // Whatever list was open over the tab just left is simply closed, not
+        // remembered. openPanel(tab) above already popped/replaced
+        // ASSET_SELECT_LIST_PANEL itself on the stack (validateTab's own
+        // pushRule), so this only needs to clear the non-stack bits that
+        // doesn't touch: the open ACTIVE_LIST_PANEL_MODES child,
+        // ACTIVE_LIST_PANEL, and the local selection-slot store.
+        // `keepContainer: true` skips closeActiveListPanel's own
+        // ASSET_SELECT_LIST_PANEL close (and the stale-stack restore read that
+        // used to come with it, see that function's own doc comment) --
+        // openPanel(tab) above already handled it correctly.
         activeListPanelStore.setWalletListSelectionSlot(null);
         closeActiveListPanel('NAV_POP:MeritWallet:handleTabClick:tabSwitch', { keepContainer: true });
-        const restoreList = listByTabRef.current[tab];
-        const restoreDetail = detailByTabRef.current[tab];
-        listByTabRef.current[tab] = null;
-        detailByTabRef.current[tab] = null;
-        // 2026-10-26 (diagnostic, owner report: selecting Swap while "Active
-        // Account Selection" was open landed on Send, not Swap) -- the one trace
-        // line above fires BEFORE restoreList/restoreDetail are even computed,
-        // so a prior pasted log couldn't show whether either of the two calls
-        // below actually fired, or what they fired with. Logged here, right
-        // before they run, so the next capture does.
-        panelTreeTrace('MeritWallet:handleTabClick:restore', {
-            tab,
-            restoreList,
-            restoreDetail: restoreDetail != null ? SP_COIN_DISPLAY[restoreDetail] : null,
-        });
-        if (restoreList)
-            setActiveList(restoreList);
-        // What was on TOP when the tab was left is on top again (a detail opened over a list returns over it): reopening an entry already on the stack trims to it, it does not push a copy.
-        if (restoreDetail)
-            openPanel(restoreDetail, 'MeritWallet:restoreDetail');
-        // A detail stays with its tab like a list does (docs 8.5.10): its panel flag stays on the stack, so the record it shows is KEPT here and cleared only when the detail's panel closes (the effect below).
     };
     // The selected detail record is data tied to its panel: it goes when the panel closes, not when the tab changes.
     useEffect(() => { if (!accountDetailVisible)

@@ -824,53 +824,31 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const configDeleteWallet = sessionHandlers.onDeleteWallet;
     const handleTabClick = (tab) => {
         // Owner rule (2026-10-26): a tab click is ONLY the plain displayStack
-        // push/pop rule (pushRule, usePanelTree.ts's validateTab) -- nothing
-        // else. This used to also remember and restore whatever list/detail
-        // was open over each tab (docs 8.5.10, 2026-10-16, via
-        // listByTabRef/detailByTabRef below) -- removed after three straight
-        // bugs traced back to behavior layered on TOP of the plain pop/push
-        // rule, never the rule itself (confirmed correct by hand-trace every
-        // time): the old "tab section" stack design, then
-        // closeActiveListPanel's own stale restore, then this remember-and-
-        // reopen feature itself re-pushing a list moments after validateTab
-        // had already popped it off correctly -- confirmed live, Swap still
-        // "remembered" an account list opened much earlier in a long session
-        // and reopened it on every later click, with the memory never going
-        // stale. Selecting a tab you're already on still changes nothing
-        // (what's open over it stays, untouched, since this function returns
-        // before doing anything) -- that half of the owner rule is unchanged.
+        // push/pop rule, unconditionally, every time -- "if tab selected and is
+        // on the displayStack, pop until it is on top; otherwise push it on
+        // top." No "selecting the tab you're already on does nothing"
+        // exception anymore (owner report: clicking Swap from "Select Network",
+        // with Swap already the derived activeTab, did nothing -- the old
+        // willNoOp check treated that as a no-op click, but the real rule is
+        // unconditional: Swap IS on the stack, so it must pop up to it, same as
+        // any other click). This also removes the onGlobalOverlay special case
+        // (MERIT_INFO_PANEL/PANEL_TREE_PANEL) that existed only to patch one
+        // hole in willNoOp -- with no no-op branch left, there is nothing left
+        // for it to patch.
         //
-        // 2026-10-24 (owner report, trace-log confirmed: clicking Swap right
-        // after opening MERIT_INFO_PANEL produced NO openPanel call at all,
-        // unlike every other tab click) -- MERIT_INFO_PANEL/PANEL_TREE_PANEL
-        // are GLOBAL overlays (the header title / the Config tab's debug
-        // link), not a list or detail genuinely covering whichever tab was
-        // last active. activeTab's own derivation (see its doc comment above
-        // derivedTab/lastKnownTabRef) falls back to the last real tab for
-        // EITHER case alike, since TAB_KEY_BY_PANEL_ID has no entry for a
-        // non-tab panel either way -- correct for a covering list/detail (the
-        // tab IS still the real content underneath, re-clicking it should do
-        // nothing), wrong for these two (nothing tab-related is happening
-        // while they're up, so re-clicking the tab you were on before them is
-        // a REAL transition, not a no-op).
-        const onGlobalOverlay = activeMainOverlay === SP_COIN_DISPLAY.MERIT_INFO_PANEL ||
-            activeMainOverlay === SP_COIN_DISPLAY.PANEL_TREE_PANEL;
-        const willNoOp = tab === activeTab && !onGlobalOverlay;
-        // 2026-10-24 -- handleTabClick itself never logged anything, so the only
-        // evidence a click was silently no-op'd was the ABSENCE of any
-        // panelTreeCallbacks:openPanel entry right after it, which is exactly
-        // how the onGlobalOverlay bug above was tracked down from a pasted
-        // trace log. Always-on, every click, so a future repro of this class of
-        // bug shows up directly instead of by omission.
+        // This used to also remember and restore whatever list/detail was open
+        // over each tab (docs 8.5.10, 2026-10-16, via listByTabRef/
+        // detailByTabRef) -- removed after three straight bugs traced back to
+        // behavior layered on TOP of the plain pop/push rule, never the rule
+        // itself (confirmed correct by hand-trace every time): the old "tab
+        // section" stack design, then closeActiveListPanel's own stale
+        // restore, then that remember-and-reopen feature itself re-pushing a
+        // list moments after validateTab had already popped it off correctly.
         panelTreeTrace('MeritWallet:handleTabClick', {
             tab,
             activeTab,
             activeMainOverlay: activeMainOverlay != null ? SP_COIN_DISPLAY[activeMainOverlay] : null,
-            onGlobalOverlay,
-            willNoOp,
         });
-        if (willNoOp)
-            return;
         openPanel(TAB_PANEL_IDS[tab], 'MeritWallet:handleTabClick');
         // Whatever list was open over the tab just left is simply closed, not
         // remembered. openPanel(tab) above already popped/replaced

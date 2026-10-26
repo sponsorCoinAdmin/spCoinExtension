@@ -1497,7 +1497,29 @@ function MeritWalletInner({
       .catch(() => { if (!cancelled) setSelfTokenDetail({ address: previewTokenAddress, logoSrc }); });
     return () => { cancelled = true; };
   }, [tokenDetailVisible, previewTokenAddress, detailChainId, baseUrl]);
-  const effectiveTokenDetail = tokenDetail && tokenDetail.address === previewTokenAddress ? tokenDetail : selfTokenDetail;
+  // 2026-10-26 (owner report: the image takes a long time to load even
+  // though "we already have the image when we right click") -- the row's
+  // own click handler (TokenLogo.tsx's openPreview) already resolved and
+  // set previewToken.logoURL/name/symbol before this panel ever opens;
+  // getTokenLogoURL is a plain synchronous path builder (no network call)
+  // either way. The old code still held logoSrc/name/symbol back behind
+  // `loading: true` until fetchTokenByAddress's network round-trip
+  // resolved, even though nothing it adds (decimals/website/explorer/
+  // description) was blocking the logo or title from rendering. This seeds
+  // from previewToken immediately so the image and title show on the very
+  // first render, while the self-fetch still runs in the background and
+  // fills in the extra fields once it lands.
+  const previewTokenSelfDetail: NonNullable<typeof tokenDetail> | null =
+    previewToken && previewToken.address === previewTokenAddress
+      ? {
+          address: previewToken.address,
+          logoSrc: previewToken.logoURL || getTokenLogoURL(detailChainId, previewToken.address),
+          name: previewToken.name,
+          symbol: previewToken.symbol,
+        }
+      : null;
+  const effectiveTokenDetail =
+    (tokenDetail && tokenDetail.address === previewTokenAddress ? tokenDetail : null) ?? selfTokenDetail ?? previewTokenSelfDetail;
   // Same idea, for the network-list's own icon (Select Network) — see
   // onNetworkIconClick's own doc comment for why this one needs no
   // separate "detail" data prop from the caller.

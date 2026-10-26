@@ -55,7 +55,13 @@ export default function TokenDetailPanel({
         <div style={detailPanelStyle.logoRow}>
           <div style={detailPanelStyle.logoBox}>
             {logoSrc ? (
-              <img src={logoSrc} alt="" style={detailPanelStyle.logoCover} />
+              // 2026-10-26 (owner report: top/bottom of the logo get cut
+              // off): logo.png files aren't always perfectly square (this
+              // one is 238x256), and `cover` crops whatever overflows a
+              // square box to fill it completely. `contain` (what
+              // NetworkDetailPanel already uses) shows the whole image
+              // instead, letterboxed if needed -- no crop, no quality loss.
+              <img src={logoSrc} alt="" style={detailPanelStyle.logoContain} />
             ) : null}
           </div>
         </div>

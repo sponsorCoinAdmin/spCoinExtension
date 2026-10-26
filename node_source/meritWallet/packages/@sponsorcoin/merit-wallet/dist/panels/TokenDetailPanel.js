@@ -21,5 +21,12 @@ export default function TokenDetailPanel({ address, logoSrc, name, symbol, decim
         { label: 'Explorer', value: loading ? 'Loading…' : explorer || '—' },
         { label: 'Description', value: loading ? 'Loading…' : description || '—' },
     ];
-    return (_jsx("div", { style: detailPanelStyle.screen, children: _jsxs("div", { style: detailPanelStyle.card, children: [_jsx("div", { style: detailPanelStyle.logoRow, children: _jsx("div", { style: detailPanelStyle.logoBox, children: logoSrc ? (_jsx("img", { src: logoSrc, alt: "", style: detailPanelStyle.logoCover })) : null }) }), _jsx("div", { style: detailPanelStyle.rows, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
+    return (_jsx("div", { style: detailPanelStyle.screen, children: _jsxs("div", { style: detailPanelStyle.card, children: [_jsx("div", { style: detailPanelStyle.logoRow, children: _jsx("div", { style: detailPanelStyle.logoBox, children: logoSrc ? (
+                        // 2026-10-26 (owner report: top/bottom of the logo get cut
+                        // off): logo.png files aren't always perfectly square (this
+                        // one is 238x256), and `cover` crops whatever overflows a
+                        // square box to fill it completely. `contain` (what
+                        // NetworkDetailPanel already uses) shows the whole image
+                        // instead, letterboxed if needed -- no crop, no quality loss.
+                        _jsx("img", { src: logoSrc, alt: "", style: detailPanelStyle.logoContain })) : null }) }), _jsx("div", { style: detailPanelStyle.rows, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
 }

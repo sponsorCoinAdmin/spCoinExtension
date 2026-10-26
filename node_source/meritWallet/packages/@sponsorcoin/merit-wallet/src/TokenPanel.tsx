@@ -16,6 +16,7 @@ import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import {
   defaultStaticImage,
   panelTreeOpenSourceStore,
+  panelTreeTrace,
   useBuyTokenContract,
   useExchangeContext,
   usePanelTree,
@@ -110,6 +111,28 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
     if (!fromPanelTree) return;
     if (isPreviewMode || vTokenList) panelTreeOpenSourceStore.mark(SP_COIN_DISPLAY.TOKEN_PANEL, false);
   }, [fromPanelTree, isPreviewMode, vTokenList]);
+
+  // 2026-10-26 (diagnostic, owner report: right-clicking a token row opens
+  // TOKEN_PANEL -- the title bar updates and it's correctly pushed onto the
+  // displayStack, but the content area stays blank). This file had zero
+  // trace instrumentation of its own ("the web app's debug traces were
+  // dropped on the move," this file's own header comment), so a captured
+  // log couldn't show which of the two render-gating conditions below
+  // (tokenListCoversThisPanel, or no tokenContract at all) is actually
+  // firing. Logged every render, right before both gates run.
+  panelTreeTrace('TokenPanel:render', {
+    vTokenPanel,
+    vTokenMetaData,
+    vTokenList,
+    isTopOfStack: isTopOfStack(SP_COIN_DISPLAY.TOKEN_PANEL),
+    isPreviewMode,
+    tokenListCoversThisPanel,
+    hasPreviewToken: previewToken != null,
+    hasSellToken: sellToken != null,
+    hasBuyToken: buyToken != null,
+    hasTokenContract: tokenContract != null,
+    tokenContractAddress: tokenContract?.address ?? null,
+  });
 
   // early return AFTER hooks
   if (!vTokenPanel || tokenListCoversThisPanel) return null;

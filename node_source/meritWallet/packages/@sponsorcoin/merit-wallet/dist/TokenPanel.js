@@ -12,7 +12,7 @@ import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { defaultStaticImage, panelTreeOpenSourceStore, useBuyTokenContract, useExchangeContext, usePanelTree, usePanelTreeOpenSource, usePanelVisible, usePreviewTokenContract, usePreviewTokenSource, useSellTokenContract, } from '@sponsorcoin/spcoin-exchange-engine';
+import { defaultStaticImage, panelTreeOpenSourceStore, panelTreeTrace, useBuyTokenContract, useExchangeContext, usePanelTree, usePanelTreeOpenSource, usePanelVisible, usePreviewTokenContract, usePreviewTokenSource, useSellTokenContract, } from '@sponsorcoin/spcoin-exchange-engine';
 import { ReadOnlyMetaDataTable } from './panels';
 import { tokenDetailRows } from './TokenSlotPanels';
 import { useWalletData } from './walletData';
@@ -97,6 +97,27 @@ export default function TokenPanel(_props) {
         if (isPreviewMode || vTokenList)
             panelTreeOpenSourceStore.mark(SP_COIN_DISPLAY.TOKEN_PANEL, false);
     }, [fromPanelTree, isPreviewMode, vTokenList]);
+    // 2026-10-26 (diagnostic, owner report: right-clicking a token row opens
+    // TOKEN_PANEL -- the title bar updates and it's correctly pushed onto the
+    // displayStack, but the content area stays blank). This file had zero
+    // trace instrumentation of its own ("the web app's debug traces were
+    // dropped on the move," this file's own header comment), so a captured
+    // log couldn't show which of the two render-gating conditions below
+    // (tokenListCoversThisPanel, or no tokenContract at all) is actually
+    // firing. Logged every render, right before both gates run.
+    panelTreeTrace('TokenPanel:render', {
+        vTokenPanel,
+        vTokenMetaData,
+        vTokenList,
+        isTopOfStack: isTopOfStack(SP_COIN_DISPLAY.TOKEN_PANEL),
+        isPreviewMode,
+        tokenListCoversThisPanel,
+        hasPreviewToken: previewToken != null,
+        hasSellToken: sellToken != null,
+        hasBuyToken: buyToken != null,
+        hasTokenContract: tokenContract != null,
+        tokenContractAddress: tokenContract?.address ?? null,
+    });
     // early return AFTER hooks
     if (!vTokenPanel || tokenListCoversThisPanel)
         return null;

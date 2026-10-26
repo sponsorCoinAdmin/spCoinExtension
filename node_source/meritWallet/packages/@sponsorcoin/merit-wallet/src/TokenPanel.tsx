@@ -155,7 +155,11 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
   return (
     <div id="TOKEN_PANEL">
       {isPreviewMode && <div id="TOKEN_META_DATA_PREVIEW" className={panelPartClass.hidden} aria-hidden="true" />}
-      {(isPreviewMode || vTokenMetaData) && (
+      {/* 2026-10-26 (owner report: TOKEN_META_DATA's panel-tree toggle had no effect — the table stayed on regardless) — `isPreviewMode ||`
+          force-showed this block whenever a token was in preview, which is every time this overlay renders at all (tokenDetailOverlay in
+          MeritWallet.tsx only builds it when previewTokenAddress is set), so vTokenMetaData's actual value was never read. AccountDetailScreen's
+          own ACCOUNT_META_DATA has no such override; this now matches it exactly — the panel tree is the one source of truth for visibility. */}
+      {vTokenMetaData && (
         <ReadOnlyMetaDataTable rows={tokenDetailRows(resolvedContract)} logoURL={logoURL || defaultStaticImage} logoAlt={name} logoVisible={vTokenLogo} />
       )}
     </div>

@@ -127,5 +127,5 @@ export default function TokenPanel(_props) {
     const resolvedContract = displayContract ?? tokenContract;
     const logoURL = (resolvedContract.logoURL ?? '').toString().trim();
     const name = (resolvedContract.name ?? '').toString().trim();
-    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), (isPreviewMode || vTokenMetaData) && (_jsx(ReadOnlyMetaDataTable, { rows: tokenDetailRows(resolvedContract), logoURL: logoURL || defaultStaticImage, logoAlt: name, logoVisible: vTokenLogo }))] }));
+    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), vTokenMetaData && (_jsx(ReadOnlyMetaDataTable, { rows: tokenDetailRows(resolvedContract), logoURL: logoURL || defaultStaticImage, logoAlt: name, logoVisible: vTokenLogo }))] }));
 }

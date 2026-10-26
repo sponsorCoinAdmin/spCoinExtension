@@ -470,13 +470,31 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // applied further down at each of these 3's own point of use, unchanged).
     const resolvedNetworkRows = networkRows ?? selfFetchedNetworkRows;
     const fetchedAccountGroups = accountGroups ?? selfFetchedAccountGroups;
+    // 2026-10-26 (owner report: MetaMask's and the extension's own rows
+    // never showed "Connected", though their groups correctly showed
+    // ACTIVE, and only the native Merit group's row worked) -- root cause,
+    // confirmed via a captured trace: buildApproverGroups (approverAccounts.ts)
+    // already computes isActive correctly, checking BOTH the active account
+    // address AND which authenticator/group it belongs to
+    // (isActiveSource && same(entry.address, activeAddress)). This memo used
+    // to unconditionally RECOMPUTE isActive from scratch, by address alone,
+    // with no idea which authenticator a row's own address belongs to --
+    // a second, redundant source of truth for the exact same flag, the same
+    // "two places decide one thing" shape behind several other bugs this
+    // session. Now only fills isActive when the caller hasn't already
+    // decided it (the self-fetched/SAMPLE fallback path, whose accounts
+    // never carry the flag); the approver system's own already-correct
+    // value is no longer overwritten.
     const resolvedAccountGroups = useMemo(() => {
         if (activeAccountAddress === undefined || !fetchedAccountGroups)
             return fetchedAccountGroups;
         const want = activeAccountAddress.trim().toLowerCase();
         return fetchedAccountGroups.map((group) => ({
             ...group,
-            accounts: group.accounts.map((account) => ({ ...account, isActive: !!want && String(account.address ?? '').toLowerCase() === want })),
+            accounts: group.accounts.map((account) => ({
+                ...account,
+                isActive: typeof account.isActive === 'boolean' ? account.isActive : !!want && String(account.address ?? '').toLowerCase() === want,
+            })),
         }));
     }, [fetchedAccountGroups, activeAccountAddress]);
     const resolvedTokenRows = tokenRows ?? selfFetchedTokenRows;

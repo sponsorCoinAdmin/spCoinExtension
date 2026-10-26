@@ -9,6 +9,7 @@ import type { Wallet, WalletAccountEntry } from './wallet';
 import { domPlatform } from '../platform/domPlatform';
 import type { MeritPlatform } from '../platform/platform';
 import { buildApproverGroups, createApproverController, type ApproverController, type ApproverHost } from './approverAccounts';
+import { engineTrace as appendDebugTrace } from '@sponsorcoin/spcoin-exchange-engine';
 
 export interface ApproverAccounts {
   groups: AccountListGroup[] | undefined;
@@ -78,7 +79,37 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
   const groups = useMemo(() => {
     if (!wallet || !host || !entries || !controller) return undefined;
     const activeApproverId = activeAddress ? wallet.backendIdFor(activeAddress) : undefined;
-    return buildApproverGroups({
+    // 2026-10-26 (diagnostic, owner report: the web app's MetaMask row for
+    // the actually-connected account doesn't show "Connected", though the
+    // group itself correctly shows ACTIVE) -- buildApproverGroups' own
+    // isActive check is `isActiveSource && same(entry.address, activeAddress)`;
+    // group-level isActiveSource is confirmed true (the ACTIVE badge proves
+    // it), so the row-level mismatch must be in the two addresses
+    // themselves. Logging full, untruncated values here since the UI only
+    // ever shows a truncated "0x1E...2D63" that could hide a real
+    // difference.
+    appendDebugTrace('useApproverAccounts:groups:input', {
+      activeAddress,
+      activeApproverId,
+      backends: wallet.backends().map((b) => b.id),
+      // 2026-10-26 (owner question, "do we have an activeAuthenticator?") --
+      // the row-level Connected check only ever compares entry.address to
+      // the global activeAddress string; it never asks, PER ROW, what
+      // backendIdFor/getActiveAuthenticator actually say for THAT address.
+      // Logging both here tests directly whether a row's own per-address
+      // authenticator choice (the saved `store` entry wallet.ts's
+      // backendIdFor reads) agrees with the group's own activeApproverId,
+      // or diverges from it.
+      entries: entries.map((e) => ({
+        address: e.address,
+        backends: e.backends,
+        name: e.name,
+        backendIdForThisAddress: wallet.backendIdFor(e.address),
+        getActiveAuthenticatorForThisAddress: wallet.getActiveAuthenticator(e.address),
+        matchesActiveAddress: !!activeAddress && e.address.toLowerCase() === activeAddress.toLowerCase(),
+      })),
+    });
+    const result = buildApproverGroups({
       backends: wallet.backends(),
       entries,
       statuses,
@@ -89,6 +120,19 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
       onDisconnect: (id) => void controller.disconnect(id).then(load),
       canConnect: (id) => typeof wallet.registry.get(id)?.connect === 'function',
     });
+    // Output, same trace pass: per group, isActiveSource (the group's own
+    // ACTIVE badge) alongside every account's own address and isActive (its
+    // Connected badge) so the input entries above can be matched directly
+    // against what each row actually rendered from.
+    appendDebugTrace('useApproverAccounts:groups:output', {
+      groups: result.map((g) => ({
+        id: g.id,
+        label: g.label,
+        isActiveSource: g.isActiveSource,
+        accounts: g.accounts.map((a) => ({ id: a.id, address: a.address, isActive: a.isActive })),
+      })),
+    });
+    return result;
   }, [wallet, host, entries, statuses, activeAddress, controller, load, platform]);
 
   return { groups, notice, clearNotice: () => setNotice(''), controller };

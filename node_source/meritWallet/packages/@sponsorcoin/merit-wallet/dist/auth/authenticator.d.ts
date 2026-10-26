@@ -104,9 +104,10 @@ export interface AccountAuthenticatorRef {
 /** Where a Merit wallet runs. A vault reports it; a signing-only wallet (MetaMask, a hardware device) has none. */
 export type WalletPlatform = 'web' | 'extension' | 'android' | 'iphone';
 /**
- * 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit Wallet (Extension)" the extension's vault (the
+ * 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit (Extension)" the extension's vault (the
  * web page that connects to the extension sees the same wallet, so it has the same name), "Merit Wallet (Android)" / "(I-Phone)" the phone apps, "Merit Wallet (Web Dev Server)" the development keystore of the developer pages, "MetaMask", and a hardware
  * wallet by its own name. A vault's own platform (when it reports one) decides the bracket for the Merit wallets that run in more than one place. Group headers show it in capitals (the header style does that), sentences show it as written here.
+ * 2026-10-26 (owner request) — the extension's own name dropped "Wallet" ("Merit Wallet (Extension)" -> "Merit (Extension)"), matching serverKeystore's existing "Merit (Web App)" shape — both now read "Merit (<where>)" the same way.
  */
 export declare function walletName(id: string, platform?: WalletPlatform): string;
 /** The name of this authenticator: the one it supplies, else the fallback table. The component asks this and never switches on the id. */

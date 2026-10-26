@@ -14,9 +14,10 @@ export class AuthenticatorError extends Error {
 }
 const PLATFORM_WORDS = { web: 'Web', extension: 'Extension', android: 'Android', iphone: 'I-Phone' };
 /**
- * 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit Wallet (Extension)" the extension's vault (the
+ * 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit (Extension)" the extension's vault (the
  * web page that connects to the extension sees the same wallet, so it has the same name), "Merit Wallet (Android)" / "(I-Phone)" the phone apps, "Merit Wallet (Web Dev Server)" the development keystore of the developer pages, "MetaMask", and a hardware
  * wallet by its own name. A vault's own platform (when it reports one) decides the bracket for the Merit wallets that run in more than one place. Group headers show it in capitals (the header style does that), sentences show it as written here.
+ * 2026-10-26 (owner request) — the extension's own name dropped "Wallet" ("Merit Wallet (Extension)" -> "Merit (Extension)"), matching serverKeystore's existing "Merit (Web App)" shape — both now read "Merit (<where>)" the same way.
  */
 export function walletName(id, platform) {
     // FALLBACK ONLY: a table of the built-in ids, for an authenticator that supplies no displayName. A new wallet supplies its own name (authenticatorName); nothing is added here.
@@ -25,7 +26,7 @@ export function walletName(id, platform) {
     if (id === 'browserVault')
         return 'Merit Wallet (Web)';
     if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit')
-        return 'Merit Wallet (Extension)';
+        return 'Merit (Extension)';
     if (id === 'deviceVault')
         return platform ? `Merit Wallet (${PLATFORM_WORDS[platform]})` : 'Merit Wallet (Phone)';
     if (id === 'injected:io.metamask')

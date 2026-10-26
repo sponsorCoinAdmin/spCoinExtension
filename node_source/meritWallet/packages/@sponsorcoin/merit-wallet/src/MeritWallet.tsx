@@ -63,6 +63,7 @@ import {
   type WalletListSelectionSlot,
   panelTreeTrace,
   useDisplayStack,
+  usePreviewTokenContract,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
@@ -1450,26 +1451,40 @@ function MeritWalletInner({
   const { exchangeContext: roleContext } = useExchangeContext();
   const [activeAccountForDetail] = useActiveAccount();
   // Same idea, for the token-list's own info icon (Select a Token).
-  const [tokenDetailAddress, setTokenDetailAddress] = useState<string | null>(null);
+  // 2026-10-26 (owner decision, after a live report: right-clicking a token
+  // row opened TOKEN_PANEL -- the title bar updated, correctly pushed onto
+  // the displayStack -- but the content area stayed blank) --
+  // tokenDetailAddress/setTokenDetailAddress removed: nothing has set it to
+  // a real address since 2026-10-20 (openTokenDetail, the only caller that
+  // ever did, was removed in favor of the shared package's generic row
+  // click, TokenListItem.tsx's openPreview(), which sets previewToken
+  // instead). Rather than resurrect a second, parallel "what token is
+  // open" field -- the exact class of bug (two sources of truth drifting
+  // apart) chased everywhere else in the panel tree this session -- this
+  // now reads the one real source directly: the same previewToken
+  // TokenPanel.tsx (the package's own, separately-mounted copy) already
+  // correctly uses.
+  const [previewToken, setPreviewTokenContract] = usePreviewTokenContract();
   const tokenDetailVisible = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
+  const previewTokenAddress = previewToken?.address ?? null;
   // 2026-10-20 (docs/meritMigration.txt part 2, row 4): the token detail is loaded HERE, the same in every app. The extension used to load it in its own host code and the web never did (its token detail stayed on "Loading..." for ever). A host may still pass `tokenDetail` for the address that is open and it wins; otherwise this loads the record through the feeds package (the hosted API, or the bundled one when the host has no server) and the logo by its URL.
   const detailChainId = Number(chainId ?? roleContext?.apiCoreSyncedMembers?.network?.appChainId ?? 0);
   const [selfTokenDetail, setSelfTokenDetail] = useState<NonNullable<typeof tokenDetail> | null>(null);
   useEffect(() => {
-    if (!tokenDetailVisible || !tokenDetailAddress || !detailChainId) {
+    if (!tokenDetailVisible || !previewTokenAddress || !detailChainId) {
       setSelfTokenDetail(null);
       return undefined;
     }
     let cancelled = false;
     setSelfTokenDetail(null);
-    const logoSrc = getTokenLogoURL(detailChainId, tokenDetailAddress);
-    void fetchTokenByAddress(detailChainId, tokenDetailAddress, { baseUrl: baseUrl ?? '' })
+    const logoSrc = getTokenLogoURL(detailChainId, previewTokenAddress);
+    void fetchTokenByAddress(detailChainId, previewTokenAddress, { baseUrl: baseUrl ?? '' })
       .then((record) => {
         if (cancelled) return;
         const data = (record ?? {}) as Record<string, unknown> & { data?: Record<string, unknown> };
         const f = (data.data ?? data) as Record<string, unknown>;
         setSelfTokenDetail({
-          address: tokenDetailAddress,
+          address: previewTokenAddress,
           logoSrc,
           name: f.name as string | undefined,
           symbol: f.symbol as string | undefined,
@@ -1479,10 +1494,10 @@ function MeritWalletInner({
           description: f.description as string | undefined,
         });
       })
-      .catch(() => { if (!cancelled) setSelfTokenDetail({ address: tokenDetailAddress, logoSrc }); });
+      .catch(() => { if (!cancelled) setSelfTokenDetail({ address: previewTokenAddress, logoSrc }); });
     return () => { cancelled = true; };
-  }, [tokenDetailVisible, tokenDetailAddress, detailChainId, baseUrl]);
-  const effectiveTokenDetail = tokenDetail && tokenDetail.address === tokenDetailAddress ? tokenDetail : selfTokenDetail;
+  }, [tokenDetailVisible, previewTokenAddress, detailChainId, baseUrl]);
+  const effectiveTokenDetail = tokenDetail && tokenDetail.address === previewTokenAddress ? tokenDetail : selfTokenDetail;
   // Same idea, for the network-list's own icon (Select Network) — see
   // onNetworkIconClick's own doc comment for why this one needs no
   // separate "detail" data prop from the caller.
@@ -1503,10 +1518,14 @@ function MeritWalletInner({
   // 2026-10-23 — openTokenDetail (the token-row equivalent of
   // openAccountDetail/openNetworkDetail below) removed: its only caller was
   // Merit's own "Select a Token" list rendering, replaced by the shared
-  // package's generic PanelListSelectWrapper (docs/meritFixes.txt §11).
-  // TOKEN_PANEL/tokenDetailVisible/setTokenDetailAddress stay — a host can
-  // still drive the token-detail screen directly (see tokenDetail's own
-  // doc comment on MeritWalletProps).
+  // package's generic PanelListSelectWrapper (docs/meritFixes.txt §11),
+  // which sets previewToken (usePreviewTokenContract) instead of calling
+  // anything here. TOKEN_PANEL/tokenDetailVisible stay; the
+  // tokenDetailAddress local state this comment used to also point to was
+  // removed 2026-10-26 (never set again after this change -- see
+  // previewTokenAddress's own doc comment above). A host can still drive
+  // the token-detail screen directly (see tokenDetail's own doc comment on
+  // MeritWalletProps).
   const openNetworkDetail = (id: string) => {
     setNetworkDetailId(id);
     openPanel(SP_COIN_DISPLAY.NETWORK_PANEL, 'MeritWallet:openNetworkDetail');
@@ -1562,7 +1581,7 @@ function MeritWalletInner({
   };
   // The selected detail record is data tied to its panel: it goes when the panel closes, not when the tab changes.
   useEffect(() => { if (!accountDetailVisible) setAccountDetailAddress(null); }, [accountDetailVisible]);
-  useEffect(() => { if (!tokenDetailVisible) setTokenDetailAddress(null); }, [tokenDetailVisible]);
+  useEffect(() => { if (!tokenDetailVisible && previewToken) setPreviewTokenContract(undefined); }, [tokenDetailVisible, previewToken, setPreviewTokenContract]);
   useEffect(() => { if (!networkDetailVisible) setNetworkDetailId(null); }, [networkDetailVisible]);
 
   // 2026-09-21, Path A — initialActiveTab/onActiveTabChange used to be a
@@ -2261,12 +2280,12 @@ function MeritWalletInner({
       })
     : null;
 
-  const tokenDetailOverlay = tokenDetailVisible && tokenDetailAddress
+  const tokenDetailOverlay = tokenDetailVisible && previewTokenAddress
     ? React.createElement(TokenDetailPanel, {
-        address: tokenDetailAddress,
+        address: previewTokenAddress,
         // Same "only trust it once it answers the current address" gate
         // as accountDetailOverlay above.
-        ...(effectiveTokenDetail && effectiveTokenDetail.address === tokenDetailAddress
+        ...(effectiveTokenDetail && effectiveTokenDetail.address === previewTokenAddress
           ? {
               logoSrc: effectiveTokenDetail.logoSrc,
               name: effectiveTokenDetail.name,
@@ -2587,7 +2606,7 @@ function MeritWalletInner({
                 }
               : tokenDetailVisible
                 ? () => {
-                    setTokenDetailAddress(null);
+                    if (previewToken) setPreviewTokenContract(undefined);
                     closePanel('NAV_POP:MeritWallet:tokenDetailBack');
                   }
                 : networkDetailVisible

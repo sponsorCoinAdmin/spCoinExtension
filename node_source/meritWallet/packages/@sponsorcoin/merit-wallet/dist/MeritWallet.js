@@ -46,8 +46,8 @@ import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps } from 
 import { useApproverAccounts } from './wallet/approverAccountsReact';
 import { useApprovalMessagePanel } from './auth/useApprovalMessagePanel';
 import { walletName } from './auth/authenticator';
-import { fetchTokenByAddress, getTokenLogoURL } from '@sponsorcoin/spcoin-feeds/tokens';
-import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, WalletRadioPanels, TradingStationPanel, SendTabPanel, TokenDetailPanel, NetworkDetailPanel, MeritInfoPanelReal } from './panels';
+import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, WalletRadioPanels, TradingStationPanel, SendTabPanel, NetworkDetailPanel, MeritInfoPanelReal } from './panels';
+import TokenPanel from './TokenPanel';
 // Panel visibility in this component goes through exactly one engine:
 // @sponsorcoin/spcoin-exchange-engine's panelStore, read via PanelGate /
 // usePanelVisible. The package's own separate store (panelState.ts) was
@@ -233,7 +233,7 @@ const SAMPLE_NETWORK_ROWS = [
 // the header account list now renders AccountListCard directly, which takes
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
-function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, showWalletSelect = true, walletAssetBaseUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, tokenDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccounts, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
+function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, showWalletSelect = true, walletAssetBaseUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccounts, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
     // reads), not owned local state. useEnforceRadioPanelGroups/
@@ -786,59 +786,6 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const [previewToken, setPreviewTokenContract] = usePreviewTokenContract();
     const tokenDetailVisible = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
     const previewTokenAddress = previewToken?.address ?? null;
-    // 2026-10-20 (docs/meritMigration.txt part 2, row 4): the token detail is loaded HERE, the same in every app. The extension used to load it in its own host code and the web never did (its token detail stayed on "Loading..." for ever). A host may still pass `tokenDetail` for the address that is open and it wins; otherwise this loads the record through the feeds package (the hosted API, or the bundled one when the host has no server) and the logo by its URL.
-    const detailChainId = Number(chainId ?? roleContext?.apiCoreSyncedMembers?.network?.appChainId ?? 0);
-    const [selfTokenDetail, setSelfTokenDetail] = useState(null);
-    useEffect(() => {
-        if (!tokenDetailVisible || !previewTokenAddress || !detailChainId) {
-            setSelfTokenDetail(null);
-            return undefined;
-        }
-        let cancelled = false;
-        setSelfTokenDetail(null);
-        const logoSrc = getTokenLogoURL(detailChainId, previewTokenAddress);
-        void fetchTokenByAddress(detailChainId, previewTokenAddress, { baseUrl: baseUrl ?? '' })
-            .then((record) => {
-            if (cancelled)
-                return;
-            const data = (record ?? {});
-            const f = (data.data ?? data);
-            setSelfTokenDetail({
-                address: previewTokenAddress,
-                logoSrc,
-                name: f.name,
-                symbol: f.symbol,
-                decimals: f.decimals,
-                website: f.website,
-                explorer: f.explorer,
-                description: f.description,
-            });
-        })
-            .catch(() => { if (!cancelled)
-            setSelfTokenDetail({ address: previewTokenAddress, logoSrc }); });
-        return () => { cancelled = true; };
-    }, [tokenDetailVisible, previewTokenAddress, detailChainId, baseUrl]);
-    // 2026-10-26 (owner report: the image takes a long time to load even
-    // though "we already have the image when we right click") -- the row's
-    // own click handler (TokenLogo.tsx's openPreview) already resolved and
-    // set previewToken.logoURL/name/symbol before this panel ever opens;
-    // getTokenLogoURL is a plain synchronous path builder (no network call)
-    // either way. The old code still held logoSrc/name/symbol back behind
-    // `loading: true` until fetchTokenByAddress's network round-trip
-    // resolved, even though nothing it adds (decimals/website/explorer/
-    // description) was blocking the logo or title from rendering. This seeds
-    // from previewToken immediately so the image and title show on the very
-    // first render, while the self-fetch still runs in the background and
-    // fills in the extra fields once it lands.
-    const previewTokenSelfDetail = previewToken && previewToken.address === previewTokenAddress
-        ? {
-            address: previewToken.address,
-            logoSrc: previewToken.logoURL || getTokenLogoURL(detailChainId, previewToken.address),
-            name: previewToken.name,
-            symbol: previewToken.symbol,
-        }
-        : null;
-    const effectiveTokenDetail = (tokenDetail && tokenDetail.address === previewTokenAddress ? tokenDetail : null) ?? selfTokenDetail ?? previewTokenSelfDetail;
     // Same idea, for the network-list's own icon (Select Network) — see
     // onNetworkIconClick's own doc comment for why this one needs no
     // separate "detail" data prop from the caller.
@@ -862,11 +809,11 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // package's generic PanelListSelectWrapper (docs/meritFixes.txt §11),
     // which sets previewToken (usePreviewTokenContract) instead of calling
     // anything here. TOKEN_PANEL/tokenDetailVisible stay; the
-    // tokenDetailAddress local state this comment used to also point to was
-    // removed 2026-10-26 (never set again after this change -- see
-    // previewTokenAddress's own doc comment above). A host can still drive
-    // the token-detail screen directly (see tokenDetail's own doc comment on
-    // MeritWalletProps).
+    // tokenDetailAddress local state this comment used to also point to, and
+    // the self-fetch hydration chain (selfTokenDetail/effectiveTokenDetail)
+    // that fed the old flat TokenDetailPanel overlay, were removed 2026-10-26
+    // alongside tokenDetailOverlay's own switch to TokenPanel.tsx (see that
+    // variable's own doc comment) — TokenPanel hydrates itself.
     const openNetworkDetail = (id) => {
         setNetworkDetailId(id);
         openPanel(SP_COIN_DISPLAY.NETWORK_PANEL, 'MeritWallet:openNetworkDetail');
@@ -1640,24 +1587,21 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                     host: accountDetailHost,
                 })
                 : null;
+    // 2026-10-26 (owner report: TOKEN_PANEL's own TOKEN_LOGO/TOKEN_META_DATA
+    // children never actually opened or closed anything — unlike
+    // ACCOUNT_PANEL's AccountDetailScreen, which reads usePanelVisible on its
+    // own ACCOUNT_LOGO/ACCOUNT_META_DATA pair). Root cause: this overlay used
+    // to build the flat, static TokenDetailPanel (address/name/symbol rows,
+    // no panel-tree awareness at all) instead of TokenPanel.tsx — the
+    // package's own panel-tree-aware token screen, which already reads
+    // TOKEN_META_DATA/TOKEN_LOGO visibility exactly the way AccountDetailScreen
+    // reads its own pair (see this file's own 2026-10-20 doc comment above
+    // previewToken: "TokenPanel.tsx ... already correctly uses" it) but was
+    // never actually wired in here. TokenPanel is self-contained (reads
+    // previewToken/chain/baseUrl via the engine's own hooks, same as
+    // AccountDetailScreen reads its host), so no props are needed.
     const tokenDetailOverlay = tokenDetailVisible && previewTokenAddress
-        ? React.createElement(TokenDetailPanel, {
-            address: previewTokenAddress,
-            // Same "only trust it once it answers the current address" gate
-            // as accountDetailOverlay above.
-            ...(effectiveTokenDetail && effectiveTokenDetail.address === previewTokenAddress
-                ? {
-                    logoSrc: effectiveTokenDetail.logoSrc,
-                    name: effectiveTokenDetail.name,
-                    symbol: effectiveTokenDetail.symbol,
-                    decimals: effectiveTokenDetail.decimals,
-                    website: effectiveTokenDetail.website,
-                    explorer: effectiveTokenDetail.explorer,
-                    description: effectiveTokenDetail.description,
-                    loading: false,
-                }
-                : { loading: true }),
-        })
+        ? React.createElement(TokenPanel, {})
         : null;
     // No loading branch needed — unlike accounts/tokens, this row's own data
     // (networkRowsSource) is already fully in memory the moment the icon is

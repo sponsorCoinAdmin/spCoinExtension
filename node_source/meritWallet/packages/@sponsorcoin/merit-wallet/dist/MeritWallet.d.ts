@@ -115,16 +115,6 @@ export interface MeritWalletProps {
     accountDetailHost?: AccountDetailHost;
     /** 2026-10-10 (docs/design/accountAuthDesign.txt section 17 item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
     addAccountHost?: AddAccountHost;
-    tokenDetail?: {
-        address: string;
-        logoSrc?: string;
-        name?: string;
-        symbol?: string;
-        decimals?: number;
-        website?: string;
-        explorer?: string;
-        description?: string;
-    } | null;
     onNetworkIconClick?: (networkId: string) => void;
     sendAmount?: string;
     onSendAmountChange?: (value: string) => void;

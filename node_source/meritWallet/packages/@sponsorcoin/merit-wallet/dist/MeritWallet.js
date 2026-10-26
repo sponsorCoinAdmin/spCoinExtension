@@ -1492,16 +1492,21 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 ...group,
                 accounts: group.accounts.map((account) => ({
                     ...account,
+                    // 2026-10-26 (owner report: "the ADDRESS_PANEL should not close
+                    // when I select another active Account for approval on this
+                    // page") -- this is the Active Account Selection list
+                    // (WALLET_ACCOUNTS feed, no address bar of its own), so "it"
+                    // means this list itself: it used to close on any successful
+                    // connect, same as every other list's pick-and-close row. That
+                    // was wrong here specifically -- connecting a different account
+                    // can kick off an approval flow (the wallet's own popup, a
+                    // pending-signature state) the owner needs to keep watching
+                    // this list to see settle, not have it yanked away the instant
+                    // the connect call returns. A failed connect already stayed
+                    // open (so its banner is seen); now a successful one does too.
+                    // The back arrow/X still close it explicitly.
                     onSelect: () => {
-                        // a connect that fails keeps the list open so its banner (accountListNotice) is seen; anything else closes it as before
-                        const result = onAccountRowSelect?.(account.id, group.id);
-                        if (result instanceof Promise)
-                            void result.then((ok) => { if (ok !== false)
-                                closeListOverlay(); });
-                        else if (result === false)
-                            return;
-                        else
-                            closeListOverlay();
+                        void onAccountRowSelect?.(account.id, group.id);
                     },
                     onInfoClick: account.address
                         ? () => {

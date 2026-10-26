@@ -48,14 +48,24 @@ export const RADIO_PANEL_GROUPS_WITH_FALLBACKS = RADIO_PANEL_GROUPS.map((group) 
   // own members (NETWORK_LIST, LOCAL_ACCOUNT_WALLET_LIST, REMOTE_TOKEN_LIST,
   // etc.) were never force-closed when their container closed by some path
   // other than openActiveListPanel's own "open the new mode, close whichever
-  // other one was open" step — a stale true then outlived its own container,
-  // not just in this component's own rendering (AssetSelectListPanel's
-  // activeChild prop is independently immune to that, see
-  // useActiveListPanelChild's own doc comment) but in every OTHER direct
-  // reader of these six flags (TokenPanel.tsx's tokenListCoversThisPanel
-  // gate already had a documented bug from exactly this shape once before).
+  // other one was open" step — a stale true then outlived its own container.
+  //
+  // 2026-10-26 (owner report + simplified rule: "pushing the stack just
+  // makes the top-of-stack member not visible before showing the new top,
+  // nothing more") — the container here used to be ASSET_SELECT_LIST_PANEL
+  // itself, which goes invisible on every PUSH over it too (e.g. TOKEN_PANEL
+  // opened from a row's info click, both MAIN_RADIO_OVERLAY_PANELS members).
+  // That force-closed REMOTE_TOKEN_LIST's own flag on every such push, so
+  // backing out of TOKEN_PANEL restored ASSET_SELECT_LIST_PANEL's empty
+  // shell with no mode selected -- the stack-top rule only promises
+  // ASSET_SELECT_LIST_PANEL itself goes invisible, not that it reaches
+  // further down into a child's child. Scoped to ACTIVE_LIST_PANEL (its
+  // immediate container, closed explicitly by closeActiveListPanel when the
+  // list is genuinely dismissed, never merely by a sibling overlay covering
+  // ASSET_SELECT_LIST_PANEL) instead: still force-closes a stale mode on a
+  // real close, no longer on a temporary cover-and-return.
   if (group.name === 'ACTIVE_LIST_PANEL_MODES') {
-    return { ...group, container: SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL };
+    return { ...group, container: SP_COIN_DISPLAY.ACTIVE_LIST_PANEL };
   }
   if (group.name === 'STAKED_SP_COIN_PANEL_MODES') {
     return { ...group, fallbackPanel: SP_COIN_DISPLAY.STAKED_RECIPIENT_SELECT_DROP_DOWN };

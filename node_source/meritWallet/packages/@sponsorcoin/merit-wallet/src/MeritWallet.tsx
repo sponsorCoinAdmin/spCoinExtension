@@ -2398,6 +2398,27 @@ function MeritWalletInner({
   // on the less precise flag would let this `??` chain stop here with
   // nothing on screen instead of correctly falling through to listOverlay/
   // gatedTabBody.
+  // 2026-10-26 (diagnostic, owner report: right-clicking a token row still
+  // shows a blank body after tokenDetailOverlay was switched to read
+  // previewToken) -- logs which of these resolved truthy/falsy right
+  // before the chain picks one, so the next capture shows which overlay is
+  // actually winning instead of tokenDetailOverlay.
+  panelTreeTrace('MeritWallet:body overlay chain', {
+    messageOverlay: messageOverlay != null,
+    passwordOverlayWithReset: passwordOverlayWithReset != null,
+    panelTreeOverlay: panelTreeOverlay != null,
+    meritInfoOverlay: meritInfoOverlay != null,
+    addAccountOverlay: addAccountOverlay != null,
+    accountDetailOverlay: accountDetailOverlay != null,
+    accountDetailVisible,
+    tokenDetailOverlay: tokenDetailOverlay != null,
+    tokenDetailVisible,
+    previewTokenAddress,
+    networkDetailOverlay: networkDetailOverlay != null,
+    walletPanelOverlay: walletPanelOverlay != null,
+    activeChild: activeChild != null ? SP_COIN_DISPLAY[activeChild] : null,
+    listOverlay: listOverlay != null,
+  });
   const body =
     messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? meritInfoOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (activeChild != null ? sharedListHost : null) ?? listOverlay ?? gatedTabBody;
 

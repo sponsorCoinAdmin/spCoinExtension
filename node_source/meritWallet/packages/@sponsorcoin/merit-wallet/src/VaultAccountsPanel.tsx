@@ -10,10 +10,36 @@
 // and an account's details (rename, copy the address, show its private key, remove an imported account), plus "Show Secret Recovery Phrase".
 'use client';
 
-import { formKitStyle, vaultAccountsStyle } from '@sponsorcoin/spcoin-common/styles';
+import { detailPanelStyle, formKitStyle, vaultAccountsStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useState } from 'react';
 import { privateKeyToAccount } from 'viem/accounts';
 import { AddWalletAccountButton, ImportAccountForm } from '@sponsorcoin/spcoin-panels';
+import { useCopyFeedback } from './platform/useCopyFeedback';
+
+/** Owner report 2026-10-26: this file's own header comment above already promised "copy the address" for an account's detail screen — it was never actually wired. Same small inline-SVG button DetailRow.tsx uses (the package has no lucide-react dependency). */
+function CopyAddressButton({ address }: { address: string }) {
+  const { copy, copied } = useCopyFeedback();
+  return (
+    <button
+      type="button"
+      title="Copy to clipboard"
+      aria-label="Copy to clipboard"
+      onClick={() => copy(address)}
+      style={copied ? detailPanelStyle.copyButtonCopied : detailPanelStyle.copyButton}
+    >
+      {copied ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </button>
+  );
+}
 
 export interface VaultAccountRow {
   address: string;
@@ -216,7 +242,10 @@ export default function VaultAccountsPanel({ api, onActiveChanged }: VaultAccoun
           <button type="button" disabled={busy || !renameValue.trim() || renameValue.trim() === account.name} style={vaultAccountsStyle.primaryAuto} onClick={() => void run(() => api.rename(account.address, renameValue.trim()))}>Save</button>
         </div>
         <p style={muted}>Address</p>
-        <p style={vaultAccountsStyle.address}>{account.address}</p>
+        <div style={vaultAccountsStyle.addressRow}>
+          <p style={vaultAccountsStyle.address}>{account.address}</p>
+          <CopyAddressButton address={account.address} />
+        </div>
         {account.devOrigin && <p style={muted}>This account uses a published development key. It can only be used on the local test chain.</p>}
         {!same(account.address, active) && (
           <button type="button" disabled={busy} style={primaryButton} onClick={() => void run(async () => { await api.setActive(account.address); onActiveChanged?.(account.address); })}>Use this account</button>

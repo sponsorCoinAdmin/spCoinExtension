@@ -288,7 +288,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
               <WalletSelectDropDown
                 walletId={target.id}
                 displayName={target.name}
-                showDisplay={WALLET_SELECT_DISPLAY.ICON | WALLET_SELECT_DISPLAY.ADDRESS | (targetPickerOpen ? WALLET_SELECT_DISPLAY.CHEVRON_UP : WALLET_SELECT_DISPLAY.CHEVRON_DN)}
+                showDisplay={WALLET_SELECT_DISPLAY.ICON | WALLET_SELECT_DISPLAY.ADDRESS | WALLET_SELECT_DISPLAY.COPY | (targetPickerOpen ? WALLET_SELECT_DISPLAY.CHEVRON_UP : WALLET_SELECT_DISPLAY.CHEVRON_DN)}
                 restrictRowClickToChevron
                 onSelectClick={() => setTargetPickerOpen((open) => !open)}
                 label="Change wallet"

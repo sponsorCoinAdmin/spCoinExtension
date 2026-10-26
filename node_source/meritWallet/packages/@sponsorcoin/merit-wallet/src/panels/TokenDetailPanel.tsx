@@ -39,8 +39,8 @@ export default function TokenDetailPanel({
   description,
   loading = false,
 }: TokenDetailPanelProps) {
-  const rows: { label: string; value: React.ReactNode }[] = [
-    { label: 'Address', value: address },
+  const rows: { label: string; value: React.ReactNode; copyable?: boolean }[] = [
+    { label: 'Address', value: address, copyable: true },
     { label: 'Name', value: loading ? 'Loading…' : name || '—' },
     { label: 'Symbol', value: loading ? 'Loading…' : symbol || '—' },
     { label: 'Decimals', value: loading ? 'Loading…' : decimals ?? '—' },
@@ -67,7 +67,7 @@ export default function TokenDetailPanel({
         </div>
         <div style={detailPanelStyle.rows}>
           {rows.map((row, i) => (
-            <DetailRow key={row.label} label={row.label} value={row.value} zebra={i % 2 === 0} />
+            <DetailRow key={row.label} label={row.label} value={row.value} zebra={i % 2 === 0} copyable={row.copyable} />
           ))}
         </div>
       </div>

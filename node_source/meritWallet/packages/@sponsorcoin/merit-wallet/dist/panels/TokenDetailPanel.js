@@ -13,7 +13,7 @@ import { detailPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import DetailRow from './DetailRow';
 export default function TokenDetailPanel({ address, logoSrc, name, symbol, decimals, website, explorer, description, loading = false, }) {
     const rows = [
-        { label: 'Address', value: address },
+        { label: 'Address', value: address, copyable: true },
         { label: 'Name', value: loading ? 'Loading…' : name || '—' },
         { label: 'Symbol', value: loading ? 'Loading…' : symbol || '—' },
         { label: 'Decimals', value: loading ? 'Loading…' : decimals ?? '—' },
@@ -28,5 +28,5 @@ export default function TokenDetailPanel({ address, logoSrc, name, symbol, decim
                         // square box to fill it completely. `contain` (what
                         // NetworkDetailPanel already uses) shows the whole image
                         // instead, letterboxed if needed -- no crop, no quality loss.
-                        _jsx("img", { src: logoSrc, alt: "", style: detailPanelStyle.logoContain })) : null }) }), _jsx("div", { style: detailPanelStyle.rows, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
+                        _jsx("img", { src: logoSrc, alt: "", style: detailPanelStyle.logoContain })) : null }) }), _jsx("div", { style: detailPanelStyle.rows, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0, copyable: row.copyable }, row.label))) })] }) }));
 }

@@ -39,7 +39,12 @@ export function createSyncTokenProvider(host) {
             title: 'Authorize Sync',
             skipMandatoryApprovalGate: true,
             forceRequirePassword: syncAuthRequired,
-            interactive: syncAuthRequired || params.userInitiated === true,
+            // Background pushes (an account switch, a content change nobody directly asked to "sync") must never pop a password screen, "Authorize" or not —
+            // see this file's own SyncSignerRequest doc comment ("unless the user asked, does not interrupt"). Only a call that actually sets userInitiated
+            // (e.g. the admin "save active spCoin" write) can promote to interactive; forceRequirePassword above still makes an un-cached background attempt
+            // fail soft (skipped, not asked) instead of silently succeeding. Owner report 2026-10-26: switching the active account on the plain account list popped
+            // an unrelated "Authorize Sync" password prompt — this was the unconditional `syncAuthRequired ||` here promoting that background push to interactive.
+            interactive: params.userInitiated === true,
             background: params.userInitiated !== true,
         });
         const token = await host.signInForSync(params.activeAccountAddress, (message) => signer.signMessage(message));

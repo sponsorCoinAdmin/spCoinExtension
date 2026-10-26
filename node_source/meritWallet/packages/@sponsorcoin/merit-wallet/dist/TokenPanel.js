@@ -8,7 +8,7 @@
 // the token hooks and panel-tree hooks from @sponsorcoin/spcoin-exchange-engine. The web app's debug traces were dropped on the move.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { panelPartClass, metaTableClass } from '@sponsorcoin/spcoin-common/styles';
 import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -127,5 +127,5 @@ export default function TokenPanel(_props) {
     const resolvedContract = displayContract ?? tokenContract;
     const logoURL = (resolvedContract.logoURL ?? '').toString().trim();
     const name = (resolvedContract.name ?? '').toString().trim();
-    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), vTokenMetaData && (_jsx(ReadOnlyMetaDataTable, { rows: tokenDetailRows(resolvedContract), logoURL: logoURL || defaultStaticImage, logoAlt: name, logoVisible: vTokenLogo }))] }));
+    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), vTokenLogo && (logoURL || defaultStaticImage) && (_jsx("div", { id: "TOKEN_LOGO", className: metaTableClass.logoBox(metaTableClass.logoContainerSize, metaTableClass.logoContainer), children: _jsx("img", { src: logoURL || defaultStaticImage, alt: name, className: metaTableClass.logoImage(metaTableClass.logoSize, metaTableClass.logoRounded, metaTableClass.logoBackground) }) })), vTokenMetaData && (_jsx(ReadOnlyMetaDataTable, { id: "TOKEN_META_DATA", rows: tokenDetailRows(resolvedContract), logoVisible: false }))] }));
 }

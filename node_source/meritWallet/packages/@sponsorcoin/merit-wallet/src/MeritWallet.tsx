@@ -1581,7 +1581,28 @@ function MeritWalletInner({
   };
   // The selected detail record is data tied to its panel: it goes when the panel closes, not when the tab changes.
   useEffect(() => { if (!accountDetailVisible) setAccountDetailAddress(null); }, [accountDetailVisible]);
-  useEffect(() => { if (!tokenDetailVisible && previewToken) setPreviewTokenContract(undefined); }, [tokenDetailVisible, previewToken, setPreviewTokenContract]);
+  // 2026-10-26 (owner report, trace-confirmed: right-clicking a token row
+  // still showed a blank body even after tokenDetailOverlay was switched to
+  // read previewToken) -- a plain `!tokenDetailVisible` check (this
+  // effect's own first version) fires on the VERY FIRST render after
+  // openPreview() sets previewToken, before TOKEN_PANEL's own visibility
+  // write has landed (that's a SEPARATE, later-scheduled write --
+  // schedule(), panelTreeDebug.ts, never batches). At that instant
+  // tokenDetailVisible still reads false, so this effect saw "not open,
+  // but there's a preview token -- must be stale" and cleared it
+  // immediately, before tokenDetailVisible ever got the chance to become
+  // true. By the time it did, previewToken was already gone again -- the
+  // two conditions tokenDetailOverlay needs were never true at the same
+  // moment. Same fix TokenPanel.tsx's own version of this effect already
+  // uses: a wasVisible ref, so this only clears on a genuine
+  // was-open-now-closed transition, never on "hasn't opened yet."
+  const tokenDetailWasVisibleRef = useRef(false);
+  useEffect(() => {
+    const wasVisible = tokenDetailWasVisibleRef.current;
+    tokenDetailWasVisibleRef.current = tokenDetailVisible;
+    if (!wasVisible || tokenDetailVisible) return;
+    if (previewToken) setPreviewTokenContract(undefined);
+  }, [tokenDetailVisible, previewToken, setPreviewTokenContract]);
   useEffect(() => { if (!networkDetailVisible) setNetworkDetailId(null); }, [networkDetailVisible]);
 
   // 2026-09-21, Path A — initialActiveTab/onActiveTabChange used to be a

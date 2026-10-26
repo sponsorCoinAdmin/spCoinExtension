@@ -992,6 +992,20 @@ async function renderWallet() {
                 onConfigMandatorySecurityChange: (value) => walletConfig.set({ mandatorySecurity: value }),
                 configMandatoryApproval: walletConfig.getState().mandatoryApproval,
                 onConfigMandatoryApprovalChange: (value) => walletConfig.set({ mandatoryApproval: value }),
+                // 2026-10-26 (owner report: "why does the Extension not have a
+                // Time Limit row?") -- never missing from the bundle, this
+                // wiring was simply never added here when the picker landed:
+                // MeritWallet only renders PersistedTimeoutPicker when BOTH
+                // configPersistedTimeoutHours and
+                // onConfigPersistedTimeoutHoursChange are passed in (see
+                // MeritWallet.tsx's own persistedTimeoutContent line),  and
+                // the web app's components/views/MeritWallet.tsx already
+                // wires both from the shared useWalletConfigPanelProps hook --
+                // this host wires the same walletConfig store directly
+                // instead of that hook (chrome.storage.local, not the hook's
+                // React state), same pattern as configMandatorySecurity above.
+                configPersistedTimeoutHours: walletConfig.getState().persistedPasswordTimeoutHours,
+                onConfigPersistedTimeoutHoursChange: (value) => walletConfig.set({ persistedPasswordTimeoutHours: value }),
                 configSyncMode: walletConfig.getState().syncMode,
                 onConfigSyncModeChange: (mode) => walletConfig.set({ syncMode: mode }),
                 configSyncDescription: syncDescriptionFor(walletConfig.getState().syncMode),

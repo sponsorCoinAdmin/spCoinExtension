@@ -113,33 +113,60 @@ async function injectRelayFrame(tabId: number, url: string): Promise<void> {
 }
 
 /** The on-page notice (owner request, 2026-10-27): shown in the app tab itself while a request is open, so there is something to see there too, not just the side panel's own "Waiting for MetaMask ..."
- * message. Idempotent (safe to call once per request); hidden again after the whole burst of requests goes idle (hideApprovalBanner, below), or by hand via its own close button. Styled to match the wallet's
- * own stakeConfirmPopupStyle (spcoin-common, div11/h3: dark navy #11162A, red border/title #ef4444/#f87171) and centered in the viewport, per the owner's own request ("more prominent without being
- * overbearing") -- centered and matched to the house style, but no full-screen backdrop, so it never blocks the page underneath. */
-async function showApprovalBanner(tabId: number): Promise<void> {
+ * message. Idempotent (safe to call once per request, and updates its method name on every call since the same banner element is reused across a burst of different methods -- connect, switch chain, send);
+ * hidden again after the whole burst of requests goes idle (hideApprovalBanner, below), or by hand via its own close button. Styled to match the wallet's own stakeConfirmPopupStyle (spcoin-common, div11/h3:
+ * dark navy #11162A, red border #ef4444) and centered in the viewport, per the owner's own request ("more prominent without being overbearing") -- centered and house-styled, but no full-screen backdrop, so
+ * it never blocks the page underneath. Text split 2026-10-27 (owner request): "Approve:" and the method name in the same red as the border (#f87171); the rest in the same blue as the Test page's own
+ * "Exchange Context" dropdown (#5981F3, stakeConfirmPopupColors.BLUE) -- three separate spans, not one string, so each colour is exact rather than guessed. */
+async function showApprovalBanner(tabId: number, method: string): Promise<void> {
   await chrome.scripting.executeScript({
     target: { tabId },
-    func: (bannerId: string) => {
+    func: (bannerId: string, methodName: string) => {
+      const methodSpanId = bannerId + '-method';
+      const titleId = bannerId + '-title';
       let el = document.getElementById(bannerId);
       if (!el) {
         el = document.createElement('div');
         el.id = bannerId;
-        el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483647;display:flex;align-items:center;gap:14px;background:#11162A;color:#f87171;border:1px solid #ef4444;border-radius:16px;padding:16px 20px;font:600 16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.35);pointer-events:auto;';
+        el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483647;display:flex;flex-direction:column;align-items:stretch;gap:10px;background:#11162A;border:1px solid #ef4444;border-radius:16px;padding:14px 20px 16px;font:600 16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.35);pointer-events:auto;';
+        // the active browser tab's own title, centered at the top (owner request, 2026-10-27): confirms which page this notice belongs to.
+        const title = document.createElement('div');
+        title.id = titleId;
+        title.style.cssText = 'text-align:center;font-size:13px;font-weight:700;color:#8FA8FF;';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:14px;';
         const text = document.createElement('span');
-        text.textContent = 'Approve the request in the MetaMask popup…';
+        const approve = document.createElement('span');
+        approve.textContent = 'Approve:';
+        approve.style.color = '#f87171';
+        const middle = document.createElement('span');
+        middle.textContent = ' MetaMask Authentication Request for Method ';
+        middle.style.color = '#5981F3';
+        const methodSpan = document.createElement('span');
+        methodSpan.id = methodSpanId;
+        methodSpan.style.color = '#f87171';
+        text.appendChild(approve);
+        text.appendChild(middle);
+        text.appendChild(methodSpan);
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button';
         closeBtn.textContent = '✕';
         closeBtn.setAttribute('aria-label', 'Dismiss');
         closeBtn.style.cssText = 'all:unset;cursor:pointer;flex-shrink:0;color:#f87171;font-size:16px;line-height:1;padding:2px 4px;';
         closeBtn.onclick = () => { el!.style.display = 'none'; };
-        el.appendChild(text);
-        el.appendChild(closeBtn);
+        row.appendChild(text);
+        row.appendChild(closeBtn);
+        el.appendChild(title);
+        el.appendChild(row);
         document.body.appendChild(el);
       }
+      const methodSpan = document.getElementById(methodSpanId);
+      if (methodSpan) methodSpan.textContent = methodName;
+      const titleEl = document.getElementById(titleId);
+      if (titleEl) titleEl.textContent = 'Panel Tab ' + document.title;
       el.style.display = 'flex';
     },
-    args: [BANNER_ID],
+    args: [BANNER_ID, method],
   }).catch(() => undefined);
 }
 
@@ -181,7 +208,7 @@ async function run(method: string, params: unknown): Promise<RelayReply> {
   } catch (error) {
     return fail(4900, error instanceof Error ? error.message : 'The MetaMask page could not be opened.');
   }
-  void showApprovalBanner(tabId);
+  void showApprovalBanner(tabId, method);
   const id = ++counter;
   const answer = new Promise<RelayReply>((resolve) => {
     waiting.set(id, { tabId, resolve });

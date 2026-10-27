@@ -61,10 +61,19 @@ async function ensureTab(): Promise<number> {
     const existing = await chrome.tabs.get(relayTabId).catch(() => undefined);
     if (existing?.id !== undefined) return existing.id;
   }
-  // its own minimized, unfocused WINDOW -- not a tab in the person's own window at all (see the file header, 2026-10-26).
-  const win = await chrome.windows.create({ url, type: 'popup', state: 'minimized', focused: false });
+  // its own unfocused, minimized WINDOW -- not a tab in the person's own window at all (see the file header, 2026-10-26). Several earlier attempts
+  // failed: state: 'minimized' at CREATE time is not reliable on real Chrome (the owner saw an ordinary visible, focused window); combining it with
+  // an explicit position is rejected outright ("Invalid value for state"); a fully off-screen position is rejected too ("Invalid value for bounds
+  // ... must be at least 50% within visible screen space" -- a deliberate anti-abuse rule); Chrome silently clamps a requested 1x1 size back up to
+  // its own minimum; and even a SEPARATE windows.update({state:'minimized'}) called right after create is itself silently reverted moments later
+  // (confirmed live: it reports success, but re-reading the window back shows state 'normal', focused true again) -- there is a brief window right
+  // after a window is created where the OS/Chrome is still settling which window has focus, and a minimize issued into that window loses the race.
+  // Waiting for that to settle before minimizing is what actually sticks (confirmed live, holds for 2+ seconds afterward).
+  const win = await chrome.windows.create({ url, type: 'popup', focused: false });
   const tab = win?.tabs?.[0];
   if (win?.id === undefined || tab?.id === undefined) throw new Error('The MetaMask page could not be opened.');
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  await chrome.windows.update(win.id, { state: 'minimized' }).catch(() => undefined);
   relayTabId = tab.id;
   relayWindowId = win.id;
   relayUrl = url;

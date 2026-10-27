@@ -1,18 +1,17 @@
 // File: src/metamaskRelay.ts
 //
 // 2026-10-12 (docs/connectionDesign.txt item 9, reopened by the owner): MetaMask as an approver for the EXTENSION. The side panel is an extension page and MetaMask does not inject itself into
-// extension pages, so the panel cannot reach it. The way through is one ordinary tab on the Merit web app's own address (/metamaskRelay.html, a static page): MetaMask injects into it like
+// extension pages, so the panel cannot reach it. The way through is one ordinary page on the Merit web app's own address (/metamaskRelay.html, a static page): MetaMask injects into it like
 // into any web page, and the extension's page script (inpage.ts) and content script (contentScript.ts) carry the request to MetaMask and the answer back. Nothing is signed here and no key is held:
 // MetaMask asks the person in its own popup, exactly as it does for any site.
-//   - Only the app's own address is opened (the open target, Local or Prod), only an allow-listed set of methods is sent, and an answer is accepted only from the tab opened here, from that address.
-//   - Requests are sent one at a time; the tab stays open for a moment after the last one (a send makes three calls) and then closes itself.
-//   - Closing the tab, or MetaMask not being installed, ends the request with the same error codes MetaMask uses (4001 rejected, 4900 unavailable).
-// The accounts MetaMask shared are kept in chrome.storage.local so the list and the signing choice need no tab.
-//   - 2026-10-26 (owner report, twice over, then the owner's own fix): the tab used to be opened ACTIVE, which visibly took over the window; closing it again left picking a new active tab to the browser's own
-//     heuristic, which did not reliably land back on the person's own tab (two different ways of restoring focus afterward were tried and still were not enough). The owner's fix is simpler: never make the
-//     relay tab active in the first place (`active: false`), so there is nothing to switch away from and nothing to restore. MetaMask still asks in its own popup regardless of whether the tab that triggered the
-//     request is the active one -- that was never required. The side panel now also says "Waiting for MetaMask to approve ..." while a request is open (src/localVaultAuthenticator.ts's withApprovalNotice), so
-//     the person has somewhere to look instead of just whatever tab used to flash by.
+//   - Only the app's own address is opened (the open target, Local or Prod), only an allow-listed set of methods is sent, and an answer is accepted only from the page opened here, from that address.
+//   - Requests are sent one at a time; the page stays open for a moment after the last one (a send makes three calls) and then closes itself.
+//   - Closing the page, or MetaMask not being installed, ends the request with the same error codes MetaMask uses (4001 rejected, 4900 unavailable).
+// The accounts MetaMask shared are kept in chrome.storage.local so the list and the signing choice need no page.
+//   - 2026-10-26 (owner reports, repeatedly): this page used to be an ordinary TAB in the person's own window -- first opened ACTIVE (visibly taking over the window; two different ways of giving focus back
+//     afterward were tried and were not enough), then opened with active: false (so it stopped stealing focus, but it was STILL a tab the person could see appear in their own tab strip, which was the actual
+//     complaint: "remove this blue Approval tab completely"). The fix: it is no longer a tab in the person's window at all. It is its own separate, minimized, unfocused popup WINDOW
+//     (chrome.windows.create, not chrome.tabs.create) -- MetaMask injects into its page exactly the same way, but there is nothing for the person to see in their own window, ever.
 import { readOpenTarget, urlForOpenTarget } from './openTargetStorage';
 
 export const RELAY_PATH = '/metamaskRelay.html';
@@ -47,6 +46,7 @@ interface Waiting {
 
 const waiting = new Map<number, Waiting>();
 let relayTabId: number | undefined;
+let relayWindowId: number | undefined;
 let relayUrl: string | undefined;
 let counter = 0;
 let chain: Promise<unknown> = Promise.resolve();
@@ -61,10 +61,12 @@ async function ensureTab(): Promise<number> {
     const existing = await chrome.tabs.get(relayTabId).catch(() => undefined);
     if (existing?.id !== undefined) return existing.id;
   }
-  // never active: the person stays on whatever tab they were already on (see the file header, 2026-10-26).
-  const tab = await chrome.tabs.create({ url, active: false });
-  if (tab.id === undefined) throw new Error('The MetaMask page could not be opened.');
+  // its own minimized, unfocused WINDOW -- not a tab in the person's own window at all (see the file header, 2026-10-26).
+  const win = await chrome.windows.create({ url, type: 'popup', state: 'minimized', focused: false });
+  const tab = win?.tabs?.[0];
+  if (win?.id === undefined || tab?.id === undefined) throw new Error('The MetaMask page could not be opened.');
   relayTabId = tab.id;
+  relayWindowId = win.id;
   relayUrl = url;
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -89,10 +91,11 @@ async function ensureTab(): Promise<number> {
 function scheduleClose(): void {
   if (closeTimer) clearTimeout(closeTimer);
   closeTimer = setTimeout(() => {
-    if (waiting.size > 0 || relayTabId === undefined) return;
-    const id = relayTabId;
+    if (waiting.size > 0 || relayWindowId === undefined) return;
+    const windowId = relayWindowId;
     relayTabId = undefined;
-    void chrome.tabs.remove(id).catch(() => undefined);
+    relayWindowId = undefined;
+    void chrome.windows.remove(windowId).catch(() => undefined);
   }, CLOSE_AFTER_IDLE_MS);
 }
 
@@ -146,7 +149,10 @@ export function acceptRelayResult(message: { id?: unknown; ok?: unknown; result?
 }
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  if (tabId === relayTabId) relayTabId = undefined;
+  if (tabId === relayTabId) {
+    relayTabId = undefined;
+    relayWindowId = undefined;
+  }
   for (const [id, entry] of Array.from(waiting)) {
     if (entry.tabId !== tabId) continue;
     waiting.delete(id);

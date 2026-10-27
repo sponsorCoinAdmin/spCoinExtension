@@ -81,7 +81,7 @@ function makeChrome({ seedAppTab = true } = {}) {
         if (!tabs.has(target.tabId)) throw new Error('No tab');
         const src = func.toString();
         if (src.includes('frameId')) { calls.inject.push({ tabId: target.tabId, args }); return [{ result: 'loaded' }]; }
-        if (src.includes('block')) { calls.bannerShow.push({ tabId: target.tabId }); return [{ result: undefined }]; }
+        if (src.includes('flex')) { calls.bannerShow.push({ tabId: target.tabId }); return [{ result: undefined }]; }
         if (src.includes('none')) { calls.bannerHide.push({ tabId: target.tabId }); return [{ result: undefined }]; }
         return [{ result: undefined }];
       },

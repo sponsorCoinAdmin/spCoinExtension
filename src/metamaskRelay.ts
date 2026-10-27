@@ -113,7 +113,9 @@ async function injectRelayFrame(tabId: number, url: string): Promise<void> {
 }
 
 /** The on-page notice (owner request, 2026-10-27): shown in the app tab itself while a request is open, so there is something to see there too, not just the side panel's own "Waiting for MetaMask ..."
- * message. Idempotent (safe to call once per request); hidden again after the whole burst of requests goes idle (hideApprovalBanner, below). */
+ * message. Idempotent (safe to call once per request); hidden again after the whole burst of requests goes idle (hideApprovalBanner, below), or by hand via its own close button. Styled to match the wallet's
+ * own stakeConfirmPopupStyle (spcoin-common, div11/h3: dark navy #11162A, red border/title #ef4444/#f87171) and centered in the viewport, per the owner's own request ("more prominent without being
+ * overbearing") -- centered and matched to the house style, but no full-screen backdrop, so it never blocks the page underneath. */
 async function showApprovalBanner(tabId: number): Promise<void> {
   await chrome.scripting.executeScript({
     target: { tabId },
@@ -122,11 +124,20 @@ async function showApprovalBanner(tabId: number): Promise<void> {
       if (!el) {
         el = document.createElement('div');
         el.id = bannerId;
-        el.textContent = 'Approve the request in the MetaMask popup…';
-        el.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;background:#1f2937;color:#f9fafb;padding:10px 16px;border-radius:8px;font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.35);pointer-events:none;';
+        el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483647;display:flex;align-items:center;gap:14px;background:#11162A;color:#f87171;border:1px solid #ef4444;border-radius:16px;padding:16px 20px;font:600 16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.35);pointer-events:auto;';
+        const text = document.createElement('span');
+        text.textContent = 'Approve the request in the MetaMask popup…';
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.textContent = '✕';
+        closeBtn.setAttribute('aria-label', 'Dismiss');
+        closeBtn.style.cssText = 'all:unset;cursor:pointer;flex-shrink:0;color:#f87171;font-size:16px;line-height:1;padding:2px 4px;';
+        closeBtn.onclick = () => { el!.style.display = 'none'; };
+        el.appendChild(text);
+        el.appendChild(closeBtn);
         document.body.appendChild(el);
       }
-      el.style.display = 'block';
+      el.style.display = 'flex';
     },
     args: [BANNER_ID],
   }).catch(() => undefined);

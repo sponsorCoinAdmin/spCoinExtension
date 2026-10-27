@@ -5,10 +5,11 @@
 // into any web page, and the extension's page script (inpage.ts) and content script (contentScript.ts) carry the request to MetaMask and the answer back. Nothing is signed here and no key is held:
 // MetaMask asks the person in its own popup, exactly as it does for any site.
 //   - Only the app's own address is opened (the open target, Local or Prod), only an allow-listed set of methods is sent, and an answer is accepted only from the tab opened here, from that address.
-//   - Requests are sent one at a time; the tab stays open for a moment after the last one (a send makes three calls) and then closes itself, which returns the person to where they were.
+//   - Requests are sent one at a time; the tab stays open for a moment after the last one (a send makes three calls), then switches back to the app tab (openApp.ts's find-or-open) and closes itself.
 //   - Closing the tab, or MetaMask not being installed, ends the request with the same error codes MetaMask uses (4001 rejected, 4900 unavailable).
 // The accounts MetaMask shared are kept in chrome.storage.local so the list and the signing choice need no tab.
 import { readOpenTarget, urlForOpenTarget } from './openTargetStorage';
+import { openOrFocusApp } from './openApp';
 
 export const RELAY_PATH = '/metamaskRelay.html';
 export const METAMASK_ACCOUNTS_KEY = 'meritMetaMaskAccounts';
@@ -46,17 +47,18 @@ let relayUrl: string | undefined;
 let counter = 0;
 let chain: Promise<unknown> = Promise.resolve();
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
-/** Where the person was before the relay tab took over the window, so closing it returns them there instead of to whatever tab the browser's own heuristic lands on (owner report, 2026-10-26: that heuristic picked an unrelated tab). Captured once, when the relay tab is first created, and cleared once restored. */
-let returnFocus: { windowId: number; tabId?: number } | undefined;
 
 const fail = (code: number, message: string): RelayReply => ({ ok: false, error: { code, message } });
 
-function restoreFocus(): void {
-  if (!returnFocus) return;
-  const { windowId, tabId } = returnFocus;
-  returnFocus = undefined;
-  chrome.windows.update(windowId, { focused: true }).catch(() => undefined);
-  if (tabId !== undefined) chrome.tabs.update(tabId, { active: true }).catch(() => undefined);
+/**
+ * 2026-10-26 (owner report): closing the relay tab while it is still the active one leaves it to the browser's own
+ * heuristic to pick what becomes active next, which does not reliably land back on the app tab (it picked an
+ * unrelated tab once). The fix the owner asked for: do exactly what the side panel's own "open the web site" button
+ * does (src/openApp.ts) and switch to the real app tab FIRST, so the relay tab is no longer active by the time it is
+ * removed and the browser never has to guess.
+ */
+async function returnToApp(): Promise<void> {
+  await openOrFocusApp().catch(() => undefined);
 }
 
 async function ensureTab(): Promise<number> {
@@ -66,8 +68,6 @@ async function ensureTab(): Promise<number> {
     const existing = await chrome.tabs.get(relayTabId).catch(() => undefined);
     if (existing?.id !== undefined) return existing.id;
   }
-  const before = await chrome.windows.getLastFocused({ populate: true }).catch(() => undefined);
-  if (before?.id !== undefined) returnFocus = { windowId: before.id, tabId: before.tabs?.find((t) => t.active)?.id };
   const tab = await chrome.tabs.create({ url, active: true });
   if (tab.id === undefined) throw new Error('The MetaMask page could not be opened.');
   relayTabId = tab.id;
@@ -98,8 +98,8 @@ function scheduleClose(): void {
     if (waiting.size > 0 || relayTabId === undefined) return;
     const id = relayTabId;
     relayTabId = undefined;
-    void chrome.tabs.remove(id).catch(() => undefined);
-    restoreFocus();
+    // switch away from the relay tab BEFORE removing it, so it is never the active tab the browser has to replace.
+    void returnToApp().then(() => chrome.tabs.remove(id).catch(() => undefined));
   }, CLOSE_AFTER_IDLE_MS);
 }
 
@@ -155,7 +155,9 @@ export function acceptRelayResult(message: { id?: unknown; ok?: unknown; result?
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (tabId === relayTabId) {
     relayTabId = undefined;
-    restoreFocus();
+    // the tab is already gone here (someone closed it by hand, or MetaMask navigated it away): the best that can be
+    // done is bring the app tab forward after the fact, same routine as the normal close above.
+    void returnToApp();
   }
   for (const [id, entry] of Array.from(waiting)) {
     if (entry.tabId !== tabId) continue;

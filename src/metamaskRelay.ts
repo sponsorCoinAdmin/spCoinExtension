@@ -113,11 +113,11 @@ async function injectRelayFrame(tabId: number, url: string): Promise<void> {
 }
 
 /** The on-page notice (owner request, 2026-10-27): shown in the app tab itself while a request is open, so there is something to see there too, not just the side panel's own "Waiting for MetaMask ..."
- * message. Idempotent (safe to call once per request, and updates its method name on every call since the same banner element is reused across a burst of different methods -- connect, switch chain, send);
- * hidden again after the whole burst of requests goes idle (hideApprovalBanner, below), or by hand via its own close button. Styled to match the wallet's own stakeConfirmPopupStyle (spcoin-common, div11/h3:
- * dark navy #11162A, red border #ef4444) and centered in the viewport, per the owner's own request ("more prominent without being overbearing") -- centered and house-styled, but no full-screen backdrop, so
- * it never blocks the page underneath. Text split 2026-10-27 (owner request): "Approve:" and the method name in the same red as the border (#f87171); the rest in the same blue as the Test page's own
- * "Exchange Context" dropdown (#5981F3, stakeConfirmPopupColors.BLUE) -- three separate spans, not one string, so each colour is exact rather than guessed. */
+ * message. Idempotent (safe to call once per request, and updates its title/method text on every call since the same banner element is reused across a burst of different methods -- connect, switch chain,
+ * send); hidden again after the whole burst of requests goes idle (hideApprovalBanner, below), or by hand via its own close button (top-right corner, per the owner's own layout request). Styled to match the
+ * wallet's own stakeConfirmPopupStyle (spcoin-common, div11/h3: dark navy #11162A, red border #ef4444) and centered in the viewport ("more prominent without being overbearing"). Two-line body text (owner's
+ * own final wording, 2026-10-27): "Approve:" and "Method:" in the house red (#f87171); everything else -- including the method name itself, no longer red -- in the house blue (#5981F3, the Test page's own
+ * "Exchange Context" dropdown colour). Five separate spans, not two strings, so each colour is exact rather than guessed. */
 async function showApprovalBanner(tabId: number, method: string): Promise<void> {
   await chrome.scripting.executeScript({
     target: { tabId },
@@ -128,40 +128,44 @@ async function showApprovalBanner(tabId: number, method: string): Promise<void> 
       if (!el) {
         el = document.createElement('div');
         el.id = bannerId;
-        el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483647;display:flex;flex-direction:column;align-items:stretch;gap:10px;background:#11162A;border:1px solid #ef4444;border-radius:16px;padding:14px 20px 16px;font:600 16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.35);pointer-events:auto;';
+        // position:fixed already establishes the containing block for the close button's position:absolute below -- no separate position:relative needed.
+        el.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2147483647;display:flex;flex-direction:column;gap:10px;background:#11162A;border:1px solid #ef4444;border-radius:16px;padding:18px 40px 18px 20px;font:600 16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.35);pointer-events:auto;';
         // the active browser tab's own title, centered at the top (owner request, 2026-10-27): confirms which page this notice belongs to.
         const title = document.createElement('div');
         title.id = titleId;
-        title.style.cssText = 'text-align:center;font-size:13px;font-weight:700;color:#8FA8FF;';
-        const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:14px;';
-        const text = document.createElement('span');
-        const approve = document.createElement('span');
-        approve.textContent = 'Approve:';
-        approve.style.color = '#f87171';
-        const middle = document.createElement('span');
-        middle.textContent = ' MetaMask Authentication Request for Method ';
-        middle.style.color = '#5981F3';
-        const methodSpan = document.createElement('span');
-        methodSpan.id = methodSpanId;
-        methodSpan.style.color = '#f87171';
-        text.appendChild(approve);
-        text.appendChild(middle);
-        text.appendChild(methodSpan);
+        title.style.cssText = 'text-align:center;font-size:19px;font-weight:700;color:#8FA8FF;';
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button';
         closeBtn.textContent = '✕';
         closeBtn.setAttribute('aria-label', 'Dismiss');
-        closeBtn.style.cssText = 'all:unset;cursor:pointer;flex-shrink:0;color:#f87171;font-size:16px;line-height:1;padding:2px 4px;';
+        closeBtn.style.cssText = 'all:unset;position:absolute;top:10px;right:12px;cursor:pointer;color:#f87171;font-size:16px;line-height:1;padding:2px 4px;';
         closeBtn.onclick = () => { el!.style.display = 'none'; };
-        row.appendChild(text);
-        row.appendChild(closeBtn);
+        const line1 = document.createElement('div');
+        const approveLabel = document.createElement('span');
+        approveLabel.textContent = 'Approve:';
+        approveLabel.style.color = '#f87171';
+        const approveRest = document.createElement('span');
+        approveRest.textContent = ' MetaMask Authentication Request';
+        approveRest.style.color = '#5981F3';
+        line1.appendChild(approveLabel);
+        line1.appendChild(approveRest);
+        const line2 = document.createElement('div');
+        const methodLabel = document.createElement('span');
+        methodLabel.textContent = 'Method:';
+        methodLabel.style.color = '#f87171';
+        const methodSpan = document.createElement('span');
+        methodSpan.id = methodSpanId;
+        methodSpan.style.color = '#5981F3';
+        line2.appendChild(methodLabel);
+        line2.appendChild(methodSpan);
         el.appendChild(title);
-        el.appendChild(row);
+        el.appendChild(closeBtn);
+        el.appendChild(line1);
+        el.appendChild(line2);
         document.body.appendChild(el);
       }
       const methodSpan = document.getElementById(methodSpanId);
-      if (methodSpan) methodSpan.textContent = methodName;
+      if (methodSpan) methodSpan.textContent = ' ' + methodName;
       const titleEl = document.getElementById(titleId);
       if (titleEl) titleEl.textContent = 'Panel Tab ' + document.title;
       el.style.display = 'flex';

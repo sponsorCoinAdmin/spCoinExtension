@@ -46,8 +46,18 @@ let relayUrl: string | undefined;
 let counter = 0;
 let chain: Promise<unknown> = Promise.resolve();
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
+/** Where the person was before the relay tab took over the window, so closing it returns them there instead of to whatever tab the browser's own heuristic lands on (owner report, 2026-10-26: that heuristic picked an unrelated tab). Captured once, when the relay tab is first created, and cleared once restored. */
+let returnFocus: { windowId: number; tabId?: number } | undefined;
 
 const fail = (code: number, message: string): RelayReply => ({ ok: false, error: { code, message } });
+
+function restoreFocus(): void {
+  if (!returnFocus) return;
+  const { windowId, tabId } = returnFocus;
+  returnFocus = undefined;
+  chrome.windows.update(windowId, { focused: true }).catch(() => undefined);
+  if (tabId !== undefined) chrome.tabs.update(tabId, { active: true }).catch(() => undefined);
+}
 
 async function ensureTab(): Promise<number> {
   const base = urlForOpenTarget(await readOpenTarget());
@@ -56,6 +66,8 @@ async function ensureTab(): Promise<number> {
     const existing = await chrome.tabs.get(relayTabId).catch(() => undefined);
     if (existing?.id !== undefined) return existing.id;
   }
+  const before = await chrome.windows.getLastFocused({ populate: true }).catch(() => undefined);
+  if (before?.id !== undefined) returnFocus = { windowId: before.id, tabId: before.tabs?.find((t) => t.active)?.id };
   const tab = await chrome.tabs.create({ url, active: true });
   if (tab.id === undefined) throw new Error('The MetaMask page could not be opened.');
   relayTabId = tab.id;
@@ -87,6 +99,7 @@ function scheduleClose(): void {
     const id = relayTabId;
     relayTabId = undefined;
     void chrome.tabs.remove(id).catch(() => undefined);
+    restoreFocus();
   }, CLOSE_AFTER_IDLE_MS);
 }
 
@@ -140,7 +153,10 @@ export function acceptRelayResult(message: { id?: unknown; ok?: unknown; result?
 }
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  if (tabId === relayTabId) relayTabId = undefined;
+  if (tabId === relayTabId) {
+    relayTabId = undefined;
+    restoreFocus();
+  }
   for (const [id, entry] of Array.from(waiting)) {
     if (entry.tabId !== tabId) continue;
     waiting.delete(id);

@@ -9,6 +9,7 @@ import {
   createAuthenticatorRegistry,
   createWallet,
   createWorkerVault,
+  withApprovalNotice,
   type Authenticator,
   type AuthenticatorAccount,
   type AuthenticatorChange,
@@ -95,9 +96,11 @@ function translate(error: unknown): AuthenticatorError {
 export const extensionAuthenticatorRegistry = createAuthenticatorRegistry();
 extensionAuthenticatorRegistry.register(localVaultAuthenticator);
 // 2026-10-12 (docs/connectionDesign.txt item 9): MetaMask, asked through the relay tab (src/metamaskRelay.ts); the extension's list shows it as a second wallet beside the vault.
-extensionAuthenticatorRegistry.register(metamaskAuthenticator);
-// 2026-10-13 (docs/connectionDesign.txt item 12): a Ledger over WebHID (the package's shared hardware layer); the device shows every request on its own screen.
-extensionAuthenticatorRegistry.register(ledgerAuthenticator);
+// 2026-10-26 (owner report): MetaMask decides in its own window, off-screen from the side panel's point of view, so without this wrapper the panel just sits there while the relay tab is open -- the same
+// "Waiting for MetaMask to approve ..." notice the web app already shows (lib/spCoin/webAuthenticators.ts) was simply never wired up here.
+extensionAuthenticatorRegistry.register(withApprovalNotice(metamaskAuthenticator));
+// 2026-10-13 (docs/connectionDesign.txt item 12): a Ledger over WebHID (the package's shared hardware layer); the device shows every request on its own screen, so the panel says where to look while it waits.
+extensionAuthenticatorRegistry.register(withApprovalNotice(ledgerAuthenticator));
 
 /** Which wallet signs for an account, kept per account (the same rule as the web app: owners own accounts). An account with nothing saved is the vault's. */
 const AUTHENTICATOR_CHOICE_KEY = 'meritAccountAuthenticator';

@@ -5,12 +5,15 @@
 // into any web page, and the extension's page script (inpage.ts) and content script (contentScript.ts) carry the request to MetaMask and the answer back. Nothing is signed here and no key is held:
 // MetaMask asks the person in its own popup, exactly as it does for any site.
 //   - Only the app's own address is opened (the open target, Local or Prod), only an allow-listed set of methods is sent, and an answer is accepted only from the tab opened here, from that address.
-//   - Requests are sent one at a time; the tab stays open for a moment after the last one (a send makes three calls), then switches back to the tab the person was actually on (falling back to openApp.ts's
-//     find-or-open when that exact tab is gone) and closes itself.
+//   - Requests are sent one at a time; the tab stays open for a moment after the last one (a send makes three calls) and then closes itself.
 //   - Closing the tab, or MetaMask not being installed, ends the request with the same error codes MetaMask uses (4001 rejected, 4900 unavailable).
 // The accounts MetaMask shared are kept in chrome.storage.local so the list and the signing choice need no tab.
+//   - 2026-10-26 (owner report, twice over, then the owner's own fix): the tab used to be opened ACTIVE, which visibly took over the window; closing it again left picking a new active tab to the browser's own
+//     heuristic, which did not reliably land back on the person's own tab (two different ways of restoring focus afterward were tried and still were not enough). The owner's fix is simpler: never make the
+//     relay tab active in the first place (`active: false`), so there is nothing to switch away from and nothing to restore. MetaMask still asks in its own popup regardless of whether the tab that triggered the
+//     request is the active one -- that was never required. The side panel now also says "Waiting for MetaMask to approve ..." while a request is open (src/localVaultAuthenticator.ts's withApprovalNotice), so
+//     the person has somewhere to look instead of just whatever tab used to flash by.
 import { readOpenTarget, urlForOpenTarget } from './openTargetStorage';
-import { openOrFocusApp } from './openApp';
 
 export const RELAY_PATH = '/metamaskRelay.html';
 export const METAMASK_ACCOUNTS_KEY = 'meritMetaMaskAccounts';
@@ -48,38 +51,8 @@ let relayUrl: string | undefined;
 let counter = 0;
 let chain: Promise<unknown> = Promise.resolve();
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
-/** The exact tab (and its window) the person was on right before the relay tab took it over, captured once when the relay tab is first created. Cleared once used (or given up on). */
-let originTab: { tabId: number; windowId: number } | undefined;
-const LOG = '[relay-focus]';
 
 const fail = (code: number, message: string): RelayReply => ({ ok: false, error: { code, message } });
-
-/**
- * 2026-10-26 (owner report, twice over): closing the relay tab while it is still the active one leaves it to the
- * browser's own heuristic to pick what becomes active next, which does not reliably land back on the app tab.
- * Switching to openApp.ts's find-by-URL (openOrFocusApp) alone was not enough either, so this goes back to the
- * owner's own suggestion: capture the EXACT tab (by id, not by URL match) the person was on right before the relay
- * tab opened, and switch back to that same tab. openOrFocusApp is kept only as a fallback for when that exact tab
- * is no longer there (closed meanwhile). Logged at every step (console.log, prefix "[relay-focus]") so this is
- * verifiable from the extension's own service worker console instead of guessed at from screenshots again.
- */
-async function returnToApp(): Promise<void> {
-  const captured = originTab;
-  originTab = undefined;
-  if (captured) {
-    try {
-      await chrome.tabs.update(captured.tabId, { active: true });
-      await chrome.windows.update(captured.windowId, { focused: true });
-      console.log(LOG, 'returnToApp: switched back to the captured origin tab', captured);
-      return;
-    } catch (error) {
-      console.warn(LOG, 'returnToApp: the captured origin tab is gone, falling back to openOrFocusApp', captured, error);
-    }
-  } else {
-    console.warn(LOG, 'returnToApp: no origin tab was captured, falling back to openOrFocusApp');
-  }
-  await openOrFocusApp().catch((error) => console.warn(LOG, 'returnToApp: openOrFocusApp fallback failed', error));
-}
 
 async function ensureTab(): Promise<number> {
   const base = urlForOpenTarget(await readOpenTarget());
@@ -88,10 +61,8 @@ async function ensureTab(): Promise<number> {
     const existing = await chrome.tabs.get(relayTabId).catch(() => undefined);
     if (existing?.id !== undefined) return existing.id;
   }
-  const [activeBefore] = await chrome.tabs.query({ active: true, lastFocusedWindow: true }).catch(() => [] as chrome.tabs.Tab[]);
-  originTab = activeBefore?.id !== undefined && activeBefore.windowId !== undefined ? { tabId: activeBefore.id, windowId: activeBefore.windowId } : undefined;
-  console.log(LOG, 'ensureTab: capturing origin tab before opening the relay tab', originTab ?? '(none found)');
-  const tab = await chrome.tabs.create({ url, active: true });
+  // never active: the person stays on whatever tab they were already on (see the file header, 2026-10-26).
+  const tab = await chrome.tabs.create({ url, active: false });
   if (tab.id === undefined) throw new Error('The MetaMask page could not be opened.');
   relayTabId = tab.id;
   relayUrl = url;
@@ -121,9 +92,7 @@ function scheduleClose(): void {
     if (waiting.size > 0 || relayTabId === undefined) return;
     const id = relayTabId;
     relayTabId = undefined;
-    console.log(LOG, 'scheduleClose: idle timeout reached, switching back before removing the relay tab', { id });
-    // switch away from the relay tab BEFORE removing it, so it is never the active tab the browser has to replace.
-    void returnToApp().then(() => chrome.tabs.remove(id).catch(() => undefined));
+    void chrome.tabs.remove(id).catch(() => undefined);
   }, CLOSE_AFTER_IDLE_MS);
 }
 
@@ -177,13 +146,7 @@ export function acceptRelayResult(message: { id?: unknown; ok?: unknown; result?
 }
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  if (tabId === relayTabId) {
-    relayTabId = undefined;
-    console.log(LOG, 'onRemoved: the relay tab is gone (closed by hand, or MetaMask navigated it away)', { tabId });
-    // the tab is already gone here: the best that can be done is bring the origin tab forward after the fact, same
-    // routine as the normal close above.
-    void returnToApp();
-  }
+  if (tabId === relayTabId) relayTabId = undefined;
   for (const [id, entry] of Array.from(waiting)) {
     if (entry.tabId !== tabId) continue;
     waiting.delete(id);

@@ -3,7 +3,8 @@
 // docs/connectionDesign.txt item 9 (MetaMask as an approver for the extension, src/metamaskRelay.ts): the worker's relay opens ONE tab on the web app's relay page, passes only an allow-listed set of calls, accepts an answer only from that tab on that address and
 // from this extension, ends the request with MetaMask's own codes when the tab is closed (4001) or cannot be opened (4900), sends requests one at a time, closes the tab after the last one, and lets only the extension's own pages use it. The page script and the content script
 // act on the relay page only. Checked live with a real MetaMask (scripts/live/extensionMetaMaskApprover.cjs in the web repo). Run: node test/metamaskRelay.test.mjs
-// MUTANT=anyMethod|anyTab|anyAddress|anyExtension|closeIgnored|notSerial|noIdleClose|pageNotChecked|contentScriptEverywhere|inpageEverywhere|focusNotRestored|closeBeforeReturn|noFallback run against deliberately broken copies and must report failures.
+// 2026-10-26: the tab is opened with active: false (owner's own fix for the tab-focus bug, see the file's own header comment) -- it must never take over the window.
+// MUTANT=anyMethod|anyTab|anyAddress|anyExtension|closeIgnored|notSerial|noIdleClose|pageNotChecked|contentScriptEverywhere|inpageEverywhere|activeTab run against deliberately broken copies and must report failures.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -26,54 +27,34 @@ if (m === 'anyAddress') relaySrc = swap(relaySrc, '|| !sender.url.startsWith(rel
 if (m === 'anyExtension') relaySrc = swap(relaySrc, 'if (sender.id !== chrome.runtime.id || sender.tab?.id', 'if (sender.tab?.id');
 if (m === 'closeIgnored') relaySrc = swap(relaySrc, "entry.resolve(fail(4001, 'The MetaMask window was closed before it answered.'));", '');
 if (m === 'notSerial') relaySrc = swap(relaySrc, 'const next = chain.then(() => run(method, params));', 'const next = run(method, params);');
-if (m === 'noIdleClose') relaySrc = swap(relaySrc, 'void returnToApp().then(() => chrome.tabs.remove(id).catch(() => undefined));', 'void returnToApp();');
+if (m === 'noIdleClose') relaySrc = swap(relaySrc, 'void chrome.tabs.remove(id).catch(() => undefined);', '');
 if (m === 'pageNotChecked') relaySrc = swap(relaySrc, "if (sender.id !== chrome.runtime.id || typeof sender.url !== 'string' || !sender.url.startsWith(chrome.runtime.getURL(''))) {\n    sendResponse({ ok: false, error: { code: 4100", "if (false) {\n    sendResponse({ ok: false, error: { code: 4100");
 if (m === 'contentScriptEverywhere') content = swap(content, "const isRelayPage = () => window.location.pathname === RELAY_PATH;", 'const isRelayPage = () => true;');
 if (m === 'inpageEverywhere') inpage = swap(inpage, "if (window.location.pathname === '/metamaskRelay.html') {", 'if (true) {');
-if (m === 'focusNotRestored') relaySrc = swap(relaySrc, 'async function returnToApp(): Promise<void> {\n  const captured = originTab;', 'async function returnToApp(): Promise<void> {\n  return;\n  const captured = originTab;');
-if (m === 'closeBeforeReturn') relaySrc = swap(relaySrc, 'void returnToApp().then(() => chrome.tabs.remove(id).catch(() => undefined));', 'void chrome.tabs.remove(id).catch(() => undefined);');
-if (m === 'noFallback') relaySrc = swap(relaySrc, 'await openOrFocusApp().catch((error) => console.warn(LOG, \'returnToApp: openOrFocusApp fallback failed\', error));', '');
+if (m === 'activeTab') relaySrc = swap(relaySrc, "chrome.tabs.create({ url, active: false })", "chrome.tabs.create({ url, active: true })");
 
 // ---- a fake chrome for the worker ----
 function makeChrome() {
-  const calls = { created: [], removed: [], sent: [], order: [] };
+  const calls = { created: [], removed: [], sent: [] };
   const tabs = new Map();
   let nextId = 100;
   const updated = new Set();
   const removedListeners = new Set();
   const runtimeListeners = [];
   const store = {};
-  // the "person" is on window 900, tab 1 (e.g. the SponsorCoin app tab) before any relay tab exists.
-  const ORIGIN_WINDOW_ID = 900;
-  const ORIGIN_TAB_ID = 1;
-  let originTabAlive = true;
   const chromeMock = {
     runtime: { id: 'ext-1', getURL: (p) => 'chrome-extension://ext-1/' + p, onMessage: { addListener: (l) => runtimeListeners.push(l) } },
     storage: { local: { get: async (k) => ({ [k]: store[k] }), set: async (o) => Object.assign(store, o) } },
     tabs: {
-      query: async ({ active, lastFocusedWindow } = {}) => (active && lastFocusedWindow ? [{ id: ORIGIN_TAB_ID, windowId: ORIGIN_WINDOW_ID, active: true }] : []),
-      create: async ({ url }) => { const id = nextId++; const tab = { id, url, status: 'loading' }; tabs.set(id, tab); calls.created.push(url); setTimeout(() => { tab.status = 'complete'; for (const l of Array.from(updated)) l(id, { status: 'complete' }); }, 5); return tab; },
+      create: async ({ url, active }) => { const id = nextId++; const tab = { id, url, status: 'loading' }; tabs.set(id, tab); calls.created.push({ url, active }); setTimeout(() => { tab.status = 'complete'; for (const l of Array.from(updated)) l(id, { status: 'complete' }); }, 5); return tab; },
       get: async (id) => { if (!tabs.has(id)) throw new Error('No tab'); return tabs.get(id); },
-      remove: async (id) => { calls.removed.push(id); calls.order.push('remove:' + id); tabs.delete(id); for (const l of Array.from(removedListeners)) l(id); },
-      update: async (id, info) => {
-        if (id === ORIGIN_TAB_ID && !originTabAlive) throw new Error('No tab with id: ' + id + '.');
-        calls.order.push(`tabs.update:${id}:${JSON.stringify(info)}`);
-      },
+      remove: async (id) => { calls.removed.push(id); tabs.delete(id); for (const l of Array.from(removedListeners)) l(id); },
       sendMessage: async (id, message) => { if (!tabs.has(id)) throw new Error('No tab'); calls.sent.push({ id, message }); },
       onUpdated: { addListener: (l) => updated.add(l), removeListener: (l) => updated.delete(l) },
       onRemoved: { addListener: (l) => removedListeners.add(l) },
     },
-    windows: {
-      update: async (id, info) => { calls.order.push(`windows.update:${id}:${JSON.stringify(info)}`); },
-    },
   };
-  // stands in for src/openApp.ts's openOrFocusApp: used only as a FALLBACK, when the captured origin tab is gone.
-  const openOrFocusApp = async () => { calls.order.push('openOrFocusApp-fallback'); };
-  return {
-    chromeMock, calls, tabs, runtimeListeners, store, openOrFocusApp, ORIGIN_WINDOW_ID, ORIGIN_TAB_ID,
-    killOriginTab: () => { originTabAlive = false; },
-    closeTab: (id) => chromeMock.tabs.remove(id),
-  };
+  return { chromeMock, calls, tabs, runtimeListeners, store, closeTab: (id) => chromeMock.tabs.remove(id) };
 }
 
 function loadRelay() {
@@ -81,11 +62,8 @@ function loadRelay() {
   // the extension's TypeScript is the native one (no JS API), so the file is compiled with the transform the build uses (oxc, in rolldown) and turned into a function over a fake chrome
   let code = transformSync('metamaskRelay.ts', relaySrc, { lang: 'ts', sourceType: 'module', target: 'es2022' }).code;
   const NLC = String.fromCharCode(10);
-  code = code
-    .replace(/^import \{[^}]*\} from ['"]\.\/openTargetStorage['"];?$/m, 'const { readOpenTarget, urlForOpenTarget } = deps;')
-    .replace(/^import \{[^}]*\} from ['"]\.\/openApp['"];?$/m, 'const { openOrFocusApp } = deps;')
-    .replace(/^export (async function|function|const) /gm, '$1 ');
-  const mod = { exports: new Function('chrome', 'deps', code + NLC + 'return { RELAY_PATH, METAMASK_ACCOUNTS_KEY, RELAY_METHODS, relayRequest, acceptRelayResult, readMetaMaskAccounts, writeMetaMaskAccounts };')(env.chromeMock, { readOpenTarget: async () => 'local', urlForOpenTarget: () => 'http://localhost:3000', openOrFocusApp: env.openOrFocusApp }) };
+  code = code.replace(/^import \{[^}]*\} from ['"]\.\/openTargetStorage['"];?$/m, 'const { readOpenTarget, urlForOpenTarget } = deps;').replace(/^export (async function|function|const) /gm, '$1 ');
+  const mod = { exports: new Function('chrome', 'deps', code + NLC + 'return { RELAY_PATH, METAMASK_ACCOUNTS_KEY, RELAY_METHODS, relayRequest, acceptRelayResult, readMetaMaskAccounts, writeMetaMaskAccounts };')(env.chromeMock, { readOpenTarget: async () => 'local', urlForOpenTarget: () => 'http://localhost:3000' }) };
   const handle = (message, sender) => new Promise((resolve) => {
     let answered = false;
     const done = (r) => { answered = true; resolve(r); };
@@ -104,12 +82,12 @@ const RELAY_URL = 'http://localhost:3000/metamaskRelay.html';
 const fromRelay = (r, tabId, extra = {}) => ({ id: 'ext-1', tab: { id: tabId }, url: RELAY_URL, ...extra });
 const answerOnce = async (r, reply) => { for (let i = 0; i < 100 && r.calls.sent.length === 0; i++) await wait(10); const s = r.calls.sent[r.calls.sent.length - 1]; return r.acceptRelayResult({ id: s.message.id, ...reply }, fromRelay(r, s.id)); };
 
-await test('a request opens one tab on the app address, sends the call there, and resolves with MetaMask\'s answer', async () => {
+await test('a request opens one tab on the app address, WITHOUT making it active, sends the call there, and resolves with MetaMask\'s answer', async () => {
   const r = loadRelay();
   const pending = r.relayRequest('eth_requestAccounts');
   assert.equal(await answerOnce(r, { ok: true, result: ['0xabc'] }), true);
   assert.deepEqual(await within(pending), { ok: true, result: ['0xabc'] });
-  assert.deepEqual(r.calls.created, [RELAY_URL]);
+  assert.deepEqual(r.calls.created, [{ url: RELAY_URL, active: false }]);
   assert.equal(r.calls.sent[0].message.type, 'merit/relay/call');
   assert.equal(r.calls.sent[0].message.method, 'eth_requestAccounts');
 });
@@ -144,7 +122,7 @@ await test('MetaMask\'s own error comes back with its code (4001 rejected stays 
   assert.deepEqual(await within(pending), { ok: false, error: { code: 4001, message: 'User rejected the request.' } });
 });
 
-await test('closing the tab before MetaMask answers ends the request with 4001, and switches back to the exact origin tab', async () => {
+await test('closing the tab before MetaMask answers ends the request with 4001', async () => {
   const r = loadRelay();
   const pending = r.relayRequest('eth_requestAccounts');
   for (let i = 0; i < 100 && r.calls.sent.length === 0; i++) await wait(10);
@@ -152,18 +130,6 @@ await test('closing the tab before MetaMask answers ends the request with 4001, 
   const reply = await within(pending);
   assert.equal(reply.ok, false);
   assert.equal(reply.error.code, 4001);
-  for (let i = 0; i < 100 && r.calls.order.length < 2; i++) await wait(10);
-  assert.deepEqual(r.calls.order.filter((e) => !e.startsWith('remove:')), [`tabs.update:${r.ORIGIN_TAB_ID}:{"active":true}`, `windows.update:${r.ORIGIN_WINDOW_ID}:{"focused":true}`]);
-});
-
-await test('when the captured origin tab is gone by the time the relay closes, it falls back to openOrFocusApp', async () => {
-  const r = loadRelay();
-  const pending = r.relayRequest('eth_accounts');
-  await answerOnce(r, { ok: true, result: [] });
-  await within(pending);
-  r.killOriginTab();
-  await wait(1800);
-  assert.deepEqual(r.calls.order.filter((e) => !e.startsWith('remove:')), ['openOrFocusApp-fallback']);
 });
 
 await test('requests go one at a time (the second is not sent until the first is answered), on the same tab', async () => {
@@ -183,16 +149,14 @@ await test('requests go one at a time (the second is not sent until the first is
   assert.equal(r.calls.created.length, 1);
 });
 
-await test('the tab closes itself shortly after the last request, switching to the exact origin tab FIRST so the relay tab is never the one the browser has to replace', async () => {
+await test('the tab closes itself shortly after the last request', async () => {
   const r = loadRelay();
   const pending = r.relayRequest('eth_accounts');
   await answerOnce(r, { ok: true, result: [] });
   await within(pending);
   assert.equal(r.calls.removed.length, 0, 'not at once (a send makes several calls)');
-  assert.equal(r.calls.order.length, 0, 'not before the tab actually closes');
   await wait(1800);
   assert.equal(r.calls.removed.length, 1);
-  assert.deepEqual(r.calls.order, [`tabs.update:${r.ORIGIN_TAB_ID}:{"active":true}`, `windows.update:${r.ORIGIN_WINDOW_ID}:{"focused":true}`, `remove:${r.calls.removed[0]}`], 'the origin tab is switched to before the relay tab is removed');
 });
 
 await test('only the extension\'s own pages may use the relay; a content script (a web page\'s URL) is refused', async () => {

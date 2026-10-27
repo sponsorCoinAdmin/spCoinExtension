@@ -145,7 +145,7 @@ async function showApprovalBanner(tabId: number, method: string): Promise<void> 
         approveLabel.textContent = 'Approve:';
         approveLabel.style.color = '#f87171';
         const approveRest = document.createElement('span');
-        approveRest.textContent = ' MetaMask Authentication Request';
+        approveRest.textContent = ' MetaMask Authentication';
         approveRest.style.color = '#5981F3';
         line1.appendChild(approveLabel);
         line1.appendChild(approveRest);

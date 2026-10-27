@@ -32,7 +32,7 @@ if (m === 'notSerial') relaySrc = swap(relaySrc, 'const next = chain.then(() => 
 if (m === 'noAppTabFound') relaySrc = swap(relaySrc, 'const [existing] = await chrome.tabs.query({ url: `${base}/*` });', 'const existing = undefined;');
 if (m === 'appTabNeverActive') relaySrc = swap(relaySrc, "chrome.tabs.create({ url: base, active: false })", "chrome.tabs.create({ url: base, active: true })");
 if (m === 'noFrameInject') relaySrc = swap(relaySrc, 'await injectRelayFrame(tabId, url);', '');
-if (m === 'noBanner') relaySrc = swap(relaySrc, 'void showApprovalBanner(tabId);', '');
+if (m === 'noBanner') relaySrc = swap(relaySrc, 'void showApprovalBanner(tabId, method);', '');
 if (m === 'bannerNotHidden') relaySrc = swap(relaySrc, 'void hideApprovalBanner(tabId);', '');
 if (m === 'pageNotChecked') relaySrc = swap(relaySrc, "if (sender.id !== chrome.runtime.id || typeof sender.url !== 'string' || !sender.url.startsWith(chrome.runtime.getURL(''))) {\n    sendResponse({ ok: false, error: { code: 4100", "if (false) {\n    sendResponse({ ok: false, error: { code: 4100");
 if (m === 'contentScriptEverywhere') content = swap(content, "const isRelayPage = () => window.location.pathname === RELAY_PATH;", 'const isRelayPage = () => true;');

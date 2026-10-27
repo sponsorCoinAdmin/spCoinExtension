@@ -43,7 +43,8 @@
     "tabs",
     "sidePanel",
     "storage",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "scripting"
   ],
   "host_permissions": [
     "http://localhost:3000/*",
@@ -58,7 +59,8 @@
       "js": [
         "src/contentScript.ts"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true
     },
     {
       "matches": [
@@ -69,7 +71,8 @@
         "src/inpage.ts"
       ],
       "run_at": "document_start",
-      "world": "MAIN"
+      "world": "MAIN",
+      "all_frames": true
     }
   ],
   "content_security_policy": {

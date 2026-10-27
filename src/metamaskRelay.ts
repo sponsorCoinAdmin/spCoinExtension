@@ -5,17 +5,26 @@
 // into any web page, and the extension's page script (inpage.ts) and content script (contentScript.ts) carry the request to MetaMask and the answer back. Nothing is signed here and no key is held:
 // MetaMask asks the person in its own popup, exactly as it does for any site.
 //   - Only the app's own address is opened (the open target, Local or Prod), only an allow-listed set of methods is sent, and an answer is accepted only from the page opened here, from that address.
-//   - Requests are sent one at a time; the page stays open for a moment after the last one (a send makes three calls) and then closes itself.
-//   - Closing the page, or MetaMask not being installed, ends the request with the same error codes MetaMask uses (4001 rejected, 4900 unavailable).
-// The accounts MetaMask shared are kept in chrome.storage.local so the list and the signing choice need no page.
-//   - 2026-10-26 (owner reports, repeatedly): this page used to be an ordinary TAB in the person's own window -- first opened ACTIVE (visibly taking over the window; two different ways of giving focus back
-//     afterward were tried and were not enough), then opened with active: false (so it stopped stealing focus, but it was STILL a tab the person could see appear in their own tab strip, which was the actual
-//     complaint: "remove this blue Approval tab completely"). The fix: it is no longer a tab in the person's window at all. It is its own separate, minimized, unfocused popup WINDOW
-//     (chrome.windows.create, not chrome.tabs.create) -- MetaMask injects into its page exactly the same way, but there is nothing for the person to see in their own window, ever.
+//   - The accounts MetaMask shared are kept in chrome.storage.local so the list and the signing choice need no page.
+//   - 2026-10-27 (owner reports, repeatedly, then the owner's own line of questioning): this page went through three designs, each one still visible to the person in some way -- an ordinary ACTIVE tab
+//     (took over the window), then a tab with active: false (stopped stealing focus, but still appeared as an entry in the tab strip -- the actual complaint, "remove this blue Approval tab completely"),
+//     then its own minimized popup WINDOW (chrome.windows.create -- fighting Chrome's own window-state APIs the whole way: state at create time is unreliable, combining it with a position is rejected
+//     outright, a fully off-screen position is rejected too as a deliberate anti-abuse rule, a requested tiny size is silently clamped back up, and even a follow-up windows.update to minimize was itself
+//     silently reverted moments later by an OS focus-settle race -- a fixed delay before minimizing was the only thing that held, and still was not reliably confirmed on the owner's own real Chrome).
+//     The owner's own question broke the deadlock: does this need to be a SEPARATE browsing context at all, or could it live inside a tab the person already has open? Confirmed live (real MetaMask): yes --
+//     chrome.scripting.executeScript injects a hidden iframe into an EXISTING ordinary tab (found by host-permission URL match, or opened inactive if none exists, exactly like openApp.ts's own
+//     find-or-open routine for the "open the web site" button); MetaMask injects into that iframe exactly as it would into a dedicated tab (confirmed: window.ethereum, EIP-6963 announce, a full
+//     eth_requestAccounts round trip all work); and the tab the person is actually on never changes, not even for an instant -- confirmed by polling chrome.tabs.query throughout an entire real approval.
+//     This does not work if the iframe's parent is an EXTENSION page (also confirmed live: nesting it inside the side panel itself gets no MetaMask injection at all -- a real Chrome isolation boundary,
+//     not a bug), which is why it has to be a tab the person already has open (or one opened for them), never the side panel.
 import { readOpenTarget, urlForOpenTarget } from './openTargetStorage';
 
 export const RELAY_PATH = '/metamaskRelay.html';
 export const METAMASK_ACCOUNTS_KEY = 'meritMetaMaskAccounts';
+/** DOM ids of the elements injected into the app tab: the hidden relay iframe, and the small "approve in MetaMask" notice shown on the page while a request is open (owner request, 2026-10-27: "let us
+ * know what is happening in the web app page"). */
+const RELAY_FRAME_ID = 'merit-metamask-relay-frame';
+const BANNER_ID = 'merit-metamask-relay-banner';
 
 /** The only calls the relay passes to MetaMask: connect, read, sign, send, switch network, revoke. */
 export const RELAY_METHODS = new Set([
@@ -31,7 +40,7 @@ export const RELAY_METHODS = new Set([
 
 const REQUEST_TIMEOUT_MS = 5 * 60_000;
 const TAB_LOAD_TIMEOUT_MS = 20_000;
-const CLOSE_AFTER_IDLE_MS = 1500;
+const HIDE_BANNER_AFTER_IDLE_MS = 1500;
 
 export interface RelayError {
   code: number;
@@ -45,42 +54,26 @@ interface Waiting {
 }
 
 const waiting = new Map<number, Waiting>();
+/** The app tab currently hosting the hidden relay iframe -- an ordinary tab the person already had open, or one opened inactive for them. Never a dedicated tab/window of its own. */
 let relayTabId: number | undefined;
-let relayWindowId: number | undefined;
 let relayUrl: string | undefined;
 let counter = 0;
 let chain: Promise<unknown> = Promise.resolve();
-let closeTimer: ReturnType<typeof setTimeout> | undefined;
+let hideBannerTimer: ReturnType<typeof setTimeout> | undefined;
 
 const fail = (code: number, message: string): RelayReply => ({ ok: false, error: { code, message } });
 
-async function ensureTab(): Promise<number> {
-  const base = urlForOpenTarget(await readOpenTarget());
-  const url = `${base}${RELAY_PATH}`;
-  if (relayTabId !== undefined && relayUrl === url) {
-    const existing = await chrome.tabs.get(relayTabId).catch(() => undefined);
-    if (existing?.id !== undefined) return existing.id;
-  }
-  // its own unfocused, minimized WINDOW -- not a tab in the person's own window at all (see the file header, 2026-10-26). Several earlier attempts
-  // failed: state: 'minimized' at CREATE time is not reliable on real Chrome (the owner saw an ordinary visible, focused window); combining it with
-  // an explicit position is rejected outright ("Invalid value for state"); a fully off-screen position is rejected too ("Invalid value for bounds
-  // ... must be at least 50% within visible screen space" -- a deliberate anti-abuse rule); Chrome silently clamps a requested 1x1 size back up to
-  // its own minimum; and even a SEPARATE windows.update({state:'minimized'}) called right after create is itself silently reverted moments later
-  // (confirmed live: it reports success, but re-reading the window back shows state 'normal', focused true again) -- there is a brief window right
-  // after a window is created where the OS/Chrome is still settling which window has focus, and a minimize issued into that window loses the race.
-  // Waiting for that to settle before minimizing is what actually sticks (confirmed live, holds for 2+ seconds afterward).
-  const win = await chrome.windows.create({ url, type: 'popup', focused: false });
-  const tab = win?.tabs?.[0];
-  if (win?.id === undefined || tab?.id === undefined) throw new Error('The MetaMask page could not be opened.');
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  await chrome.windows.update(win.id, { state: 'minimized' }).catch(() => undefined);
-  relayTabId = tab.id;
-  relayWindowId = win.id;
-  relayUrl = url;
+/** The app's own tab, found by its URL (host_permissions already covers it) -- the SAME routine openApp.ts's "open the web site" button uses, except never made active: finding or opening it must not
+ * disturb whatever tab the person is actually looking at. */
+async function findOrOpenAppTab(base: string): Promise<number> {
+  const [existing] = await chrome.tabs.query({ url: `${base}/*` });
+  if (existing?.id !== undefined) return existing.id;
+  const tab = await chrome.tabs.create({ url: base, active: false });
+  if (tab.id === undefined) throw new Error('The app page could not be opened.');
   await new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(listener);
-      reject(new Error('The MetaMask page did not load.'));
+      reject(new Error('The app page did not load.'));
     }, TAB_LOAD_TIMEOUT_MS);
     const listener = (id: number, info: { status?: string }) => {
       if (id !== tab.id || info.status !== 'complete') return;
@@ -97,26 +90,87 @@ async function ensureTab(): Promise<number> {
   return tab.id;
 }
 
-function scheduleClose(): void {
-  if (closeTimer) clearTimeout(closeTimer);
-  closeTimer = setTimeout(() => {
-    if (waiting.size > 0 || relayWindowId === undefined) return;
-    const windowId = relayWindowId;
-    relayTabId = undefined;
-    relayWindowId = undefined;
-    void chrome.windows.remove(windowId).catch(() => undefined);
-  }, CLOSE_AFTER_IDLE_MS);
+/** Creates the hidden relay iframe in the app tab if it is not already there (idempotent: also self-heals if the person navigated that tab away and back, since the element would be gone). Resolves only
+ * once the iframe itself has loaded, the same guarantee the old tab/window-based ensureTab() gave before a request is sent into it. */
+async function injectRelayFrame(tabId: number, url: string): Promise<void> {
+  const [injected] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (frameId: string, relayUrl: string) => {
+      const existing = document.getElementById(frameId);
+      if (existing) return Promise.resolve('existing');
+      return new Promise((resolve) => {
+        const frame = document.createElement('iframe');
+        frame.id = frameId;
+        frame.src = relayUrl;
+        frame.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;border:0;';
+        frame.onload = () => resolve('loaded');
+        document.body.appendChild(frame);
+      });
+    },
+    args: [RELAY_FRAME_ID, url],
+  });
+  if (injected?.result !== 'existing' && injected?.result !== 'loaded') throw new Error('The MetaMask page could not be opened.');
+}
+
+/** The on-page notice (owner request, 2026-10-27): shown in the app tab itself while a request is open, so there is something to see there too, not just the side panel's own "Waiting for MetaMask ..."
+ * message. Idempotent (safe to call once per request); hidden again after the whole burst of requests goes idle (hideApprovalBanner, below). */
+async function showApprovalBanner(tabId: number): Promise<void> {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (bannerId: string) => {
+      let el = document.getElementById(bannerId);
+      if (!el) {
+        el = document.createElement('div');
+        el.id = bannerId;
+        el.textContent = 'Approve the request in the MetaMask popup…';
+        el.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;background:#1f2937;color:#f9fafb;padding:10px 16px;border-radius:8px;font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.35);pointer-events:none;';
+        document.body.appendChild(el);
+      }
+      el.style.display = 'block';
+    },
+    args: [BANNER_ID],
+  }).catch(() => undefined);
+}
+
+async function hideApprovalBanner(tabId: number): Promise<void> {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (bannerId: string) => {
+      const el = document.getElementById(bannerId);
+      if (el) el.style.display = 'none';
+    },
+    args: [BANNER_ID],
+  }).catch(() => undefined);
+}
+
+async function ensureTab(): Promise<number> {
+  const base = urlForOpenTarget(await readOpenTarget());
+  const url = `${base}${RELAY_PATH}`;
+  const tabId = await findOrOpenAppTab(base);
+  await injectRelayFrame(tabId, url);
+  relayTabId = tabId;
+  relayUrl = url;
+  return tabId;
+}
+
+function scheduleHideBanner(tabId: number): void {
+  if (hideBannerTimer) clearTimeout(hideBannerTimer);
+  hideBannerTimer = setTimeout(() => {
+    if (waiting.size > 0) return;
+    void hideApprovalBanner(tabId);
+  }, HIDE_BANNER_AFTER_IDLE_MS);
 }
 
 async function run(method: string, params: unknown): Promise<RelayReply> {
   if (!RELAY_METHODS.has(method)) return fail(-32601, `${method} is not supported through the relay.`);
-  if (closeTimer) clearTimeout(closeTimer);
+  if (hideBannerTimer) clearTimeout(hideBannerTimer);
   let tabId: number;
   try {
     tabId = await ensureTab();
   } catch (error) {
     return fail(4900, error instanceof Error ? error.message : 'The MetaMask page could not be opened.');
   }
+  void showApprovalBanner(tabId);
   const id = ++counter;
   const answer = new Promise<RelayReply>((resolve) => {
     waiting.set(id, { tabId, resolve });
@@ -130,7 +184,7 @@ async function run(method: string, params: unknown): Promise<RelayReply> {
     if (waiting.delete(id)) return fail(4900, 'The MetaMask page is not ready. Try again.');
   }
   const reply = await answer;
-  scheduleClose();
+  scheduleHideBanner(tabId);
   return reply;
 }
 
@@ -158,14 +212,11 @@ export function acceptRelayResult(message: { id?: unknown; ok?: unknown; result?
 }
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  if (tabId === relayTabId) {
-    relayTabId = undefined;
-    relayWindowId = undefined;
-  }
+  if (tabId === relayTabId) relayTabId = undefined;
   for (const [id, entry] of Array.from(waiting)) {
     if (entry.tabId !== tabId) continue;
     waiting.delete(id);
-    entry.resolve(fail(4001, 'The MetaMask window was closed before it answered.'));
+    entry.resolve(fail(4001, 'The app tab was closed before MetaMask answered.'));
   }
 });
 

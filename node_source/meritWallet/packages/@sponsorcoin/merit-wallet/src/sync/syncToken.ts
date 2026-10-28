@@ -30,6 +30,17 @@ export interface SyncTokenHost {
   now?: () => number;
   setTimer?: (fn: () => void, ms: number) => unknown;
   clearTimer?: (handle: unknown) => void;
+  /**
+   * 2026-10-28, on request ("Authorize Sync popups are appearing unwanted
+   * and without notice — track this down") — optional, so test/syncToken.test.mjs's
+   * harness (which runs this file's compiled source through `new Function(...)`
+   * with NO `require` parameter at all — an `import` here would throw a hard
+   * ReferenceError, not just resolve to undefined like meritApproval.ts's own
+   * stub-require harness) never needs to supply one; every real call below is
+   * `host.trace?.(...)`, a silent no-op when omitted. The web app's host
+   * wires this to its own debug trace.
+   */
+  trace?: (event: string, data: Record<string, unknown>) => void;
 }
 
 export interface EnsureSyncTokenParams {
@@ -80,6 +91,15 @@ export function createSyncTokenProvider(host: SyncTokenHost): SyncTokenProvider 
 
   async function mintToken(params: EnsureSyncTokenParams): Promise<CachedToken> {
     const syncAuthRequired = host.isSyncAuthorizationRequired();
+    host.trace?.('syncToken:mintToken:start', {
+      chainId: params.chainId,
+      activeAccountAddress: params.activeAccountAddress,
+      userInitiated: params.userInitiated === true,
+      interactive: params.userInitiated === true,
+      background: params.userInitiated !== true,
+      syncAuthRequired,
+      stack: new Error('mintToken').stack,
+    });
     const signer = await host.getSigner({
       chainId: params.chainId,
       activeAccountAddress: params.activeAccountAddress,
@@ -96,11 +116,13 @@ export function createSyncTokenProvider(host: SyncTokenHost): SyncTokenProvider 
       interactive: params.userInitiated === true,
       background: params.userInitiated !== true,
     });
+    host.trace?.('syncToken:mintToken:gotSigner', { chainId: params.chainId, activeAccountAddress: params.activeAccountAddress });
     const token = await host.signInForSync(params.activeAccountAddress, (message) => signer.signMessage(message));
     const expiresAt = parseTokenExpiresAt(token);
     if (expiresAt === null) {
       throw new Error('ensureSyncToken: minted token has an unrecognized shape');
     }
+    host.trace?.('syncToken:mintToken:minted', { chainId: params.chainId, activeAccountAddress: params.activeAccountAddress, expiresAt });
     return { address: params.activeAccountAddress.toLowerCase(), token, expiresAt };
   }
 
@@ -120,6 +142,12 @@ export function createSyncTokenProvider(host: SyncTokenHost): SyncTokenProvider 
   }
 
   async function ensureSyncToken(params: EnsureSyncTokenParams): Promise<string> {
+    host.trace?.('syncToken:ensureSyncToken:called', {
+      chainId: params.chainId,
+      activeAccountAddress: params.activeAccountAddress,
+      userInitiated: params.userInitiated === true,
+      stack: new Error('ensureSyncToken').stack,
+    });
     if (host.isSyncDisabled()) {
       clearScheduledRefresh();
       cached = null;
@@ -127,6 +155,7 @@ export function createSyncTokenProvider(host: SyncTokenHost): SyncTokenProvider 
     }
     const normalized = params.activeAccountAddress.toLowerCase();
     if (cached?.address === normalized && cached.expiresAt - now() > REFRESH_LEAD_MS) {
+      host.trace?.('syncToken:ensureSyncToken:cached', { chainId: params.chainId, activeAccountAddress: params.activeAccountAddress });
       return cached.token;
     }
     if (inFlight?.address === normalized) return inFlight.promise;
@@ -135,6 +164,14 @@ export function createSyncTokenProvider(host: SyncTokenHost): SyncTokenProvider 
         cached = minted;
         scheduleRefresh(params, minted.expiresAt);
         return minted.token;
+      })
+      .catch((error) => {
+        host.trace?.('syncToken:ensureSyncToken:mintFailed', {
+          chainId: params.chainId,
+          activeAccountAddress: params.activeAccountAddress,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
       })
       .finally(() => {
         if (inFlight?.promise === promise) inFlight = null;

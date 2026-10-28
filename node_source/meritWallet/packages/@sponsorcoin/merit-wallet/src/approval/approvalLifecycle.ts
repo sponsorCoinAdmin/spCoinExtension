@@ -34,6 +34,10 @@ export function useMeritApprovalLifecycle({ openWallet, messagePanelVisible }: A
   useEffect(() => subscribeMeritApproval(setRequest), []);
 
   // the outcome is on screen: the request is done
+  // 2026-10-28 — no longer the only thing standing between a settled
+  // request and a new one: requestMeritWriteApproval in ./meritApproval
+  // now supersedes a 'settling' request outright (see its own comment), so
+  // a slow message-panel reveal here can no longer block the next write.
   useEffect(() => {
     if (shouldClearSettled(request, messagePanelVisible)) clearSettledMeritApproval();
   }, [request?.phase, messagePanelVisible]);

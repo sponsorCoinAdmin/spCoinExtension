@@ -16,16 +16,25 @@ import { SP_COIN_DISPLAY, RADIO_PANEL_GROUPS } from '@sponsorcoin/spcoin-common/
 //
 // 2026-09-17, on report ("STAKED_TOKEN_SELECT_DROP_DOWN [not selected] but
 // spcoin 0x8b0E...a8FC is still visible, why?") — STAKED_SP_COIN_PANEL_MODES
-// joins the list for the same reason. StakingStatusPanel.tsx's token pill
-// (the raw activeSpCoinAddress display) is an always-rendered base layer,
-// only ever covered by RecipientSelectDropDown when
-// STAKED_RECIPIENT_SELECT_DROP_DOWN is visible — so whenever this group
-// drops to 0 (e.g. the recipient overlay collapses without anything
-// re-selecting it), the raw pill shows through underneath, even though
-// nothing in the panel tree marked it as the active member. defaultPanelTree.ts's
-// own node comment already documents the intended steady state ("recipient
-// wins by default ... so the recipient's own name/logo shows instead of the
-// generic spCoin pill") — this fallback is what actually enforces it.
+// used to join this list for the same reason, with
+// STAKED_RECIPIENT_SELECT_DROP_DOWN as its fallbackPanel.
+//
+// 2026-10-28, real bug fix (live report, Test page: "STAKED_RECIPIENT_SELECT_DROP_DOWN
+// does not hide the image in the gui and is not selectable... the panel tree
+// [+]/[-] do not toggle") — STAKED_TOKEN_SELECT_DROP_DOWN is never opened by
+// ANY real code path (confirmed: it's read via usePanelVisible in
+// StakingStatusPanelPart.tsx but nothing anywhere ever sets it true), so
+// this "2-way radio" only ever has one real member. A fallbackPanel on a
+// group whose other member can never win doesn't restore a default — it
+// permanently pins that one member open: the instant anything (including
+// the Test page's own tree toggle) sets STAKED_RECIPIENT_SELECT_DROP_DOWN to
+// false, the group drops to 0 visible and this same effect immediately
+// flips it back to true on the next render, so the toggle looked dead and
+// the pill/icon it gates could never actually hide. Dropped the fallback
+// entirely: STAKED_SP_COIN_PANEL_MODES now behaves like every other
+// "exactly 0 or 1 visible" group in panelGroups.ts (ACCOUNT_PANEL_MODES,
+// REWARDS_GROUP_MODES, ...) — 0 visible is a legitimate state, not a bug to
+// self-heal.
 export const RADIO_PANEL_GROUPS_WITH_FALLBACKS = RADIO_PANEL_GROUPS.map((group) => {
     if (group.name === 'MAIN_RADIO_OVERLAY_PANELS') {
         return { ...group, fallbackPanel: SP_COIN_DISPLAY.TRADING_STATION_PANEL };
@@ -65,9 +74,6 @@ export const RADIO_PANEL_GROUPS_WITH_FALLBACKS = RADIO_PANEL_GROUPS.map((group) 
     // real close, no longer on a temporary cover-and-return.
     if (group.name === 'ACTIVE_LIST_PANEL_MODES') {
         return { ...group, container: SP_COIN_DISPLAY.ACTIVE_LIST_PANEL };
-    }
-    if (group.name === 'STAKED_SP_COIN_PANEL_MODES') {
-        return { ...group, fallbackPanel: SP_COIN_DISPLAY.STAKED_RECIPIENT_SELECT_DROP_DOWN };
     }
     return group;
 });

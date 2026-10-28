@@ -22,6 +22,17 @@ export interface SyncTokenHost {
     now?: () => number;
     setTimer?: (fn: () => void, ms: number) => unknown;
     clearTimer?: (handle: unknown) => void;
+    /**
+     * 2026-10-28, on request ("Authorize Sync popups are appearing unwanted
+     * and without notice — track this down") — optional, so test/syncToken.test.mjs's
+     * harness (which runs this file's compiled source through `new Function(...)`
+     * with NO `require` parameter at all — an `import` here would throw a hard
+     * ReferenceError, not just resolve to undefined like meritApproval.ts's own
+     * stub-require harness) never needs to supply one; every real call below is
+     * `host.trace?.(...)`, a silent no-op when omitted. The web app's host
+     * wires this to its own debug trace.
+     */
+    trace?: (event: string, data: Record<string, unknown>) => void;
 }
 export interface EnsureSyncTokenParams {
     chainId: number;

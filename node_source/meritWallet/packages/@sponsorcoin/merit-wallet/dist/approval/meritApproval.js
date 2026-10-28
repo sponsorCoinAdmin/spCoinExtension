@@ -1,3 +1,4 @@
+import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
 let nextId = 1;
 let currentRequest = null;
 /** Resolves requestMeritWriteApproval's promise — Reject/Approve. */
@@ -45,8 +46,32 @@ export function getPendingMeritApproval() {
  * background holds the slot" gets the preempt path.
  */
 export function requestMeritWriteApproval(details) {
+    // 2026-10-28 (owner report, live: a SPONSOR flow's Swap step was rejected
+    // with "Another Merit Wallet approval is already pending" seconds after
+    // its own Approve step had already fully confirmed) — root cause: a
+    // request in `settling` phase already has NOTHING pending on it.
+    // currentDecideResolve is set to null the moment resolveMeritApproval
+    // moves a request from 'decide' to 'settling' (see that function, just
+    // above) — 'settling' only exists so MeritApprovalOrchestrator/
+    // approvalLifecycle.ts knows when to stop showing "Signing..." UI for
+    // the write that already finished, a DISPLAY concern, not a "protect an
+    // undecided write" concern. The old code blocked a brand-new request on
+    // that same no-longer-meaningful slot regardless of phase — correct for
+    // 'decide' (a real, unresolved choice in flight), wrong for 'settling'
+    // (already decided; only waiting on its own UI cleanup, which a stale
+    // MESSAGE_PANEL-visibility race could delay well past when the NEXT
+    // step's own write is ready to go, exactly what the trace showed). A
+    // settling request is now transparently replaced, the same way an
+    // already-established `background` request gets preempted below — the
+    // only case that still genuinely blocks is a second REAL decision
+    // arriving while a first is still mid-decide.
     if (currentRequest) {
-        if (currentRequest.background && !details.background) {
+        if (currentRequest.phase === 'settling') {
+            engineTrace?.('meritApproval:requestMeritWriteApproval:supersedeSettled', { superseded: { id: currentRequest.id, label: currentRequest.label }, incoming: { label: details.label } });
+            currentRequest = null;
+        }
+        else if (currentRequest.background && !details.background) {
+            engineTrace?.('meritApproval:requestMeritWriteApproval:preemptBackground', { occupying: { id: currentRequest.id, label: currentRequest.label, phase: currentRequest.phase }, incoming: { label: details.label, background: details.background } });
             const preemptedResolve = currentDecideResolve;
             currentRequest = null;
             currentDecideResolve = null;
@@ -59,11 +84,17 @@ export function requestMeritWriteApproval(details) {
             preemptedResolve?.(false);
         }
         else {
-            return Promise.reject(new Error('Another Merit Wallet approval is already pending.'));
+            // 2026-10-28 — the occupying request's own details are now baked
+            // into the thrown message itself (not just the trace above), so a
+            // future recurrence is immediately diagnosable from the MESSAGE_PANEL
+            // alone: which write got here first, and how it's blocking this one.
+            engineTrace?.('meritApproval:requestMeritWriteApproval:rejected', { occupying: { id: currentRequest.id, label: currentRequest.label, signerAddress: currentRequest.signerAddress, phase: currentRequest.phase, background: currentRequest.background }, incoming: { label: details.label, signerAddress: details.signerAddress, background: details.background } });
+            return Promise.reject(new Error(`Another Merit Wallet approval is already pending (id ${currentRequest.id}: "${currentRequest.label}", phase "${currentRequest.phase}", signer ${currentRequest.signerAddress}${currentRequest.background ? ', background' : ''}). This write ("${details.label}") cannot start until that one is decided.`));
         }
     }
     return new Promise((resolve) => {
         currentRequest = { ...details, id: nextId++, phase: 'decide' };
+        engineTrace?.('meritApproval:requestMeritWriteApproval:opened', { id: currentRequest.id, label: currentRequest.label, signerAddress: currentRequest.signerAddress, background: currentRequest.background });
         currentDecideResolve = resolve;
         notify();
     });
@@ -94,12 +125,14 @@ export function resolveMeritApproval(approved) {
     const resolve = currentDecideResolve;
     currentDecideResolve = null;
     if (!approved) {
+        engineTrace?.('meritApproval:resolveMeritApproval:rejected', { id: currentRequest?.id, label: currentRequest?.label });
         currentRequest = null;
         notify();
         resolve(false);
         return;
     }
     currentRequest = currentRequest ? { ...currentRequest, phase: 'settling' } : null;
+    engineTrace?.('meritApproval:resolveMeritApproval:nowSettling', { id: currentRequest?.id, label: currentRequest?.label, atMs: Date.now() });
     notify();
     resolve(true);
 }
@@ -146,8 +179,11 @@ export function requestReauthentication() {
  * `settling` yet (still mid-decide) — only ever tears down a settling one.
  */
 export function clearSettledMeritApproval() {
-    if (currentRequest?.phase !== 'settling')
+    if (currentRequest?.phase !== 'settling') {
+        engineTrace?.('meritApproval:clearSettledMeritApproval:noop', { currentPhase: currentRequest?.phase ?? '(none)', atMs: Date.now() });
         return;
+    }
+    engineTrace?.('meritApproval:clearSettledMeritApproval:cleared', { id: currentRequest.id, label: currentRequest.label, atMs: Date.now() });
     currentRequest = null;
     notify();
 }

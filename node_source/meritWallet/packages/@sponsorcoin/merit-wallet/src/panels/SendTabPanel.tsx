@@ -46,8 +46,14 @@ export interface SendTabPanelProps {
   sendSymbol?: string;
   /** 2026-10-03 — "You Send" balance line (was hardcoded "Balance: 0"). The caller resolves it. */
   balanceText?: string;
+  /** 2026-10-27 (owner report) — the "You Send" row's balance hover title,
+   *  kept separate from `balanceText` (see TradeAmountRow's own doc
+   *  comment for the full reasoning). */
+  balanceTitle?: string;
   /** The Recipient row's balance line (the recipient's balance of the token being sent). */
   recipientBalanceText?: string;
+  /** Same split as balanceTitle, for the Recipient row. */
+  recipientBalanceTitle?: string;
   /** 2026-09-15, on request ("the Token/Account/NetworkSelectListDropdown
    *  chevrons [need] to be linked to the required panels") — same shape as
    *  ExchangeTradingPair.tsx's own onSellTokenClick/onBuyTokenClick, just
@@ -71,8 +77,20 @@ export default function SendTabPanel({
   onSendAmountChange,
   onSubmit,
   submitBusy = false,
-  balanceText = 'Balance: 0',
+  // 2026-10-27 (owner report) — "Balance: 0" as the default read live as a
+  // real, confirmed zero while the real balance was still loading/not yet
+  // supplied. 2026-10-28 (owner report, "wherever '...' is replace it with
+  // this spinner") — MeritWallet.tsx (this prop's only real caller) computes
+  // its balances via useFetchedBalance, which drops the `loading` flag
+  // useFetchedBalanceState already tracks internally (unlike the web app's
+  // useWalletTokenBalance, which keeps it) — exposing it through to a real
+  // spinner here means widening that extension-side hook's return shape
+  // first, out of scope for tonight's web-app sweep. Static "—" instead of
+  // "…" at least stops claiming motion this prop can't actually show yet.
+  balanceText = 'Balance: —',
+  balanceTitle,
   recipientBalanceText,
+  recipientBalanceTitle,
   sendDecimals = 18,
   sendBalanceRaw,
   sendHasRecipient = false,
@@ -114,13 +132,14 @@ export default function SendTabPanel({
         tokenSymbol={sendTokenSymbol}
         tokenAddress={sendTokenAddress}
         balanceText={balanceText}
+        balanceTitle={balanceTitle}
         onTokenPillClick={onSendTokenClick}
         amount={sendAmount}
         onAmountChange={onSendAmountChange}
         amountDisabled={submitBusy}
       />
       </PanelGate>
-      <TradeAmountRow label="Recipient" emptyPillLabel="Select Recipient" balanceText={recipientBalanceText} tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
+      <TradeAmountRow label="Recipient" emptyPillLabel="Select Recipient" balanceText={recipientBalanceText} balanceTitle={recipientBalanceTitle} tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
       <PanelGate panel={SP_COIN_DISPLAY.SEND_BUTTON}>
       {/* The shared SendButton (it turns into the Connect button while no account is active). */}
       <SendButton id="SEND_BUTTON_ACTION" amount={sendAmount ?? ''} decimals={sendDecimals} balanceRaw={sendBalanceRaw} hasRecipient={sendHasRecipient} symbol={sendSymbol} isPending={submitBusy} onSend={() => onSubmit?.()} />

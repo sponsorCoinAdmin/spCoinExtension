@@ -31,6 +31,15 @@ export function createSyncTokenProvider(host) {
     }
     async function mintToken(params) {
         const syncAuthRequired = host.isSyncAuthorizationRequired();
+        host.trace?.('syncToken:mintToken:start', {
+            chainId: params.chainId,
+            activeAccountAddress: params.activeAccountAddress,
+            userInitiated: params.userInitiated === true,
+            interactive: params.userInitiated === true,
+            background: params.userInitiated !== true,
+            syncAuthRequired,
+            stack: new Error('mintToken').stack,
+        });
         const signer = await host.getSigner({
             chainId: params.chainId,
             activeAccountAddress: params.activeAccountAddress,
@@ -47,11 +56,13 @@ export function createSyncTokenProvider(host) {
             interactive: params.userInitiated === true,
             background: params.userInitiated !== true,
         });
+        host.trace?.('syncToken:mintToken:gotSigner', { chainId: params.chainId, activeAccountAddress: params.activeAccountAddress });
         const token = await host.signInForSync(params.activeAccountAddress, (message) => signer.signMessage(message));
         const expiresAt = parseTokenExpiresAt(token);
         if (expiresAt === null) {
             throw new Error('ensureSyncToken: minted token has an unrecognized shape');
         }
+        host.trace?.('syncToken:mintToken:minted', { chainId: params.chainId, activeAccountAddress: params.activeAccountAddress, expiresAt });
         return { address: params.activeAccountAddress.toLowerCase(), token, expiresAt };
     }
     function scheduleRefresh(params, expiresAt) {
@@ -69,6 +80,12 @@ export function createSyncTokenProvider(host) {
         }, delay);
     }
     async function ensureSyncToken(params) {
+        host.trace?.('syncToken:ensureSyncToken:called', {
+            chainId: params.chainId,
+            activeAccountAddress: params.activeAccountAddress,
+            userInitiated: params.userInitiated === true,
+            stack: new Error('ensureSyncToken').stack,
+        });
         if (host.isSyncDisabled()) {
             clearScheduledRefresh();
             cached = null;
@@ -76,6 +93,7 @@ export function createSyncTokenProvider(host) {
         }
         const normalized = params.activeAccountAddress.toLowerCase();
         if (cached?.address === normalized && cached.expiresAt - now() > REFRESH_LEAD_MS) {
+            host.trace?.('syncToken:ensureSyncToken:cached', { chainId: params.chainId, activeAccountAddress: params.activeAccountAddress });
             return cached.token;
         }
         if (inFlight?.address === normalized)
@@ -85,6 +103,14 @@ export function createSyncTokenProvider(host) {
             cached = minted;
             scheduleRefresh(params, minted.expiresAt);
             return minted.token;
+        })
+            .catch((error) => {
+            host.trace?.('syncToken:ensureSyncToken:mintFailed', {
+                chainId: params.chainId,
+                activeAccountAddress: params.activeAccountAddress,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            throw error;
         })
             .finally(() => {
             if (inFlight?.promise === promise)

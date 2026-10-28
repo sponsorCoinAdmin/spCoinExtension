@@ -18,7 +18,18 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { PANEL_GAP, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { PACKAGE_BUILD, TabBodyMarker, TradeAmountRow, PanelGate, SendButton } from '@sponsorcoin/spcoin-panels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy = false, balanceText = 'Balance: 0', recipientBalanceText, sendDecimals = 18, sendBalanceRaw, sendHasRecipient = false, sendSymbol = '', onSendTokenClick, onRecipientClick, }) {
+export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy = false, 
+// 2026-10-27 (owner report) — "Balance: 0" as the default read live as a
+// real, confirmed zero while the real balance was still loading/not yet
+// supplied. 2026-10-28 (owner report, "wherever '...' is replace it with
+// this spinner") — MeritWallet.tsx (this prop's only real caller) computes
+// its balances via useFetchedBalance, which drops the `loading` flag
+// useFetchedBalanceState already tracks internally (unlike the web app's
+// useWalletTokenBalance, which keeps it) — exposing it through to a real
+// spinner here means widening that extension-side hook's return shape
+// first, out of scope for tonight's web-app sweep. Static "—" instead of
+// "…" at least stops claiming motion this prop can't actually show yet.
+balanceText = 'Balance: —', balanceTitle, recipientBalanceText, recipientBalanceTitle, sendDecimals = 18, sendBalanceRaw, sendHasRecipient = false, sendSymbol = '', onSendTokenClick, onRecipientClick, }) {
     return (
     // 2026-09-14, on request ("spacing between SEND_SELECT_PANEL,
     // SEND_ADDRESS_HEADER_BAR and SEND_BUTTON... not the case in the swap
@@ -41,5 +52,5 @@ export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTo
     // that file's own header comment; one shared source instead of a
     // separately hardcoded `4` in this file/TradingStationPanel.tsx/
     // SponsorshipPanel.tsx.
-    _jsxs("div", { style: panelBoxStyle.stack(PANEL_GAP), children: [_jsx(TabBodyMarker, { path: "SendTabPanel.tsx", build: PACKAGE_BUILD }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_SELECT_PANEL, children: _jsx(TradeAmountRow, { label: "You Send", tokenIcon: sendTokenIcon, tokenSymbol: sendTokenSymbol, tokenAddress: sendTokenAddress, balanceText: balanceText, onTokenPillClick: onSendTokenClick, amount: sendAmount, onAmountChange: onSendAmountChange, amountDisabled: submitBusy }) }), _jsx(TradeAmountRow, { label: "Recipient", emptyPillLabel: "Select Recipient", balanceText: recipientBalanceText, tokenIcon: recipientIcon, tokenSymbol: recipientSymbol, tokenAddress: recipientAddress, onTokenPillClick: onRecipientClick }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_BUTTON, children: _jsx(SendButton, { id: "SEND_BUTTON_ACTION", amount: sendAmount ?? '', decimals: sendDecimals, balanceRaw: sendBalanceRaw, hasRecipient: sendHasRecipient, symbol: sendSymbol, isPending: submitBusy, onSend: () => onSubmit?.() }) })] }));
+    _jsxs("div", { style: panelBoxStyle.stack(PANEL_GAP), children: [_jsx(TabBodyMarker, { path: "SendTabPanel.tsx", build: PACKAGE_BUILD }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_SELECT_PANEL, children: _jsx(TradeAmountRow, { label: "You Send", tokenIcon: sendTokenIcon, tokenSymbol: sendTokenSymbol, tokenAddress: sendTokenAddress, balanceText: balanceText, balanceTitle: balanceTitle, onTokenPillClick: onSendTokenClick, amount: sendAmount, onAmountChange: onSendAmountChange, amountDisabled: submitBusy }) }), _jsx(TradeAmountRow, { label: "Recipient", emptyPillLabel: "Select Recipient", balanceText: recipientBalanceText, balanceTitle: recipientBalanceTitle, tokenIcon: recipientIcon, tokenSymbol: recipientSymbol, tokenAddress: recipientAddress, onTokenPillClick: onRecipientClick }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_BUTTON, children: _jsx(SendButton, { id: "SEND_BUTTON_ACTION", amount: sendAmount ?? '', decimals: sendDecimals, balanceRaw: sendBalanceRaw, hasRecipient: sendHasRecipient, symbol: sendSymbol, isPending: submitBusy, onSend: () => onSubmit?.() }) })] }));
 }

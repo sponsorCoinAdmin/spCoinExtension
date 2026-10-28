@@ -36,7 +36,7 @@
 
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getAddress } from 'viem';
+import { getAddress, formatUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
@@ -64,6 +64,10 @@ import {
   panelTreeTrace,
   useDisplayStack,
   usePreviewTokenContract,
+  clampDisplay,
+  isIntermediateDecimal,
+  maxInputSz,
+  TYPING_GRACE_MS,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
@@ -1387,11 +1391,19 @@ function MeritWalletInner({
   const buyBalance = useFetchedBalance(fetchBalance, buyTokenContract?.address, activeBalanceAccount, refreshToken);
   const fetchedSellBalanceText = fetchedBalanceText(fetchBalance, sellBalance, sellTokenContract?.decimals ?? 18);
   const fetchedBuyBalanceText = fetchedBalanceText(fetchBalance, buyBalance, buyTokenContract?.decimals ?? 18);
+  // 2026-10-27 (owner report) — on-screen balance text stays plain
+  // "Balance: X"; the richer "${symbol} Balance: X" still shows on hover,
+  // via these separate *Title* variables (TradeAmountRow's own doc comment
+  // has the full reasoning).
+  const fetchedSellBalanceTitle = sellTokenContract?.symbol && fetchedSellBalanceText ? `${sellTokenContract.symbol} ${fetchedSellBalanceText}` : undefined;
+  const fetchedBuyBalanceTitle = buyTokenContract?.symbol && fetchedBuyBalanceText ? `${buyTokenContract.symbol} ${fetchedBuyBalanceText}` : undefined;
   // The Send button's text and readiness are the shared computeSendButton (spcoin-panels), the same rules and the same button the web app's Send tab uses.
   const sendDecimals = sendTokenEntry.decimals ?? 18;
   const sendHasRecipient = Boolean(selections.sendRecipient?.address);
   const sendBalanceText = fetchedBalanceText(fetchBalance, sendBalance, sendDecimals);
+  const sendBalanceTitle = sendTokenEntry.symbol && sendBalanceText ? `${sendTokenEntry.symbol} ${sendBalanceText}` : undefined;
   const recipientBalanceText = fetchedBalanceText(fetchBalance, recipientSendBalance, sendDecimals);
+  const recipientBalanceTitle = sendTokenEntry.symbol && recipientBalanceText ? `${sendTokenEntry.symbol} ${recipientBalanceText}` : undefined;
 
   // 2026-09-30, real bug fix (live report — "balanceOf... not working" /
   // "cannot type input in the Amount field" on the SWAP tab). Root cause:
@@ -1417,20 +1429,66 @@ function MeritWalletInner({
   // any not-yet-a-full-number input — never throws, never blocks typing.
   const [sellAmountText, setSellAmountText] = useState('');
   const [buyAmountText, setBuyAmountText] = useState('');
-  const [, setSellAmountContext] = useSellAmount();
-  const [, setBuyAmountContext] = useBuyAmount();
+  const [sellAmountContext, setSellAmountContext] = useSellAmount();
+  const [buyAmountContextValue, setBuyAmountContext] = useBuyAmount();
   const sellDecimals = sellTokenContract?.decimals ?? 18;
   const buyDecimals = buyTokenContract?.decimals ?? 18;
+  const sellTypingUntilRef = useRef(0);
+  const buyTypingUntilRef = useRef(0);
   const setSellAmount = (text: string) => {
+    sellTypingUntilRef.current = Date.now() + TYPING_GRACE_MS;
     setSellAmountText(text);
     const parsed = parseDecimalAmount(text, sellDecimals);
     if (parsed !== undefined) setSellAmountContext(parsed);
   };
   const setBuyAmount = (text: string) => {
+    buyTypingUntilRef.current = Date.now() + TYPING_GRACE_MS;
     setBuyAmountText(text);
     const parsed = parseDecimalAmount(text, buyDecimals);
     if (parsed !== undefined) setBuyAmountContext(parsed);
   };
+
+  // 2026-10-27 (owner report, live screenshot — Trace Log showed
+  // sellTokenContract.amount already back at 0 after a Uniswap swap
+  // succeeded, but the "You Exactly Pay" box kept showing the pre-swap
+  // amount) — root cause: both hooks above used to discard the live
+  // context value (`const [, setSellAmountContext] = useSellAmount()`),
+  // so an external reset (UniSelectPanelLayoutContainer's setSwapState,
+  // on swap success) updated the real ExchangeContext but this panel's own
+  // local sellAmountText/buyAmountText strings — the only thing the input
+  // actually renders — had no path back to it; they only ever got written
+  // by the user's own typing (setSellAmount/setBuyAmount above). Same
+  // resync-with-retry pattern as spcoin-panels' SellSelectPanelLayoutContainer.tsx
+  // (that file's own 2026-10-27 fix for the identical bug one layer down):
+  // a grace window protects an in-flight keystroke from being overwritten
+  // by a stale/concurrent context read, and a retryTick forces one more
+  // pass once that window closes instead of silently skipping forever.
+  const [sellRetryTick, setSellRetryTick] = useState(0);
+  const [buyRetryTick, setBuyRetryTick] = useState(0);
+
+  useEffect(() => {
+    if (isIntermediateDecimal(sellAmountText)) return undefined;
+    const remaining = sellTypingUntilRef.current - Date.now();
+    if (remaining > 0) {
+      const timer = setTimeout(() => setSellRetryTick((t) => t + 1), remaining);
+      return () => clearTimeout(timer);
+    }
+    const formatted = clampDisplay(formatUnits(sellAmountContext ?? 0n, sellDecimals), maxInputSz);
+    if (sellAmountText !== formatted) setSellAmountText(formatted);
+    return undefined;
+  }, [sellAmountContext, sellDecimals, sellAmountText, sellRetryTick]);
+
+  useEffect(() => {
+    if (isIntermediateDecimal(buyAmountText)) return undefined;
+    const remaining = buyTypingUntilRef.current - Date.now();
+    if (remaining > 0) {
+      const timer = setTimeout(() => setBuyRetryTick((t) => t + 1), remaining);
+      return () => clearTimeout(timer);
+    }
+    const formatted = clampDisplay(formatUnits(buyAmountContextValue ?? 0n, buyDecimals), maxInputSz);
+    if (buyAmountText !== formatted) setBuyAmountText(formatted);
+    return undefined;
+  }, [buyAmountContextValue, buyDecimals, buyAmountText, buyRetryTick]);
 
   // Real balance TEXT is a caller-supplied prop (sellBalanceText/
   // buyBalanceText on MeritWalletProps), NOT fetched here directly.
@@ -1768,6 +1826,13 @@ function MeritWalletInner({
           }));
           closeListOverlay();
         },
+        // 2026-10-27 (owner report) — missing here, unlike the sellToken/
+        // buyToken/sendToken block above: clicking a row's own logo/icon
+        // fell through to the list's default row-click (open the account's
+        // TOKEN_PANEL preview, "Select Preview Image") instead of committing
+        // the recipient and returning to the Send tab. Same affordance as
+        // every other picker in this function.
+        selectOnLogoClick: true,
       };
     }
     // account | network
@@ -1806,9 +1871,11 @@ function MeritWalletInner({
           sellAmount: sellAmountText,
           onSellAmountChange: setSellAmount,
           sellBalanceText: sellBalanceText ?? fetchedSellBalanceText,
+          sellBalanceTitle: fetchedSellBalanceTitle,
           buyAmount: buyAmountText,
           onBuyAmountChange: setBuyAmount,
           buyBalanceText: buyBalanceText ?? fetchedBuyBalanceText,
+          buyBalanceTitle: fetchedBuyBalanceTitle,
           // 2026-10-05 — the live, trade-direction-dependent buy
           // label ("You Receive ± 2.00%") and the slippage cog
           // toggle, see buyLabel/handleSlippageCog's own doc
@@ -1878,7 +1945,9 @@ function MeritWalletInner({
              sendSymbol: sendTokenEntry.symbol ?? '',
              submitBusy: sendBusy,
              balanceText: sendBalanceText,
+             balanceTitle: sendBalanceTitle,
              recipientBalanceText,
+             recipientBalanceTitle,
              // 2026-09-23, Stage 39 — resolve the real sendToken address +
              // decimals picked via the token list picker (see PickedEntry's
              // own decimals doc comment) and pass them, plus the amount, to
@@ -2644,7 +2713,25 @@ function MeritWalletInner({
                     }
                   : addFlowTop != null
                     ? () => closePanel(addFlowTop, 'NAV_POP:MeritWallet:addFlowBack')
-                    : activeListMode
+                    // 2026-10-28, real bug fix (live report, Test page:
+                    // "the down chevron points up" after Back from the
+                    // Sponsor tab's recipient list, and never reverts) —
+                    // activeListMode is null for a list opened directly
+                    // through openActiveListPanel rather than this
+                    // component's own setActiveList (RecipientSelectDropDown.tsx's
+                    // REMOTE_ACCOUNT_RECIPIENT_LIST among them — it only ever
+                    // recognizes its own 'account'/'network' fallback modes,
+                    // see this file's own activeListMode derivation comment),
+                    // so Back fell through to the generic stack-pop below,
+                    // which never calls closeActiveListPanel — the list's
+                    // flags stayed stuck true, and the chevron (which reads
+                    // REMOTE_ACCOUNT_RECIPIENT_LIST's own visibility) stayed
+                    // pointing up forever. activeChild (useActiveListPanelChild,
+                    // already this file's own single source of truth
+                    // elsewhere) covers all six ACTIVE_LIST_PANEL_MODES
+                    // members, not just two — same close action already
+                    // proven correct for account/network.
+                    : activeListMode || activeChild != null
                       ? () => setActiveList(null)
                       : () => closePanel('MeritWallet:back')
           }

@@ -20,8 +20,14 @@ export interface SendTabPanelProps {
     sendSymbol?: string;
     /** 2026-10-03 — "You Send" balance line (was hardcoded "Balance: 0"). The caller resolves it. */
     balanceText?: string;
+    /** 2026-10-27 (owner report) — the "You Send" row's balance hover title,
+     *  kept separate from `balanceText` (see TradeAmountRow's own doc
+     *  comment for the full reasoning). */
+    balanceTitle?: string;
     /** The Recipient row's balance line (the recipient's balance of the token being sent). */
     recipientBalanceText?: string;
+    /** Same split as balanceTitle, for the Recipient row. */
+    recipientBalanceTitle?: string;
     /** 2026-09-15, on request ("the Token/Account/NetworkSelectListDropdown
      *  chevrons [need] to be linked to the required panels") — same shape as
      *  ExchangeTradingPair.tsx's own onSellTokenClick/onBuyTokenClick, just
@@ -33,4 +39,4 @@ export interface SendTabPanelProps {
     onSendTokenClick?: (e: React.SyntheticEvent) => void;
     onRecipientClick?: (e: React.SyntheticEvent) => void;
 }
-export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy, balanceText, recipientBalanceText, sendDecimals, sendBalanceRaw, sendHasRecipient, sendSymbol, onSendTokenClick, onRecipientClick, }: SendTabPanelProps): React.JSX.Element;
+export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy, balanceText, balanceTitle, recipientBalanceText, recipientBalanceTitle, sendDecimals, sendBalanceRaw, sendHasRecipient, sendSymbol, onSendTokenClick, onRecipientClick, }: SendTabPanelProps): React.JSX.Element;

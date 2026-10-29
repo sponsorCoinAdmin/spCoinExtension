@@ -1518,8 +1518,24 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                     // the connect call returns. A failed connect already stayed
                     // open (so its banner is seen); now a successful one does too.
                     // The back arrow/X still close it explicitly.
+                    //
+                    // 2026-10-29 (owner report, live: "it should also close this
+                    // page to return to Add Sponsorship... the Recipient [list] can
+                    // be used as an example how Active Account should close its
+                    // panel") -- narrowed rather than reverting 2026-10-26 above: a
+                    // FAILED connect (result === false; ApproverController.connect's
+                    // own contract, see approverAccounts.ts) still leaves the list
+                    // open so its banner is seen, unchanged. A SUCCESSFUL connect
+                    // (no pending approval state to keep watching once it resolves
+                    // true) now closes again, matching every other pick-and-close
+                    // row in this app -- the Recipient list included, which already
+                    // worked this way and is what the owner pointed to as correct.
                     onSelect: () => {
-                        void onAccountRowSelect?.(account.id, group.id);
+                        void (async () => {
+                            const result = await onAccountRowSelect?.(account.id, group.id);
+                            if (result !== false)
+                                closeListOverlay();
+                        })();
                     },
                     onInfoClick: account.address
                         ? () => {

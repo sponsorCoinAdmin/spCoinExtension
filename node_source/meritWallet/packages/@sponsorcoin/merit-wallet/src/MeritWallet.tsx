@@ -87,7 +87,7 @@ import TokenPanel from './TokenPanel';
 // deleted 2026-10-02 — see this package's index.ts header for why a
 // second store let a tree toggle silently do nothing.
 import ConnectedMessagePanel from './ConnectedMessagePanel';
-import ApprovalResponder, { type ApprovalHost } from './approval/ApprovalResponder';
+import { useMeritApprovalMessagePanel, type ApprovalHost } from './approval/useMeritApprovalMessagePanel';
 import ConnectedRewardsPanel, { type RewardsHost, type RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
 import AddAccountFlow, { type AddAccountHost } from './account/AddAccountFlow';
 import TestAccountsSection, { type TestAccountsApi } from './TestAccountsSection';
@@ -908,6 +908,14 @@ function MeritWalletInner({
 
     setPanelVisible: setRealPanelVisible,
   } = usePanelTree();
+  // 2026-10-29, on request ("it should at least open in message panel [...]
+  // Yes, move it into Message Panel") — replaces <ApprovalResponder
+  // host={approvalHost} /> (see this file's own git history): same
+  // decision logic, but it publishes to every ConnectedMessagePanel
+  // instance via pendingApprovalMessageStore instead of rendering its own
+  // standalone backdrop over everything — see that hook's own doc comment
+  // for why this call's return value (void) isn't what wires it up.
+  useMeritApprovalMessagePanel(approvalHost);
   // 2026-10-23, owner investigation (docs/meritFixes.txt) — the sell/buy/
   // send token pickers now open through the SAME mechanism Group 2's
   // pickers (Sell/BuySelectPanelLayoutContainer.tsx, AgentSelectDropDown.tsx,
@@ -2864,8 +2872,9 @@ function MeritWalletInner({
           ⟨@sponsorcoin/merit-wallet/MeritWallet.tsx · build {PACKAGE_BUILD}⟩
         </div>
       )}
-      {/* The screen that answers a write's approval (Approve / Reject, the password when locked): the wallet draws it itself, the same in every app. */}
-      <ApprovalResponder host={approvalHost} />
+      {/* The screen that answers a write's approval (Approve / Reject, the password when locked) is
+          now MESSAGE_PANEL itself — useMeritApprovalMessagePanel(approvalHost) above drives it;
+          nothing renders here any more. */}
     </div>
     </ActiveAccountProfileContext.Provider>
     </WalletConnectProvider>

@@ -41,7 +41,7 @@ export { default as TokenAddressComponent, type TokenAddressComponentProps } fro
 export { errorPanelDisplayStore } from './errorPanelDisplayStore';
 export { default as MessageLabelValueRow, type MessageLabelValueRowProps } from './MessageLabelValueRow';
 export { default as MessageDetailsSection, type MessageDetailsSectionProps } from './MessageDetailsSection';
-export { default as MessagePanelReal, type MessagePanelRealProps } from './MessagePanelReal';
+export { default as MessagePanelReal, type MessagePanelRealProps, type MessagePanelPendingApproval } from './MessagePanelReal';
 export { default as TradingStationPanel } from './TradingStationPanel';
 export type { TradingStationPanelProps } from './TradingStationPanel';
 export { default as SendTabPanel } from './SendTabPanel';

@@ -54,7 +54,7 @@ import TokenPanel from './TokenPanel';
 // deleted 2026-10-02 — see this package's index.ts header for why a
 // second store let a tree toggle silently do nothing.
 import ConnectedMessagePanel from './ConnectedMessagePanel';
-import ApprovalResponder from './approval/ApprovalResponder';
+import { useMeritApprovalMessagePanel } from './approval/useMeritApprovalMessagePanel';
 import ConnectedRewardsPanel from './rewards/ConnectedRewardsPanel';
 import AddAccountFlow from './account/AddAccountFlow';
 import TestAccountsSection from './TestAccountsSection';
@@ -244,6 +244,14 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // than adding a second host component sidepanel.ts would need to
     // remember to mount.
     const { activeMainOverlay, openPanel, closePanel, setPanelVisible: setRealPanelVisible, } = usePanelTree();
+    // 2026-10-29, on request ("it should at least open in message panel [...]
+    // Yes, move it into Message Panel") — replaces <ApprovalResponder
+    // host={approvalHost} /> (see this file's own git history): same
+    // decision logic, but it publishes to every ConnectedMessagePanel
+    // instance via pendingApprovalMessageStore instead of rendering its own
+    // standalone backdrop over everything — see that hook's own doc comment
+    // for why this call's return value (void) isn't what wires it up.
+    useMeritApprovalMessagePanel(approvalHost);
     // 2026-10-23, owner investigation (docs/meritFixes.txt) — the sell/buy/
     // send token pickers now open through the SAME mechanism Group 2's
     // pickers (Sell/BuySelectPanelLayoutContainer.tsx, AgentSelectDropDown.tsx,
@@ -1914,7 +1922,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                         // proven correct for account/network.
                                                         : activeListMode || activeChild != null
                                                             ? () => setActiveList(null)
-                                                            : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: body })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] })), _jsx(ApprovalResponder, { host: approvalHost })] }) }) }) }));
+                                                            : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: body })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] }))] }) }) }) }));
 }
 let warnedNoAccountSource = false;
 /**

@@ -24,14 +24,78 @@ import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen } fro
 import { errorPanelDisplayStore } from './errorPanelDisplayStore';
 import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import MessageDetailsSection from './MessageDetailsSection';
-import { messagePanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 
+/**
+ * 2026-10-29, on request ("it should be in the Message panel" — the
+ * standalone Merit approval backdrop, ApprovalResponder.tsx, read as "out
+ * of character" for the app) — when a Merit-authorized write needs a
+ * person (a password, since "Mandatory Approval Required"'s own
+ * Approve/Reject click was retired 2026-09-07 — the password prompt IS the
+ * approval now), this panel shows the password field and Approve/Reject
+ * buttons itself instead of a second, separately-styled overlay sitting on
+ * top of everything. useMeritApprovalMessagePanel.ts (this package's own
+ * replacement for ApprovalResponder.tsx) is what builds this prop and
+ * drives it — see that hook's own doc comment for the full wiring.
+ */
+export interface MessagePanelPendingApproval {
+  requirePassword: boolean;
+  passwordError: string;
+  /** True once Approve has been clicked and the real write is in flight — disables both controls, Approve reads "Signing…". */
+  busy: boolean;
+  onApprove: (password?: string) => void;
+  onReject: () => void;
+}
 
 export interface MessagePanelRealProps {
   panelId?: SP_COIN_DISPLAY;
   errorMessage: ErrorMessage | undefined;
   renderAccountRow: (entry: MessageAccountEntry, index: number) => ReactNode;
   renderTokenRow: (entry: MessageTokenEntry, index: number) => ReactNode;
+  /** Present only while a Merit-authorized write is actually waiting on a person. */
+  pendingApproval?: MessagePanelPendingApproval | null;
+}
+
+/** The password field + Reject/Approve row — same shape/styling TransactionConfirmPanel.tsx's own password section uses (shared transactionConfirmPanelStyle tokens), kept local here rather than rendering that whole component a second time: this panel already shows the title/accounts/tokens/amount itself via MessageDetailsSection above, so only the decision controls are needed. */
+function ApprovalDecisionRow({ pendingApproval }: { pendingApproval: MessagePanelPendingApproval }) {
+  const { requirePassword, passwordError, busy, onApprove, onReject } = pendingApproval;
+  const [password, setPassword] = useState('');
+  const canApprove = !busy && (!requirePassword || password.length > 0);
+  return (
+    <div className={messagePanelClass.block}>
+      {requirePassword && (
+        <div style={transactionConfirmPanelStyle.div12}>
+          <input
+            type="password"
+            autoComplete="current-password"
+            aria-label="Wallet password"
+            placeholder="Merit Wallet password"
+            value={password}
+            disabled={busy}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && canApprove) onApprove(password);
+            }}
+            style={transactionConfirmPanelStyle.input}
+          />
+          {passwordError && <div style={transactionConfirmPanelStyle.div13}>{passwordError}</div>}
+        </div>
+      )}
+      <div style={transactionConfirmPanelStyle.div14}>
+        <button type="button" onClick={onReject} disabled={busy} style={transactionConfirmPanelStyle.button(busy)}>
+          Reject
+        </button>
+        <button
+          type="button"
+          onClick={() => onApprove(requirePassword ? password : undefined)}
+          disabled={!canApprove}
+          style={transactionConfirmPanelStyle.button2(canApprove)}
+        >
+          {busy ? 'Signing…' : 'Approve'}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function MessagePanelReal({
@@ -39,6 +103,7 @@ export default function MessagePanelReal({
   errorMessage,
   renderAccountRow,
   renderTokenRow,
+  pendingApproval,
 }: MessagePanelRealProps) {
   const visible = usePanelVisible(panelId);
   const { closePanel } = usePanelTree();
@@ -128,7 +193,15 @@ export default function MessagePanelReal({
             >
               {copyLabel}
             </SmallYellowButton>
-            <SmallYellowButton title="Close message" aria-label="Close message" onClick={() => closePanel(panelId, 'MessagePanel:close')}>
+            {/* pendingApproval: X rejects the write instead of a bare close — the hook that
+                opened this message (useMeritApprovalMessagePanel) keeps it open for as long
+                as a decision is outstanding, so a plain close would either leave the write's
+                own promise hanging forever or have the panel reopen itself right away. */}
+            <SmallYellowButton
+              title={pendingApproval ? 'Reject' : 'Close message'}
+              aria-label={pendingApproval ? 'Reject' : 'Close message'}
+              onClick={() => (pendingApproval ? pendingApproval.onReject() : closePanel(panelId, 'MessagePanel:close'))}
+            >
               X
             </SmallYellowButton>
           </div>
@@ -142,6 +215,8 @@ export default function MessagePanelReal({
         </div>
 
         <MessageDetailsSection errorMessage={errorMessage} renderAccountRow={renderAccountRow} renderTokenRow={renderTokenRow} />
+
+        {pendingApproval && <ApprovalDecisionRow pendingApproval={pendingApproval} />}
 
         {bodyTail && (
           <div className={messagePanelClass.block}>

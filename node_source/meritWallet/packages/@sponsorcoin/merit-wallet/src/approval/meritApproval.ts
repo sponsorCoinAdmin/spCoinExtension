@@ -236,7 +236,16 @@ export function requestMeritWriteApproval(
   }
   return new Promise<boolean>((resolve) => {
     currentRequest = { ...details, id: nextId++, phase: 'decide' };
-    engineTrace?.('meritApproval:requestMeritWriteApproval:opened', { id: currentRequest.id, label: currentRequest.label, signerAddress: currentRequest.signerAddress, background: currentRequest.background });
+    // 2026-10-29, TEMP DIAGNOSTIC (on request — "see where this popup is
+    // called and what are the conditions, dump the conditions") — isLocked/
+    // needsApproval/chainId are the three fields that actually decide
+    // whether ApprovalResponder shows a password field, and they were
+    // missing from this line even though every caller (getConnectedSigner.ts,
+    // browserVault.ts's createMeritApprovalBridge, StakeConfirmPopup.tsx)
+    // funnels through here — this is the one place that answers it for ANY
+    // caller, not just the one(s) already instrumented upstream. Remove once
+    // this is root-caused.
+    engineTrace?.('meritApproval:requestMeritWriteApproval:opened', { id: currentRequest.id, label: currentRequest.label, title: currentRequest.title, signerAddress: currentRequest.signerAddress, chainId: currentRequest.chainId, isLocked: currentRequest.isLocked, needsApproval: currentRequest.needsApproval, background: currentRequest.background });
     currentDecideResolve = resolve;
     notify();
   });

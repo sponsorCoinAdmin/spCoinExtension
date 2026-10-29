@@ -12,11 +12,12 @@
 'use client';
 
 import { messageRowStyle } from '@sponsorcoin/spcoin-common/styles';
-import React from 'react';
+import React, { useSyncExternalStore } from 'react';
 import type { MessageAccountEntry, MessageTokenEntry } from '@sponsorcoin/spcoin-common/context';
 import { useExchangeContext } from '@sponsorcoin/spcoin-exchange-engine';
 import { MessageAccountRow, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { MessagePanelReal } from './panels';
+import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageStore';
 
 /** The web app's MessageTokenRow, unchanged. */
 function DefaultTokenRow({ entry }: { entry: MessageTokenEntry }) {
@@ -41,11 +42,21 @@ export interface ConnectedMessagePanelProps {
 
 export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow }: ConnectedMessagePanelProps) {
   const { errorMessage } = useExchangeContext();
+  // 2026-10-29: present only while a Merit-authorized write is waiting on a person —
+  // useMeritApprovalMessagePanel.ts (mounted once in MeritWallet.tsx) publishes it here rather
+  // than as a prop, since this component is mounted in more than one place — see that store's own
+  // doc comment for why.
+  const pendingApproval = useSyncExternalStore(
+    pendingApprovalMessageStore.subscribe,
+    pendingApprovalMessageStore.getSnapshot,
+    pendingApprovalMessageStore.getServerSnapshot,
+  );
   return (
     <MessagePanelReal
       errorMessage={errorMessage}
       renderAccountRow={renderAccountRow ?? ((entry, i) => <MessageAccountRow key={`${entry.role}-${i}`} entry={entry} />)}
       renderTokenRow={renderTokenRow ?? ((entry, i) => <DefaultTokenRow key={`token-${i}`} entry={entry} />)}
+      pendingApproval={pendingApproval}
     />
   );
 }

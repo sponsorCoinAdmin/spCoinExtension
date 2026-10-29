@@ -95,8 +95,7 @@ export { connectAccount, disconnectAccount, ConnectChoiceRequired, type ConnectH
 export { createInjectedAuthenticator, translateProviderError, type InjectedProvider, type InjectedAuthenticatorOptions } from './auth/injectedAuthenticator';
 export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritApproval, resolveMeritApproval, requestReauthentication, clearSettledMeritApproval, } from './approval/meritApproval';
 export type { MeritApprovalRequest, MeritApprovalPhase } from './approval/meritApproval';
-export { default as ApprovalResponder } from './approval/ApprovalResponder';
-export type { ApprovalHost } from './approval/ApprovalResponder';
+export { useMeritApprovalMessagePanel, type ApprovalHost } from './approval/useMeritApprovalMessagePanel';
 export { buildApproverGroups, mergeWalletAccountEntries, createApproverController, connectNoticeText, type ApproverHost, type ApproverGroupsInput, type ApproverController } from './wallet/approverAccounts';
 export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet, type SignInParams } from './account/signIn';

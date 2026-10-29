@@ -7,7 +7,7 @@ import { type WalletDerivation } from './wallet/walletProps';
 import type { ApproverHost } from './wallet/approverAccounts';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
 import { type MenuTabKey, type MeritWalletNetworkRow } from './panels';
-import { type ApprovalHost } from './approval/ApprovalResponder';
+import { type ApprovalHost } from './approval/useMeritApprovalMessagePanel';
 import { type RewardsHost, type RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
 import { type AddAccountHost } from './account/AddAccountFlow';
 import { type TestAccountsApi } from './TestAccountsSection';

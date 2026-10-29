@@ -74,7 +74,10 @@ export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownW
 export { connectAccount, disconnectAccount, ConnectChoiceRequired } from './auth/connect';
 export { createInjectedAuthenticator, translateProviderError } from './auth/injectedAuthenticator';
 export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritApproval, resolveMeritApproval, requestReauthentication, clearSettledMeritApproval, } from './approval/meritApproval';
-export { default as ApprovalResponder } from './approval/ApprovalResponder';
+// 2026-10-29: ApprovalResponder (the standalone password/approval backdrop) is retired — a Merit
+// write needing a person now shows through MESSAGE_PANEL instead (see useMeritApprovalMessagePanel's
+// own doc comment). A host mounts that hook once, in place of the old <ApprovalResponder host=.../>.
+export { useMeritApprovalMessagePanel } from './approval/useMeritApprovalMessagePanel';
 export { buildApproverGroups, mergeWalletAccountEntries, createApproverController, connectNoticeText } from './wallet/approverAccounts';
 export { useApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet } from './account/signIn';

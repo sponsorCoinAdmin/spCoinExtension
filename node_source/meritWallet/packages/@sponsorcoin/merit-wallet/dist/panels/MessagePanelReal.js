@@ -23,8 +23,18 @@ import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen } fro
 import { errorPanelDisplayStore } from './errorPanelDisplayStore';
 import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import MessageDetailsSection from './MessageDetailsSection';
-import { messagePanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
-export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PANEL, errorMessage, renderAccountRow, renderTokenRow, }) {
+import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle } from '@sponsorcoin/spcoin-common/styles';
+/** The password field + Reject/Approve row — same shape/styling TransactionConfirmPanel.tsx's own password section uses (shared transactionConfirmPanelStyle tokens), kept local here rather than rendering that whole component a second time: this panel already shows the title/accounts/tokens/amount itself via MessageDetailsSection above, so only the decision controls are needed. */
+function ApprovalDecisionRow({ pendingApproval }) {
+    const { requirePassword, passwordError, busy, onApprove, onReject } = pendingApproval;
+    const [password, setPassword] = useState('');
+    const canApprove = !busy && (!requirePassword || password.length > 0);
+    return (_jsxs("div", { className: messagePanelClass.block, children: [requirePassword && (_jsxs("div", { style: transactionConfirmPanelStyle.div12, children: [_jsx("input", { type: "password", autoComplete: "current-password", "aria-label": "Wallet password", placeholder: "Merit Wallet password", value: password, disabled: busy, onChange: (e) => setPassword(e.target.value), onKeyDown: (e) => {
+                            if (e.key === 'Enter' && canApprove)
+                                onApprove(password);
+                        }, style: transactionConfirmPanelStyle.input }), passwordError && _jsx("div", { style: transactionConfirmPanelStyle.div13, children: passwordError })] })), _jsxs("div", { style: transactionConfirmPanelStyle.div14, children: [_jsx("button", { type: "button", onClick: onReject, disabled: busy, style: transactionConfirmPanelStyle.button(busy), children: "Reject" }), _jsx("button", { type: "button", onClick: () => onApprove(requirePassword ? password : undefined), disabled: !canApprove, style: transactionConfirmPanelStyle.button2(canApprove), children: busy ? 'Signing…' : 'Approve' })] })] }));
+}
+export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PANEL, errorMessage, renderAccountRow, renderTokenRow, pendingApproval, }) {
     const visible = usePanelVisible(panelId);
     const { closePanel } = usePanelTree();
     // 2026-10-06, on request — every message gets a Copy button and a close X in its top right.
@@ -85,5 +95,5 @@ export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PAN
                                             setCopyLabel('Copy Failed');
                                             setTimeout(() => setCopyLabel('Copy'), 1800);
                                         }
-                                    }, children: copyLabel }), _jsx(SmallYellowButton, { title: "Close message", "aria-label": "Close message", onClick: () => closePanel(panelId, 'MessagePanel:close'), children: "X" })] })] }), _jsxs("div", { ref: bodyRef, className: messagePanelClass.body, children: [_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : ''), children: bodyHead }) }), _jsx(MessageDetailsSection, { errorMessage: errorMessage, renderAccountRow: renderAccountRow, renderTokenRow: renderTokenRow }), bodyTail && (_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap), children: bodyTail }) })), hasSource && (_jsx("div", { className: messagePanelClass.source, children: errorMessage?.source && (_jsxs("div", { children: [_jsx("span", { className: messagePanelClass.sourceLabel, children: "Source:" }), " ", errorMessage.source] })) }))] })] }) }));
+                                    }, children: copyLabel }), _jsx(SmallYellowButton, { title: pendingApproval ? 'Reject' : 'Close message', "aria-label": pendingApproval ? 'Reject' : 'Close message', onClick: () => (pendingApproval ? pendingApproval.onReject() : closePanel(panelId, 'MessagePanel:close')), children: "X" })] })] }), _jsxs("div", { ref: bodyRef, className: messagePanelClass.body, children: [_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : ''), children: bodyHead }) }), _jsx(MessageDetailsSection, { errorMessage: errorMessage, renderAccountRow: renderAccountRow, renderTokenRow: renderTokenRow }), pendingApproval && _jsx(ApprovalDecisionRow, { pendingApproval: pendingApproval }), bodyTail && (_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap), children: bodyTail }) })), hasSource && (_jsx("div", { className: messagePanelClass.source, children: errorMessage?.source && (_jsxs("div", { children: [_jsx("span", { className: messagePanelClass.sourceLabel, children: "Source:" }), " ", errorMessage.source] })) }))] })] }) }));
 }

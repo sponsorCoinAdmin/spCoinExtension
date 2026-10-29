@@ -145,8 +145,10 @@ export {
   clearSettledMeritApproval,
 } from './approval/meritApproval';
 export type { MeritApprovalRequest, MeritApprovalPhase } from './approval/meritApproval';
-export { default as ApprovalResponder } from './approval/ApprovalResponder';
-export type { ApprovalHost } from './approval/ApprovalResponder';
+// 2026-10-29: ApprovalResponder (the standalone password/approval backdrop) is retired — a Merit
+// write needing a person now shows through MESSAGE_PANEL instead (see useMeritApprovalMessagePanel's
+// own doc comment). A host mounts that hook once, in place of the old <ApprovalResponder host=.../>.
+export { useMeritApprovalMessagePanel, type ApprovalHost } from './approval/useMeritApprovalMessagePanel';
 export { buildApproverGroups, mergeWalletAccountEntries, createApproverController, connectNoticeText, type ApproverHost, type ApproverGroupsInput, type ApproverController } from './wallet/approverAccounts';
 export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet, type SignInParams } from './account/signIn';

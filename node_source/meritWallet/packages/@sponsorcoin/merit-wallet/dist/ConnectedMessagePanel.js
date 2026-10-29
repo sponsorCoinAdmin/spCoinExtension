@@ -12,14 +12,21 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { messageRowStyle } from '@sponsorcoin/spcoin-common/styles';
+import { useSyncExternalStore } from 'react';
 import { useExchangeContext } from '@sponsorcoin/spcoin-exchange-engine';
 import { MessageAccountRow, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { MessagePanelReal } from './panels';
+import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageStore';
 /** The web app's MessageTokenRow, unchanged. */
 function DefaultTokenRow({ entry }) {
     return (_jsxs("div", { style: messageRowStyle.tokenColumn, children: [_jsxs("div", { style: messageRowStyle.line, children: [_jsx(TokenLogo, { tokenContract: entry.token, className: "", style: messageRowStyle.tokenLogo }), _jsxs("span", { style: messageRowStyle.label, children: [_jsxs("span", { style: messageRowStyle.role, children: [entry.label, ":"] }), ' ', [entry.token.symbol, entry.token.name].filter(Boolean).join(': ')] })] }), entry.detail && _jsx("div", { style: messageRowStyle.detail, children: entry.detail })] }));
 }
 export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow }) {
     const { errorMessage } = useExchangeContext();
-    return (_jsx(MessagePanelReal, { errorMessage: errorMessage, renderAccountRow: renderAccountRow ?? ((entry, i) => _jsx(MessageAccountRow, { entry: entry }, `${entry.role}-${i}`)), renderTokenRow: renderTokenRow ?? ((entry, i) => _jsx(DefaultTokenRow, { entry: entry }, `token-${i}`)) }));
+    // 2026-10-29: present only while a Merit-authorized write is waiting on a person —
+    // useMeritApprovalMessagePanel.ts (mounted once in MeritWallet.tsx) publishes it here rather
+    // than as a prop, since this component is mounted in more than one place — see that store's own
+    // doc comment for why.
+    const pendingApproval = useSyncExternalStore(pendingApprovalMessageStore.subscribe, pendingApprovalMessageStore.getSnapshot, pendingApprovalMessageStore.getServerSnapshot);
+    return (_jsx(MessagePanelReal, { errorMessage: errorMessage, renderAccountRow: renderAccountRow ?? ((entry, i) => _jsx(MessageAccountRow, { entry: entry }, `${entry.role}-${i}`)), renderTokenRow: renderTokenRow ?? ((entry, i) => _jsx(DefaultTokenRow, { entry: entry }, `token-${i}`)), pendingApproval: pendingApproval }));
 }

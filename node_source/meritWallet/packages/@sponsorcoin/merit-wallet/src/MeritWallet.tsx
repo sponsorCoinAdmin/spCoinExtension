@@ -2868,7 +2868,7 @@ function MeritWalletInner({
           this marker isn't rendered via that shared component, so it
           needs its own check. */}
       {SHOW_BUILD_MARKERS && (
-        <div style={walletFrameStyle.buildMarker}>
+        <div data-build-marker="" style={walletFrameStyle.buildMarker}>
           ⟨@sponsorcoin/merit-wallet/MeritWallet.tsx · build {PACKAGE_BUILD}⟩
         </div>
       )}

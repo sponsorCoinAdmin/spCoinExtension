@@ -41,6 +41,8 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
+import { plainSendStepStore, stepThroughApprovalStore } from '@sponsorcoin/spcoin-exchange-engine';
+import { StakeConfirmPopup } from '@sponsorcoin/spcoin-panels';
 import {
   usePanelTree,
   usePanelVisible,
@@ -100,7 +102,7 @@ import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';
 import WalletOnboardingPanel, { type WalletOnboardingPanelProps } from './WalletOnboardingPanel';
 import ConnectedSponsorStakingList, { type SponsorStakingHost } from './sponsor/ConnectedSponsorStakingList';
-import { buildSendReceipt, type HostTransactionResult } from './receipt/transactionReceipts';
+import { buildSendReceipt, toMessageAccount, type HostTransactionResult } from './receipt/transactionReceipts';
 import { isNativePlaceholder } from './send/sendTransfer';
 import { useTransactionReceipt } from './receipt/useTransactionReceipt';
 import { ActiveAccountProfileContext } from './swap/activeAccountProfile';
@@ -1342,6 +1344,74 @@ function MeritWalletInner({
     };
   }, [resolvedTokenRows, resolvedNetworkRows, nativeMeta]);
   const sendTokenEntry: PickedEntry = selections.sendToken ?? nativeSendEntry;
+  // 2026-10-30, on request ("animate the Send tab like you animated the Swap tab with the step tab on") - with the Steps checkbox checked the
+  // Send click opens the step popup (Confirm Send -> Send Complete, with the receipt behind a scroll) instead of sending at once. A plain
+  // transfer has no approve stage. The popup's state lives in plainSendStepStore (reading the receipt opens MESSAGE_PANEL).
+  const plainSend = React.useSyncExternalStore(plainSendStepStore.subscribe, plainSendStepStore.getSnapshot, plainSendStepStore.getServerSnapshot);
+  const sendRecipientProfile = {
+    address: selections.sendRecipient?.address,
+    name: selections.sendRecipient?.name,
+    symbol: selections.sendRecipient?.symbol,
+    logoURL: selections.sendRecipient?.iconSrc,
+  };
+  // The real send. deferReceipt: keep the success receipt for the popup's scroll instead of opening MESSAGE_PANEL; a failure always opens it.
+  const performSend = async (deferReceipt: boolean): Promise<boolean> => {
+    if (!onSendSubmit) return false;
+    const params = {
+      recipientAddress: selections.sendRecipient?.address,
+      tokenAddress: sendTokenEntry.address,
+      decimals: sendTokenEntry.decimals,
+      tokenSymbol: sendTokenEntry.symbol,
+      amount: sendAmount ?? '',
+    };
+    const result = await Promise.resolve(onSendSubmit(params));
+    if (!result) return false;
+    const receipt = buildSendReceipt({
+      result,
+      amount: params.amount,
+      tokenSymbol: params.tokenSymbol ?? '',
+      tokenAddress: isNativePlaceholder(params.tokenAddress) ? undefined : params.tokenAddress,
+      from: activeProfileRef.current,
+      to: sendRecipientProfile,
+    });
+    // A confirmed send clears the amount; a failed one leaves everything as it was.
+    if (result.ok) onSendAmountChange?.('');
+    if (deferReceipt && result.ok) {
+      plainSendStepStore.set({ receipt, phase: 'done' });
+      return true;
+    }
+    showReceipt(receipt, 'MeritWallet:send');
+    return result.ok;
+  };
+  const startSend = () => {
+    if (stepThroughApprovalStore.get()) {
+      plainSendStepStore.set({ open: true, phase: 'confirm', viewing: false, viewingSeen: false, receipt: null, scrollRead: false });
+      return;
+    }
+    void performSend(false);
+  };
+  const confirmSendStep = async () => {
+    if (plainSendStepStore.get().phase === 'confirm') {
+      const ok = await performSend(true);
+      if (!ok) plainSendStepStore.close(); // a failure has already opened its error receipt
+      return;
+    }
+    plainSendStepStore.close(); // done: the "Send Complete" button
+  };
+  const showSendStepReceipt = () => {
+    const saved = plainSendStepStore.get().receipt as Parameters<typeof showReceipt>[0] | null;
+    if (saved) showReceipt(saved, 'MeritWallet:send');
+    plainSendStepStore.set({ scrollRead: true, viewing: true, viewingSeen: false });
+  };
+  // Reading the receipt hides the popup until MESSAGE_PANEL closes again, then it comes back exactly as it was.
+  useEffect(() => {
+    if (!plainSend.viewing) return;
+    if (messageVisible) {
+      if (!plainSend.viewingSeen) plainSendStepStore.set({ viewingSeen: true });
+      return;
+    }
+    if (plainSend.viewingSeen) plainSendStepStore.set({ viewing: false, viewingSeen: false });
+  }, [plainSend.viewing, plainSend.viewingSeen, messageVisible]);
   // 2026-10-11 (row 13): a list the shared panels opened through the panel tree (pay token, recipient, agent); the host's listHost renders it.
   useApprovalMessagePanel();
   const panelTreeListOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL);
@@ -1968,33 +2038,7 @@ function MeritWalletInner({
              // `tsc`/`vite` verified in 2026-09-22 (no browser-automation
              // available), not live-driven. Native send omits tokenAddress;
              // an ERC20 send passes both.
-             onSubmit: onSendSubmit
-               ? () => {
-                   const params = {
-                     recipientAddress: selections.sendRecipient?.address,
-                     tokenAddress: sendTokenEntry.address,
-                     decimals: sendTokenEntry.decimals,
-                     tokenSymbol: sendTokenEntry.symbol,
-                     amount: sendAmount ?? '',
-                   };
-                   void Promise.resolve(onSendSubmit(params)).then((result) => {
-                     if (!result) return;
-                     showReceipt(
-                       buildSendReceipt({
-                         result,
-                         amount: params.amount,
-                         tokenSymbol: params.tokenSymbol ?? '',
-                         tokenAddress: isNativePlaceholder(params.tokenAddress) ? undefined : params.tokenAddress,
-                         from: activeProfileRef.current,
-                         to: { address: selections.sendRecipient?.address, name: selections.sendRecipient?.name, symbol: selections.sendRecipient?.symbol, logoURL: selections.sendRecipient?.iconSrc },
-                       }),
-                       'MeritWallet:send',
-                     );
-                     // A confirmed send clears the amount; a failed one leaves everything as it was.
-                     if (result.ok) onSendAmountChange?.('');
-                   });
-                 }
-               : undefined,
+             onSubmit: onSendSubmit ? startSend : undefined,
           })
         : activeTab === 'SPONSOR'
           ? React.createElement(ConnectedSponsorPanel, { host: tradeHost })
@@ -2867,6 +2911,25 @@ function MeritWalletInner({
           checks internally (see packageBuildTag.ts's own doc comment) —
           this marker isn't rendered via that shared component, so it
           needs its own check. */}
+      <StakeConfirmPopup
+        isOpen={plainSend.open && !plainSend.viewing}
+        mode="SPONSOR"
+        isSpCoin={false}
+        sendOnly
+        payTokenContract={{ address: sendTokenEntry.address ?? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', chainId, symbol: sendTokenEntry.symbol, name: sendTokenEntry.name, decimals: sendTokenEntry.decimals, logoURL: sendTokenEntry.iconSrc } as unknown as TokenContract}
+        activeAccount={toMessageAccount(activeProfileRef.current)}
+        recipientAccount={toMessageAccount(sendRecipientProfile)}
+        hasAgent={false}
+        swapReceiptReady={plainSend.phase === 'done'}
+        swapReceiptKept={plainSend.phase === 'done'}
+        swapScrollRead={plainSend.scrollRead}
+        onShowSwapReceipt={showSendStepReceipt}
+        onCancel={() => plainSendStepStore.close()}
+        onConfirm={() => {
+          void confirmSendStep();
+        }}
+        chainId={chainId}
+      />
       {SHOW_BUILD_MARKERS && (
         <div data-build-marker="" style={walletFrameStyle.buildMarker}>
           ⟨@sponsorcoin/merit-wallet/MeritWallet.tsx · build {PACKAGE_BUILD}⟩

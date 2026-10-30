@@ -38,6 +38,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAddress, formatUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
+import { plainSendStepStore, stepThroughApprovalStore } from '@sponsorcoin/spcoin-exchange-engine';
+import { StakeConfirmPopup } from '@sponsorcoin/spcoin-panels';
 import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, panelStore, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useEnforceRadioPanelContainers, useAgentAccount, useActiveAccount, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
@@ -65,7 +67,7 @@ import AccountDetailScreen from './account/AccountDetailScreen';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';
 import WalletOnboardingPanel from './WalletOnboardingPanel';
 import ConnectedSponsorStakingList from './sponsor/ConnectedSponsorStakingList';
-import { buildSendReceipt } from './receipt/transactionReceipts';
+import { buildSendReceipt, toMessageAccount } from './receipt/transactionReceipts';
 import { isNativePlaceholder } from './send/sendTransfer';
 import { useTransactionReceipt } from './receipt/useTransactionReceipt';
 import { ActiveAccountProfileContext } from './swap/activeAccountProfile';
@@ -650,6 +652,82 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         };
     }, [resolvedTokenRows, resolvedNetworkRows, nativeMeta]);
     const sendTokenEntry = selections.sendToken ?? nativeSendEntry;
+    // 2026-10-30, on request ("animate the Send tab like you animated the Swap tab with the step tab on") - with the Steps checkbox checked the
+    // Send click opens the step popup (Confirm Send -> Send Complete, with the receipt behind a scroll) instead of sending at once. A plain
+    // transfer has no approve stage. The popup's state lives in plainSendStepStore (reading the receipt opens MESSAGE_PANEL).
+    const plainSend = React.useSyncExternalStore(plainSendStepStore.subscribe, plainSendStepStore.getSnapshot, plainSendStepStore.getServerSnapshot);
+    const sendRecipientProfile = {
+        address: selections.sendRecipient?.address,
+        name: selections.sendRecipient?.name,
+        symbol: selections.sendRecipient?.symbol,
+        logoURL: selections.sendRecipient?.iconSrc,
+    };
+    // The real send. deferReceipt: keep the success receipt for the popup's scroll instead of opening MESSAGE_PANEL; a failure always opens it.
+    const performSend = async (deferReceipt) => {
+        if (!onSendSubmit)
+            return false;
+        const params = {
+            recipientAddress: selections.sendRecipient?.address,
+            tokenAddress: sendTokenEntry.address,
+            decimals: sendTokenEntry.decimals,
+            tokenSymbol: sendTokenEntry.symbol,
+            amount: sendAmount ?? '',
+        };
+        const result = await Promise.resolve(onSendSubmit(params));
+        if (!result)
+            return false;
+        const receipt = buildSendReceipt({
+            result,
+            amount: params.amount,
+            tokenSymbol: params.tokenSymbol ?? '',
+            tokenAddress: isNativePlaceholder(params.tokenAddress) ? undefined : params.tokenAddress,
+            from: activeProfileRef.current,
+            to: sendRecipientProfile,
+        });
+        // A confirmed send clears the amount; a failed one leaves everything as it was.
+        if (result.ok)
+            onSendAmountChange?.('');
+        if (deferReceipt && result.ok) {
+            plainSendStepStore.set({ receipt, phase: 'done' });
+            return true;
+        }
+        showReceipt(receipt, 'MeritWallet:send');
+        return result.ok;
+    };
+    const startSend = () => {
+        if (stepThroughApprovalStore.get()) {
+            plainSendStepStore.set({ open: true, phase: 'confirm', viewing: false, viewingSeen: false, receipt: null, scrollRead: false });
+            return;
+        }
+        void performSend(false);
+    };
+    const confirmSendStep = async () => {
+        if (plainSendStepStore.get().phase === 'confirm') {
+            const ok = await performSend(true);
+            if (!ok)
+                plainSendStepStore.close(); // a failure has already opened its error receipt
+            return;
+        }
+        plainSendStepStore.close(); // done: the "Send Complete" button
+    };
+    const showSendStepReceipt = () => {
+        const saved = plainSendStepStore.get().receipt;
+        if (saved)
+            showReceipt(saved, 'MeritWallet:send');
+        plainSendStepStore.set({ scrollRead: true, viewing: true, viewingSeen: false });
+    };
+    // Reading the receipt hides the popup until MESSAGE_PANEL closes again, then it comes back exactly as it was.
+    useEffect(() => {
+        if (!plainSend.viewing)
+            return;
+        if (messageVisible) {
+            if (!plainSend.viewingSeen)
+                plainSendStepStore.set({ viewingSeen: true });
+            return;
+        }
+        if (plainSend.viewingSeen)
+            plainSendStepStore.set({ viewing: false, viewingSeen: false });
+    }, [plainSend.viewing, plainSend.viewingSeen, messageVisible]);
     // 2026-10-11 (row 13): a list the shared panels opened through the panel tree (pay token, recipient, agent); the host's listHost renders it.
     useApprovalMessagePanel();
     const panelTreeListOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL);
@@ -1272,32 +1350,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 // `tsc`/`vite` verified in 2026-09-22 (no browser-automation
                 // available), not live-driven. Native send omits tokenAddress;
                 // an ERC20 send passes both.
-                onSubmit: onSendSubmit
-                    ? () => {
-                        const params = {
-                            recipientAddress: selections.sendRecipient?.address,
-                            tokenAddress: sendTokenEntry.address,
-                            decimals: sendTokenEntry.decimals,
-                            tokenSymbol: sendTokenEntry.symbol,
-                            amount: sendAmount ?? '',
-                        };
-                        void Promise.resolve(onSendSubmit(params)).then((result) => {
-                            if (!result)
-                                return;
-                            showReceipt(buildSendReceipt({
-                                result,
-                                amount: params.amount,
-                                tokenSymbol: params.tokenSymbol ?? '',
-                                tokenAddress: isNativePlaceholder(params.tokenAddress) ? undefined : params.tokenAddress,
-                                from: activeProfileRef.current,
-                                to: { address: selections.sendRecipient?.address, name: selections.sendRecipient?.name, symbol: selections.sendRecipient?.symbol, logoURL: selections.sendRecipient?.iconSrc },
-                            }), 'MeritWallet:send');
-                            // A confirmed send clears the amount; a failed one leaves everything as it was.
-                            if (result.ok)
-                                onSendAmountChange?.('');
-                        });
-                    }
-                    : undefined,
+                onSubmit: onSendSubmit ? startSend : undefined,
             })
             : activeTab === 'SPONSOR'
                 ? React.createElement(ConnectedSponsorPanel, { host: tradeHost })
@@ -1922,7 +1975,9 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                         // proven correct for account/network.
                                                         : activeListMode || activeChild != null
                                                             ? () => setActiveList(null)
-                                                            : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: body })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { "data-build-marker": "", style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] }))] }) }) }) }));
+                                                            : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: body })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), _jsx(StakeConfirmPopup, { isOpen: plainSend.open && !plainSend.viewing, mode: "SPONSOR", isSpCoin: false, sendOnly: true, payTokenContract: { address: sendTokenEntry.address ?? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', chainId, symbol: sendTokenEntry.symbol, name: sendTokenEntry.name, decimals: sendTokenEntry.decimals, logoURL: sendTokenEntry.iconSrc }, activeAccount: toMessageAccount(activeProfileRef.current), recipientAccount: toMessageAccount(sendRecipientProfile), hasAgent: false, swapReceiptReady: plainSend.phase === 'done', swapReceiptKept: plainSend.phase === 'done', swapScrollRead: plainSend.scrollRead, onShowSwapReceipt: showSendStepReceipt, onCancel: () => plainSendStepStore.close(), onConfirm: () => {
+                                void confirmSendStep();
+                            }, chainId: chainId }), SHOW_BUILD_MARKERS && (_jsxs("div", { "data-build-marker": "", style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] }))] }) }) }) }));
 }
 let warnedNoAccountSource = false;
 /**

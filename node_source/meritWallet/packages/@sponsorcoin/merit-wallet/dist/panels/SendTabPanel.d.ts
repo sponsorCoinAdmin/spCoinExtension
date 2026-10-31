@@ -28,6 +28,9 @@ export interface SendTabPanelProps {
     recipientBalanceText?: string;
     /** Same split as balanceTitle, for the Recipient row. */
     recipientBalanceTitle?: string;
+    /** A real spinner next to the balance line while its read has not resolved (TradeAmountRow's balanceLoading). */
+    balanceLoading?: boolean;
+    recipientBalanceLoading?: boolean;
     /** 2026-09-15, on request ("the Token/Account/NetworkSelectListDropdown
      *  chevrons [need] to be linked to the required panels") — same shape as
      *  ExchangeTradingPair.tsx's own onSellTokenClick/onBuyTokenClick, just
@@ -39,4 +42,4 @@ export interface SendTabPanelProps {
     onSendTokenClick?: (e: React.SyntheticEvent) => void;
     onRecipientClick?: (e: React.SyntheticEvent) => void;
 }
-export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy, balanceText, balanceTitle, recipientBalanceText, recipientBalanceTitle, sendDecimals, sendBalanceRaw, sendHasRecipient, sendSymbol, onSendTokenClick, onRecipientClick, }: SendTabPanelProps): React.JSX.Element;
+export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy, balanceText, balanceTitle, recipientBalanceText, recipientBalanceTitle, balanceLoading, recipientBalanceLoading, sendDecimals, sendBalanceRaw, sendHasRecipient, sendSymbol, onSendTokenClick, onRecipientClick, }: SendTabPanelProps): React.JSX.Element;

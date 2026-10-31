@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
-import { usePriceAPI } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePriceAPI, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { AccountAvatarWithOpen, ExchangeButtonController, StakeConfirmPopup, TradeButtonSlot } from '@sponsorcoin/spcoin-panels';
 
 type PopupProps = React.ComponentProps<typeof StakeConfirmPopup>;
@@ -41,17 +41,25 @@ export const noConfirmHost = (): StakeConfirmHostState => ({});
 
 export function ConfirmPopup({ popupProps, useConfirmHost }: { popupProps: PopupSlotProps; useConfirmHost: () => StakeConfirmHostState }) {
   const { onBeforeCancel, ...state } = useConfirmHost();
-  return (
+  const { viewing, ...stakePopupProps } = popupProps;
+  const cancel = () => {
+    onBeforeCancel?.();
+    popupProps.onCancel();
+  };
+  // 2026-10-30, on request ("do the same for Send and Sponsor") - the popup is drawn inside MESSAGE_PANEL. While a receipt is read
+  // (viewing) it is hidden but the flow is not over; closing the panel with its X cancels the flow.
+  const element = (
     <StakeConfirmPopup
-      {...popupProps}
+      {...stakePopupProps}
       {...state}
+      isOpen
+      inline
       renderAccountAvatar={({ account, title, style }) => <AccountAvatarWithOpen account={account} title={title} style={style} />}
-      onCancel={() => {
-        onBeforeCancel?.();
-        popupProps.onCancel();
-      }}
+      onCancel={cancel}
     />
   );
+  useStepPanel({ element, showing: popupProps.isOpen, over: !popupProps.isOpen && !viewing, onPanelClosed: cancel, invoker: 'tradeHost:sponsorStep' });
+  return null;
 }
 
 /** The Swap tab's trade button: the shared ExchangeButtonController (balance check, approve -> swap -> stake flow, the confirm popup) on the engine's price state, gated by its own panel-tree flag. */

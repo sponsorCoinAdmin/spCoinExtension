@@ -54,6 +54,9 @@ export interface SendTabPanelProps {
   recipientBalanceText?: string;
   /** Same split as balanceTitle, for the Recipient row. */
   recipientBalanceTitle?: string;
+  /** A real spinner next to the balance line while its read has not resolved (TradeAmountRow's balanceLoading). */
+  balanceLoading?: boolean;
+  recipientBalanceLoading?: boolean;
   /** 2026-09-15, on request ("the Token/Account/NetworkSelectListDropdown
    *  chevrons [need] to be linked to the required panels") — same shape as
    *  ExchangeTradingPair.tsx's own onSellTokenClick/onBuyTokenClick, just
@@ -91,6 +94,8 @@ export default function SendTabPanel({
   balanceTitle,
   recipientBalanceText,
   recipientBalanceTitle,
+  balanceLoading,
+  recipientBalanceLoading,
   sendDecimals = 18,
   sendBalanceRaw,
   sendHasRecipient = false,
@@ -133,13 +138,14 @@ export default function SendTabPanel({
         tokenAddress={sendTokenAddress}
         balanceText={balanceText}
         balanceTitle={balanceTitle}
+        balanceLoading={balanceLoading}
         onTokenPillClick={onSendTokenClick}
         amount={sendAmount}
         onAmountChange={onSendAmountChange}
         amountDisabled={submitBusy}
       />
       </PanelGate>
-      <TradeAmountRow label="Recipient" emptyPillLabel="Select Recipient" balanceText={recipientBalanceText} balanceTitle={recipientBalanceTitle} tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
+      <TradeAmountRow label="Recipient" emptyPillLabel="Select Recipient" balanceText={recipientBalanceText} balanceTitle={recipientBalanceTitle} balanceLoading={recipientBalanceLoading} tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
       <PanelGate panel={SP_COIN_DISPLAY.SEND_BUTTON}>
       {/* The shared SendButton (it turns into the Connect button while no account is active). */}
       <SendButton id="SEND_BUTTON_ACTION" amount={sendAmount ?? ''} decimals={sendDecimals} balanceRaw={sendBalanceRaw} hasRecipient={sendHasRecipient} symbol={sendSymbol} isPending={submitBusy} onSend={() => onSubmit?.()} />

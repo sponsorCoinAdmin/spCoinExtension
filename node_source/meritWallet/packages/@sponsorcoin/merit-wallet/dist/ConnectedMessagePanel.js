@@ -13,7 +13,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { messageRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useSyncExternalStore } from 'react';
-import { useExchangeContext } from '@sponsorcoin/spcoin-exchange-engine';
+import { useExchangeContext, stepPanelContentStore } from '@sponsorcoin/spcoin-exchange-engine';
 import { MessageAccountRow, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { MessagePanelReal } from './panels';
 import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageStore';
@@ -28,5 +28,10 @@ export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow
     // than as a prop, since this component is mounted in more than one place — see that store's own
     // doc comment for why.
     const pendingApproval = useSyncExternalStore(pendingApprovalMessageStore.subscribe, pendingApprovalMessageStore.getSnapshot, pendingApprovalMessageStore.getServerSnapshot);
+    // A step-through popup published for MESSAGE_PANEL (the Swap tab's Steps flow) replaces the normal message while it is up.
+    const stepContent = useSyncExternalStore(stepPanelContentStore.subscribe, stepPanelContentStore.getSnapshot, stepPanelContentStore.getServerSnapshot);
+    // A write waiting on a person (Approve / Reject, the password) always comes first: the step popup returns once it is answered.
+    if (stepContent && !pendingApproval)
+        return _jsx("div", { style: { padding: '0 8px 8px' }, children: stepContent });
     return (_jsx(MessagePanelReal, { errorMessage: errorMessage, renderAccountRow: renderAccountRow ?? ((entry, i) => _jsx(MessageAccountRow, { entry: entry }, `${entry.role}-${i}`)), renderTokenRow: renderTokenRow ?? ((entry, i) => _jsx(DefaultTokenRow, { entry: entry }, `token-${i}`)), pendingApproval: pendingApproval }));
 }

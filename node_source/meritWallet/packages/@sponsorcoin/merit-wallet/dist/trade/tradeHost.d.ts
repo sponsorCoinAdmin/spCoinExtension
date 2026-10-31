@@ -29,7 +29,7 @@ export declare const noConfirmHost: () => StakeConfirmHostState;
 export declare function ConfirmPopup({ popupProps, useConfirmHost }: {
     popupProps: PopupSlotProps;
     useConfirmHost: () => StakeConfirmHostState;
-}): React.JSX.Element;
+}): null;
 /** The Swap tab's trade button: the shared ExchangeButtonController (balance check, approve -> swap -> stake flow, the confirm popup) on the engine's price state, gated by its own panel-tree flag. */
 export declare function ConnectedTradeButton({ host }: {
     host?: TradeHost;

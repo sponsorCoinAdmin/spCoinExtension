@@ -14,7 +14,7 @@
 import { messageRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useSyncExternalStore } from 'react';
 import type { MessageAccountEntry, MessageTokenEntry } from '@sponsorcoin/spcoin-common/context';
-import { useExchangeContext } from '@sponsorcoin/spcoin-exchange-engine';
+import { useExchangeContext, stepPanelContentStore } from '@sponsorcoin/spcoin-exchange-engine';
 import { MessageAccountRow, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { MessagePanelReal } from './panels';
 import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageStore';
@@ -51,6 +51,10 @@ export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow
     pendingApprovalMessageStore.getSnapshot,
     pendingApprovalMessageStore.getServerSnapshot,
   );
+  // A step-through popup published for MESSAGE_PANEL (the Swap tab's Steps flow) replaces the normal message while it is up.
+  const stepContent = useSyncExternalStore(stepPanelContentStore.subscribe, stepPanelContentStore.getSnapshot, stepPanelContentStore.getServerSnapshot);
+  // A write waiting on a person (Approve / Reject, the password) always comes first: the step popup returns once it is answered.
+  if (stepContent && !pendingApproval) return <div style={{ padding: '0 8px 8px' }}>{stepContent as React.ReactNode}</div>;
   return (
     <MessagePanelReal
       errorMessage={errorMessage}

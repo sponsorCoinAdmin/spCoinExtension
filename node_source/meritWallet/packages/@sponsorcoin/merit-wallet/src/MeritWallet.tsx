@@ -41,7 +41,7 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
-import { plainSendStepStore, stepThroughApprovalStore } from '@sponsorcoin/spcoin-exchange-engine';
+import { engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { StakeConfirmPopup } from '@sponsorcoin/spcoin-panels';
 import {
   usePanelTree,
@@ -71,7 +71,7 @@ import {
   maxInputSz,
   TYPING_GRACE_MS,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalance, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
+import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, type MeritPlatform } from './platform/platform';
@@ -1027,6 +1027,12 @@ function MeritWalletInner({
   // into this component's own body at the same time; this one was missed.
   const meritInfoVisible = usePanelVisible(SP_COIN_DISPLAY.MERIT_INFO_PANEL);
   const messageVisible = usePanelVisible(SP_COIN_DISPLAY.MESSAGE_PANEL);
+  // A step-through popup (Swap / Send / Sponsor) is drawn in MESSAGE_PANEL: its stage heading is the PANEL_TITLE, and the tab body stays mounted.
+  const stepContentUp = React.useSyncExternalStore(stepPanelContentStore.subscribe, () => stepPanelContentStore.getSnapshot() != null, () => false) && messageVisible;
+  const stepTitle = React.useSyncExternalStore(stepPanelTitleStore.subscribe, stepPanelTitleStore.getSnapshot, stepPanelTitleStore.getServerSnapshot);
+  React.useEffect(() => {
+    engineTrace('MeritWallet:stepContent', { stepContentUp, messageVisible, stepTitle });
+  }, [stepContentUp, messageVisible, stepTitle]);
   // 2026-10-13: where the wallet asset files are served from, for the pill, the list and the panel alike (a host on another origin, the extension, passes the web app's address)
   if (walletAssetBaseUrl !== undefined) setWalletAssetBaseUrl(walletAssetBaseUrl); // set while rendering (an idempotent module setting), so the children's first render already reads it
   const walletPanelVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_PANEL);
@@ -1412,6 +1418,35 @@ function MeritWalletInner({
     }
     if (plainSend.viewingSeen) plainSendStepStore.set({ viewing: false, viewingSeen: false });
   }, [plainSend.viewing, plainSend.viewingSeen, messageVisible]);
+  const sendStepElement = (
+    <StakeConfirmPopup
+        isOpen
+        inline
+        mode="SPONSOR"
+        isSpCoin={false}
+        sendOnly
+        payTokenContract={{ address: sendTokenEntry.address ?? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', chainId, symbol: sendTokenEntry.symbol, name: sendTokenEntry.name, decimals: sendTokenEntry.decimals, logoURL: sendTokenEntry.iconSrc } as unknown as TokenContract}
+        activeAccount={toMessageAccount(activeProfileRef.current)}
+        recipientAccount={toMessageAccount(sendRecipientProfile)}
+        hasAgent={false}
+        swapReceiptReady={plainSend.phase === 'done'}
+        swapReceiptKept={plainSend.phase === 'done'}
+        swapScrollRead={plainSend.scrollRead}
+        onShowSwapReceipt={showSendStepReceipt}
+        onCancel={() => plainSendStepStore.close()}
+        onConfirm={() => {
+          void confirmSendStep();
+        }}
+        chainId={chainId}
+    />
+  );
+  useStepPanel({
+    element: sendStepElement,
+    showing: plainSend.open && !plainSend.viewing,
+    over: !plainSend.open,
+    onPanelClosed: () => plainSendStepStore.close(),
+    invoker: 'MeritWallet:sendStep',
+  });
   // 2026-10-11 (row 13): a list the shared panels opened through the panel tree (pay token, recipient, agent); the host's listHost renders it.
   useApprovalMessagePanel();
   const panelTreeListOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL);
@@ -1462,13 +1497,14 @@ function MeritWalletInner({
     () => ({ fetchBalance, accountAddress: activeBalanceAccount, refreshToken }),
     [fetchBalance, activeBalanceAccount, refreshToken],
   );
-  const sendBalance = useFetchedBalance(fetchBalance, sendTokenEntry.address, activeBalanceAccount, refreshToken);
+  const { balance: sendBalance, loading: sendBalanceLoading } = useFetchedBalanceResult(fetchBalance, sendTokenEntry.address, activeBalanceAccount, refreshToken);
   // The recipient's balance of the token being sent (the Recipient row's line, as in the web Send tab).
-  const recipientSendBalance = useFetchedBalance(fetchBalance, sendTokenEntry.address, selections.sendRecipient?.address, refreshToken);
-  const sellBalance = useFetchedBalance(fetchBalance, sellTokenContract?.address, activeBalanceAccount, refreshToken);
-  const buyBalance = useFetchedBalance(fetchBalance, buyTokenContract?.address, activeBalanceAccount, refreshToken);
-  const fetchedSellBalanceText = fetchedBalanceText(fetchBalance, sellBalance, sellTokenContract?.decimals ?? 18);
-  const fetchedBuyBalanceText = fetchedBalanceText(fetchBalance, buyBalance, buyTokenContract?.decimals ?? 18);
+  const { balance: recipientSendBalance, loading: recipientBalanceLoading } = useFetchedBalanceResult(fetchBalance, sendTokenEntry.address, selections.sendRecipient?.address, refreshToken);
+  const { balance: sellBalance, loading: sellBalanceLoading } = useFetchedBalanceResult(fetchBalance, sellTokenContract?.address, activeBalanceAccount, refreshToken);
+  const { balance: buyBalance, loading: buyBalanceLoading } = useFetchedBalanceResult(fetchBalance, buyTokenContract?.address, activeBalanceAccount, refreshToken);
+  // While a read is unresolved the text is just "Balance: " and the row shows a spinner (2026-10-30), instead of a bare "—".
+  const fetchedSellBalanceText = sellBalanceLoading ? 'Balance: ' : fetchedBalanceText(fetchBalance, sellBalance, sellTokenContract?.decimals ?? 18);
+  const fetchedBuyBalanceText = buyBalanceLoading ? 'Balance: ' : fetchedBalanceText(fetchBalance, buyBalance, buyTokenContract?.decimals ?? 18);
   // 2026-10-27 (owner report) — on-screen balance text stays plain
   // "Balance: X"; the richer "${symbol} Balance: X" still shows on hover,
   // via these separate *Title* variables (TradeAmountRow's own doc comment
@@ -1478,9 +1514,9 @@ function MeritWalletInner({
   // The Send button's text and readiness are the shared computeSendButton (spcoin-panels), the same rules and the same button the web app's Send tab uses.
   const sendDecimals = sendTokenEntry.decimals ?? 18;
   const sendHasRecipient = Boolean(selections.sendRecipient?.address);
-  const sendBalanceText = fetchedBalanceText(fetchBalance, sendBalance, sendDecimals);
+  const sendBalanceText = sendBalanceLoading ? 'Balance: ' : fetchedBalanceText(fetchBalance, sendBalance, sendDecimals);
   const sendBalanceTitle = sendTokenEntry.symbol && sendBalanceText ? `${sendTokenEntry.symbol} ${sendBalanceText}` : undefined;
-  const recipientBalanceText = fetchedBalanceText(fetchBalance, recipientSendBalance, sendDecimals);
+  const recipientBalanceText = recipientBalanceLoading ? 'Balance: ' : fetchedBalanceText(fetchBalance, recipientSendBalance, sendDecimals);
   const recipientBalanceTitle = sendTokenEntry.symbol && recipientBalanceText ? `${sendTokenEntry.symbol} ${recipientBalanceText}` : undefined;
 
   // 2026-09-30, real bug fix (live report — "balanceOf... not working" /
@@ -1950,10 +1986,12 @@ function MeritWalletInner({
           onSellAmountChange: setSellAmount,
           sellBalanceText: sellBalanceText ?? fetchedSellBalanceText,
           sellBalanceTitle: fetchedSellBalanceTitle,
+          sellBalanceLoading,
           buyAmount: buyAmountText,
           onBuyAmountChange: setBuyAmount,
           buyBalanceText: buyBalanceText ?? fetchedBuyBalanceText,
           buyBalanceTitle: fetchedBuyBalanceTitle,
+          buyBalanceLoading,
           // 2026-10-05 — the live, trade-direction-dependent buy
           // label ("You Receive ± 2.00%") and the slippage cog
           // toggle, see buyLabel/handleSlippageCog's own doc
@@ -2026,6 +2064,8 @@ function MeritWalletInner({
              balanceTitle: sendBalanceTitle,
              recipientBalanceText,
              recipientBalanceTitle,
+             balanceLoading: sendBalanceLoading,
+             recipientBalanceLoading,
              // 2026-09-23, Stage 39 — resolve the real sendToken address +
              // decimals picked via the token list picker (see PickedEntry's
              // own decimals doc comment) and pass them, plus the amount, to
@@ -2386,7 +2426,8 @@ function MeritWalletInner({
 
       // PanelGate's props type requires `children` as a prop, so createElement's children argument does not type-check here
       // eslint-disable-next-line react/no-children-prop
-      const gatedTabBody = React.createElement(PanelGate, { panel: TAB_PANEL_IDS[activeTab], children: tabBody });
+      // While a step popup is drawn in MESSAGE_PANEL the tab body stays mounted (hidden): the popup's flow (the Sponsor tab's confirm hook) lives in it.
+      const gatedTabBody = React.createElement(PanelGate, { panel: TAB_PANEL_IDS[activeTab], lazyLoad: !stepContentUp, children: tabBody });
 
   // 2026-10-10: the shared Add a Wallet/Account flow (the host's addAccountHost), shown over the wallet like the profile editor.
   // docs/meritMigration.txt row 19 (found by the deep walk, 2026-10-20, in BOTH apps): backing out of the Add a Wallet/Account screens left the tab's title over a BLANK body. "Add a Wallet" closes the account-list overlay and then opens the add flow, so when the flow is
@@ -2563,7 +2604,12 @@ function MeritWalletInner({
     listOverlay: listOverlay != null,
   });
   const body =
-    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? meritInfoOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (activeChild != null ? sharedListHost : null) ?? listOverlay ?? gatedTabBody;
+    messageOverlay ?? passwordOverlayWithReset ?? panelTreeOverlay ?? meritInfoOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (activeChild != null ? sharedListHost : null) ?? listOverlay ?? null;
+  // The tab body always sits in the SAME slot of one Fragment ([overlay, tab body]): while a step popup is drawn in MESSAGE_PANEL it stays there (hidden) beside
+  // the panel, so the popup's owner (the Sponsor trade button's confirm flow) is not unmounted by the panel opening. Switching between a bare element and a
+  // Fragment instead would remount the whole tab.
+  const showTabBody = body == null || (stepContentUp && body === messageOverlay);
+  const bodyWithTab = React.createElement(React.Fragment, null, body, showTabBody ? gatedTabBody : null);
 
   // Matches the real app's own per-tab titles (useActiveWalletPanelTitle.tsx,
   // its `sponsorshipPanelVisible`/`tradingTabVisible`/`sendTabVisible`/
@@ -2580,7 +2626,9 @@ function MeritWalletInner({
   // component already shows the state in PanelTitle; passwordMode drives both.
   // 2026-10-15 (owner request): "Select Software Wallet" / "Select Hardware Wallet" / "Select Wallet", by the list's two footer boxes
   const walletListScreenTitle = useWalletListTitle();
-  const panelTitle = passwordOverlay
+  const panelTitle = stepContentUp && stepTitle
+    ? stepTitle
+    : passwordOverlay
     ? passwordMode === 'setup' ? 'Create Account' : 'Account Login'
     : walletListLeafVisible
     ? walletListScreenTitle
@@ -2829,7 +2877,7 @@ function MeritWalletInner({
               <WalletSelectDropDownHosted walletId={pillWalletId} displayName={pillWalletId ? walletName(pillWalletId) : undefined} baseUrl={walletAssetBaseUrl} />
             </div>
           )}
-          <WalletRadioPanels>{body}</WalletRadioPanels>
+          <WalletRadioPanels>{bodyWithTab}</WalletRadioPanels>
         </MenuTabHeaderBar>
       </div>
       <WalletSessionDialogs dialog={sessionDialog} onClose={() => setSessionDialog(null)} session={walletSession} />
@@ -2911,25 +2959,6 @@ function MeritWalletInner({
           checks internally (see packageBuildTag.ts's own doc comment) —
           this marker isn't rendered via that shared component, so it
           needs its own check. */}
-      <StakeConfirmPopup
-        isOpen={plainSend.open && !plainSend.viewing}
-        mode="SPONSOR"
-        isSpCoin={false}
-        sendOnly
-        payTokenContract={{ address: sendTokenEntry.address ?? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', chainId, symbol: sendTokenEntry.symbol, name: sendTokenEntry.name, decimals: sendTokenEntry.decimals, logoURL: sendTokenEntry.iconSrc } as unknown as TokenContract}
-        activeAccount={toMessageAccount(activeProfileRef.current)}
-        recipientAccount={toMessageAccount(sendRecipientProfile)}
-        hasAgent={false}
-        swapReceiptReady={plainSend.phase === 'done'}
-        swapReceiptKept={plainSend.phase === 'done'}
-        swapScrollRead={plainSend.scrollRead}
-        onShowSwapReceipt={showSendStepReceipt}
-        onCancel={() => plainSendStepStore.close()}
-        onConfirm={() => {
-          void confirmSendStep();
-        }}
-        chainId={chainId}
-      />
       {SHOW_BUILD_MARKERS && (
         <div data-build-marker="" style={walletFrameStyle.buildMarker}>
           ⟨@sponsorcoin/merit-wallet/MeritWallet.tsx · build {PACKAGE_BUILD}⟩

@@ -6,7 +6,7 @@
 'use client';
 
 import { formKitStyle } from '@sponsorcoin/spcoin-common/styles';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from './vault/walletAccounts';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';

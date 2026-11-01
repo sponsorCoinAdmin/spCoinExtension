@@ -1,4 +1,3 @@
-import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 interface Props {
     panelGateId?: SP_COIN_DISPLAY | null;
@@ -7,5 +6,5 @@ interface Props {
     /** Accepted and ignored, so existing callers do not change. */
     collapseKey?: unknown;
 }
-export default function AgentSelectDropDownWithAvatar({ panelGateId, label, addrPrePostSize }: Props): React.JSX.Element;
+export default function AgentSelectDropDownWithAvatar({ panelGateId, label, addrPrePostSize }: Props): import("react").JSX.Element;
 export {};

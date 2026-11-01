@@ -11,7 +11,7 @@
 'use client';
 
 import { detailPanelStyle, formKitStyle, vaultAccountsStyle } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { privateKeyToAccount } from 'viem/accounts';
 import { AddWalletAccountButton, ImportAccountForm } from '@sponsorcoin/spcoin-panels';
 import { useCopyFeedback } from './platform/useCopyFeedback';

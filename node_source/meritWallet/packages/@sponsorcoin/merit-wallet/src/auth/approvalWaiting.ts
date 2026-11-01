@@ -37,10 +37,12 @@ export interface ApprovalWaitingStore {
   getOutcome(): ApprovalOutcome | undefined;
   /** Register one open request; call the returned function when it ends: with nothing when it was approved, with the error when it was refused or failed. */
   begin(entry: Omit<ApprovalWaiting, 'id' | 'startedAt'>): (error?: unknown) => void;
+  /** The wallet has the request on its own screen: its open requests stop being listed as "waiting" (they stay open and still report how they end). */
+  markPresented(authenticatorId: string): void;
 }
 
 /** How long the "did not approve" line stays. */
-export const APPROVAL_OUTCOME_MS = 10_000;
+const APPROVAL_OUTCOME_MS = 10_000;
 
 export function createApprovalWaitingStore(now: () => number = Date.now, outcomeMs: number = APPROVAL_OUTCOME_MS): ApprovalWaitingStore {
   let state: readonly ApprovalWaiting[] = [];
@@ -65,6 +67,10 @@ export function createApprovalWaitingStore(now: () => number = Date.now, outcome
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
+    },
+    markPresented(authenticatorId) {
+      if (!state.some((e) => e.authenticatorId === authenticatorId && !e.silent)) return;
+      set(state.map((e) => (e.authenticatorId === authenticatorId ? { ...e, silent: true } : e)));
     },
     begin(entry) {
       const id = nextId++;
@@ -110,6 +116,11 @@ export function approvalWaitingText(all: readonly ApprovalWaiting[]): string {
 export function withApprovalNotice(authenticator: Authenticator, store: ApprovalWaitingStore = approvalWaiting, options: { showWaiting?: boolean } = {}): Authenticator {
   const track = async <T>(action: ApprovalAction, run: () => Promise<T>): Promise<T> => {
     const end = store.begin({ authenticatorId: authenticator.id, label: authenticatorName(authenticator), action, silent: options.showWaiting === false });
+    // 2026-11-01 (owner report: the wallet connect notice stayed up while the extension's account selector was open): once the wallet shows the request on its own screen the notice closes. Subscribed per request, when the provider is surely there.
+    const off = authenticator.onChange?.((change) => {
+      if (change !== 'requestPresented') return;
+      store.markPresented(authenticator.id);
+    });
     try {
       const result = await run();
       end();
@@ -117,6 +128,8 @@ export function withApprovalNotice(authenticator: Authenticator, store: Approval
     } catch (error) {
       end(error ?? 'the request failed');
       throw error;
+    } finally {
+      off?.();
     }
   };
   const wrapped: Authenticator = Object.create(authenticator);

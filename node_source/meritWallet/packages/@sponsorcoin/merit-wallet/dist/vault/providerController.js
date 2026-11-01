@@ -113,11 +113,16 @@ export class ProviderController {
                 return hexChain(await this.o.getChainId());
             case 'net_version':
                 return String(await this.o.getChainId());
+            // 2026-11-01 (owner: wallet-level "connected" means logged on, nothing more): whether the wallet is unlocked, readable by any page without a prompt and without revealing an account
+            case 'merit_isUnlocked':
+                return this.o.session.isUnlocked();
             case 'eth_accounts':
                 return this.visibleAccounts(origin);
             case 'eth_requestAccounts':
-            case 'wallet_requestPermissions':
                 return this.requestAccounts(origin);
+            // 2026-10-31: like MetaMask, wallet_requestPermissions always asks again (the person changes which accounts the site sees); eth_requestAccounts asks only when the site has none yet
+            case 'wallet_requestPermissions':
+                return this.requestAccounts(origin, true);
             case 'wallet_getPermissions':
                 return (await this.visibleAccounts(origin)).length ? [{ parentCapability: 'eth_accounts', invoker: origin, caveats: [] }] : [];
             case 'wallet_revokePermissions':
@@ -204,29 +209,53 @@ export class ProviderController {
                 throw new ProviderRpcError(PROVIDER_ERROR.methodNotFound, `The method ${method} is not supported.`);
         }
     }
-    requestAccounts(origin) {
+    requestAccounts(origin, force = false) {
         const open = this.pendingConnects.get(origin);
         if (open)
             return open;
-        const started = this.requestAccountsOnce(origin).finally(() => this.pendingConnects.delete(origin));
+        const started = this.requestAccountsOnce(origin, force).finally(() => this.pendingConnects.delete(origin));
         this.pendingConnects.set(origin, started);
         return started;
     }
-    async requestAccountsOnce(origin) {
+    async requestAccountsOnce(origin, force = false) {
         const already = await this.visibleAccounts(origin);
-        if (already.length)
+        if (already.length && !force)
             return already;
         // The user picks: approving connects the account that is active in the wallet.
-        const granted = await this.o.approvals.request({ kind: 'connect', origin, summary: `${origin} wants to connect to your wallet`, details: { origin } }, async () => {
+        const granted = await this.o.approvals.request({ kind: 'connect', origin, summary: `${origin} wants to connect to your wallet`, details: { origin } }, async (input) => {
             if (!this.o.session.isUnlocked())
                 throw Object.assign(new Error('The wallet is locked.'), { name: 'VaultLockedError' });
             const active = this.o.accounts.activeAddress();
             if (!active)
                 throw new ProviderRpcError(PROVIDER_ERROR.unauthorized, 'The wallet has no account.');
-            await this.o.permissions.set(origin, [active]);
-            return [active];
+            // 2026-10-31: the person chooses which accounts the site sees (the wallet's account list opened by the site); no choice given: the active account, as before
+            const chosen = input?.accounts;
+            const inWallet = this.o.accounts.list().map((a) => a.address);
+            const picked = Array.isArray(chosen) ? chosen.filter((a) => typeof a === 'string' && inWallet.some((w) => lower(w) === lower(a))) : [];
+            const granted = picked.length ? picked : [active];
+            await this.o.permissions.set(origin, granted);
+            return granted;
         });
         return granted;
+    }
+    /** 2026-11-01: the wallet was locked or unlocked: tell every page (not only the connected ones), so a page's "Connected" for this wallet follows the login. */
+    notifyLockChanged() {
+        this.emit({ event: 'merit_unlockedChanged', data: this.o.session.isUnlocked() });
+    }
+    /** 2026-11-01: this site's open request is now on the wallet's own screen: tell the page ONCE, so its "waiting for the wallet" notice can close (the request itself stays open until the person decides). */
+    notifyRequestPresented(origin) {
+        this.o.log?.(`request-presented sent to ${origin}`);
+        this.emit({ origin, event: 'merit_requestPresented', data: null });
+    }
+    /** 2026-10-31 (owner design: connect live from the account selector): the person changes which accounts a site sees, after the site's connect was approved. No accounts left = the site is disconnected. */
+    async setSiteAccounts(origin, accounts) {
+        const inWallet = this.o.accounts.list().map((a) => a.address);
+        const kept = accounts.filter((a) => inWallet.some((w) => lower(w) === lower(a)));
+        if (kept.length)
+            await this.o.permissions.set(origin, kept);
+        else
+            await this.o.permissions.remove(origin);
+        this.emit({ origin, event: 'accountsChanged', data: await this.visibleAccounts(origin) });
     }
     /** The user (or a page) moved the wallet to another network: tell every connected page. */
     async setChain(chainId) {

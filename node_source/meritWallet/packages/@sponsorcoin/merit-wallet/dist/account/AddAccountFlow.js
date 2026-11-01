@@ -6,12 +6,14 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
 import { usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
 import { AddWalletMenu, ConnectMetaMaskLeaf, HardwareDeviceMenu, ImportAccountForm, ImportWalletForm, WalletListPanel, useAddWalletFlow } from '@sponsorcoin/spcoin-panels';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
 import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
+import { WALLET_SLUG_ID } from '../wallet/walletSlugs';
+import { approvalWaiting } from '../auth/approvalWaiting';
 import { addEntryReasons, readAddTargets } from '../wallet/addTarget';
 import { WalletSelectDropDown, WALLET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 /** What a disabled connect row says when the host gave no reason of its own. */
@@ -25,7 +27,6 @@ export const CONNECT_SOFT_WAIT_MS = 60000;
 const EMPTY_PROFILE = { name: '', symbol: '', description: '', logo: null };
 const KEY_FORMAT = /^0x[0-9a-fA-F]{64}$/;
 /** The wallets the wallet list offers (WALLET_LIST_SELECT_PANEL), by asset folder, and the authenticator each one is. */
-const WALLET_SLUG_ID = { merit: 'serverKeystore', meritExtension: 'injected:org.sponsorcoin.merit', metamask: 'injected:io.metamask', ledger: 'hardware:ledger', trezor: 'hardware:trezor' };
 /** The list row of the wallet THIS host is: always connected, nothing to connect or disconnect from it. */
 const nativeSlugOf = (nativeWalletId) => (nativeWalletId === 'serverKeystore' ? 'merit' : nativeWalletId === 'localVault' ? 'meritExtension' : undefined);
 export default function AddAccountFlow({ host, onDone, wallet, activeAddress, nativeWalletId, walletConnection, onDisconnectWallet }) {
@@ -55,6 +56,10 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     const [connecting, setConnecting] = useState(false);
     const [waitingLong, setWaitingLong] = useState(false);
     const connectRunning = useRef(false);
+    // 2026-11-01 (owner: "it should not say Connecting to Merit (Extension) as we are finished with that"): the wallet-level connect is done when the other wallet has the request on its own screen (approvalWaiting.markPresented). This screen
+    // then leaves, back to the wallet list; the open request goes on in the background (the person picks the accounts in the other wallet) and its end is reported by the approval notice.
+    const waitingRequests = useSyncExternalStore(approvalWaiting.subscribe, approvalWaiting.getState, approvalWaiting.getState);
+    const dismissedEarly = useRef(false);
     /** Ends the wait that is running (Cancel); null when none runs. */
     const connectStop = useRef(null);
     const attemptConnect = (entry, leaf) => {
@@ -80,17 +85,33 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
             connectRunning.current = false;
             setWaitingLong(false);
             setConnecting(false);
-            if (connected) {
+            const leftEarly = dismissedEarly.current;
+            dismissedEarly.current = false;
+            if (connected && !leftEarly) {
                 // the effect below shows the wallet list again once the screen is gone
                 closePanel(leaf, 'AddAccountFlow:connected');
             }
         })();
     };
+    const presentedId = connectEntry === 'connectMeritExtension' ? 'injected:org.sponsorcoin.merit' : undefined;
+    const requestPresented = !!presentedId && connecting && waitingRequests.some((e) => e.action === 'connect' && e.silent && e.authenticatorId === presentedId);
+    useEffect(() => {
+        if (!requestPresented || dismissedEarly.current)
+            return;
+        dismissedEarly.current = true;
+        closePanel(connectLeaf, 'AddAccountFlow:presented');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [requestPresented]);
     const startedEntry = useRef(undefined);
     /** The connect screen was opened from the wallet list: wherever it closes (Cancel, Back, connected), the list is what shows next. The stack's own restore does not always bring it back. */
     const returnToList = useRef(false);
     useEffect(() => {
         if (!connectEntry) {
+            // the screen is gone while its connect still waits (the back arrow): end it here and in the other wallet, unless the other wallet already has it on its own screen (dismissedEarly: it goes on in the background)
+            if (connectRunning.current && !dismissedEarly.current && startedEntry.current) {
+                host.cancelConnect?.(startedEntry.current);
+                connectStop.current?.();
+            }
             startedEntry.current = undefined;
             if (returnToList.current) {
                 returnToList.current = false;
@@ -204,15 +225,21 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     };
     // The wallet list (WALLET_LIST_SELECT_PANEL, opened from the wallet pill): one row per wallet with Connect / Disconnect, written once here for every host. The web app's Merit wallet row is not offered by a host that is not the web app.
     const nativeSlug = nativeSlugOf(nativeWalletId);
-    const walletSlugs = Object.keys(WALLET_SLUG_ID).filter((slug) => !(slug === 'merit' && nativeWalletId && nativeWalletId !== 'serverKeystore'));
+    // 2026-10-31 (owner question): every wallet is listed in every host, Merit (Web App) in the extension too (it used to be hidden there, which made the two lists differ)
+    const walletSlugs = Object.keys(WALLET_SLUG_ID);
     const connection = {};
     for (const slug of walletSlugs)
         connection[slug] = slug === nativeSlug ? true : !!walletConnection?.[slug];
+    // 2026-11-01 (owner: "it takes a long time, it should throb while disconnecting"): a disconnect under way is marked on its row until it ends (or 10 s, whichever is first)
+    const [disconnecting, setDisconnecting] = useState({});
     const toggleWallet = (slug) => {
         if (slug === nativeSlug)
             return;
         if (connection[slug]) {
-            onDisconnectWallet?.(slug);
+            setDisconnecting((d) => ({ ...d, [slug]: true }));
+            const done = () => setDisconnecting((d) => ({ ...d, [slug]: false }));
+            const timer = setTimeout(done, 10000);
+            void Promise.resolve(onDisconnectWallet?.(slug)).catch(() => undefined).finally(() => { clearTimeout(timer); done(); });
             return;
         }
         // in the click itself (a browser lets an extension open its side panel only in answer to one), then the connect screen pushed above the wallet list
@@ -224,6 +251,10 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
             host.bringWalletForward?.('connectMeritExtension');
             returnToList.current = true;
             openPanel(SP.CONNECT_MERIT_EXTENSION, 'AddAccountFlow:walletList:connectMeritExtension');
+        }
+        else if (slug === 'merit') {
+            // the web app's dev keystore lives on its server: a host that is not the web app has no way to reach it yet
+            setError('Connecting Merit (Web App) from here is not available yet.');
         }
         else if (slug === 'ledger' || slug === 'trezor') {
             if (host.connectHardwareDevice)
@@ -240,7 +271,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     };
     return (_jsxs("div", { style: addAccountStyle.screen, children: [menuVisible && target && (_jsxs("div", { style: addAccountStyle.targetLine, children: [_jsx("span", { children: "Adding to" }), targets.length > 1 ? (_jsxs("div", { style: addAccountStyle.targetPickerAnchor, children: [_jsx(WalletSelectDropDown, { walletId: target.id, displayName: target.name, showDisplay: WALLET_SELECT_DISPLAY.ICON | WALLET_SELECT_DISPLAY.ADDRESS | WALLET_SELECT_DISPLAY.COPY | (targetPickerOpen ? WALLET_SELECT_DISPLAY.CHEVRON_UP : WALLET_SELECT_DISPLAY.CHEVRON_DN), restrictRowClickToChevron: true, onSelectClick: () => setTargetPickerOpen((open) => !open), label: "Change wallet", collapseKey: target.id }), targetPickerOpen && (_jsx("div", { role: "listbox", "aria-label": "Wallets that can add accounts", style: addAccountStyle.targetPickerList, children: targets.map((option) => (_jsx("button", { type: "button", role: "option", "aria-selected": option.id === target.id, onClick: () => { setPickedTarget(option.id); setTargetPickerOpen(false); }, style: addAccountStyle.targetOption(option.id === target.id), children: option.name }, option.id))) }))] })) : _jsx("strong", { style: addAccountStyle.targetName, children: target.name })] })), menuVisible && (_jsx(AddWalletMenu, { onImportWallet: open('importWallet', SP.IMPORT_A_WALLET), onImportAccount: open('importAccount', SP.IMPORT_AN_ACCOUNT), onCreateAccount: open('createAccount', SP.CREATE_ACCOUNT), onConnectMetaMask: connect('connectMetaMask'), onConnectMeritExtension: host.connectApprover ? connect('connectMeritExtension') : undefined, onConnectHardware: openHardware, 
                 // like the web app: connecting MetaMask, the Merit extension and a hardware wallet is done from the wallet list (the pill's chevron), not from this menu
-                hide: { connectMetaMask: true, connectMeritExtension: true, connectHardware: true }, unavailable: unavailable, error: error })), flow.walletListVisible && (_jsx(WalletListPanel, { onSelect: () => undefined, wallets: walletSlugs, connection: connection, onToggleConnection: toggleWallet })), connectEntry && (_jsx(ConnectMetaMaskLeaf, { walletName: connectEntry === 'connectMetaMask' ? 'MetaMask' : 'Merit Extension', isConnecting: connecting, message: error, onRetry: () => attemptConnect(connectEntry, connectLeaf), waitingLong: waitingLong, onBringForward: host.bringWalletForward ? () => host.bringWalletForward(connectEntry) : undefined, onCancel: () => {
+                hide: { connectMetaMask: true, connectMeritExtension: true, connectHardware: true }, unavailable: unavailable, error: error })), flow.walletListVisible && (_jsx(WalletListPanel, { onSelect: () => undefined, wallets: walletSlugs, connection: connection, busy: disconnecting, onToggleConnection: toggleWallet })), connectEntry && (_jsx(ConnectMetaMaskLeaf, { walletName: connectEntry === 'connectMetaMask' ? 'MetaMask' : 'Merit (Extension)', isConnecting: connecting, message: error, onRetry: () => attemptConnect(connectEntry, connectLeaf), waitingLong: waitingLong, onBringForward: host.bringWalletForward ? () => host.bringWalletForward(connectEntry) : undefined, onCancel: () => {
                     host.cancelConnect?.(connectEntry);
                     connectStop.current?.();
                     closePanel(connectLeaf, 'AddAccountFlow:connectCancelled');

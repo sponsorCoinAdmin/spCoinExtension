@@ -111,17 +111,21 @@ export function createInjectedAuthenticator({ id, label, displayName, badge, ico
             let cancelled = false;
             const accountsChanged = () => listener('accountsChanged');
             const chainChanged = () => listener('chainChanged');
+            // 2026-11-01: the wallet took the page's open request and showed it to the person (its own screen is up): the page's "waiting" notice has done its job
+            const requestPresented = () => listener('requestPresented');
             void Promise.resolve(getProvider()).then((p) => {
                 if (cancelled || !p)
                     return;
                 provider = p;
                 p.on?.('accountsChanged', accountsChanged);
                 p.on?.('chainChanged', chainChanged);
+                p.on?.('merit_requestPresented', requestPresented);
             });
             return () => {
                 cancelled = true;
                 provider?.removeListener?.('accountsChanged', accountsChanged);
                 provider?.removeListener?.('chainChanged', chainChanged);
+                provider?.removeListener?.('merit_requestPresented', requestPresented);
             };
         },
     };

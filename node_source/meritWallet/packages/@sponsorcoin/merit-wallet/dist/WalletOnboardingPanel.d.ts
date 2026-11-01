@@ -1,4 +1,3 @@
-import React from 'react';
 export interface WalletOnboardingPanelProps {
     /** Create a new wallet under `password`; resolves with the Secret Recovery Phrase to show once. */
     createWallet(password: string): Promise<{
@@ -11,4 +10,4 @@ export interface WalletOnboardingPanelProps {
     /** Setup is finished and the wallet is unlocked. */
     onDone(): void;
 }
-export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }: WalletOnboardingPanelProps): React.JSX.Element;
+export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }: WalletOnboardingPanelProps): import("react").JSX.Element;

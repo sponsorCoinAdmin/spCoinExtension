@@ -1,4 +1,3 @@
-import React from 'react';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import { type ReceiptProfile } from '../receipt/transactionReceipts';
 import { type ChainRead, type TreeRecipient } from './sponsorReads';
@@ -29,4 +28,4 @@ export interface SponsorStakingHost {
 }
 export default function ConnectedSponsorStakingList({ host }: {
     host: SponsorStakingHost;
-}): React.JSX.Element;
+}): import("react").JSX.Element;

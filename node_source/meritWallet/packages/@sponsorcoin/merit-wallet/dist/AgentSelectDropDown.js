@@ -37,9 +37,10 @@ export default function ConnectedAgentSelectDropDown({ panelGateId, label = 'Sel
             feedType: FEED_TYPE.REMOTE_AGENT_ACCOUNTS,
             onCommit: (asset) => setAgentAccount(asset),
             selectOnLogoClick: true,
+            currentTokenAddress: address || undefined,
             validateSelection: (addr) => validateAccount('AGENT', addr, exchangeContext?.apiCoreSyncedMembers?.accounts ?? {}),
         }, 'AgentSelectDropDown:openAgentList', SP_COIN_DISPLAY.REMOTE_ACCOUNT_AGENT_LIST);
-    }, [agentListVisible, openActiveListPanel, closeActiveListPanel, setAgentAccount, exchangeContext?.apiCoreSyncedMembers?.accounts]);
+    }, [agentListVisible, openActiveListPanel, closeActiveListPanel, setAgentAccount, exchangeContext?.apiCoreSyncedMembers?.accounts, address]);
     return (_jsx(PortableAgentSelectDropDown
     // No agent (never selected, or selection cleared) falls through to the portable component's shared Anonymous avatar.
     , { 

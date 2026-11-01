@@ -5,7 +5,7 @@
 'use client';
 
 import { formKitStyle } from '@sponsorcoin/spcoin-common/styles';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
 
 const box = formKitStyle.box(12);

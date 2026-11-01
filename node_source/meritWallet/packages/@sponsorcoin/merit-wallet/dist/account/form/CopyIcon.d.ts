@@ -1,2 +1,1 @@
-import React from 'react';
-export default function CopyIcon(): React.JSX.Element;
+export default function CopyIcon(): import("react").JSX.Element;

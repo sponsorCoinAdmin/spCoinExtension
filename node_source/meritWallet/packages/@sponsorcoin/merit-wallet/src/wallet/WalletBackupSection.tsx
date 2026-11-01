@@ -5,7 +5,7 @@
 'use client';
 
 import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import PasswordPromptDialog from '../PasswordPromptDialog';

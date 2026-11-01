@@ -9,7 +9,7 @@
 // debug trace calls were dropped on the move (same convention as every earlier move into a package).
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';

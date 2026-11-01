@@ -32,6 +32,6 @@ export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow
     const stepContent = useSyncExternalStore(stepPanelContentStore.subscribe, stepPanelContentStore.getSnapshot, stepPanelContentStore.getServerSnapshot);
     // A write waiting on a person (Approve / Reject, the password) always comes first: the step popup returns once it is answered.
     if (stepContent && !pendingApproval)
-        return _jsx("div", { style: { padding: '0 8px 8px' }, children: stepContent });
+        return _jsx("div", { style: messageRowStyle.stepContent, children: stepContent });
     return (_jsx(MessagePanelReal, { errorMessage: errorMessage, renderAccountRow: renderAccountRow ?? ((entry, i) => _jsx(MessageAccountRow, { entry: entry }, `${entry.role}-${i}`)), renderTokenRow: renderTokenRow ?? ((entry, i) => _jsx(DefaultTokenRow, { entry: entry }, `token-${i}`)), pendingApproval: pendingApproval }));
 }

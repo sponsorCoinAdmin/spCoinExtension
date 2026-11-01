@@ -7,6 +7,10 @@ import { METAMASK_ID } from './src/metamaskAuthenticator';
 import { isExternalAccount } from './src/externalAccounts';
 import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger';
 import { startDappApprovals } from './src/dappApprovals';
+import { mountDebugOverlay } from './src/debugOverlay';
+import { remoteSelectionStore } from './src/remoteSelectionStore';
+import { extensionPeers } from './src/extensionPeers';
+import { traceFrom } from './src/debugTrace';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
 import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
 import { persistedTimeoutMs } from '@sponsorcoin/merit-wallet';
@@ -90,6 +94,8 @@ import { parseAbi } from 'viem';
 
 // 2026-10-13 (docs/connectionDesign.txt item 12): bring a Ledger the person granted earlier back after a reload (no prompt).
 restoreLedger();
+mountDebugOverlay();
+traceFrom('panel', 'side panel loaded');
 
 // docs/meritMigration.txt row 27: the Hardhat RPC is the wallet's network registry's (src/chainRpc.ts), the one place it is written; this file had its own copy of the URL and of the V0 spCoin address.
 
@@ -383,7 +389,7 @@ async function renderWallet() {
       if (status && status.unlocked === false) {
         const reply = (await chrome.runtime.sendMessage({ type: 'merit/signing/pending' })) as { pending?: Array<{ kind: string; origin: string }> } | undefined;
         const first = (reply?.pending ?? []).find((p) => p.origin && p.origin !== 'wallet');
-        if (first) text = `${first.origin} is waiting to ${first.kind === 'connect' ? 'connect' : 'be approved'}. Log in to continue.`;
+        if (first) text = `${first.origin} ${first.kind === 'connect' ? 'Connect Request' : 'Approval Request'}`;
       }
       if (text !== lockedRequestNotice) {
         lockedRequestNotice = text;
@@ -424,6 +430,8 @@ async function renderWallet() {
     return false;
   });
   startDappApprovals();
+  // the remote account selector (a site asked to connect) shows in the wallet's own list: re-render whenever its state changes
+  remoteSelectionStore.subscribe(() => render());
   // While this screen is open the worker holds a port to it: the port going away is how the worker learns the screen was closed, and it then rejects every page still waiting (walletProvider.ts). A worker the browser stopped
   // drops the port too; the screen is still here, so it connects again.
   const holdPortOpen = () => {
@@ -869,6 +877,8 @@ async function renderWallet() {
                   },
                   describeAccount: (address: string) => vaultMeta.get(address.toLowerCase()),
                 },
+                // 2026-11-01: the wallets this one is paired with, checked by the package (see src/extensionPeers.ts)
+                peers: extensionPeers,
                 // 2026-09-29, stage 8 — tokenRows/recipientRows no longer passed
                 // explicitly; MeritWallet self-fetches them via these 4 props
                 // instead (same underlying spcoin-feeds calls this file used to
@@ -890,6 +900,10 @@ async function renderWallet() {
                 accountDetail,
                 accountDetailHost,
                 addAccountHost,
+                remoteSelection: (() => {
+                  const pending = remoteSelectionStore.get();
+                  return pending ? { ...pending, onToggle: remoteSelectionStore.toggle, onCancel: remoteSelectionStore.cancel } : undefined;
+                })(),
               },
               actions: {
                 // Phase B.2 Stage 4 follow-up — the real SEND tab wiring.

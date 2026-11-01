@@ -1,6 +1,7 @@
 import React from 'react';
+import { type PeerConnection } from './peer/peerConnection';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
-import { type AssetListEntry, type AccountListGroup, type FetchBalance, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel } from '@sponsorcoin/spcoin-panels';
+import { type AssetListEntry, type AccountListGroup, type AccountListRemoteSelection, type FetchBalance, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { type MeritPlatform } from './platform/platform';
 import { type WalletDerivation } from './wallet/walletProps';
@@ -115,6 +116,8 @@ export interface MeritWalletProps {
     accountDetailHost?: AccountDetailHost;
     /** 2026-10-10 (docs/design/accountAuthDesign.txt section 17 item 2): what the shared Add a Wallet/Account flow does for this host. When given, the list's button opens the shared flow; otherwise onAddAccount is called as before. */
     addAccountHost?: AddAccountHost;
+    /** 2026-10-31 (owner design): the account list was opened BY A REMOTE (a site asking the wallet to connect). The list opens by itself, titled "Remote <caller> Account Selector", every row has a Connect / Connected button and the footer is Done / Cancel. */
+    remoteSelection?: AccountListRemoteSelection;
     onNetworkIconClick?: (networkId: string) => void;
     sendAmount?: string;
     onSendAmountChange?: (value: string) => void;
@@ -152,6 +155,8 @@ export interface MeritWalletProps {
      * installed from, how an approver is unlocked. Passing it asks for the derived list: it replaces the host's own accountGroups / onAccountRowSelect once the list has loaded (they stay as the fallback until then).
      */
     approverHost?: ApproverHost;
+    /** 2026-11-01: the wallets this one is paired with (the other Merit wallet, a phone wallet app), by authenticator id, each a PeerConnection the host built from its own transport (src/peer/peerConnection.ts). A peer's Connected is its `connected` (reachable and logged on); a wallet with no peer keeps the approverHost's rule. */
+    peers?: Record<string, PeerConnection>;
     /** The banner above the account list (a failed connect). Derived when `approverHost` is given; a host may also set it. */
     accountListNotice?: string;
     /** The wallet that signs for the active account (derived from `wallet` when the host does not pass it), shown as the account header's tooltip. */
@@ -163,7 +168,7 @@ export interface MeritWalletProps {
     /** Which wallets are connected to this app, by wallet asset folder (merit, meritExtension, metamask, ledger, trezor): the wallet list's Connected / Disconnected buttons. Derived from `approverHost` when the host does not pass it. */
     walletConnection?: Record<string, boolean>;
     /** Disconnect a wallet of the wallet list, by asset folder. Derived from `approverHost` when the host does not pass it. */
-    onDisconnectWallet?: (slug: string) => void;
+    onDisconnectWallet?: (slug: string) => void | Promise<unknown>;
     /** Show the wallet pill (WalletSelectDropDown) just under the tabs: its down chevron opens the wallet list (REMOTE_WALLET_LIST), its icon opens the active wallet's panel (WALLET_PANEL). Default true. */
     showWalletSelect?: boolean;
     /** Where the wallet asset files (public/assets/wallets) are served from: this page's own origin by default; a host on another origin (the extension) passes the web app's address. */

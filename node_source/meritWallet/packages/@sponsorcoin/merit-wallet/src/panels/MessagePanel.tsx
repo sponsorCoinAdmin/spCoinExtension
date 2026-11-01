@@ -21,7 +21,6 @@
 
 import { plainPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import { walletColors, walletTints } from '@sponsorcoin/spcoin-common/styles';
-import React from 'react';
 
 export type MessageKind = 'error' | 'warning' | 'success' | 'info' | 'trace';
 

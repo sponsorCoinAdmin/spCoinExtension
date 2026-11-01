@@ -1,4 +1,3 @@
-import React from 'react';
 import type { ApplicationSyncMode, MeritExtensionChannel, MeritWalletLocation, MeritWalletPasswordMode } from '@sponsorcoin/spcoin-panels';
 import { type WalletConfigAdapter } from './walletConfig';
 export declare const HOUR_OPTIONS: number[];
@@ -14,7 +13,7 @@ export declare function joinPersistedTimeout(hours: number, minutes: number): nu
 export declare function PersistedTimeoutPicker({ hours, onChange }: {
     hours: number;
     onChange: (hours: number) => void;
-}): React.JSX.Element;
+}): import("react").JSX.Element;
 export interface WalletConfigEngine {
     uniSelectVisible: boolean;
     zeroXEngineVisible: boolean;

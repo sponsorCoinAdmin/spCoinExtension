@@ -22,6 +22,9 @@ export function useApprovalMessagePanel(store: ApprovalWaitingStore = approvalWa
   const text = waitingText || outcome?.text || '';
   const shown = useRef('');
   const currentSource = (exchangeContext as { errorMessage?: { source?: string } } | undefined)?.errorMessage?.source;
+  // the effect below runs when the request ENDS, and by then the render it closed over may carry an older message: read the latest source
+  const latestSource = useRef(currentSource);
+  latestSource.current = currentSource;
 
   useEffect(() => {
     if (text) {
@@ -31,8 +34,12 @@ export function useApprovalMessagePanel(store: ApprovalWaitingStore = approvalWa
       openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'ApprovalWaiting:show');
       return;
     }
-    // nothing pending and no refusal to report: the request was approved, so take our own message down
-    if (shown.current && currentSource === SOURCE) closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'NAV_POP:ApprovalWaiting:approved');
+    // nothing pending and no refusal to report: the request was approved, so take our own message down.
+    // 2026-11-01 (owner report: the notice stayed after the extension connected): the connect's own success clears or replaces the message, so the source is no longer ours (often empty); only another message's source keeps the panel up
+    if (shown.current) {
+      const source = latestSource.current;
+      if (!source || source === SOURCE) closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'NAV_POP:ApprovalWaiting:approved');
+    }
     shown.current = '';
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, waitingText]);

@@ -20,7 +20,6 @@
 'use client';
 
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import React from 'react';
 import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
 
 // Single source of truth: spcoin-feeds' ANONYMOUS_ACCOUNT_AVATAR_URL.

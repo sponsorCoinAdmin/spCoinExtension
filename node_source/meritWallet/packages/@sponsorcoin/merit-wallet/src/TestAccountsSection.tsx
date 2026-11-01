@@ -7,7 +7,7 @@
 'use client';
 
 import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
 import type { AuthenticationType} from './auth/authenticationType';
 import { authenticationTypeLabel } from './auth/authenticationType';

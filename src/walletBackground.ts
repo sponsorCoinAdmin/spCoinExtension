@@ -86,6 +86,8 @@ export type VaultRequest =
   | { type: 'merit/signing/pending' }
   | { type: 'merit/signing/approve'; id: string; input?: unknown }
   | { type: 'merit/signing/reject'; id: string }
+  | { type: 'merit/permissions/set'; origin: string; accounts: string[] }
+  | { type: 'merit/connect/presented'; origin: string }
   | { type: 'merit/network/get' }
   | { type: 'merit/network/set'; chainId: number };
 
@@ -234,6 +236,14 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
       case 'merit/signing/reject':
         approvals.reject(request.id);
         return snapshot({ pending: approvals.list() });
+      case 'merit/connect/presented':
+        if (typeof request.origin !== 'string') return { ok: false, error: 'invalid-request' };
+        provider.notifyRequestPresented(request.origin);
+        return snapshot({});
+      case 'merit/permissions/set':
+        if (typeof request.origin !== 'string' || !Array.isArray(request.accounts)) return { ok: false, error: 'invalid-request' };
+        await provider.setSiteAccounts(request.origin, request.accounts);
+        return snapshot({});
       case 'merit/network/get':
         return snapshot({ chainId: await getActiveChainId() });
       case 'merit/network/set':
@@ -263,7 +273,7 @@ session.onChange(() => {
 
 chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
   const type = (message as { type?: unknown } | null)?.type;
-  if (typeof type !== 'string' || !(type.startsWith('merit/vault/') || type.startsWith('merit/accounts/') || type.startsWith('merit/signing/') || type.startsWith('merit/network/')) || type === 'merit/vault/changed' || type === 'merit/signing/changed' || type === 'merit/network/changed') return false;
+  if (typeof type !== 'string' || !(type.startsWith('merit/vault/') || type.startsWith('merit/accounts/') || type.startsWith('merit/signing/') || type.startsWith('merit/network/') || type.startsWith('merit/connect/') || type.startsWith('merit/permissions/')) || type === 'merit/vault/changed' || type === 'merit/signing/changed' || type === 'merit/network/changed') return false;
   // Only the extension's own pages (the side panel, or an extension page open in a tab) may drive the vault. A content script reports the URL of
   // the web page it runs in, and another extension reports another id, so both are refused.
   if (sender.id !== chrome.runtime.id || typeof sender.url !== 'string' || !sender.url.startsWith(chrome.runtime.getURL(''))) {

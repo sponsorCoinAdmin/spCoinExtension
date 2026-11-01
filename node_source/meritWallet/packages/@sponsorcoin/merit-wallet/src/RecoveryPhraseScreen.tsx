@@ -5,7 +5,7 @@
 // (security/secretClearing.ts), and Continue stays available then (the wallet already exists; the phrase can be shown again in Security with the password).
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { recoveryPhraseStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useCopyFeedback } from './platform/useCopyFeedback';
 import { NEW_PHRASE_SHOWN_MAX_MS, useSecretClearing } from './security/secretClearing';

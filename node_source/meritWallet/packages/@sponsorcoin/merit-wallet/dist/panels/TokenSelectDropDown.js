@@ -21,6 +21,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { tokenWrapperStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useRef } from 'react';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
+import { STATIC_MISSING_TOKEN_ICON_URL } from '@sponsorcoin/spcoin-feeds/shared';
 export default function TokenSelectDropDown({ icon, defaultIconSrc, hasEntity = false, address, symbol, name, label = 'Select Token', onSelectClick, onAddressClick, showChevron = false, showDisplay, addrPrePostSize = 4, showSymbol = false, showName = false, collapseKey, onExpandedChange, restrictRowClickToChevron = false, copyLabel = 'Copy token address', style, dataPanelRoot, panelGateId, panelGate, }) {
     // Guard against re-entrancy while a previous click is still settling —
     // real behavior (not just logging, see the original's own doc comment on
@@ -46,5 +47,8 @@ export default function TokenSelectDropDown({ icon, defaultIconSrc, hasEntity = 
             ASSET_SELECT_DISPLAY.COPY |
             ASSET_SELECT_DISPLAY.ADDR_COMP |
             (showChevron ? ASSET_SELECT_DISPLAY.CHEVRON_DN : 0));
-    return (_jsx("div", { style: tokenWrapperStyle(style), "data-panel-root": dataPanelRoot, children: _jsx(AssetSelectDropDown, { rootId: "TokenSelectDropDown", hasEntity: hasEntity, icon: icon, ...(defaultIconSrc ? { defaultIconSrc } : {}), showIconWhenEmpty: true, symbol: symbol, name: name, address: address ?? '', placeholderLabel: label, copyLabel: copyLabel, showDisplay: resolvedShowDisplay, showSymbol: showSymbol, showName: showName, onRowClick: handleRowClick, onAddressClick: onAddressClick, restrictRowClickToChevron: restrictRowClickToChevron, addrPrePostSize: addrPrePostSize, panelGateId: panelGateId, panelGate: panelGate, collapseKey: collapseKey, onExpandedChange: onExpandedChange }) }));
+    return (_jsx("div", { style: tokenWrapperStyle(style), "data-panel-root": dataPanelRoot, children: _jsx(AssetSelectDropDown, { rootId: "TokenSelectDropDown", hasEntity: hasEntity, icon: icon, 
+            // 2026-10-22 (owner report): the default (question-mark) icon shows even before a token is picked, instead of an empty slot.
+            // an empty token picker shows the missing-token image (2026-10-30, on request), unless the caller names its own
+            defaultIconSrc: defaultIconSrc ?? STATIC_MISSING_TOKEN_ICON_URL, showIconWhenEmpty: true, symbol: symbol, name: name, address: address ?? '', placeholderLabel: label, copyLabel: copyLabel, showDisplay: resolvedShowDisplay, showSymbol: showSymbol, showName: showName, onRowClick: handleRowClick, onAddressClick: onAddressClick, restrictRowClickToChevron: restrictRowClickToChevron, addrPrePostSize: addrPrePostSize, panelGateId: panelGateId, panelGate: panelGate, collapseKey: collapseKey, onExpandedChange: onExpandedChange }) }));
 }

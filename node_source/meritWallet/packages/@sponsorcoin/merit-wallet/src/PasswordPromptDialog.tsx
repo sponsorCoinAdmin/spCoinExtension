@@ -5,7 +5,7 @@
 'use client';
 
 import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DialogPortal from './DialogPortal';
 
 export default function PasswordPromptDialog({

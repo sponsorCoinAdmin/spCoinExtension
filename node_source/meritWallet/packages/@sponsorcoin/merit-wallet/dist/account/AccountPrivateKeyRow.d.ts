@@ -1,4 +1,3 @@
-import React from 'react';
 /** Thrown by a host's revealPrivateKey when it needs the wallet password (none given, or the cached one no longer works). */
 export declare class PasswordRequiredError extends Error {
     constructor(message?: string);
@@ -11,4 +10,4 @@ export default function AccountPrivateKeyRow({ address, reveal, idPrefix, zebra,
     idPrefix?: string;
     zebra: string;
     cell: string;
-}): React.JSX.Element;
+}): import("react").JSX.Element;

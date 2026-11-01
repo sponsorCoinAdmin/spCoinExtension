@@ -22,6 +22,7 @@
 import { tokenWrapperStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useRef } from 'react';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
+import { STATIC_MISSING_TOKEN_ICON_URL } from '@sponsorcoin/spcoin-feeds/shared';
 
 export interface TokenSelectDropDownProps {
   /** Rendered in the icon slot when a token is selected — the real caller
@@ -137,7 +138,8 @@ export default function TokenSelectDropDown({
         hasEntity={hasEntity}
         icon={icon}
         // 2026-10-22 (owner report): the default (question-mark) icon shows even before a token is picked, instead of an empty slot.
-        {...(defaultIconSrc ? { defaultIconSrc } : {})}
+        // an empty token picker shows the missing-token image (2026-10-30, on request), unless the caller names its own
+        defaultIconSrc={defaultIconSrc ?? STATIC_MISSING_TOKEN_ICON_URL}
         showIconWhenEmpty
         symbol={symbol}
         name={name}

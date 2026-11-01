@@ -26,9 +26,9 @@ export interface ApprovalWaitingStore {
     getOutcome(): ApprovalOutcome | undefined;
     /** Register one open request; call the returned function when it ends: with nothing when it was approved, with the error when it was refused or failed. */
     begin(entry: Omit<ApprovalWaiting, 'id' | 'startedAt'>): (error?: unknown) => void;
+    /** The wallet has the request on its own screen: its open requests stop being listed as "waiting" (they stay open and still report how they end). */
+    markPresented(authenticatorId: string): void;
 }
-/** How long the "did not approve" line stays. */
-export declare const APPROVAL_OUTCOME_MS = 10000;
 export declare function createApprovalWaitingStore(now?: () => number, outcomeMs?: number): ApprovalWaitingStore;
 /** The one default store: the notice component reads it, the hosts wrap their remote authenticators with it. */
 export declare const approvalWaiting: ApprovalWaitingStore;

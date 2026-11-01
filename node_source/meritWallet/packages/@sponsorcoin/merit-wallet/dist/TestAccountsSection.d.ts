@@ -1,4 +1,3 @@
-import React from 'react';
 import type { AuthenticationType } from './auth/authenticationType';
 export interface TestAccountsApi {
     /** How many of the standard test accounts are in the store. */
@@ -24,4 +23,4 @@ export interface TestAccountsSectionProps {
     /** Called after a load or unload so the host can refresh its account list. */
     onChanged?: () => void;
 }
-export default function TestAccountsSection({ api, authenticationType, onChanged }: TestAccountsSectionProps): React.JSX.Element;
+export default function TestAccountsSection({ api, authenticationType, onChanged }: TestAccountsSectionProps): import("react").JSX.Element;

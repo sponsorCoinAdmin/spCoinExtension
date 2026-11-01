@@ -120,7 +120,7 @@ export interface Wallet {
   setActiveAuthenticator(address: string, id: AuthenticatorId | undefined): void;
   getActiveAuthenticator(address: string): AuthenticatorId | undefined;
   /** Every backend's accounts, each address once. A backend that fails to list is skipped, never fatal. */
-  accounts(): Promise<WalletAccountEntry[]>;
+  accounts(onPartial?: (entries: WalletAccountEntry[]) => void): Promise<WalletAccountEntry[]>;
   /** Whether the backend for `address` supports the feature; without an address, whether ANY backend does. */
   can(feature: WalletFeature, address?: string): boolean;
   /** The vault of the backend for `address`, or undefined (a signing-only backend, or nothing registered). */
@@ -200,36 +200,47 @@ export function createWallet(options: CreateWalletOptions): Wallet {
       notify();
     },
     getActiveAuthenticator: (address) => store.get(address),
-    async accounts() {
-      const byAddress = new Map<string, WalletAccountEntry>();
-      for (const authenticator of registry.list()) {
-        let listed: AuthenticatorAccount[] = [];
-        try {
-          listed = await authenticator.accounts();
-        } catch {
-          continue;
-        }
-        for (const account of listed) {
-          const key = String(account.address ?? '').toLowerCase();
-          if (!key) continue;
-          const existing = byAddress.get(key);
-          if (existing) {
-            existing.backends.push(authenticator.id);
-            existing.name ??= account.name;
-            continue;
+    async accounts(onPartial) {
+      // 2026-10-30, on request ("the Merit (Web App) list should be lazy loaded"): the backends are asked at the same time, not one after another, and `onPartial` hears the merged list each time
+      // one of them has answered, so a fast backend (the wallet's own keystore) is on screen at once and a slow one (an injected wallet, a hardware device) fills in when it arrives.
+      const authenticators = registry.list();
+      const listedBy: (AuthenticatorAccount[] | undefined)[] = authenticators.map(() => undefined);
+      const merge = (): WalletAccountEntry[] => {
+        const byAddress = new Map<string, WalletAccountEntry>();
+        authenticators.forEach((authenticator, index) => {
+          for (const account of listedBy[index] ?? []) {
+            const key = String(account.address ?? '').toLowerCase();
+            if (!key) continue;
+            const existing = byAddress.get(key);
+            if (existing) {
+              existing.backends.push(authenticator.id);
+              existing.name ??= account.name;
+              continue;
+            }
+            byAddress.set(key, { ...account, authenticatorId: authenticator.id, badge: authenticatorBadgeOf(authenticator), backends: [authenticator.id] });
           }
-          byAddress.set(key, { ...account, authenticatorId: authenticator.id, badge: authenticatorBadgeOf(authenticator), backends: [authenticator.id] });
+        });
+        // The saved choice wins over "the first backend that listed it", when that backend is one of the ones holding the address.
+        for (const [key, entry] of byAddress) {
+          const saved = store.get(key);
+          if (saved && entry.backends.includes(saved)) {
+            entry.authenticatorId = saved;
+            entry.badge = authenticatorBadgeOf(registry.get(saved) ?? { id: saved });
+          }
         }
-      }
-      // The saved choice wins over "the first backend that listed it", when that backend is one of the ones holding the address.
-      for (const [key, entry] of byAddress) {
-        const saved = store.get(key);
-        if (saved && entry.backends.includes(saved)) {
-          entry.authenticatorId = saved;
-          entry.badge = authenticatorBadgeOf(registry.get(saved) ?? { id: saved });
-        }
-      }
-      return [...byAddress.values()];
+        return [...byAddress.values()];
+      };
+      await Promise.all(
+        authenticators.map(async (authenticator, index) => {
+          try {
+            listedBy[index] = await authenticator.accounts();
+          } catch {
+            listedBy[index] = []; // a backend that fails to list is skipped, never fatal
+          }
+          onPartial?.(merge());
+        }),
+      );
+      return merge();
     },
     can(feature, address) {
       if (address) {

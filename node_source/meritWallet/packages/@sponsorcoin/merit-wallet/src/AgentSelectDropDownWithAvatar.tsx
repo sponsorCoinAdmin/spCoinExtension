@@ -5,7 +5,6 @@
 'use client';
 
 import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
-import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AccountAvatarWithOpen } from '@sponsorcoin/spcoin-panels';
 import ConnectedAgentSelectDropDown from './AgentSelectDropDown';

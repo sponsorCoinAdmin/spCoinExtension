@@ -7,6 +7,8 @@
 import { requestSignApproval, type PendingSignRequest } from './pendingSignRequestStore';
 import { clearPendingSignRequest } from './pendingSignRequestStore';
 import { requestTransferApproval } from './transferApprovalStore';
+import { requestRemoteSelection } from './remoteSelectionStore';
+import { traceFrom } from './debugTrace';
 
 interface PendingItem {
   id: string;
@@ -89,6 +91,37 @@ export function startDappApprovals(): void {
         if (next.kind === 'transfer') {
           const password = await requestTransferApproval({ origin: next.origin, address: String(next.details?.address ?? '') });
           await worker(password ? { type: 'merit/signing/approve', id: next.id, input: { password } } : { type: 'merit/signing/reject', id: next.id }).catch(() => undefined);
+          continue;
+        }
+        // 2026-10-31 (owner design): a site asking to connect opens the wallet's own account list (the remote account selector): the person ticks which accounts the site may see and presses Done.
+        if (next.kind === 'connect') {
+          traceFrom('panel', `account selector opened for ${next.origin}`);
+          // 2026-11-01: the wallet is unlocked and its account selector is what the person sees: only now is the page told ONCE (its waiting notice and its "Connecting..." screen close); while the wallet shows its login, the page keeps waiting
+          traceFrom('panel', `telling ${next.origin} its request is on the wallet screen`);
+          void worker({ type: 'merit/connect/presented', origin: next.origin } as never).catch(() => undefined);
+          // live connect (owner design, no Done): the first account connected answers the site's request at once (its waiting notice closes); the selector stays open and every later change is applied to the site's accounts immediately.
+          // Closing the selector (Cancel / back) with nothing connected refuses the request.
+          let answered = false;
+          let queue: Promise<unknown> = Promise.resolve();
+          const apply = (selected: string[]) => {
+            queue = queue.then(async () => {
+              if (!answered) {
+                if (!selected.length) return;
+                answered = true;
+                traceFrom('panel', `account selector connected ${selected.length} account(s) for ${next.origin}`);
+                await worker({ type: 'merit/signing/approve', id: next.id, input: { accounts: selected } } as never).catch(() => undefined);
+                return;
+              }
+              traceFrom('panel', `account selector now shares ${selected.length} account(s) with ${next.origin}`);
+              await worker({ type: 'merit/permissions/set', origin: next.origin, accounts: selected } as never).catch(() => undefined);
+            });
+          };
+          await requestRemoteSelection({ caller: 'Merit (Web)', origin: next.origin, selected: [], onChange: apply });
+          await queue;
+          if (!answered) {
+            traceFrom('panel', 'account selector cancelled');
+            await worker({ type: 'merit/signing/reject', id: next.id }).catch(() => undefined);
+          }
           continue;
         }
         const chainId = (await worker({ type: 'merit/network/get' }).catch(() => undefined))?.chainId ?? 31337;

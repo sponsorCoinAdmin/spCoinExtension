@@ -64,6 +64,7 @@ export default function ConnectedAgentSelectDropDown({
           feedType: FEED_TYPE.REMOTE_AGENT_ACCOUNTS,
           onCommit: (asset) => setAgentAccount(asset as spCoinAccount),
           selectOnLogoClick: true,
+          currentTokenAddress: address || undefined,
           validateSelection: (addr) =>
             validateAccount('AGENT', addr, exchangeContext?.apiCoreSyncedMembers?.accounts ?? {}),
         },
@@ -71,7 +72,7 @@ export default function ConnectedAgentSelectDropDown({
         SP_COIN_DISPLAY.REMOTE_ACCOUNT_AGENT_LIST,
       );
     },
-    [agentListVisible, openActiveListPanel, closeActiveListPanel, setAgentAccount, exchangeContext?.apiCoreSyncedMembers?.accounts],
+    [agentListVisible, openActiveListPanel, closeActiveListPanel, setAgentAccount, exchangeContext?.apiCoreSyncedMembers?.accounts, address],
   );
 
   return (

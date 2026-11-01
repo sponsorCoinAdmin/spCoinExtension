@@ -54,7 +54,7 @@ export interface AuthenticatorTransaction {
     /** What the confirmation screen shows; see AuthenticatorDisplay. */
     display?: AuthenticatorDisplay;
 }
-export type AuthenticatorChange = 'lock' | 'unlock' | 'accountsChanged' | 'chainChanged' | 'availability';
+export type AuthenticatorChange = 'lock' | 'unlock' | 'accountsChanged' | 'chainChanged' | 'availability' | 'requestPresented';
 /** The one error set every authenticator reports in (foreign errors are translated into these by the adapter). */
 export type AuthenticatorErrorCode = 'user_rejected' | 'locked' | 'unauthorized' | 'unsupported' | 'unreachable' | 'wrong_chain';
 export declare class AuthenticatorError extends Error {

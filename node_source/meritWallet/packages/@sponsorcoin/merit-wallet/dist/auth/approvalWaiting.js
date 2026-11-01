@@ -7,7 +7,7 @@
 // message lives in the docked wallet popup and is hidden behind its lock screen. A wallet whose own screen already asks the person (the browser wallet) can be wrapped with showWaiting: false: it then reports only how a request ended, never "waiting".
 import { authenticatorName } from './authenticator';
 /** How long the "did not approve" line stays. */
-export const APPROVAL_OUTCOME_MS = 10000;
+const APPROVAL_OUTCOME_MS = 10000;
 export function createApprovalWaitingStore(now = Date.now, outcomeMs = APPROVAL_OUTCOME_MS) {
     let state = [];
     let outcome;
@@ -33,6 +33,11 @@ export function createApprovalWaitingStore(now = Date.now, outcomeMs = APPROVAL_
         subscribe(listener) {
             listeners.add(listener);
             return () => listeners.delete(listener);
+        },
+        markPresented(authenticatorId) {
+            if (!state.some((e) => e.authenticatorId === authenticatorId && !e.silent))
+                return;
+            set(state.map((e) => (e.authenticatorId === authenticatorId ? { ...e, silent: true } : e)));
         },
         begin(entry) {
             const id = nextId++;
@@ -77,6 +82,12 @@ export function approvalWaitingText(all) {
 export function withApprovalNotice(authenticator, store = approvalWaiting, options = {}) {
     const track = async (action, run) => {
         const end = store.begin({ authenticatorId: authenticator.id, label: authenticatorName(authenticator), action, silent: options.showWaiting === false });
+        // 2026-11-01 (owner report: the wallet connect notice stayed up while the extension's account selector was open): once the wallet shows the request on its own screen the notice closes. Subscribed per request, when the provider is surely there.
+        const off = authenticator.onChange?.((change) => {
+            if (change !== 'requestPresented')
+                return;
+            store.markPresented(authenticator.id);
+        });
         try {
             const result = await run();
             end();
@@ -85,6 +96,9 @@ export function withApprovalNotice(authenticator, store = approvalWaiting, optio
         catch (error) {
             end(error ?? 'the request failed');
             throw error;
+        }
+        finally {
+            off?.();
         }
     };
     const wrapped = Object.create(authenticator);

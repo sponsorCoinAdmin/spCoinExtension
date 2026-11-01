@@ -27,22 +27,33 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
   const hostRef = useRef(host);
   hostRef.current = host;
 
+  const loadSeq = useRef(0);
+  // 2026-10-30, on request ("the Merit (Web App) list should be lazy loaded"): nothing waits for the slowest wallet any more. The accounts of each backend show as soon as that backend answers,
+  // and each backend's status badge fills in on its own; a slow or absent wallet (an injected wallet, a hardware device) only delays its own group.
   const load = useCallback(async () => {
     if (!wallet) return;
-    const next: Partial<Record<AuthenticatorId, AuthenticatorStatus>> = {};
-    await Promise.all(
-      wallet.backends().map(async (backend) => {
-        try {
-          const status = await wallet.registry.get(backend.id)?.status();
-          if (status) next[backend.id] = status;
-        } catch {
-          next[backend.id] = { available: false, unlocked: false };
-        }
-      }),
-    );
-    const list = await wallet.accounts().catch(() => [] as WalletAccountEntry[]);
-    setStatuses(next);
-    setEntries(list);
+    const seq = ++loadSeq.current;
+    const current = () => seq === loadSeq.current;
+    const statusJobs = wallet.backends().map(async (backend) => {
+      let status: AuthenticatorStatus | undefined;
+      try {
+        status = await wallet.registry.get(backend.id)?.status();
+      } catch {
+        status = { available: false, unlocked: false };
+      }
+      if (status && current()) setStatuses((previous) => ({ ...previous, [backend.id]: status as AuthenticatorStatus }));
+    });
+    const accountsJob = wallet
+      .accounts((partial) => {
+        if (current()) setEntries(partial);
+      })
+      .then((list) => {
+        if (current()) setEntries(list);
+      })
+      .catch(() => {
+        if (current()) setEntries([] as WalletAccountEntry[]);
+      });
+    await Promise.all([...statusJobs, accountsJob]);
   }, [wallet]);
 
   useEffect(() => {

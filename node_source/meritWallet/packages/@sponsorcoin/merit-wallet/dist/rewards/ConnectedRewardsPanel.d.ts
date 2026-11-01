@@ -1,4 +1,3 @@
-import React from 'react';
 export interface RewardsHost {
     /** The active spCoin contract. */
     contractAddress(): string;
@@ -50,4 +49,4 @@ export interface RewardsPanelExtras {
 export default function ConnectedRewardsPanel({ host, extras }: {
     host: RewardsHost;
     extras?: RewardsPanelExtras;
-}): React.JSX.Element | null;
+}): import("react").JSX.Element | null;

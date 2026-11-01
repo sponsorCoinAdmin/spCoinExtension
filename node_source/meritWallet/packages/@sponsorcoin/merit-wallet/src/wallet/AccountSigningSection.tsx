@@ -5,7 +5,7 @@
 'use client';
 
 import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SmallYellowButton } from '@sponsorcoin/spcoin-panels';
 import type { AuthenticatorId } from '../auth/authenticator';
 import { chooseSigner, readSigningChoices, type HolderState, type SigningChoices } from './accountSigning';

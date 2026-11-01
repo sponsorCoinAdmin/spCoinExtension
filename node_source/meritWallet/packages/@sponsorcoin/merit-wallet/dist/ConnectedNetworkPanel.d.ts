@@ -1,4 +1,3 @@
-import React from 'react';
 import type { NetworkElement } from '@sponsorcoin/spcoin-common/context';
 /** A NetworkElement for a chain id straight from the registry (the default for previewing a chain other than the live one). */
 export declare function networkElementFromRegistry(chainId: number): NetworkElement;
@@ -13,4 +12,4 @@ export interface ConnectedNetworkPanelProps {
     /** Host hook for the live network (stable module-level function). Default: the exchange context filled from the registry. */
     useLiveNetwork?: () => LiveNetwork;
 }
-export default function ConnectedNetworkPanel({ useLiveNetwork }: ConnectedNetworkPanelProps): React.JSX.Element | null;
+export default function ConnectedNetworkPanel({ useLiveNetwork }: ConnectedNetworkPanelProps): import("react").JSX.Element | null;

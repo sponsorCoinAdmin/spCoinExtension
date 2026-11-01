@@ -4,7 +4,6 @@
 'use client';
 
 import { dialogStyle } from '@sponsorcoin/spcoin-common/styles';
-import React from 'react';
 import ChangePasswordPanel from '../ChangePasswordPanel';
 import DeleteWalletDialog from '../DeleteWalletDialog';
 import DialogPortal from '../DialogPortal';

@@ -13,23 +13,39 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
     activeRef.current = activeAddress;
     const hostRef = useRef(host);
     hostRef.current = host;
+    const loadSeq = useRef(0);
+    // 2026-10-30, on request ("the Merit (Web App) list should be lazy loaded"): nothing waits for the slowest wallet any more. The accounts of each backend show as soon as that backend answers,
+    // and each backend's status badge fills in on its own; a slow or absent wallet (an injected wallet, a hardware device) only delays its own group.
     const load = useCallback(async () => {
         if (!wallet)
             return;
-        const next = {};
-        await Promise.all(wallet.backends().map(async (backend) => {
+        const seq = ++loadSeq.current;
+        const current = () => seq === loadSeq.current;
+        const statusJobs = wallet.backends().map(async (backend) => {
+            let status;
             try {
-                const status = await wallet.registry.get(backend.id)?.status();
-                if (status)
-                    next[backend.id] = status;
+                status = await wallet.registry.get(backend.id)?.status();
             }
             catch {
-                next[backend.id] = { available: false, unlocked: false };
+                status = { available: false, unlocked: false };
             }
-        }));
-        const list = await wallet.accounts().catch(() => []);
-        setStatuses(next);
-        setEntries(list);
+            if (status && current())
+                setStatuses((previous) => ({ ...previous, [backend.id]: status }));
+        });
+        const accountsJob = wallet
+            .accounts((partial) => {
+            if (current())
+                setEntries(partial);
+        })
+            .then((list) => {
+            if (current())
+                setEntries(list);
+        })
+            .catch(() => {
+            if (current())
+                setEntries([]);
+        });
+        await Promise.all([...statusJobs, accountsJob]);
     }, [wallet]);
     useEffect(() => {
         if (!wallet)

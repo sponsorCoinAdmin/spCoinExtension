@@ -54,7 +54,7 @@ export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow
   // A step-through popup published for MESSAGE_PANEL (the Swap tab's Steps flow) replaces the normal message while it is up.
   const stepContent = useSyncExternalStore(stepPanelContentStore.subscribe, stepPanelContentStore.getSnapshot, stepPanelContentStore.getServerSnapshot);
   // A write waiting on a person (Approve / Reject, the password) always comes first: the step popup returns once it is answered.
-  if (stepContent && !pendingApproval) return <div style={{ padding: '0 8px 8px' }}>{stepContent as React.ReactNode}</div>;
+  if (stepContent && !pendingApproval) return <div style={messageRowStyle.stepContent}>{stepContent as React.ReactNode}</div>;
   return (
     <MessagePanelReal
       errorMessage={errorMessage}

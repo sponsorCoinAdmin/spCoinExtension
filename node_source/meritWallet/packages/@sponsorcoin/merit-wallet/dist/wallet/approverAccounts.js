@@ -23,11 +23,6 @@ export function mergeWalletAccountEntries(...sources) {
 /** The groups for the shared account list. Pure: the statuses and the entries are read by the caller. */
 export function buildApproverGroups(input) {
     const { backends, entries, statuses, activeAddress, activeApproverId, host } = input;
-    // docs/design/accountAuthDesign.txt section 18 4.2: on an account that more than one wallet holds, the row says where else its key is, by the other wallets' own names
-    const alsoIn = (entry, here) => {
-        const others = entry.backends.filter((id) => id !== here).map((id) => backends.find((b) => b.id === id)?.name ?? id);
-        return others.length ? `Key also in ${others.join(', ')}` : undefined;
-    };
     const groups = backends.map((backend) => {
         const status = statuses[backend.id];
         const isActiveSource = !!activeAddress && activeApproverId === backend.id;
@@ -41,7 +36,6 @@ export function buildApproverGroups(input) {
                 iconSrc: known?.iconSrc,
                 address: entry.address,
                 isActive: isActiveSource && same(entry.address, activeAddress),
-                note: alsoIn(entry, backend.id),
             };
         });
         const group = {
@@ -56,8 +50,17 @@ export function buildApproverGroups(input) {
             return group;
         }
         // the native wallet is us: connected by definition, so it is never offered Install, Unlock or Connect
-        if (backend.id === host.nativeWalletId)
+        if (backend.id === host.nativeWalletId) {
+            group.connected = true;
             return group;
+        }
+        // 2026-10-31 (owner: "even though we are not the active wallet, can't we stay connected?"): connected is the wallet's own permission for this site (an injected wallet answers eth_accounts with the shared accounts), not whether it holds the ACTIVE account.
+        // Choosing another wallet's account changes the active account only; the permission stays until the person disconnects. A click on the green badge disconnects it.
+        if (status?.available && status.unlocked && accounts.length > 0 && input.canConnect(backend.id)) {
+            group.connected = true;
+            group.onActiveClick = () => input.onDisconnect(backend.id);
+            return group;
+        }
         const url = host.installUrl?.(backend.id);
         if (status && !status.available) {
             if (url) {
@@ -69,7 +72,7 @@ export function buildApproverGroups(input) {
             group.connectLabel = 'Unlock';
             group.onConnectClick = () => host.onUnlock?.(backend.id);
         }
-        else if (status && status.available && accounts.length === 0 && input.canConnect(backend.id)) {
+        else if (status && status.available && input.canConnect(backend.id)) {
             group.connectLabel = 'Connect';
             group.onConnectClick = () => input.onConnect(backend.id);
         }
@@ -121,7 +124,9 @@ export function createApproverController(wallet, host, onNotice, getActiveAddres
             const active = getActiveAddress();
             const id = approverId ?? (active ? wallet.backendIdFor(active) : undefined);
             try {
-                await disconnectAccount({ registry: wallet.registry, approverId: id, host: connectHost });
+                // 2026-10-31: a wallet that does not hold the active account can be disconnected (its permission revoked) without touching the active account.
+                const holdsActive = !active || !id || wallet.backendIdFor(active) === id;
+                await disconnectAccount({ registry: wallet.registry, approverId: id, host: holdsActive ? connectHost : { ...connectHost, clearActiveAccount: () => undefined } });
             }
             catch (error) {
                 onNotice(connectNoticeText(error));

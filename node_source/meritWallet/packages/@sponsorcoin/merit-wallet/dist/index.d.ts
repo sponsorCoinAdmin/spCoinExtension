@@ -101,6 +101,7 @@ export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAcc
 export { signInForToken, signInWithWallet, type SignInParams } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning, type SigningChoices, type SigningHolder, type HolderState } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
+export { createPeerConnection, usePeerStates, type PeerConnection, type PeerState, type PeerTransport } from './peer/peerConnection';
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, outcomeText, withApprovalNotice, type ApprovalWaiting, type ApprovalOutcome, type ApprovalWaitingStore, type ApprovalAction } from './auth/approvalWaiting';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons, type AddTarget, type AddTargets, type AddKeyEntry } from './wallet/addTarget';

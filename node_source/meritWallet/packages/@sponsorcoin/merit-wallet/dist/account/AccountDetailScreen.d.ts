@@ -1,4 +1,3 @@
-import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
 import { type AccountFormHost } from './form/useAccountForm';
@@ -30,4 +29,4 @@ export default function AccountDetailScreen({ account, role, host }: {
     account: spCoinAccount | undefined;
     role?: AccountDetailRole;
     host: AccountDetailHost;
-}): React.JSX.Element | null;
+}): import("react").JSX.Element | null;

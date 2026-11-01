@@ -1,4 +1,3 @@
-import React from 'react';
 import type { AuthenticatorId } from '../auth/authenticator';
 import type { Wallet } from '../wallet/wallet';
 export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
@@ -62,5 +61,5 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     activeAddress?: string;
     nativeWalletId?: string;
     walletConnection?: Record<string, boolean>;
-    onDisconnectWallet?(slug: string): void;
-}): React.JSX.Element;
+    onDisconnectWallet?(slug: string): void | Promise<unknown>;
+}): import("react").JSX.Element;

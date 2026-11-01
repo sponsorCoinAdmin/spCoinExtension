@@ -139,13 +139,14 @@ export default function SendTabPanel({
         balanceText={balanceText}
         balanceTitle={balanceTitle}
         balanceLoading={balanceLoading}
+        listOwnerId="send"
         onTokenPillClick={onSendTokenClick}
         amount={sendAmount}
         onAmountChange={onSendAmountChange}
         amountDisabled={submitBusy}
       />
       </PanelGate>
-      <TradeAmountRow label="Recipient" emptyPillLabel="Select Recipient" balanceText={recipientBalanceText} balanceTitle={recipientBalanceTitle} balanceLoading={recipientBalanceLoading} tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
+      <TradeAmountRow label="Recipient" listOwnerId="sendRecipient" emptyPillLabel="Select Recipient" balanceText={recipientBalanceText} balanceTitle={recipientBalanceTitle} balanceLoading={recipientBalanceLoading} tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
       <PanelGate panel={SP_COIN_DISPLAY.SEND_BUTTON}>
       {/* The shared SendButton (it turns into the Connect button while no account is active). */}
       <SendButton id="SEND_BUTTON_ACTION" amount={sendAmount ?? ''} decimals={sendDecimals} balanceRaw={sendBalanceRaw} hasRecipient={sendHasRecipient} symbol={sendSymbol} isPending={submitBusy} onSend={() => onSubmit?.()} />

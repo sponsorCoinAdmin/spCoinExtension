@@ -7,7 +7,7 @@
 'use client';
 
 import { accountDetailClass, accountDetailStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
 import { setAccountStoreBaseUrl, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';

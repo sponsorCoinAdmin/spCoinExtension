@@ -39,6 +39,8 @@ export interface ProviderControllerOptions {
     isKnownChain: (chainId: number) => boolean;
     /** Forward one JSON-RPC call to the chain's node. */
     rpc: (chainId: number, method: string, params: unknown[]) => Promise<unknown>;
+    /** One line for the host's debug trace (who / what). Optional. */
+    log?: (text: string) => void;
 }
 export type ProviderEvent = {
     origin?: string;
@@ -48,6 +50,14 @@ export type ProviderEvent = {
     origin?: string;
     event: 'chainChanged';
     data: string;
+} | {
+    origin?: string;
+    event: 'merit_requestPresented';
+    data: null;
+} | {
+    origin?: string;
+    event: 'merit_unlockedChanged';
+    data: boolean;
 } | {
     origin?: string;
     event: 'disconnect';
@@ -75,6 +85,12 @@ export declare class ProviderController {
     private pendingConnects;
     private requestAccounts;
     private requestAccountsOnce;
+    /** 2026-11-01: the wallet was locked or unlocked: tell every page (not only the connected ones), so a page's "Connected" for this wallet follows the login. */
+    notifyLockChanged(): void;
+    /** 2026-11-01: this site's open request is now on the wallet's own screen: tell the page ONCE, so its "waiting for the wallet" notice can close (the request itself stays open until the person decides). */
+    notifyRequestPresented(origin: string): void;
+    /** 2026-10-31 (owner design: connect live from the account selector): the person changes which accounts a site sees, after the site's connect was approved. No accounts left = the site is disconnected. */
+    setSiteAccounts(origin: string, accounts: string[]): Promise<void>;
     /** The user (or a page) moved the wallet to another network: tell every connected page. */
     setChain(chainId: number): Promise<void>;
     /** The wallet's active account changed or the wallet locked: tell each connected page what it can see now. */

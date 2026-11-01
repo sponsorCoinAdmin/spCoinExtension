@@ -6,7 +6,7 @@
 'use client';
 
 import { accountFormClass, privateKeyRowClass } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import PasswordPromptDialog from '../PasswordPromptDialog';
 import { useCopyFeedback } from '../platform/useCopyFeedback';
 

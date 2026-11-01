@@ -1,7 +1,6 @@
 // File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/account/form/CopyIcon.tsx
 //
 // docs/meritMigration.txt row 31: the copy-to-clipboard icon of the account form, drawn once (the form panel and the web's Create Account private key row each had the same inline SVG).
-import React from 'react';
 
 export default function CopyIcon() {
   return (

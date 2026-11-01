@@ -79,7 +79,8 @@ async function sendToTabs(origin: string | undefined, message: unknown) {
  * from the person (only chrome.sidePanel.open does), which is what lets a request from a remote page open the wallet.
  */
 /** The name of the port the side panel keeps open while it is on screen (sidepanel.ts). */
-export const SIDE_PANEL_PORT = 'merit-sidepanel';
+import { trace } from './debugTrace';
+const SIDE_PANEL_PORT = 'merit-sidepanel';
 /** How long a page's request may wait for the person before it is rejected (MetaMask has no limit; this wallet's side panel lives long, so an old request would show up much later). */
 const PAGE_REQUEST_MAX_MS = 5 * 60_000;
 const NEEDS_PERSON =new Set(['eth_requestAccounts', 'wallet_requestPermissions', 'eth_sendTransaction', 'personal_sign', 'eth_sign', 'eth_signTypedData_v4', 'eth_signTypedData_v3', 'eth_signTypedData']);
@@ -93,7 +94,9 @@ function openSidePanelNow(windowId: number | undefined) {
   const sp = chrome.sidePanel as unknown as { open(o: { windowId: number }): Promise<void> };
   // Marked BEFORE the open settles: the approval can reach ensureWalletScreenOpen while the open is still in flight (a locked wallet), and that must not add a popup next to the side panel.
   openedNow.set(windowId, Date.now());
-  sp.open({ windowId }).catch((error) => {
+  trace('worker', `side panel open requested (window ${windowId})`);
+  sp.open({ windowId }).then(() => trace('worker', 'side panel open: ok')).catch((error) => {
+    trace('worker', `side panel open FAILED: ${error instanceof Error ? error.message : String(error)}`);
     console.warn('side panel open (gesture)', error);
     openedNow.delete(windowId);
     void ensureWalletScreenOpen(windowId);
@@ -161,6 +164,7 @@ export function installProvider({ session, accounts, approvals, signer, ready }:
     },
     isKnownChain,
     rpc,
+    log: (text) => trace('worker', text),
   });
 
   controller.onEvent((e) => {
@@ -168,7 +172,10 @@ export function installProvider({ session, accounts, approvals, signer, ready }:
   });
 
   // Lock / unlock changes what every connected page may see.
-  session.onChange(() => void controller.notifyAccountsChanged());
+  session.onChange(() => {
+    void controller.notifyAccountsChanged();
+    controller.notifyLockChanged();
+  });
 
   // The approval screen: tell the side panel the list changed, and open a screen when a PAGE (not the wallet itself) is waiting.
   // The lock gate is the queue itself (as in MetaMask): a request from a page waits here while the wallet is locked, the side panel shows the login with the waiting site named, and the request is shown for approval only after the unlock
@@ -178,6 +185,7 @@ export function installProvider({ session, accounts, approvals, signer, ready }:
   approvals.onChange(() => {
     chrome.runtime.sendMessage({ type: 'merit/signing/changed' }).catch(() => undefined);
     const pending = approvals.list();
+    trace('worker', `approval queue: ${pending.length ? pending.map((p) => `${p.kind}@${p.origin}`).join(', ') : 'empty'}`);
     const fresh = pending.filter((p) => p.origin !== 'wallet' && !seen.has(p.id));
     seen = new Set(pending.map((p) => p.id));
     for (const p of fresh) {
@@ -213,10 +221,18 @@ export function installProvider({ session, accounts, approvals, signer, ready }:
     }
     const origin = sender.origin;
     lastRequestWindowId = sender.tab.windowId;
+    trace('worker', `request ${m.method} from ${origin} (tab ${sender.tab.id}, window ${sender.tab.windowId})`);
     // The page's own click, sent BEFORE any request (the app's Connect click): open the screen now, while the click's gesture is still alive. A request that follows only after the app's own awaits (finding the wallet, asking
     // its status) arrives too late for the browser to allow an open.
     if (m.method === 'merit_openWallet') {
       openSidePanelNow(sender.tab.windowId);
+      sendResponse({ ok: true, result: null });
+      return false;
+    }
+    // 2026-11-01 (owner: the connection is full duplex): a Merit web app page reports its own state (it is here, and whether its wallet is logged on); the extension keeps it per tab and verifies it again whenever the panel asks (webApps below)
+    if (m.method === 'merit_reportWalletState') {
+      const state = (Array.isArray(m.params) ? m.params[0] : undefined) as { loggedOn?: unknown; detached?: unknown; at?: unknown } | undefined;
+      reportWebApp(sender.tab.id, origin, state?.loggedOn === true, state?.detached === true, Number(state?.at) || 0);
       sendResponse({ ok: true, result: null });
       return false;
     }
@@ -230,9 +246,13 @@ export function installProvider({ session, accounts, approvals, signer, ready }:
     if (NEEDS_PERSON.has(m.method)) openSidePanelNow(sender.tab.windowId);
     void ready
       .then(() => controller.handle(origin, { method: m.method as string, params: m.params }))
-      .then((result) => sendResponse({ ok: true, result: result === undefined ? null : result }))
+      .then((result) => {
+        trace('worker', `${m.method} answered: ${JSON.stringify(result ?? null).slice(0, 120)}`);
+        sendResponse({ ok: true, result: result === undefined ? null : result });
+      })
       .catch((error: unknown) => {
         const e = error instanceof ProviderRpcError ? error : new ProviderRpcError(PROVIDER_ERROR.internal, error instanceof Error ? error.message : String(error));
+        trace('worker', `${m.method} FAILED: ${e.code} ${e.message}`);
         sendResponse({ ok: false, error: { code: e.code, message: e.message } });
       });
     return true;
@@ -240,3 +260,63 @@ export function installProvider({ session, accounts, approvals, signer, ready }:
 
   return controller;
 }
+
+// 2026-11-01 (owner: "the hook should also run on the extension to verify connection to the web app"): the web app pages that reported in, per tab. A page re-reports when asked (merit_queryWalletState), so the side panel's check is a real
+// round trip: an entry that does not answer within WEB_APP_ANSWER_MS is dropped (a closed or frozen tab), and the panel is told when the set changes (merit/web/changed).
+const WEB_APP_ANSWER_MS = 1500;
+trace('worker', 'worker started');
+const webApps = new Map<number, { origin: string; loggedOn: boolean; fresh: boolean }>();
+const webAppsChanged = () => chrome.runtime.sendMessage({ type: 'merit/web/changed' }).catch(() => undefined);
+
+function reportWebApp(tabId: number | undefined, origin: string, loggedOn: boolean, detached: boolean, at: number) {
+  if (tabId === undefined) return;
+  const before = webApps.get(tabId);
+  webApps.set(tabId, { origin, loggedOn, fresh: true });
+  trace('worker', `web app reported: ${origin} (tab ${tabId}) ${loggedOn ? 'logged on' : 'not logged on'}, link ${detached ? 'CUT' : 'made'} at ${at}`);
+  if (!before || before.loggedOn !== loggedOn || before.origin !== origin) void webAppsChanged();
+  // the link flag is shared by both sides and the NEWER choice wins: the panel takes the page choice when it is newer than its own (a page that never chose reports 0 and changes nothing)
+  if (at > 0) chrome.runtime.sendMessage({ type: 'merit/web/peerChoice', detached, at }).catch(() => undefined);
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (webApps.delete(tabId)) {
+    trace('worker', `web app tab ${tabId} closed`);
+    void webAppsChanged();
+  }
+});
+
+chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+  const type = (message as { type?: string } | null)?.type;
+  if (type !== 'merit/web/status' && type !== 'merit/web/choice') return false;
+  // only the extension's own pages (the side panel) may ask
+  if (sender.id !== chrome.runtime.id || typeof sender.url !== 'string' || !sender.url.startsWith(chrome.runtime.getURL(''))) {
+    sendResponse({ ok: false, error: 'forbidden' });
+    return false;
+  }
+  // the person disconnected / connected the web app in the panel: every web app page hears it, so the link is cut or made on both sides
+  if (type === 'merit/web/choice') {
+    const choice = message as { detached?: unknown; at?: unknown };
+    const detached = choice.detached === true;
+    trace('worker', `web app link ${detached ? 'CUT' : 'made'} by the person in the panel at ${Number(choice.at) || 0}`);
+    void sendToTabs(undefined, { type: 'merit/provider/event', event: 'merit_peerAttached', data: { attached: !detached, at: Number(choice.at) || 0 } });
+    sendResponse({ ok: true });
+    return false;
+  }
+  for (const entry of webApps.values()) entry.fresh = false;
+  void sendToTabs(undefined, { type: 'merit/provider/event', event: 'merit_queryWalletState', data: null });
+  setTimeout(() => {
+    let dropped = false;
+    for (const [tabId, entry] of webApps) {
+      if (!entry.fresh) {
+        webApps.delete(tabId);
+        dropped = true;
+        trace('worker', `web app tab ${tabId} did not answer, dropped`);
+      }
+    }
+    const all = Array.from(webApps.values());
+    // reachable = a web app page answers (the disconnect is the shared link flag, kept by each side peer)
+    sendResponse({ ok: true, reachable: all.length > 0, loggedOn: all.some((e) => e.loggedOn) });
+    if (dropped) void webAppsChanged();
+  }, WEB_APP_ANSWER_MS);
+  return true;
+});

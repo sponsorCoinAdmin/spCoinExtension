@@ -1,4 +1,3 @@
-import React from 'react';
 export interface WalletSecurityApi {
     /** Resolve with the account's private key; throw a readable message for a wrong password. */
     revealPrivateKey(password: string, address: string): Promise<string>;
@@ -7,4 +6,4 @@ export interface WalletSecurityApi {
 }
 export default function WalletSecuritySection({ api }: {
     api: WalletSecurityApi;
-}): React.JSX.Element;
+}): import("react").JSX.Element;

@@ -7,7 +7,7 @@
 'use client';
 
 import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract, spCoinAccount } from '@sponsorcoin/spcoin-common/context';

@@ -23,7 +23,7 @@
 'use client';
 
 import { infoPanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { STATIC_MERIT_BADGE_ICON_URL } from '@sponsorcoin/spcoin-feeds/shared';

@@ -43,7 +43,7 @@ export const extensionVault = createWorkerVault(
 export const localVaultAuthenticator: Authenticator = {
   id: 'localVault',
   label: 'Extension',
-  displayName: 'Merit Wallet (Extension)',
+  displayName: 'Merit (Extension)',
   badge: 'Extension',
   capabilities: { signMessage: true, signTypedData: false, sendTransaction: true, listAccounts: true, createAccount: true, importKey: true, lock: true },
   vault: extensionVault,
@@ -111,7 +111,7 @@ const readChoices = (): Record<string, AuthenticatorId> => {
     return {};
   }
 };
-export const extensionAccountAuthenticatorStore = {
+const extensionAccountAuthenticatorStore = {
   get: (address: string): AuthenticatorId | undefined => readChoices()[address.toLowerCase()],
   set: (address: string, id: AuthenticatorId): void => {
     try {

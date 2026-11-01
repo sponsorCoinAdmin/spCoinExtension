@@ -5,7 +5,6 @@
 //   adapter  where the config is stored and what a change does besides (the web app's localStorage record, clearing or persisting its cached wallet password, a window event; the extension's chrome.storage with no side effects),
 //   engine   the two engine toggles (Uniswap and 0x) as the panel-visibility state plus the functions that change it.
 // The result is spread onto the shared WalletConfigPanel (spcoin-panels). Nothing here imports web code.
-import React from 'react';
 import { timeLimitStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ScrollableDropdown } from '@sponsorcoin/spcoin-panels';
 import type { ApplicationSyncMode, MeritExtensionChannel, MeritWalletLocation, MeritWalletPasswordMode } from '@sponsorcoin/spcoin-panels';

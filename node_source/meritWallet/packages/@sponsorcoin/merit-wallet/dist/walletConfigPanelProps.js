@@ -1,4 +1,11 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+// File: src/walletConfigPanelProps.tsx
+//
+// 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 11, owner: "I do not want any dependency on the web app"): everything the Config tab's panel needs, built ONCE in the package from a host ADAPTER. This was the web app's lib/spCoinWallet/useMeritWalletConfig.tsx: the handlers
+// that turn a click into a config change, the persisted-password time limit (the hours / minutes pickers and their clamp) and the descriptions under the options. A host now passes only what is really its own:
+//   adapter  where the config is stored and what a change does besides (the web app's localStorage record, clearing or persisting its cached wallet password, a window event; the extension's chrome.storage with no side effects),
+//   engine   the two engine toggles (Uniswap and 0x) as the panel-visibility state plus the functions that change it.
+// The result is spread onto the shared WalletConfigPanel (spcoin-panels). Nothing here imports web code.
 import { timeLimitStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ScrollableDropdown } from '@sponsorcoin/spcoin-panels';
 import { clampPersistedPasswordTimeoutHours, extensionDownloadPathFor, passwordDescriptionFor, syncDescriptionFor, useWalletConfig } from './walletConfig';

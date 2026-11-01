@@ -11,7 +11,6 @@
 'use client';
 
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import React from 'react';
 import { HexAddressInput } from '@sponsorcoin/spcoin-panels';
 import { AssetPreviewRow, type AssetPreviewRowProps } from '@sponsorcoin/spcoin-panels';
 

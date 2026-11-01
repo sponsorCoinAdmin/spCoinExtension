@@ -7,7 +7,7 @@
 'use client';
 
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';

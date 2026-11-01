@@ -50,7 +50,7 @@ export interface Wallet {
     setActiveAuthenticator(address: string, id: AuthenticatorId | undefined): void;
     getActiveAuthenticator(address: string): AuthenticatorId | undefined;
     /** Every backend's accounts, each address once. A backend that fails to list is skipped, never fatal. */
-    accounts(): Promise<WalletAccountEntry[]>;
+    accounts(onPartial?: (entries: WalletAccountEntry[]) => void): Promise<WalletAccountEntry[]>;
     /** Whether the backend for `address` supports the feature; without an address, whether ANY backend does. */
     can(feature: WalletFeature, address?: string): boolean;
     /** The vault of the backend for `address`, or undefined (a signing-only backend, or nothing registered). */

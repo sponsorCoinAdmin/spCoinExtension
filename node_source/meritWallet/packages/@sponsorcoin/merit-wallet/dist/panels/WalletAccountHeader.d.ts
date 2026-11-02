@@ -32,10 +32,6 @@ export interface WalletAccountHeaderProps {
      *  row with no picker to open yet. */
     onSelectClick?: () => void;
     onIconClick?: (address: string) => void;
-    /** Flips the chevron to point up while whatever picker this opens is
-     *  already showing — same chevronUp convention NetworkSelectDropDown's
-     *  own trigger mode uses. Defaults false (closed). */
-    chevronUp?: boolean;
     /** The wallet that signs for the account (docs/design/accountAuthDesign.txt section 18 4.3), e.g. "Merit Wallet (Extension)": the header's tooltip, so the person can always see which wallet is about to approve. */
     walletName?: string;
     /** Defaults to every role false/inert — matches "no account, no roles"
@@ -47,4 +43,4 @@ export interface WalletAccountHeaderProps {
      *  of `roles`. */
     onRoleClick?: (role: 'sponsor' | 'recipient' | 'agent') => void;
 }
-export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, chevronUp, walletName, }: WalletAccountHeaderProps): React.JSX.Element;
+export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, walletName, }: WalletAccountHeaderProps): React.JSX.Element;

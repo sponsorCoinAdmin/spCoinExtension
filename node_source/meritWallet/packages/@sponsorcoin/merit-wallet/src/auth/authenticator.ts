@@ -84,8 +84,13 @@ export interface Authenticator {
   /** 2026-10-11 (docs/design/accountAuthDesign.txt 14.3): present when this authenticator keeps keys itself under a credential; the shared password / delete / backup / security panels drive it. */
   readonly vault?: VaultCapability;
   status(): Promise<AuthenticatorStatus>;
-  /** The accounts this authenticator can sign for. */
-  accounts(): Promise<AuthenticatorAccount[]>;
+  /**
+   * The accounts this authenticator can sign for.
+   * 2026-11-02 (owner request: the first load of the list was slow, and a future phone app injects its own keystore the same way): `onPartial` is OPTIONAL. An authenticator that has the accounts in pieces (a keystore that lists addresses at once and fills
+   * in names and avatars later, a slow device) calls it with everything known so far, as often as it likes, and still resolves with the full list. One that ignores it keeps working: the wallet shows its list when the promise resolves. The wallet
+   * merges every authenticator's partials, so web, extension and a phone keystore are all handled the same way.
+   */
+  accounts(onPartial?: (accounts: AuthenticatorAccount[]) => void): Promise<AuthenticatorAccount[]>;
   /** Ask the user to connect (remote ones: the wallet's own connect popup). */
   connect?(): Promise<AuthenticatorAccount[]>;
   /** Optional: give up whatever permission connect() was granted (MetaMask: revoke the page's access). Never touches keys or the wallet's account list. */

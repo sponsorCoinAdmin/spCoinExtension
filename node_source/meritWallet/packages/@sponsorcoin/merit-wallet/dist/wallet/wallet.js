@@ -143,7 +143,11 @@ export function createWallet(options) {
             };
             await Promise.all(authenticators.map(async (authenticator, index) => {
                 try {
-                    listedBy[index] = await authenticator.accounts();
+                    // an authenticator that lists in pieces is merged as each piece arrives (see Authenticator.accounts)
+                    listedBy[index] = await authenticator.accounts((partial) => {
+                        listedBy[index] = partial;
+                        onPartial?.(merge());
+                    });
                 }
                 catch {
                     listedBy[index] = []; // a backend that fails to list is skipped, never fatal

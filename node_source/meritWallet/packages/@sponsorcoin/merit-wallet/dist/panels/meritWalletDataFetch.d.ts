@@ -37,7 +37,9 @@ export declare function createMeritWalletIconCaches(storage?: IconCacheStorage):
 };
 export type MeritWalletIconCaches = ReturnType<typeof createMeritWalletIconCaches>;
 export declare function buildNetworkRows(chainId: number, baseUrl: string, caches: MeritWalletIconCaches, forceRefresh?: boolean): Promise<MeritWalletNetworkRow[]>;
-export declare function fetchAccountGroups(chainId: number, baseUrl: string, caches: MeritWalletIconCaches, forceRefresh?: boolean): Promise<AccountListGroupData[] | undefined>;
+export declare function fetchAccountGroups(chainId: number, baseUrl: string, caches: MeritWalletIconCaches, forceRefresh?: boolean, 
+/** 2026-11-02 (owner request, both apps): called with the groups as soon as the rows are known (no avatars yet) and again as avatars arrive, so the list is on screen at once and fills in. The returned promise still resolves with the finished list. */
+onUpdate?: (groups: AccountListGroupData[]) => void): Promise<AccountListGroupData[] | undefined>;
 export declare function buildRecipientRows(chainId: number, baseUrl: string, caches: MeritWalletIconCaches, forceRefresh?: boolean): Promise<AssetListEntry[] | undefined>;
 export declare function buildAllAccountRows(baseUrl: string, caches: MeritWalletIconCaches, forceRefresh?: boolean): Promise<AssetListEntry[] | undefined>;
 export declare function buildTokenRows(chainId: number, baseUrl: string, caches: MeritWalletIconCaches, forceRefresh?: boolean): Promise<AssetListEntry[] | undefined>;

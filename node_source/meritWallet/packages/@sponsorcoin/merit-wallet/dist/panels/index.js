@@ -5,6 +5,7 @@ export { default as WalletRadioPanels } from './WalletRadioPanels';
 export { createMeritWalletIconCaches, buildNetworkRows, fetchAccountGroups, buildRecipientRows, buildAllAccountRows, buildTokenRows, } from './meritWalletDataFetch';
 export { default as AddressPanel } from './AddressPanel';
 export { default as WalletAccountHeader } from './WalletAccountHeader';
+export { default as WalletAccountSelectDropDown, useWalletAccountListVisible } from './WalletAccountSelectDropDown';
 export { default as NetworkSelectDropDown } from './NetworkSelectDropDown';
 export { default as AnonymousAvatar, ANONYMOUS_ACCOUNT_ICON_SRC } from './AnonymousAvatar';
 export { default as AgentSelectDropDown } from './AgentSelectDropDown';

@@ -34,12 +34,12 @@
 
 'use client';
 
-import { accountHeaderStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { accountHeaderStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { AssetSelectDropDown, ASSET_SELECT_DISPLAY, PanelGate } from '@sponsorcoin/spcoin-panels';
+import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import WalletAccountSelectDropDown from './WalletAccountSelectDropDown';
 
-import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
 
 export interface WalletAccountHeaderRoles {
   isSponsor: boolean;
@@ -88,10 +88,6 @@ export interface WalletAccountHeaderProps {
   // avatar.png/info.json, render AccountDetailPanel, etc.), same boundary
   // every other real-data callback in this package draws.
   onIconClick?: (address: string) => void;
-  /** Flips the chevron to point up while whatever picker this opens is
-   *  already showing — same chevronUp convention NetworkSelectDropDown's
-   *  own trigger mode uses. Defaults false (closed). */
-  chevronUp?: boolean;
   /** The wallet that signs for the account (docs/design/accountAuthDesign.txt section 18 4.3), e.g. "Merit Wallet (Extension)": the header's tooltip, so the person can always see which wallet is about to approve. */
   walletName?: string;
 
@@ -139,50 +135,9 @@ function RoleCell({
 /** This package's own inert default pill — used only when the caller
  *  doesn't pass pillSlot (e.g. the extension, via MeritWallet.tsx, which
  *  still calls this with the old icon/address/symbol/... props). */
-function DefaultAccountPill({
-  icon,
-  address,
-  symbol,
-  name,
-  placeholderLabel,
-  onSelectClick,
-  onIconClick,
-  chevronUp,
-}: Pick<WalletAccountHeaderProps, 'icon' | 'address' | 'symbol' | 'name' | 'placeholderLabel' | 'onSelectClick' | 'onIconClick' | 'chevronUp'>) {
-  const hasEntity = Boolean(address);
-  return (
-    <AssetSelectDropDown
-      rootId="WALLET_ACCOUNT_HEADER"
-      hasEntity={hasEntity}
-      // 2026-10-03 — shared Anonymous avatar when no account avatar is available.
-      icon={icon}
-      defaultIconSrc={ANONYMOUS_ACCOUNT_AVATAR_URL}
-      showIconWhenEmpty
-      symbol={symbol}
-      name={name}
-      address={address ?? ''}
-      placeholderLabel={placeholderLabel ?? 'Select Account'}
-      copyLabel="Copy Account Address"
-      showDisplay={
-        ASSET_SELECT_DISPLAY.ICON |
-        ASSET_SELECT_DISPLAY.SYMBOL |
-        ASSET_SELECT_DISPLAY.NAME |
-        ASSET_SELECT_DISPLAY.ADDRESS |
-        ASSET_SELECT_DISPLAY.COPY |
-        (chevronUp ? ASSET_SELECT_DISPLAY.CHEVRON_UP : ASSET_SELECT_DISPLAY.CHEVRON_DN) |
-        ASSET_SELECT_DISPLAY.ADDR_COMP
-      }
-      onRowClick={onSelectClick}
-      onIconClick={onIconClick ? () => onIconClick(address ?? '') : undefined}
-      addrPrePostSize={4}
-      iconSizeClassName={walletPartClass.compactPill.iconSize}
-      pillHeightClassName={walletPartClass.compactPill.pillHeight}
-      pillFontClassName={walletPartClass.compactPill.pillFont}
-      chevronSize={walletPartClass.compactPill.chevronSize}
-      copyIconSize={walletPartClass.compactPill.copyIconSize}
-      nameLineClassName={walletPartClass.compactPill.nameLine}
-    />
-  );
+function DefaultAccountPill(props: Pick<WalletAccountHeaderProps, 'icon' | 'address' | 'symbol' | 'name' | 'placeholderLabel' | 'onSelectClick' | 'onIconClick'>) {
+  // 2026-11-01: WalletAccountSelectDropDown replaces AccountSelectDropDown here and decides its own chevron from the panel tree.
+  return <WalletAccountSelectDropDown {...props} />;
 }
 
 /** This package's own inert default role table — same "used only when the
@@ -236,7 +191,6 @@ export default function WalletAccountHeader({
   onSelectClick,
   onIconClick,
   onRoleClick,
-  chevronUp,
   walletName,
 }: WalletAccountHeaderProps) {
   const resolvedPill =
@@ -249,7 +203,6 @@ export default function WalletAccountHeader({
         placeholderLabel={placeholderLabel}
         onSelectClick={onSelectClick}
         onIconClick={onIconClick}
-        chevronUp={chevronUp}
       />
     );
   // roleSlot === null is an explicit "render nothing" — distinct from

@@ -62,19 +62,34 @@ export async function buildNetworkRows(chainId, baseUrl, caches, forceRefresh = 
 // fetchAccountListGroups doesn't know which account is "active" (a
 // wallet-session concern, not this keystore-read's job) — no account is marked active here. The host passes
 // the real selection (MeritWallet's activeAccountAddress); until one is chosen the header reads "Select Account".
-export async function fetchAccountGroups(chainId, baseUrl, caches, forceRefresh = false) {
+export async function fetchAccountGroups(chainId, baseUrl, caches, forceRefresh = false, 
+/** 2026-11-02 (owner request, both apps): called with the groups as soon as the rows are known (no avatars yet) and again as avatars arrive, so the list is on screen at once and fills in. The returned promise still resolves with the finished list. */
+onUpdate) {
     try {
         const groups = await fetchAccountListGroups(chainId, { baseUrl });
-        const flatAccounts = groups.flatMap((group) => group.accounts);
-        const iconUrls = await Promise.all(flatAccounts.map((account) => caches.getCachedAccountIconDataUrl(account.avatarURL, baseUrl, forceRefresh)));
-        let cursor = 0;
-        return groups.map((group) => ({
+        const iconOf = new Map();
+        const build = () => groups.map((group) => ({
             ...group,
-            accounts: group.accounts.map((account) => ({
-                ...account,
-                iconSrc: iconUrls[cursor++],
-            })),
+            accounts: group.accounts.map((account) => ({ ...account, iconSrc: iconOf.get(account.id) })),
         }));
+        onUpdate?.(build());
+        // a few avatars at a time, published at most every 150 ms: one slow avatar no longer holds the whole list back
+        const flatAccounts = groups.flatMap((group) => group.accounts);
+        let next = 0;
+        let lastPublished = 0;
+        const worker = async () => {
+            while (next < flatAccounts.length) {
+                const account = flatAccounts[next++];
+                iconOf.set(account.id, await caches.getCachedAccountIconDataUrl(account.avatarURL, baseUrl, forceRefresh).catch(() => undefined));
+                const now = Date.now();
+                if (onUpdate && now - lastPublished >= 150) {
+                    lastPublished = now;
+                    onUpdate(build());
+                }
+            }
+        };
+        await Promise.all(Array.from({ length: 6 }, () => worker()));
+        return build();
     }
     catch (error) {
         // undefined (not []) so MeritWallet's own `accountGroups ??

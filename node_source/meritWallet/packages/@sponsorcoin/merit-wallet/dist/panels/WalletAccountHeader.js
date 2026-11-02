@@ -33,11 +33,11 @@
 // Tailwind pipeline just to render correctly).
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { accountHeaderStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { accountHeaderStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { AssetSelectDropDown, ASSET_SELECT_DISPLAY, PanelGate } from '@sponsorcoin/spcoin-panels';
-import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
+import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import WalletAccountSelectDropDown from './WalletAccountSelectDropDown';
 const DEFAULT_ROLES = { isSponsor: false, isRecipient: false, isAgent: false };
 function RoleCell({ label, active, title, onClick, borderRight, }) {
     const [hovered, setHovered] = useState(false);
@@ -46,25 +46,17 @@ function RoleCell({ label, active, title, onClick, borderRight, }) {
 /** This package's own inert default pill — used only when the caller
  *  doesn't pass pillSlot (e.g. the extension, via MeritWallet.tsx, which
  *  still calls this with the old icon/address/symbol/... props). */
-function DefaultAccountPill({ icon, address, symbol, name, placeholderLabel, onSelectClick, onIconClick, chevronUp, }) {
-    const hasEntity = Boolean(address);
-    return (_jsx(AssetSelectDropDown, { rootId: "WALLET_ACCOUNT_HEADER", hasEntity: hasEntity, 
-        // 2026-10-03 — shared Anonymous avatar when no account avatar is available.
-        icon: icon, defaultIconSrc: ANONYMOUS_ACCOUNT_AVATAR_URL, showIconWhenEmpty: true, symbol: symbol, name: name, address: address ?? '', placeholderLabel: placeholderLabel ?? 'Select Account', copyLabel: "Copy Account Address", showDisplay: ASSET_SELECT_DISPLAY.ICON |
-            ASSET_SELECT_DISPLAY.SYMBOL |
-            ASSET_SELECT_DISPLAY.NAME |
-            ASSET_SELECT_DISPLAY.ADDRESS |
-            ASSET_SELECT_DISPLAY.COPY |
-            (chevronUp ? ASSET_SELECT_DISPLAY.CHEVRON_UP : ASSET_SELECT_DISPLAY.CHEVRON_DN) |
-            ASSET_SELECT_DISPLAY.ADDR_COMP, onRowClick: onSelectClick, onIconClick: onIconClick ? () => onIconClick(address ?? '') : undefined, addrPrePostSize: 4, iconSizeClassName: walletPartClass.compactPill.iconSize, pillHeightClassName: walletPartClass.compactPill.pillHeight, pillFontClassName: walletPartClass.compactPill.pillFont, chevronSize: walletPartClass.compactPill.chevronSize, copyIconSize: walletPartClass.compactPill.copyIconSize, nameLineClassName: walletPartClass.compactPill.nameLine }));
+function DefaultAccountPill(props) {
+    // 2026-11-01: WalletAccountSelectDropDown replaces AccountSelectDropDown here and decides its own chevron from the panel tree.
+    return _jsx(WalletAccountSelectDropDown, { ...props });
 }
 /** This package's own inert default role table — same "used only when the
  *  caller doesn't pass roleSlot" reasoning as DefaultAccountPill above. */
 function DefaultRoleTable({ roles = DEFAULT_ROLES, onRoleClick, }) {
     return (_jsx("div", { style: accountHeaderStyle.roleBox, children: _jsx("table", { style: accountHeaderStyle.roleTable, children: _jsx("tbody", { children: _jsxs("tr", { children: [_jsx(RoleCell, { label: "S", active: roles.isSponsor, title: roles.isSponsor ? 'Sponsor Account — click to open Rewards' : 'Not a Sponsor Account', onClick: roles.isSponsor && onRoleClick ? () => onRoleClick('sponsor') : undefined, borderRight: true }), _jsx(RoleCell, { label: "R", active: roles.isRecipient, title: roles.isRecipient ? 'Recipient Account — click to open Rewards' : 'Not a Recipient Account', onClick: roles.isRecipient && onRoleClick ? () => onRoleClick('recipient') : undefined, borderRight: true }), _jsx(RoleCell, { label: "A", active: roles.isAgent, title: roles.isAgent ? 'Agent Account — click to open Rewards' : 'Not an Agent Account', onClick: roles.isAgent && onRoleClick ? () => onRoleClick('agent') : undefined, borderRight: false })] }) }) }) }));
 }
-export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, chevronUp, walletName, }) {
-    const resolvedPill = pillSlot ?? (_jsx(DefaultAccountPill, { icon: icon, address: address, symbol: symbol, name: name, placeholderLabel: placeholderLabel, onSelectClick: onSelectClick, onIconClick: onIconClick, chevronUp: chevronUp }));
+export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, walletName, }) {
+    const resolvedPill = pillSlot ?? (_jsx(DefaultAccountPill, { icon: icon, address: address, symbol: symbol, name: name, placeholderLabel: placeholderLabel, onSelectClick: onSelectClick, onIconClick: onIconClick }));
     // roleSlot === null is an explicit "render nothing" — distinct from
     // undefined ("caller didn't pass one, use the default").
     const resolvedRole = roleSlot === null ? null : roleSlot ?? _jsx(DefaultRoleTable, { roles: roles, onRoleClick: onRoleClick });

@@ -128,21 +128,35 @@ export async function fetchAccountGroups(
   baseUrl: string,
   caches: MeritWalletIconCaches,
   forceRefresh = false,
+  /** 2026-11-02 (owner request, both apps): called with the groups as soon as the rows are known (no avatars yet) and again as avatars arrive, so the list is on screen at once and fills in. The returned promise still resolves with the finished list. */
+  onUpdate?: (groups: AccountListGroupData[]) => void,
 ): Promise<AccountListGroupData[] | undefined> {
   try {
     const groups = await fetchAccountListGroups(chainId, { baseUrl });
+    const iconOf = new Map<string, string | undefined>();
+    const build = (): AccountListGroupData[] =>
+      groups.map((group) => ({
+        ...group,
+        accounts: group.accounts.map((account) => ({ ...account, iconSrc: iconOf.get(account.id) })),
+      }));
+    onUpdate?.(build());
+    // a few avatars at a time, published at most every 150 ms: one slow avatar no longer holds the whole list back
     const flatAccounts = groups.flatMap((group) => group.accounts);
-    const iconUrls = await Promise.all(
-      flatAccounts.map((account) => caches.getCachedAccountIconDataUrl(account.avatarURL, baseUrl, forceRefresh)),
-    );
-    let cursor = 0;
-    return groups.map((group) => ({
-      ...group,
-      accounts: group.accounts.map((account) => ({
-        ...account,
-        iconSrc: iconUrls[cursor++],
-      })),
-    }));
+    let next = 0;
+    let lastPublished = 0;
+    const worker = async () => {
+      while (next < flatAccounts.length) {
+        const account = flatAccounts[next++];
+        iconOf.set(account.id, await caches.getCachedAccountIconDataUrl(account.avatarURL, baseUrl, forceRefresh).catch(() => undefined));
+        const now = Date.now();
+        if (onUpdate && now - lastPublished >= 150) {
+          lastPublished = now;
+          onUpdate(build());
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: 6 }, () => worker()));
+    return build();
   } catch (error) {
     // undefined (not []) so MeritWallet's own `accountGroups ??
     // SAMPLE_ACCOUNT_GROUPS` fallback actually kicks in, rather than

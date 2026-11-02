@@ -50,7 +50,6 @@ import {
   usePanelVisible,
   useOpenActiveListPanel,
   useActiveListPanelChild,
-  panelStore,
   useEnforceRadioPanelGroups,
   useEnforcePanelAncestorVisibility,
   useAgentAccount,
@@ -1034,8 +1033,6 @@ function MeritWalletInner({
   const meritInfoVisible = usePanelVisible(SP_COIN_DISPLAY.MERIT_INFO_PANEL);
   const messageVisible = usePanelVisible(SP_COIN_DISPLAY.MESSAGE_PANEL);
   // The header pills' chevrons follow the real visibility of their list (2026-10-30, on request), so a list opened by any other means flips them too.
-  const networkListVisible = usePanelVisible(SP_COIN_DISPLAY.NETWORK_LIST);
-  const accountListVisible = usePanelVisible(SP_COIN_DISPLAY.LOCAL_ACCOUNT_WALLET_LIST);
   // A step-through popup (Swap / Send / Sponsor) is drawn in MESSAGE_PANEL: its stage heading is the PANEL_TITLE, and the tab body stays mounted.
   const stepContentUp = React.useSyncExternalStore(stepPanelContentStore.subscribe, () => stepPanelContentStore.getSnapshot() != null, () => false) && messageVisible;
   const stepTitle = React.useSyncExternalStore(stepPanelTitleStore.subscribe, stepPanelTitleStore.getSnapshot, stepPanelTitleStore.getServerSnapshot);
@@ -1044,7 +1041,10 @@ function MeritWalletInner({
   }, [stepContentUp, messageVisible, stepTitle]);
   // 2026-10-13: where the wallet asset files are served from, for the pill, the list and the panel alike (a host on another origin, the extension, passes the web app's address)
   if (walletAssetBaseUrl !== undefined) setWalletAssetBaseUrl(walletAssetBaseUrl); // set while rendering (an idempotent module setting), so the children's first render already reads it
-  const walletPanelVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_PANEL);
+  // 2026-11-01 (owner rule: a panel is drawn only while the panel tree says its branch is open). The detail screens below (account, agent, sponsor, recipient, token, network, wallet) are members of ASSET_RADIO_PANELS: their own flag outlives the branch now (closing a panel closes
+  // just that panel), so each is drawn only while ASSET_RADIO_PANELS itself is open. Live log: the Account Details screen kept covering a list the tree had switched to.
+  const assetRadioOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_RADIO_PANELS);
+  const walletPanelVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_PANEL) && assetRadioOpen;
   const walletLogoVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_LOGO);
   const walletMetaDataVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_META_DATA);
   const sellVisible = usePanelVisible(SP_COIN_DISPLAY.SELL_SELECT_PANEL);
@@ -1119,7 +1119,7 @@ function MeritWalletInner({
         .catch((error) => console.error('MeritWallet: failed to self-fetch network rows:', error));
     }
     if (accountGroups === undefined) {
-      void selfFetchAccountGroups(chainId, resolvedBaseUrl, caches, forceRefresh)
+      void selfFetchAccountGroups(chainId, resolvedBaseUrl, caches, forceRefresh, (partial) => { if (!cancelled) setSelfFetchedAccountGroups(partial); })
         .then((groups) => { if (!cancelled) setSelfFetchedAccountGroups(groups); })
         .catch((error) => console.error('MeritWallet: failed to self-fetch account groups:', error));
     }
@@ -1262,8 +1262,12 @@ function MeritWalletInner({
   // sharedListHost — one read, two consumers, so they can never disagree.
   const activeChild = useActiveListPanelChild();
   // The wallet's own list overlays are not radio members: the tab stays the main overlay while one is open, and the list the person just opened must show.
-  const activeListMode: ActiveListMode =
-    activeListModeLocal ??
+  // 2026-11-01 (owner rule: a panel is drawn only while the panel tree says it is open): the selection slot is not state about what is on screen, it is the picker destination. It counts only while the list's own panel,
+  // ASSET_SELECT_LIST_PANEL, is visible. Without this, a tab switch (which no longer clears the slot) left the account list drawn over the Swap tab.
+  const listPanelOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL);
+  const activeListMode: ActiveListMode = !listPanelOpen
+    ? null
+    : activeListModeLocal ??
     (activeChild === SP_COIN_DISPLAY.LOCAL_ACCOUNT_WALLET_LIST
       ? 'account'
       : activeChild === SP_COIN_DISPLAY.NETWORK_LIST
@@ -1303,7 +1307,8 @@ function MeritWalletInner({
   };
   // A header chevron TOGGLES its list: down opens it (pushes the display stack), up closes it (pops it). Open = the local mode OR the tree flag of the list id (a host may have opened it through the tree).
   const toggleList = (mode: Exclude<ActiveListMode, null>) => {
-    if (activeListMode === mode || panelStore.isVisible(listPanelIdFor(mode))) setActiveList(null);
+    // open means the list is SHOWING (its panel open AND this mode active), not that the mode's own flag is set: the flag outlives a tab switch now (closing a panel closes just that panel)
+    if (activeListMode === mode || activeChild === listPanelIdFor(mode)) setActiveList(null);
     else setActiveList(mode);
   };
   // 2026-09-16, on live report ("selecting a token from the logo.png,
@@ -1629,11 +1634,11 @@ function MeritWalletInner({
   // different trigger (the avatar icon, not the row/chevron). Null when
   // closed; a real address string while showing that account's details.
   const [accountDetailAddress, setAccountDetailAddress] = useState<string | null>(null);
-  const accountDetailVisible = usePanelVisible(SP_COIN_DISPLAY.ACCOUNT_PANEL);
+  const accountDetailVisible = usePanelVisible(SP_COIN_DISPLAY.ACCOUNT_PANEL) && assetRadioOpen;
   // The role detail panels (an agent, a sponsor, a recipient) show the same account detail screen for the account the exchange context holds in that role.
-  const agentPanelVisible = usePanelVisible(SP_COIN_DISPLAY.AGENT_PANEL);
-  const sponsorPanelVisible = usePanelVisible(SP_COIN_DISPLAY.SPONSOR_PANEL);
-  const recipientPanelVisible = usePanelVisible(SP_COIN_DISPLAY.RECIPIENT_PANEL);
+  const agentPanelVisible = usePanelVisible(SP_COIN_DISPLAY.AGENT_PANEL) && assetRadioOpen;
+  const sponsorPanelVisible = usePanelVisible(SP_COIN_DISPLAY.SPONSOR_PANEL) && assetRadioOpen;
+  const recipientPanelVisible = usePanelVisible(SP_COIN_DISPLAY.RECIPIENT_PANEL) && assetRadioOpen;
   const { exchangeContext: roleContext } = useExchangeContext();
   const [activeAccountForDetail] = useActiveAccount();
   // Same idea, for the token-list's own info icon (Select a Token).
@@ -1651,13 +1656,13 @@ function MeritWalletInner({
   // TokenPanel.tsx (the package's own, separately-mounted copy) already
   // correctly uses.
   const [previewToken, setPreviewTokenContract] = usePreviewTokenContract();
-  const tokenDetailVisible = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
+  const tokenDetailVisible = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL) && assetRadioOpen;
   const previewTokenAddress = previewToken?.address ?? null;
   // Same idea, for the network-list's own icon (Select Network) — see
   // onNetworkIconClick's own doc comment for why this one needs no
   // separate "detail" data prop from the caller.
   const [networkDetailId, setNetworkDetailId] = useState<string | null>(null);
-  const networkDetailVisible = usePanelVisible(SP_COIN_DISPLAY.NETWORK_PANEL);
+  const networkDetailVisible = usePanelVisible(SP_COIN_DISPLAY.NETWORK_PANEL) && assetRadioOpen;
   // 2026-09-21, Path A — ACCOUNT_PANEL/TOKEN_PANEL/NETWORK_PANEL are ALL
   // `MAIN_RADIO_OVERLAY_PANELS` members too (verified the same way as
   // the tab/list-overlay pieces — read `panelGroups.ts` directly), so
@@ -2738,7 +2743,7 @@ function MeritWalletInner({
                     }
                   : undefined
               }
-              chevronUp={activeListMode === 'network' || networkListVisible}
+              chevronUp={activeListMode === 'network' || activeChild === SP_COIN_DISPLAY.NETWORK_LIST}
             />
           }
           titleBadgeSrc={titleBadgeSrc}
@@ -2773,7 +2778,6 @@ function MeritWalletInner({
             openAccountDetail(address);
             onAccountIconClick?.(address);
           }}
-          chevronUp={activeListMode === 'account' || accountListVisible}
           walletName={activeWalletName}
         />
       </PanelGate>

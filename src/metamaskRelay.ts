@@ -42,7 +42,7 @@ const REQUEST_TIMEOUT_MS = 5 * 60_000;
 const TAB_LOAD_TIMEOUT_MS = 20_000;
 const HIDE_BANNER_AFTER_IDLE_MS = 1500;
 
-export interface RelayError {
+interface RelayError {
   code: number;
   message: string;
 }

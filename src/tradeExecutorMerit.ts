@@ -22,7 +22,7 @@ import { ethCall, isVaultAccount, vaultUnavailableMessage, waitForReceipt } from
 import { localVaultAuthenticator } from './localVaultAuthenticator';
 import { authenticatorFor, isExternalAccount } from './externalAccounts';
 
-export interface MeritTradeExecutorParams {
+interface MeritTradeExecutorParams {
   /** RPC URL: used when a call does not carry its own. */
   rpcUrl: string;
   /** 2026-10-08 (table row 14): the signing account. When it belongs to the unlocked vault, execute() signs locally in the worker (src/localSigning.ts). */
@@ -41,7 +41,7 @@ export interface MeritTradeExecutorParams {
  * with the approve transaction anyway (allowance reads as 0 → always approves).
  * A future cross-origin RPC relay can fill in the real eth_call.
  */
-export function createMeritTradeExecutor(params: MeritTradeExecutorParams): TradeExecutor {
+function createMeritTradeExecutor(params: MeritTradeExecutorParams): TradeExecutor {
   return {
     async execute({
       to,

@@ -9,7 +9,7 @@ import { buildMeritTradeExecutorContext } from './tradeExecutorMerit';
 export { CLAIM_METHODS, SPOIN_CLAIM_ABI };
 export type { ClaimMethod, ExecuteClaimTransactionResult };
 
-export interface ExecuteClaimTransactionParams {
+interface ExecuteClaimTransactionParams {
   baseUrl: string;
   rpcUrl: string;
   /** The accountAddress whose rewards are being claimed. */

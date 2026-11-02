@@ -35,7 +35,7 @@
 
 const STORAGE_KEY = 'spcoin_merit_wallet_ui';
 
-export interface MeritWalletUiState {
+interface MeritWalletUiState {
   menuOpen: boolean;
 }
 

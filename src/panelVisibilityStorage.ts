@@ -75,7 +75,7 @@ async function applyDefaultOnMigrations(snapshot: PanelVisibilitySnapshot): Prom
   return snapshot;
 }
 
-export async function readPanelVisibilityRaw(): Promise<PanelVisibilitySnapshot | null> {
+async function readPanelVisibilityRaw(): Promise<PanelVisibilitySnapshot | null> {
   try {
     const stored = await chrome.storage.local.get(STORAGE_KEY);
     const snapshot = parsePanelVisibilitySnapshot(stored[STORAGE_KEY]);

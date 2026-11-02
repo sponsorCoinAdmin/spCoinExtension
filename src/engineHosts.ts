@@ -39,7 +39,7 @@ import { getPendingSignRequest, subscribePendingSignRequest } from './pendingSig
 /** The engine only calls invalidateQueries after a confirmed trade; the extension has no query cache, its balances refresh through balancesChangedStore. */
 const noQueryClient = { invalidateQueries: async () => undefined };
 
-export function useExtensionSwapFunctions(): ReturnType<typeof useSwapFunctions> {
+function useExtensionSwapFunctions(): ReturnType<typeof useSwapFunctions> {
   const { exchangeContext } = useExchangeContext();
   const [activeSpCoinAddress] = useActiveSpCoinAddress();
   const [buyTokenContract] = useBuyTokenContract();
@@ -77,11 +77,11 @@ export function useExtensionSwapFunctions(): ReturnType<typeof useSwapFunctions>
 const subscribeSign = (onChange: () => void) => subscribePendingSignRequest(() => onChange());
 const signRequestOpen = () => getPendingSignRequest() != null;
 
-export function useExtensionApprovalPending(): boolean {
+function useExtensionApprovalPending(): boolean {
   return useSyncExternalStore(subscribeSign, signRequestOpen, signRequestOpen);
 }
 
-export function useExtensionAppPublicClient() {
+function useExtensionAppPublicClient() {
   const [chainId] = useAppChainId();
   return useMemo(() => {
     const rpcUrl = chainId ? rpcUrlForChain(Number(chainId)) : undefined;
@@ -90,7 +90,7 @@ export function useExtensionAppPublicClient() {
 }
 
 /** A client for any chain in the network registry (the engine reads contracts through it). */
-export function useExtensionChainPublicClient(chainId?: number) {
+function useExtensionChainPublicClient(chainId?: number) {
   return useMemo(() => {
     const rpcUrl = chainId ? rpcUrlForChain(Number(chainId)) : undefined;
     return rpcUrl ? createPublicClient({ transport: http(rpcUrl) }) : undefined;

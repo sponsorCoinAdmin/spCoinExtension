@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useExchangeEngineSync } from '@sponsorcoin/spcoin-exchange-engine';
 import { registerEngineSetters } from './meritWalletConfigEngineStore';
 
-export interface MeritWalletConfigBridgeProps {
+interface MeritWalletConfigBridgeProps {
   onEngineVisibilityChange: () => void;
 }
 

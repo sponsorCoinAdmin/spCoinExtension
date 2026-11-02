@@ -12,7 +12,7 @@ import { localVaultAuthenticator } from './localVaultAuthenticator';
 import { authenticatorFor } from './externalAccounts';
 import { rpcUrlForChain } from './chainRpc';
 
-export interface SendNativeParams {
+interface SendNativeParams {
   chainId: number;
   rpcUrl: string;
   from: string;

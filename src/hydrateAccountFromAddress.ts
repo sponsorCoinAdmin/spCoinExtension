@@ -17,11 +17,10 @@
 import type { Address } from 'viem';
 import { isAddress } from 'viem';
 import { loadExtensionAccountProfile } from './accountProfile';
-import { defaultMissingImage } from '@sponsorcoin/spcoin-exchange-engine';
 
 import type { HydratedAgent } from '@sponsorcoin/spcoin-panels';
 
-export interface HydrateAccountOpts {
+interface HydrateAccountOpts {
   baseUrl: string;
 }
 

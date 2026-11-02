@@ -58,7 +58,7 @@ const chromeSessionStore: VaultSessionStore = {
   },
 };
 
-export type VaultRequest =
+type VaultRequest =
   | { type: 'merit/vault/status' }
   | { type: 'merit/vault/create'; password: string; mnemonic?: string }
   | { type: 'merit/vault/unlock'; password: string }
@@ -91,7 +91,7 @@ export type VaultRequest =
   | { type: 'merit/network/get' }
   | { type: 'merit/network/set'; chainId: number };
 
-export type VaultResponse =
+type VaultResponse =
   | {
       ok: true;
       initialized: boolean;

@@ -86,7 +86,6 @@ import { runSpCoinReadStep } from './src/runSpCoinReadStep';
 import { buildMeritTradeExecutorContext } from './src/tradeExecutorMerit';
 import { makeFetchBalance } from './src/fetchBalance';
 import { rpcUrlForChain } from './src/chainRpc';
-import { makeResolveAssetAddress } from './src/resolveAssetAddress';
 import { SPOIN_STAKE_ABI } from './src/spCoinStakeAbi';
 import { executeClaimTransaction, SPOIN_CLAIM_ABI } from './src/executeClaimTransaction';
 import { parseAbi } from 'viem';
@@ -133,23 +132,10 @@ let activeChainId: number = MERIT_WALLET_HARDHAT_CHAIN_ID;
 (globalThis as unknown as { __spcoinAuthenticators?: typeof extensionAuthenticatorRegistry }).__spcoinAuthenticators = extensionAuthenticatorRegistry;
 
 
-// 2026-10-05 — resolves an address typed into a list's ADDRESS_PANEL that isn't one of the loaded rows
-// (see src/resolveAssetAddress.ts). Module scope for a stable identity; the app origin follows the
-// open-target setting, so it reads currentBaseUrl, which every render refreshes.
+// the app origin follows the open-target setting, so it is read from currentBaseUrl, which every render refreshes
 let currentBaseUrl = '';
 // who is waiting for the wallet to be unlocked (shown on the login page); refreshed while the wallet is locked
 let lockedRequestNotice = '';
-const assetResolvers = new Map<number, ReturnType<typeof makeResolveAssetAddress>>();
-// one resolver per chain, picked when it is called: the active chain can change while the panel is open
-const resolveAssetAddress: ReturnType<typeof makeResolveAssetAddress> = (...args) => {
-  const chainId = activeChainId;
-  let resolver = assetResolvers.get(chainId);
-  if (!resolver) {
-    resolver = makeResolveAssetAddress({ rpcUrl: chainRpcUrl(chainId), chainId, getBaseUrl: () => currentBaseUrl });
-    assetResolvers.set(chainId, resolver);
-  }
-  return resolver(...args);
-};
 
 
 // 2026-10-07 — the REAL active spCoin address, read from the web app's saved ExchangeContext
@@ -888,7 +874,6 @@ async function renderWallet() {
                 baseUrl,
                 storage: chromeIconCacheStorage,
                 fetchBalance: fetchBalanceFor(activeChainId),
-                resolveAssetAddress,
                 rewardsHost,
                 stakingHost,
               },

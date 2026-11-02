@@ -27,8 +27,8 @@ export type OpenTarget = 'local' | 'prod';
 
 const STORAGE_KEY = 'spcoin_open_target';
 
-export const LOCAL_APP_URL = 'http://localhost:3000';
-export const PROD_APP_URL = 'https://sponsorcoin.org';
+const LOCAL_APP_URL = 'http://localhost:3000';
+const PROD_APP_URL = 'https://sponsorcoin.org';
 
 // Prod is the default — matches this button's existing, always-sponsorcoin.org
 // behavior until someone deliberately flips it to Local.

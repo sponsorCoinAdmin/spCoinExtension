@@ -14,7 +14,7 @@ import {
 import { buildMeritTradeExecutorContext } from './tradeExecutorMerit';
 import type { TradeExecutorContext, TradeExecutorAccount } from '@sponsorcoin/spcoin-exchange-engine';
 
-export interface ExecuteErc20ApproveParamsExt {
+interface ExecuteErc20ApproveParamsExt {
   baseUrl: string;
   rpcUrl: string;
   chainId: number;

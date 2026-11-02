@@ -21,7 +21,7 @@ import {
 import { buildMeritTradeExecutorContext } from './tradeExecutorMerit';
 import type { TradeExecutorContext, TradeExecutorAccount } from '@sponsorcoin/spcoin-exchange-engine';
 
-export interface ExecuteUniswapV3SwapParamsExt {
+interface ExecuteUniswapV3SwapParamsExt {
   baseUrl: string;
   rpcUrl: string;
   chainId: number;

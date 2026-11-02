@@ -6,7 +6,7 @@ export interface EngineVisibility {
   zeroXEngineVisible: boolean;
 }
 
-export interface EngineSetters {
+interface EngineSetters {
   setUniswapEngine(checked: boolean): void;
   setZeroXEngine(checked: boolean): void;
 }

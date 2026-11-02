@@ -37,7 +37,7 @@ async function isQuietAccount(address: string, chainId: number): Promise<boolean
 
 export type ConfirmCopy = Omit<PendingSignRequest, 'id'>;
 
-export interface LocalTransaction {
+interface LocalTransaction {
   from: string;
   to: string;
   data?: string;

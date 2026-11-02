@@ -2,7 +2,7 @@
 //
 // 2026-10-31 (owner design): a site asked the wallet to connect. The wallet's own account list opens for it ("Remote Merit (Web) Account Selector") with a Connect / Connected button on every account; the first account connected answers the site
 // (dappApprovals.ts) and every later change is applied at once; closing the list (back arrow) with nothing connected refuses. This is the slot between the approval queue and the side panel: ONE pending selection at a time.
-export interface RemoteSelection {
+interface RemoteSelection {
   caller: string;
   origin: string;
   selected: string[];

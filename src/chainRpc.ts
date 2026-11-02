@@ -6,7 +6,6 @@
 import { getNetworkConfiguration } from '@sponsorcoin/spcoin-feeds/networks';
 
 export const HARDHAT_CHAIN_ID = 31337;
-export const HARDHAT_RPC_URL = getNetworkConfiguration(HARDHAT_CHAIN_ID)?.rpcUrl ?? '';
 
 export function rpcUrlForChain(chainId: number): string | undefined {
   return getNetworkConfiguration(chainId)?.rpcUrl || undefined;

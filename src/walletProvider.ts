@@ -140,7 +140,7 @@ async function ensureWalletScreenOpen(windowId?: number) {
   await chrome.windows.create({ url: chrome.runtime.getURL('sidepanel.html'), type: 'popup', width: 400, height: 740 });
 }
 
-export interface ProviderDeps {
+interface ProviderDeps {
   session: VaultSession<WalletVaultContents>;
   accounts: WalletAccounts;
   approvals: ApprovalController;

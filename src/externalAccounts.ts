@@ -9,7 +9,7 @@ import { isMetaMaskAccount, metamaskAuthenticator } from './metamaskAuthenticato
 const same = (a: string, b: string) => a.toLowerCase() === b.trim().toLowerCase();
 
 /** The wallet that holds this account, when it is not the vault: the Ledger (when connected and it gave this account) or MetaMask (when it shared it). */
-export async function externalAuthenticatorFor(address: string | undefined): Promise<Authenticator | undefined> {
+async function externalAuthenticatorFor(address: string | undefined): Promise<Authenticator | undefined> {
   if (!address) return undefined;
   const ledger = await ledgerAuthenticator.accounts().catch(() => []);
   if (ledger.some((a) => same(a.address, address))) return ledgerAuthenticator;

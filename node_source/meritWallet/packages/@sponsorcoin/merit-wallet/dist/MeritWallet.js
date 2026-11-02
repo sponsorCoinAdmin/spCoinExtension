@@ -1636,11 +1636,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                 remoteSelection.onToggle(account.address);
                             return;
                         }
-                        void (async () => {
-                            const result = await onAccountRowSelect?.(account.id, group.id);
-                            if (result !== false)
-                                closeListOverlay();
-                        })();
+                        // 2026-11-02 (owner request, Active Account Selection): picking an account makes it the active account and LEAVES the list open; the person closes it with Back. This reverses 2026-10-29 above (a successful pick closed the list).
+                        void onAccountRowSelect?.(account.id, group.id);
                     },
                     onInfoClick: account.address
                         ? () => {

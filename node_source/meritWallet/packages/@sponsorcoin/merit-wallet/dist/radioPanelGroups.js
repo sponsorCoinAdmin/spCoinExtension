@@ -35,6 +35,9 @@ import { SP_COIN_DISPLAY, RADIO_PANEL_GROUPS } from '@sponsorcoin/spcoin-common/
 // "exactly 0 or 1 visible" group in panelGroups.ts (ACCOUNT_PANEL_MODES,
 // REWARDS_GROUP_MODES, ...) — 0 visible is a legitimate state, not a bug to
 // self-heal.
+// 2026-11-01 (owner rule, docs/meritFixes.txt "PANEL CLOSE RULE"): closing a panel closes just that panel, nothing else. No group here has a
+// `container` any more: the two that did (ASSET_RADIO_PANELS, ACTIVE_LIST_PANEL_MODES) used to have their members force-closed when the container
+// closed (useEnforceRadioPanelContainers, now deleted). Notes below that describe that containment are history.
 export const RADIO_PANEL_GROUPS_WITH_FALLBACKS = RADIO_PANEL_GROUPS.map((group) => {
     if (group.name === 'MAIN_RADIO_OVERLAY_PANELS') {
         return { ...group, fallbackPanel: SP_COIN_DISPLAY.TRADING_STATION_PANEL };
@@ -48,7 +51,7 @@ export const RADIO_PANEL_GROUPS_WITH_FALLBACKS = RADIO_PANEL_GROUPS.map((group) 
     // the group is force-closed, so reopening 136 returns an empty container
     // instead of restoring whatever happened to be open before.
     if (group.name === 'ASSET_RADIO_PANELS') {
-        return { ...group, container: SP_COIN_DISPLAY.ASSET_RADIO_PANELS };
+        return group;
     }
     // 2026-10-23 (docs/meritFixes.txt §15-16, live report: popping
     // ASSET_SELECT_LIST_PANEL off the display stack left NETWORK_LIST still
@@ -73,7 +76,7 @@ export const RADIO_PANEL_GROUPS_WITH_FALLBACKS = RADIO_PANEL_GROUPS.map((group) 
     // ASSET_SELECT_LIST_PANEL) instead: still force-closes a stale mode on a
     // real close, no longer on a temporary cover-and-return.
     if (group.name === 'ACTIVE_LIST_PANEL_MODES') {
-        return { ...group, container: SP_COIN_DISPLAY.ACTIVE_LIST_PANEL };
+        return group;
     }
     return group;
 });

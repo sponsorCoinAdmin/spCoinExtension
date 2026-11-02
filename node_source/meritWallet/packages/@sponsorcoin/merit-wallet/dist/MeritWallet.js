@@ -42,7 +42,7 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import { engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { StakeConfirmPopup } from '@sponsorcoin/spcoin-panels';
-import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, panelStore, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useEnforceRadioPanelContainers, useAgentAccount, useActiveAccount, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, panelStore, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext } from './platform/platform';
@@ -395,12 +395,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // called every render, just with nothing to enforce when disabled).
     useEnforceRadioPanelGroups(manageRadioPanels ? RADIO_PANEL_GROUPS_WITH_FALLBACKS : EMPTY_RADIO_PANEL_GROUPS);
     useEnforcePanelAncestorVisibility();
-    // 2026-10-03 — containment, and it MUST come after ancestor reveal above.
-    // React runs effects in hook order within a commit, so a bare
-    // setPanelVisible on one of the twelve detail panels gets its container
-    // opened first and this pass then stands down; the other order would close
-    // the panel again in the same flush that revealed its container.
-    useEnforceRadioPanelContainers(manageRadioPanels ? RADIO_PANEL_GROUPS_WITH_FALLBACKS : EMPTY_RADIO_PANEL_GROUPS);
+    // 2026-11-01 (owner rule): closing a panel closes just that panel. The container enforcement that used to run here (it force-closed a group's
+    // members when their container closed) is removed. See docs/meritFixes.txt, "PANEL CLOSE RULE".
     // 2026-09-25, on request ("migrate AGENT_HEADER_PANEL") — useAgentAccount
     // is genuinely portable (already in @sponsorcoin/spcoin-exchange-engine),
     // so agentAccount here is real, live, shared state — not a placeholder —
@@ -1016,18 +1012,10 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
             activeMainOverlay: activeMainOverlay != null ? SP_COIN_DISPLAY[activeMainOverlay] : null,
         });
         openPanel(TAB_PANEL_IDS[tab], 'MeritWallet:handleTabClick');
-        // Whatever list was open over the tab just left is simply closed, not
-        // remembered. openPanel(tab) above already popped/replaced
-        // ASSET_SELECT_LIST_PANEL itself on the stack (validateTab's own
-        // pushRule), so this only needs to clear the non-stack bits that
-        // doesn't touch: the open ACTIVE_LIST_PANEL_MODES child,
-        // ACTIVE_LIST_PANEL, and the local selection-slot store.
-        // `keepContainer: true` skips closeActiveListPanel's own
-        // ASSET_SELECT_LIST_PANEL close (and the stale-stack restore read that
-        // used to come with it, see that function's own doc comment) --
-        // openPanel(tab) above already handled it correctly.
-        activeListPanelStore.setWalletListSelectionSlot(null);
-        closeActiveListPanel('NAV_POP:MeritWallet:handleTabClick:tabSwitch', { keepContainer: true });
+        // 2026-11-01 (owner rule: "closing a radio panel, or any other panel, closes just that panel, nothing else") -- a tab switch only
+        // closes the panels the plain pop/push rule above closes (ASSET_SELECT_LIST_PANEL goes off the stack). The list's own ACTIVE_LIST_PANEL,
+        // its open mode (NETWORK_LIST, ...) and the selection slot are left exactly as they were, so going back shows the list as it was left.
+        // This used to call closeActiveListPanel(..., { keepContainer: true }) here, which wiped them.
     };
     // The selected detail record is data tied to its panel: it goes when the panel closes, not when the tab changes.
     useEffect(() => { if (!accountDetailVisible)

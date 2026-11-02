@@ -108,6 +108,7 @@ export * from './account/profileForm';
 
 export * from './auth/authenticator';
 export * from './auth/resolve';
+export * from './keystore';
 // 2026-10-11 (docs/design/accountAuthDesign.txt section 15.7, item W1a): the wallet object (registry, saved choice per account, resolver, accounts, capabilities) a host hands the component.
 export * from './wallet/wallet';
 export { MeritPlatformContext, usePlatform, type MeritPlatform, type PlatformStorage } from './platform/platform';

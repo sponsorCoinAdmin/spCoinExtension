@@ -10,6 +10,7 @@ import {
   createWallet,
   createWorkerVault,
   withApprovalNotice,
+  withPublicAccountCache,
   type Authenticator,
   type AuthenticatorAccount,
   type AuthenticatorChange,
@@ -17,6 +18,7 @@ import {
   type AuthenticatorTransaction,
   type WorkerReply as VaultWorkerReply,
 } from '@sponsorcoin/merit-wallet';
+import { extensionPublicAccountStore } from './extensionPublicAccountStore';
 import { signMessageWithVault, signWithVault, type ConfirmCopy } from './localSigning';
 import { metamaskAuthenticator } from './metamaskAuthenticator';
 import { ledgerAuthenticator } from './hardwareLedger';
@@ -40,7 +42,7 @@ export const extensionVault = createWorkerVault(
   { label: 'this device' },
 );
 
-export const localVaultAuthenticator: Authenticator = {
+const localVaultBase: Authenticator = {
   id: 'localVault',
   label: 'Extension',
   displayName: 'Merit (Extension)',
@@ -91,6 +93,9 @@ function translate(error: unknown): AuthenticatorError {
   if (/not in the wallet|not allowed|refused/i.test(text)) return new AuthenticatorError('unauthorized', text, 'localVault');
   return new AuthenticatorError('unreachable', text, 'localVault');
 }
+
+// The vault's account list shows from the saved public copy first (the same wrapper the web app uses); the worker still has the last word.
+export const localVaultAuthenticator: Authenticator = withPublicAccountCache(localVaultBase, extensionPublicAccountStore);
 
 /** The extension's registry: it has the one authenticator. */
 export const extensionAuthenticatorRegistry = createAuthenticatorRegistry();

@@ -600,10 +600,13 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // 2026-11-01 (owner rule: a panel is drawn only while the panel tree says it is open): the selection slot is not state about what is on screen, it is the picker destination. It counts only while the list's own panel,
     // ASSET_SELECT_LIST_PANEL, is visible. Without this, a tab switch (which no longer clears the slot) left the account list drawn over the Swap tab.
     const listPanelOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL);
+    // 2026-11-02 (owner: closing LOCAL_ACCOUNT_WALLET_LIST in the tree left the account list drawn): the slot counts only while ITS OWN panel is the open child too, so closing that one panel removes the list from the screen.
+    const slotShowing = activeListModeLocal != null && activeChild === listPanelIdFor(activeListModeLocal);
     const activeListMode = !listPanelOpen
         ? null
-        : activeListModeLocal ??
-            (activeChild === SP_COIN_DISPLAY.LOCAL_ACCOUNT_WALLET_LIST
+        : slotShowing
+            ? activeListModeLocal
+            : (activeChild === SP_COIN_DISPLAY.LOCAL_ACCOUNT_WALLET_LIST
                 ? 'account'
                 : activeChild === SP_COIN_DISPLAY.NETWORK_LIST
                     ? 'network'

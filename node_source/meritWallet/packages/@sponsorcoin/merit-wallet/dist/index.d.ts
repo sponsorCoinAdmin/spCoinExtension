@@ -72,6 +72,7 @@ export { saveAccountProfile } from './account/accountProfileClient';
 export * from './account/profileForm';
 export * from './auth/authenticator';
 export * from './auth/resolve';
+export * from './keystore';
 export * from './wallet/wallet';
 export { MeritPlatformContext, usePlatform, type MeritPlatform, type PlatformStorage } from './platform/platform';
 export { domPlatform } from './platform/domPlatform';

@@ -2360,8 +2360,8 @@ function MeritWalletInner({
         })),
         infoIconSrc,
         errorMessage: accountListNotice,
+        // 2026-11-02 (owner: Back from Add Wallet Account must step back to the list): the list is NOT closed here. Opening the add flow closes nothing; the flow is drawn over the list, and Back closes just the flow, so the list is what is left.
         onAddWalletAccount: addAccountHost ? () => {
-          closeListOverlay();
           openPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:openAddWalletAccount');
         } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
       }),
@@ -2457,7 +2457,8 @@ function MeritWalletInner({
   useEffect(() => {
     const wasOpen = prevAddFlowTopRef.current != null;
     prevAddFlowTopRef.current = addFlowTop;
-    if (wasOpen && addFlowTop == null) openPanel(TAB_PANEL_IDS[activeTab], 'MeritWallet:addFlowRestoreTab');
+    // 2026-11-02: only when no list is open underneath: a list left open is what Back returns to, and a tab opened over it would hide it
+    if (wasOpen && addFlowTop == null && activeChild == null) openPanel(TAB_PANEL_IDS[activeTab], 'MeritWallet:addFlowRestoreTab');
   }, [addFlowTop]);
   const addAccountOverlay = addFlowTop != null && addAccountHost
     ? React.createElement(AddAccountFlow, { host: addAccountHost, wallet, activeAddress: activeAccountAddress, nativeWalletId, walletConnection, onDisconnectWallet, onDone: () => closePanel(addFlowTop, 'MeritWallet:addAccountFlow:done') })

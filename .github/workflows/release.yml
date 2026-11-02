@@ -24,10 +24,8 @@ name: Testing Release
 # tagged release per commit. That matches what the testing link actually
 # wants: whatever main currently builds, not a specific version history.
 
+# 2026-11-02 (owner): MANUAL ONLY. The push trigger is off: every push was spending GitHub build minutes. Run it on request: `cibuild` (scripts/cibuild.sh) or `gh workflow run <name> --ref main`.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:

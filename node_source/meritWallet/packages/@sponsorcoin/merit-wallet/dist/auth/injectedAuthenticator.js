@@ -76,6 +76,18 @@ export function createInjectedAuthenticator({ id, label, displayName, badge, ico
             return toAccounts(await call('eth_accounts'));
         },
         async connect() {
+            // already permitted: eth_requestAccounts would return at once, so ask for the permission again (the wallet's account picker) to let the person change which accounts are shared
+            if (toAccounts(await call('eth_accounts')).length > 0) {
+                try {
+                    await call('wallet_requestPermissions', [{ eth_accounts: {} }]);
+                    return toAccounts(await call('eth_accounts'));
+                }
+                catch (error) {
+                    const code = error?.code;
+                    if (code !== -32601 && code !== 4200)
+                        throw error;
+                }
+            }
             return toAccounts(await call('eth_requestAccounts'));
         },
         async disconnect() {

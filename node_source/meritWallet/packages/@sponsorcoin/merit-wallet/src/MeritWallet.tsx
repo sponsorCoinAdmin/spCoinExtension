@@ -2360,7 +2360,9 @@ function MeritWalletInner({
         errorMessage: accountListNotice,
         // 2026-11-02 (owner: Back from Add Wallet Account must step back to the list): the list is NOT closed here. Opening the add flow closes nothing; the flow is drawn over the list, and Back closes just the flow, so the list is what is left.
         onAddWalletAccount: addAccountHost ? () => {
+          // 2026-11-03 (owner request): "Manage Wallets and Accounts" opens the wallet list (Select Software Wallet) over the Add screen
           openPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:openAddWalletAccount');
+          openPanel(SP_COIN_DISPLAY.WALLET_LIST_SELECT_PANEL, 'MeritWallet:openAddWalletAccount');
         } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
       }),
     });
@@ -2662,7 +2664,7 @@ function MeritWalletInner({
     : walletListLeafVisible
     ? walletListScreenTitle
     : addMenuVisible && panelTreeListOpen
-    ? 'Add Wallet Account'
+    ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
     : panelTreeVisible
     ? 'Panel Tree'
     : meritInfoVisible
@@ -2902,7 +2904,7 @@ function MeritWalletInner({
               see docs/npmPanelDisplayIssue.md. */}
           {/* 2026-10-13 (owner request): the wallet pill, just under the tabs (not on the lock screen). The down chevron opens the wallet list, the icon the active wallet's panel. */}
           {/* 2026-10-13 (owner request): the wallet pill belongs to the Active Account Selection page only, not to the tab pages. */}
-          {showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (
+          {showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && walletListVisible && !addMenuVisible && !walletListLeafVisible && (
             <div id="WALLET_SELECT_ROW" style={walletFrameStyle.walletSelectRow}>
               <WalletSelectDropDownHosted walletId={pillWalletId} displayName={pillWalletId ? walletName(pillWalletId) : undefined} baseUrl={walletAssetBaseUrl} />
             </div>
@@ -3022,9 +3024,18 @@ function MeritWalletWired(props: MeritWalletProps) {
   }, [props.wallet, props.accountGroups, props.chainId]);
   const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress, props.walletDerives);
   const peerStates = usePeerStates(props.peers);
+  const { openPanel: openWalletListPanel } = usePanelTree();
+  // the running app's own "Add Account(s)": the Add menu (Add Wallet Authenticator or Account)
+  const openAddMenu = useCallback(() => {
+    openWalletListPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:addAccounts:addMenu');
+  }, [openWalletListPanel]);
   const approverHost = useMemo<ApproverHost | undefined>(
-    () => (props.approverHost && props.peers ? { ...props.approverHost, isConnected: (id) => (id in peerStates ? peerStates[id].connected : props.approverHost!.isConnected?.(id)) } : props.approverHost),
-    [props.approverHost, props.peers, peerStates],
+    () => {
+      if (!props.approverHost) return props.approverHost;
+      const withList: ApproverHost = { ...props.approverHost, openAddMenu: props.approverHost.openAddMenu ?? openAddMenu };
+      return props.peers ? { ...withList, isConnected: (id) => (id in peerStates ? peerStates[id].connected : props.approverHost!.isConnected?.(id)) } : withList;
+    },
+    [props.approverHost, props.peers, peerStates, openAddMenu],
   );
   const wantsAccounts = !!approverHost && (props.walletDerives ?? ALL_WALLET_DERIVATIONS).includes('accounts');
   const approvers = useApproverAccounts(wantsAccounts ? props.wallet : undefined, approverHost, props.activeAccountAddress, platform);

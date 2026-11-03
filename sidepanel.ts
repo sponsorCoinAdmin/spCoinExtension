@@ -853,6 +853,7 @@ async function renderWallet() {
                 approverHost: {
                   // the vault of this extension IS the Merit wallet here: listed first, always connected
                   nativeWalletId: 'localVault',
+                  platform: 'extension',
                   setActiveAccount: async (address: string) => {
                     await setActiveAccountOf(address);
                   },

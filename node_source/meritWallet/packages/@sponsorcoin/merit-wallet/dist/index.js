@@ -79,7 +79,7 @@ export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritAppro
 // write needing a person now shows through MESSAGE_PANEL instead (see useMeritApprovalMessagePanel's
 // own doc comment). A host mounts that hook once, in place of the old <ApprovalResponder host=.../>.
 export { useMeritApprovalMessagePanel } from './approval/useMeritApprovalMessagePanel';
-export { buildApproverGroups, mergeWalletAccountEntries, createApproverController, connectNoticeText } from './wallet/approverAccounts';
+export { buildApproverGroups, splitNameSymbol, mergeWalletAccountEntries, createApproverController, connectNoticeText } from './wallet/approverAccounts';
 export { useApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accountSigning';

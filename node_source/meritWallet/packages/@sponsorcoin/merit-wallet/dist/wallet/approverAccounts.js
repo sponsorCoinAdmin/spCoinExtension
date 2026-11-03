@@ -1,5 +1,16 @@
 import { connectAccount, disconnectAccount, ConnectChoiceRequired } from '../auth/connect';
 const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+/**
+ * 2026-11-03 (owner rule): a wallet such as MetaMask keeps ONE label per account, so the name and the symbol travel together as "Name,Symbol". Split at the first comma; a label with no comma is a name only.
+ * Either half missing is filled from the public profile (describeAccount), and what is still missing reads N/A: the name is never copied into the symbol.
+ */
+export function splitNameSymbol(label) {
+    const text = (label ?? '').trim();
+    const comma = text.indexOf(',');
+    if (comma < 0)
+        return { name: text || undefined };
+    return { name: text.slice(0, comma).trim() || undefined, symbol: text.slice(comma + 1).trim() || undefined };
+}
 /** Merge host-known accounts with accounts listed by wallet backends, joining duplicate addresses case-insensitively. */
 export function mergeWalletAccountEntries(...sources) {
     const byAddress = new Map();
@@ -29,10 +40,11 @@ export function buildApproverGroups(input) {
         const held = entries.filter((entry) => entry.backends.includes(backend.id));
         const accounts = held.map((entry) => {
             const known = host.describeAccount?.(entry.address);
+            const label = splitNameSymbol(entry.name);
             return {
                 id: entry.address,
-                symbol: known?.symbol || entry.name || undefined,
-                name: known?.name || entry.name || undefined,
+                symbol: label.symbol || known?.symbol || 'N/A',
+                name: label.name || known?.name || 'N/A',
                 iconSrc: known?.iconSrc,
                 address: entry.address,
                 isActive: isActiveSource && same(entry.address, activeAddress),
@@ -78,6 +90,9 @@ export function buildApproverGroups(input) {
         }
         return group;
     });
+    if (input.onAddAccounts)
+        for (const group of groups)
+            group.addAccounts = { onClick: () => input.onAddAccounts(group.id) };
     const native = host.nativeWalletId;
     const kept = input.showDisconnected
         ? groups

@@ -150,7 +150,7 @@ export type { MeritApprovalRequest, MeritApprovalPhase } from './approval/meritA
 // write needing a person now shows through MESSAGE_PANEL instead (see useMeritApprovalMessagePanel's
 // own doc comment). A host mounts that hook once, in place of the old <ApprovalResponder host=.../>.
 export { useMeritApprovalMessagePanel, type ApprovalHost } from './approval/useMeritApprovalMessagePanel';
-export { buildApproverGroups, mergeWalletAccountEntries, createApproverController, connectNoticeText, type ApproverHost, type ApproverGroupsInput, type ApproverController } from './wallet/approverAccounts';
+export { buildApproverGroups, splitNameSymbol, mergeWalletAccountEntries, createApproverController, connectNoticeText, type ApproverHost, type ApproverHostPlatform, type ApproverGroupsInput, type ApproverController } from './wallet/approverAccounts';
 export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet, type SignInParams } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning, type SigningChoices, type SigningHolder, type HolderState } from './wallet/accountSigning';

@@ -1651,7 +1651,9 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
             errorMessage: accountListNotice,
             // 2026-11-02 (owner: Back from Add Wallet Account must step back to the list): the list is NOT closed here. Opening the add flow closes nothing; the flow is drawn over the list, and Back closes just the flow, so the list is what is left.
             onAddWalletAccount: addAccountHost ? () => {
+                // 2026-11-03 (owner request): "Manage Wallets and Accounts" opens the wallet list (Select Software Wallet) over the Add screen
                 openPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:openAddWalletAccount');
+                openPanel(SP_COIN_DISPLAY.WALLET_LIST_SELECT_PANEL, 'MeritWallet:openAddWalletAccount');
             } : onAddAccount ? () => { closeListOverlay(); onAddAccount(); } : undefined,
         }),
     });
@@ -1926,7 +1928,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 : walletListLeafVisible
                     ? walletListScreenTitle
                     : addMenuVisible && panelTreeListOpen
-                        ? 'Add Wallet Account'
+                        ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
                         : panelTreeVisible
                             ? 'Panel Tree'
                             : meritInfoVisible
@@ -2038,7 +2040,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                             // proven correct for account/network.
                                                             : activeListMode || activeChild != null
                                                                 ? () => setActiveList(null)
-                                                                : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && (addMenuVisible || walletListVisible) && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: bodyWithTab })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { "data-build-marker": "", style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] }))] }) }) }) }));
+                                                                : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && walletListVisible && !addMenuVisible && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: bodyWithTab })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { "data-build-marker": "", style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] }))] }) }) }) }));
 }
 let warnedNoAccountSource = false;
 /**
@@ -2057,7 +2059,17 @@ function MeritWalletWired(props) {
     }, [props.wallet, props.accountGroups, props.chainId]);
     const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress, props.walletDerives);
     const peerStates = usePeerStates(props.peers);
-    const approverHost = useMemo(() => (props.approverHost && props.peers ? { ...props.approverHost, isConnected: (id) => (id in peerStates ? peerStates[id].connected : props.approverHost.isConnected?.(id)) } : props.approverHost), [props.approverHost, props.peers, peerStates]);
+    const { openPanel: openWalletListPanel } = usePanelTree();
+    // the running app's own "Add Account(s)": the Add menu (Add Wallet Authenticator or Account)
+    const openAddMenu = useCallback(() => {
+        openWalletListPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:addAccounts:addMenu');
+    }, [openWalletListPanel]);
+    const approverHost = useMemo(() => {
+        if (!props.approverHost)
+            return props.approverHost;
+        const withList = { ...props.approverHost, openAddMenu: props.approverHost.openAddMenu ?? openAddMenu };
+        return props.peers ? { ...withList, isConnected: (id) => (id in peerStates ? peerStates[id].connected : props.approverHost.isConnected?.(id)) } : withList;
+    }, [props.approverHost, props.peers, peerStates, openAddMenu]);
     const wantsAccounts = !!approverHost && (props.walletDerives ?? ALL_WALLET_DERIVATIONS).includes('accounts');
     const approvers = useApproverAccounts(wantsAccounts ? props.wallet : undefined, approverHost, props.activeAccountAddress, platform);
     const accountDerived = approvers.groups

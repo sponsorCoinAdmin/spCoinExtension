@@ -17,7 +17,7 @@ import type { Wallet } from '../wallet/wallet';
 import { WALLET_SLUG_ID } from '../wallet/walletSlugs';
 import { approvalWaiting } from '../auth/approvalWaiting';
 import { addEntryReasons, readAddTargets, type AddTarget } from '../wallet/addTarget';
-import { WalletSelectDropDown, WALLET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
+import { WalletSelectDropDown, WALLET_SELECT_DISPLAY, getWalletAssetBaseUrl } from '@sponsorcoin/spcoin-panels';
 
 export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
 
@@ -310,7 +310,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
 
   return (
     <div style={addAccountStyle.screen}>
-      {menuVisible && target && (
+      {menuVisible && target && targets.length > 1 && (
         <div style={addAccountStyle.targetLine}>
           <span>Adding to</span>
           {targets.length > 1 ? (
@@ -347,6 +347,8 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
           onConnectHardware={openHardware}
           // like the web app: connecting MetaMask, the Merit extension and a hardware wallet is done from the wallet list (the pill's chevron), not from this menu
           hide={{ connectMetaMask: true, connectMeritExtension: true, connectHardware: true }}
+          // the wallet pill's job (open the wallet list above this page) is this last row
+          attachRemoteWallet={{ iconSrc: `${getWalletAssetBaseUrl()}/assets/miscellaneous/meritWallet.png`, onClick: () => { openPanel(SP.ADD_WALLET_ACCOUNT, 'AddAccountFlow:attachRemoteWallet'); openPanel(SP.WALLET_LIST_SELECT_PANEL, 'AddAccountFlow:attachRemoteWallet'); } }}
           unavailable={unavailable}
           error={error}
         />

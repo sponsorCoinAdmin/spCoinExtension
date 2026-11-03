@@ -99,6 +99,12 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
       onConnect: (id) => void controller.connect(id).then(load),
       onDisconnect: (id) => void controller.disconnect(id).then(load),
       canConnect: (id) => typeof wallet.registry.get(id)?.connect === 'function',
+      // "Add Account(s)": the wallet's own account selection (the native wallet holds its accounts here: nothing to ask)
+      onAddAccounts: (id) => {
+        // the running app's own wallet (web or extension): the Add menu. Every other wallet, and a host of any other kind: the wallet's own account selection.
+        if (id === host.nativeWalletId && (host.platform === 'web' || host.platform === 'extension') && host.openAddMenu) { host.openAddMenu(); return; }
+        if (id !== host.nativeWalletId) void Promise.resolve(wallet.registry.get(id)?.connect?.()).catch(() => undefined).then(load);
+      },
     });
     return result;
   }, [wallet, host, entries, statuses, activeAddress, controller, load, platform]);

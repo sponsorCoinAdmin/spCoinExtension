@@ -20,6 +20,7 @@ import { WalletSelectDropDown, WALLET_SELECT_DISPLAY } from '@sponsorcoin/spcoin
 export const DEFAULT_CONNECT_UNAVAILABLE = {
     connectMetaMask: 'Available in the web app',
     connectMeritExtension: 'Available in the web app',
+    connectMeritWeb: 'Available in the extension',
     connectHardware: 'Available in the web app',
 };
 /** The connect screen says it is still waiting after this long (the wallet is probably locked); the host owns the hard limit. */
@@ -256,9 +257,16 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
                 .catch((e) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
                 .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
         }
+        else if (slug === 'merit' && !unavailable.connectMeritWeb && host.connectApprover) {
+            // 2026-11-04 (owner request: any Merit wallet attaches to any other, through the server, Local or Prod): the host makes the link and brings the other wallet's app forward; the row is Connected when that wallet answers logged on
+            setError('');
+            setDisconnecting((d) => ({ ...d, [slug]: 'connecting' }));
+            void Promise.resolve(host.connectApprover('connectMeritWeb'))
+                .catch((e) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
+                .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
+        }
         else if (slug === 'merit') {
-            // the web app's dev keystore lives on its server: a host that is not the web app has no way to reach it yet
-            setError('Connecting Merit (Web App) from here is not available yet.');
+            setError('Merit (Web App) cannot be connected from here.');
         }
         else if (slug === 'ledger' || slug === 'trezor') {
             if (host.connectHardwareDevice)

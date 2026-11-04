@@ -1,8 +1,8 @@
 import type { AuthenticatorId } from '../auth/authenticator';
 import type { Wallet } from '../wallet/wallet';
-export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
+export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectMeritWeb' | 'connectHardware';
 /** The entries that connect an account an approver already holds (rather than adding keys here). */
-export type ConnectApproverEntry = 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
+export type ConnectApproverEntry = 'connectMetaMask' | 'connectMeritExtension' | 'connectMeritWeb' | 'connectHardware';
 /** The public profile typed on the Create Account screen (a host that sets createProfile). Blank fields are left to the host's own defaults. */
 export interface NewAccountProfile {
     name: string;

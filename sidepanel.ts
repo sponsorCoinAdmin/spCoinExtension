@@ -467,6 +467,7 @@ async function renderWallet() {
     // MetaMask answers in its own window; the extension reaches it through one tab on the web app's relay page
     connectApprover: async (entry) => {
       if (entry === 'connectHardware') throw new Error('Choose a device first.');
+      if (entry === 'connectMeritWeb') return connectMeritWeb();
       if (entry !== 'connectMetaMask') throw new Error('You are already in the Merit extension.');
       await connectExternalFromMenu(METAMASK_ID);
     },
@@ -505,6 +506,26 @@ async function renderWallet() {
     },
     deleteButton: 'deleteWallet',
   };
+  // 2026-11-04 (owner request: any Merit wallet attaches to any other, through the server, Local or Prod): the link is made (the peer tells every web app page) and the web app is brought forward at the server address, a new tab when none is open.
+  // It reads Connected once that wallet answers logged on, which may take the person logging in there first: this waits for that, but never longer than 15 seconds.
+  async function connectMeritWeb(): Promise<void> {
+    const peer = extensionPeers.serverKeystore;
+    peer.attach(true);
+    peer.start();
+    await openOrFocusApp();
+    if (peer.get().connected) return;
+    await new Promise<void>((resolve) => {
+      const done = () => {
+        stop();
+        clearTimeout(timer);
+        resolve();
+      };
+      const stop = peer.subscribe(() => {
+        if (peer.get().connected) done();
+      });
+      const timer = setTimeout(done, 15_000);
+    });
+  }
   const accountProfileHost: AccountProfileHost = {
     canEdit: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),
     resolveAvatar: (address) => readAvatar(address),

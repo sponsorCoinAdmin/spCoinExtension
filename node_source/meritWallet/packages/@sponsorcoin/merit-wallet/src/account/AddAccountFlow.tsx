@@ -19,10 +19,10 @@ import { approvalWaiting } from '../auth/approvalWaiting';
 import { addEntryReasons, readAddTargets, type AddTarget } from '../wallet/addTarget';
 import { WalletSelectDropDown, WALLET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 
-export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
+export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectMeritWeb' | 'connectHardware';
 
 /** The entries that connect an account an approver already holds (rather than adding keys here). */
-export type ConnectApproverEntry = 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
+export type ConnectApproverEntry = 'connectMetaMask' | 'connectMeritExtension' | 'connectMeritWeb' | 'connectHardware';
 
 /** The public profile typed on the Create Account screen (a host that sets createProfile). Blank fields are left to the host's own defaults. */
 export interface NewAccountProfile {
@@ -72,6 +72,7 @@ export interface AddAccountHost {
 export const DEFAULT_CONNECT_UNAVAILABLE: Record<ConnectApproverEntry, string> = {
   connectMetaMask: 'Available in the web app',
   connectMeritExtension: 'Available in the web app',
+  connectMeritWeb: 'Available in the extension',
   connectHardware: 'Available in the web app',
 };
 
@@ -297,9 +298,16 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         .catch((e: unknown) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
         .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
     }
+    else if (slug === 'merit' && !unavailable.connectMeritWeb && host.connectApprover) {
+      // 2026-11-04 (owner request: any Merit wallet attaches to any other, through the server, Local or Prod): the host makes the link and brings the other wallet's app forward; the row is Connected when that wallet answers logged on
+      setError('');
+      setDisconnecting((d) => ({ ...d, [slug]: 'connecting' }));
+      void Promise.resolve(host.connectApprover('connectMeritWeb'))
+        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
+        .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
+    }
     else if (slug === 'merit') {
-      // the web app's dev keystore lives on its server: a host that is not the web app has no way to reach it yet
-      setError('Connecting Merit (Web App) from here is not available yet.');
+      setError('Merit (Web App) cannot be connected from here.');
     }
     else if (slug === 'ledger' || slug === 'trezor') {
       if (host.connectHardwareDevice) void run(() => host.connectHardwareDevice!(`hardware:${slug}`));

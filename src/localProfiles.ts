@@ -62,7 +62,8 @@ export async function saveLocalAvatar(address: string, file: Blob): Promise<void
  * the device's copy, sees it; a server that does not answer changes nothing and nothing is emptied. Returns true when the profile text changed.
  */
 export async function syncFromServer(address: string, serverUrl: string): Promise<boolean> {
-  if (!serverUrl) return false;
+  // only for an account published from this wallet (it has a profile saved on this device): the extension asks the server about nothing else, so a wallet that never published makes no request (the independence check in CI enforces that)
+  if (!serverUrl || !(await readAll())[address.toLowerCase()]) return false;
   let changed = false;
   try {
     const response = await fetch(`${serverUrl}/api/spCoin/accounts/${encodeURIComponent(address)}`, { cache: 'no-store', signal: AbortSignal.timeout(4000) });

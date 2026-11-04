@@ -118,6 +118,12 @@ export interface MeritWalletProps {
     addAccountHost?: AddAccountHost;
     /** 2026-10-31 (owner design): the account list was opened BY A REMOTE (a site asking the wallet to connect). The list opens by itself, titled "Remote <caller> Account Selector", every row has a Connect / Connected button and the footer is Done / Cancel. */
     remoteSelection?: AccountListRemoteSelection;
+    /** 2026-11-03 (owner request): a request the person must answer (connect this site, sign, send) is VALIDATE_REMOTE_CONNECT, a page inside the wallet's own chrome (header, title bar, tabs). The host supplies the page and what its back arrow does (refuse); the component opens and closes the panel with it. */
+    approvalPage?: {
+        title: string;
+        element: React.ReactNode;
+        onCancel: () => void;
+    };
     onNetworkIconClick?: (networkId: string) => void;
     sendAmount?: string;
     onSendAmountChange?: (value: string) => void;
@@ -173,6 +179,8 @@ export interface MeritWalletProps {
     showWalletSelect?: boolean;
     /** Where the wallet asset files (public/assets/wallets) are served from: this page's own origin by default; a host on another origin (the extension) passes the web app's address. */
     walletAssetBaseUrl?: string;
+    /** 2026-11-03 (owner request: the same for every app that uses this component): the address of the account service, the one server the wallet calls to sign in and publish an account profile (any server that implements /api/spCoin/auth and /api/spCoin/accounts). Every host injects it the same way; none is assumed. Omitted or empty: no call is made and Publish Account says so. */
+    accountServiceUrl?: string;
     /** What the component may derive from `wallet` (default: everything). A host that has its own lock gate (the web app) leaves out 'lock' and 'logoff'. */
     walletDerives?: readonly WalletDerivation[];
     /** The trade screens' host data and functions (the Swap tab and the Sponsor tab trade through one path): the trading provider, a trace sink, how a recipient's site opens and one hook for the confirm popup's state. The component draws the screens. */

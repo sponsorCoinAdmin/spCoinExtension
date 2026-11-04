@@ -1,7 +1,6 @@
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
 import { type AccountFormHost } from './form/useAccountForm';
-import type { ProfileFormData } from './profileForm';
 export interface AccountDetailHost {
     /** How a save is signed, who may edit whom, and how the picked avatar is processed. */
     form: AccountFormHost;
@@ -10,7 +9,6 @@ export interface AccountDetailHost {
     /** The wallet edits exactly the accounts this answers yes for (the extension: its vault's accounts); the account itself then signs. When given it replaces `connected` and `activeAddress`. */
     canEdit?(address: string): boolean;
     /** Called once after a save finishes, so the host can refresh its cached copy of the profile. */
-    onSaved?(address: string, saved: ProfileFormData, avatarChanged: boolean): void;
     /** The connected account, if any (the signer of a save). */
     activeAddress?: string;
     /** A keystore session exists without a connected wallet (the web app's own keystore); the loaded selection is then kept when no address is set. */

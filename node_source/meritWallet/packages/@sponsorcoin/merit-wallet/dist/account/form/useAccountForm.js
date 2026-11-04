@@ -8,9 +8,10 @@ import { signInForToken } from '../signIn';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { getAccountLogoURL, loadAccountRecord, saveAccountLogo, saveAccountRecord, useCacheRefreshHandler, useErrorMessage, usePanelTree, } from '@sponsorcoin/spcoin-exchange-engine';
+import { getAccountLogoURL, loadAccountRecord, saveAccountLogo, saveAccountRecord, useCacheRefreshHandler, useErrorMessage, usePanelTree, getAccountServiceUrl, engineTrace, } from '@sponsorcoin/spcoin-exchange-engine';
 import { DEFAULT_ACCOUNT_LOGO_URL, EMPTY_FORM_DATA, FORM_ERROR_FOCUS_ORDER, FORM_FIELDS, ensureAbsoluteAssetURL, getAbsoluteFieldError, getFieldTooLargeMessage, isValidEmail, isValidWebsite, normalizeAddress, shouldBlockAdditionalInput, trimForm, withCacheBust, } from './formHelpers';
 import { useAccountFormDerivedState } from './useAccountFormDerivedState';
+import { usePlatform } from '../../platform/platform';
 function isAddress(value) {
     return /^0[xX][0-9a-fA-F]{40}$/.test(String(value ?? '').trim());
 }
@@ -49,6 +50,17 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- an empty-string logoURL is not a usable URL and should fall back too, same as unset
     const [serverLogoURL, setServerLogoURL] = useState(initialLogoURL || DEFAULT_ACCOUNT_LOGO_URL);
     const initialLogoURLRef = useRef(initialLogoURL);
+    const resolveAvatarRef = useRef(host.resolveAvatar);
+    resolveAvatarRef.current = host.resolveAvatar;
+    const platform = usePlatform();
+    // the avatar to show for an account: the cache's, else the record's own address
+    const showServerLogo = (url, address) => {
+        const resolve = resolveAvatarRef.current;
+        if (resolve && address)
+            void resolve(address).then((src) => setServerLogoURL(src ?? url));
+        else
+            setServerLogoURL(url);
+    };
     const logoFileInputRef = useRef(null);
     const descriptionTextareaRef = useRef(null);
     const [, setStatusMessage] = useErrorMessage();
@@ -97,6 +109,31 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         }
         setPublicKey(initialAccountAddress);
     }, [sessionWithoutConnection, initialAccountAddress]);
+    useEffect(() => {
+        if (!initialAccountAddress || !resolveAvatarRef.current)
+            return undefined;
+        return platform.onImageCacheUpdated?.(() => void resolveAvatarRef.current?.(initialAccountAddress).then((src) => { if (src)
+            setServerLogoURL(src); }));
+    }, [initialAccountAddress, platform]);
+    const baselineRef = useRef(baselineData);
+    baselineRef.current = baselineData;
+    useEffect(() => {
+        if (!initialAccountAddress)
+            return undefined;
+        return platform.onAccountRecordUpdated?.((address) => {
+            if (address.toLowerCase() !== initialAccountAddress.toLowerCase())
+                return;
+            engineTrace('accountForm: record updated, read again', { address });
+            void loadAccountRecord(initialAccountAddress)
+                .then((record) => {
+                const fresh = accountFormDataFromRecord(record);
+                // what the person has typed is never replaced: only a form with no edits takes the new record
+                setFormData((current) => (JSON.stringify(current) === JSON.stringify(baselineRef.current) ? fresh : current));
+                setBaselineData(fresh);
+            })
+                .catch(() => undefined);
+        });
+    }, [initialAccountAddress, platform]);
     // Keep ref current so the address-change effect always reads the latest value
     useEffect(() => { initialLogoURLRef.current = initialLogoURL; });
     // When the target account changes, immediately show the known logo rather than
@@ -137,12 +174,12 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
             setBaselineData(loaded);
             setErrors({});
             setLogoFile(null);
-            setServerLogoURL(withCacheBust(recordLogoURL(record)));
+            showServerLogo(withCacheBust(recordLogoURL(record)), normalizedAddress);
         };
+        let shownKey = null;
         try {
             // docs/meritMigration.txt row 37: show what is already known AT ONCE. The header loaded this account into the registry, so a cached read resolves immediately; the forced read below then refreshes it in the background and updates the form only if it comes back different
             // (it used to wait for the network alone, which on the web is queued behind a dozen other calls for 10 to 25 seconds).
-            let shownKey = null;
             try {
                 const cached = (await loadAccountRecord(normalizedAddress, { signal }));
                 if (signal?.aborted)
@@ -151,8 +188,9 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
                 shownKey = JSON.stringify(accountFormDataFromRecord(cached));
                 setIsLoadingAccount(false);
             }
-            catch {
+            catch (error) {
                 // nothing cached and the network read failed: the forced read below decides
+                engineTrace('accountForm: cached read failed', { address: normalizedAddress, error: error instanceof Error ? error.message : String(error) });
             }
             const record = (await loadAccountRecord(normalizedAddress, { forceRefresh: true, signal }));
             if (signal?.aborted)
@@ -165,11 +203,13 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
                 const fresh = accountFormDataFromRecord(record);
                 setFormData((current) => (JSON.stringify(current) === shownKey ? fresh : current));
                 setBaselineData(fresh);
-                setServerLogoURL(withCacheBust(recordLogoURL(record)));
+                showServerLogo(withCacheBust(recordLogoURL(record)), normalizedAddress);
             }
         }
-        catch {
-            if (!signal?.aborted) {
+        catch (error) {
+            engineTrace('accountForm: record read failed', { address: normalizedAddress, error: error instanceof Error ? error.message : String(error), keptCached: shownKey !== null });
+            // the cache already showed this account (the refresh is what failed): keep it, do not empty the form
+            if (!signal?.aborted && shownKey === null) {
                 setPublicKey(initialAccountAddress);
                 setResolvedAccountAddress(initialAccountAddress);
                 setAccountExists(false);
@@ -260,7 +300,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
             setBaselineData(loaded);
             setErrors({});
             setLogoFile(null);
-            setServerLogoURL(withCacheBust(resolvedLogoURL));
+            showServerLogo(withCacheBust(resolvedLogoURL), normalizedAddress);
         }
         catch {
             setPublicKey(normalizedAddress);
@@ -420,7 +460,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
                 throw new Error(`Connected account mismatch. ${signerLabel}=${normalizedSignerAddress}, Target=${derived.publicKeyTrimmed}`);
             }
             // the one shared sign-in (src/account/signIn.ts): the challenge, the signature, the token
-            const authToken = await signInForToken({ baseUrl: host.baseUrl ?? '', address: normalizedSignerAddress, signMessage });
+            const authToken = await signInForToken({ baseUrl: host.baseUrl ?? getAccountServiceUrl(), address: normalizedSignerAddress, signMessage });
             const shouldSaveAccount = derived.hasDataChanges || !accountExists;
             const shouldSaveLogo = Boolean(logoFile);
             if (shouldSaveAccount) {
@@ -440,6 +480,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
                 const logoForm = new FormData();
                 logoForm.append('file', logoFile);
                 await saveAccountLogo(derived.publicKeyTrimmed, logoForm, authToken);
+                host.onLogoSaved?.(derived.publicKeyTrimmed, logoFile);
             }
             if (shouldSaveAccount) {
                 const savedForm = { ...normalizedForm };
@@ -451,8 +492,11 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
             if (shouldSaveLogo) {
                 const canonicalLogoURL = getAccountLogoURL(derived.publicKeyTrimmed);
                 setLogoFile(null);
-                setServerLogoURL(withCacheBust(canonicalLogoURL));
+                showServerLogo(withCacheBust(canonicalLogoURL), derived.publicKeyTrimmed);
             }
+            // the host keeps its own copy current from here: the screen that started this save may be gone (the approval page replaces it while the person approves)
+            engineTrace('accountForm: saved, host told', { address: derived.publicKeyTrimmed, hasHostHandler: !!host.onSaved });
+            host.onSaved?.(derived.publicKeyTrimmed, normalizedForm, shouldSaveLogo);
             if (shouldSaveAccount && shouldSaveLogo) {
                 showStatusMessage('Account metadata and image updated successfully', STATUS.SUCCESS, 'useAccountForm:save');
             }
@@ -464,7 +508,14 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
             }
         }
         catch (err) {
-            showStatusMessage(err instanceof Error ? err.message : 'Failed to save account', STATUS.MESSAGE_ERROR, 'useAccountForm:save');
+            // a browser fetch that never reached a server says only "Failed to fetch": say what was being reached and why it may not answer
+            const unreachable = err instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(err.message);
+            const serviceUrl = host.baseUrl ?? getAccountServiceUrl();
+            showStatusMessage(unreachable
+                ? serviceUrl
+                    ? `Could not reach the account service at ${serviceUrl}. Check that it is running; nothing was published.`
+                    : 'No account service address is set, so this account profile cannot be published. Set the accountServiceUrl setting to the address of an account service.'
+                : err instanceof Error ? err.message : 'Failed to save account', STATUS.MESSAGE_ERROR, 'useAccountForm:save');
         }
         finally {
             setIsSaving(false);

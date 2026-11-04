@@ -60,7 +60,7 @@ export function useAccountFormDerivedState({
   }, [connected, publicKeyTrimmed, accountExists, hasUnsavedChanges]);
 
   const submitLabel = !accountExists
-    ? 'Create Account'
+    ? 'Publish Account'
     : hasUnsavedChanges
       ? 'Update Account'
       : 'Edit Account';

@@ -14,6 +14,14 @@ export interface AccountFormHost {
     signerLabel?: string;
     /** Turns the picked image into the avatar to upload (resize / contain / size limits). */
     processLogo(file: File): Promise<File>;
+    /** 2026-11-04 (owner decision: the image cache is the single source of truth): the account's avatar as the host's image cache holds it. When given, the form shows that, and again whenever the cache says an image changed; the record's own logo address is only the fallback. */
+    resolveAvatar?(address: string): Promise<string | undefined>;
+    /** The picked image was published: the host keeps it too (its own image cache), so the avatar shows from the device with no request. */
+    onLogoSaved?(address: string, file: File): void;
+    /**
+     * 2026-11-04: called by the SAVE itself when it has succeeded, with what was saved (it used to be called from an effect of the details screen, which is unmounted while the approval page is up, so it never ran). `avatarChanged` is true when a new image was uploaded.
+     */
+    onSaved?(address: string, saved: AccountFormData, avatarChanged: boolean): void;
 }
 export interface UseAccountFormParams {
     connected: boolean;

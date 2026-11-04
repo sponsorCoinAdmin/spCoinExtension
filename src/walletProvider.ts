@@ -83,7 +83,7 @@ import { trace } from './debugTrace';
 const SIDE_PANEL_PORT = 'merit-sidepanel';
 /** How long a page's request may wait for the person before it is rejected (MetaMask has no limit; this wallet's side panel lives long, so an old request would show up much later). */
 const PAGE_REQUEST_MAX_MS = 5 * 60_000;
-const NEEDS_PERSON =new Set(['eth_requestAccounts', 'wallet_requestPermissions', 'eth_sendTransaction', 'personal_sign', 'eth_sign', 'eth_signTypedData_v4', 'eth_signTypedData_v3', 'eth_signTypedData']);
+const NEEDS_PERSON =new Set(['eth_requestAccounts', 'wallet_requestPermissions', 'merit_requestConnection', 'eth_sendTransaction', 'personal_sign', 'eth_sign', 'eth_signTypedData_v4', 'eth_signTypedData_v3', 'eth_signTypedData']);
 /** Side panels opened by gesture just now, per window: ensureWalletScreenOpen then knows the screen is already there. */
 const openedNow = new Map<number, number>();
 /** Set by installProvider: the wallet is locked. A locked wallet never gets a popup (the side panel shows the login and the waiting site); the popup was a second copy of the connect page. */

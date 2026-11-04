@@ -84,6 +84,7 @@ export declare class ProviderController {
     private dispatch;
     private pendingConnects;
     private requestAccounts;
+    private requestConnection;
     private requestAccountsOnce;
     /** 2026-11-01: the wallet was locked or unlocked: tell every page (not only the connected ones), so a page's "Connected" for this wallet follows the login. */
     notifyLockChanged(): void;

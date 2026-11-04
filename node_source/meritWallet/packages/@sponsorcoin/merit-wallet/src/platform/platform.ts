@@ -36,6 +36,10 @@ export interface MeritPlatform {
    * no portal target on this platform).
    */
   portalContainer(): Element | null;
+  /** 2026-11-04: an image in the shared image cache was added or dropped (a saved avatar): whatever shows it reads it again. Returns the unsubscribe function. A platform that never announces one leaves this out. */
+  onImageCacheUpdated?(listener: () => void): () => void;
+  /** 2026-11-04: an account's record (name, symbol, website, ...) in the shared record cache changed: whatever shows it reads it again. Called with the account's address. Returns the unsubscribe function. */
+  onAccountRecordUpdated?(listener: (address: string) => void): () => void;
 }
 
 /** What a component reads: the host's platform, or the DOM one when the host gave none (the web app and the extension give none). */

@@ -13,5 +13,9 @@ export interface NetworkSelectDropDownProps {
      *  showing — same chevronUp convention the real trigger-mode file uses.
      *  Defaults false (closed). */
     chevronUp?: boolean;
+    /** 2026-11-03 (owner request): the chain's symbol, name and id. With an id the pill reads like the account pill: "$symbol | $name" over the id (31337), instead of the name alone in the pill. */
+    symbol?: string;
+    name?: string;
+    id?: string | number;
 }
-export default function NetworkSelectDropDown({ icon, label, onSelectClick, onIconClick, chevronUp, }: NetworkSelectDropDownProps): React.JSX.Element;
+export default function NetworkSelectDropDown({ icon, label, onSelectClick, onIconClick, chevronUp, symbol, name, id, }: NetworkSelectDropDownProps): React.JSX.Element;

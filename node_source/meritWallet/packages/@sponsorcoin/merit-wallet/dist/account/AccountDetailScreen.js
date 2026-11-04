@@ -7,9 +7,8 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { accountDetailClass, accountDetailStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
-import { useEffect, useRef } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { setAccountStoreBaseUrl, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { RoleTableComponent, SponsoredAmountLine, StakedAmountReceivedLine } from '@sponsorcoin/spcoin-panels';
 import { useAccountForm } from './form/useAccountForm';
 import AccountFormPanel from './form/AccountFormPanel';
@@ -34,10 +33,6 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
     const address = String(account?.address ?? '').trim();
     const editable = host.canEdit ? host.canEdit(address) : host.connected;
     const signer = host.canEdit ? address : host.activeAddress;
-    useEffect(() => {
-        if (host.form.baseUrl !== undefined)
-            setAccountStoreBaseUrl(host.form.baseUrl);
-    }, [host.form.baseUrl]);
     const form = useAccountForm({
         connected: editable,
         activeAddress: signer,
@@ -46,18 +41,6 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
         sessionWithoutConnection: host.sessionWithoutConnection,
         host: host.form,
     });
-    const hostRef = useRef(host);
-    hostRef.current = host;
-    const savedOnce = useRef(false);
-    useEffect(() => {
-        // After a save the form's baseline equals what was typed; tell the host once per save so it refreshes its cached copy.
-        if (!form.isSaving && form.accountExists && !form.hasUnsavedChanges && savedOnce.current) {
-            savedOnce.current = false;
-            hostRef.current.onSaved?.(address, form.formData, true);
-        }
-        if (form.isSaving)
-            savedOnce.current = true;
-    }, [form.isSaving, form.accountExists, form.hasUnsavedChanges, form.formData, address]);
     if (!account)
         return null;
     const loadingInputMessage = 'Loading or updating account data. Input is temporarily disabled.';

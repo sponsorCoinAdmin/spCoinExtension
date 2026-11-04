@@ -123,6 +123,9 @@ export class ProviderController {
             // 2026-10-31: like MetaMask, wallet_requestPermissions always asks again (the person changes which accounts the site sees); eth_requestAccounts asks only when the site has none yet
             case 'wallet_requestPermissions':
                 return this.requestAccounts(origin, true);
+            // 2026-11-03 (owner: wallet connect and account connect are two things): connecting THIS WALLET to the site is a plain confirmation ("Connect <site> with Merit", Cancel / Connect), asked every time, with no account choice
+            case 'merit_requestConnection':
+                return this.requestConnection(origin);
             case 'wallet_getPermissions':
                 return (await this.visibleAccounts(origin)).length ? [{ parentCapability: 'eth_accounts', invoker: origin, caveats: [] }] : [];
             case 'wallet_revokePermissions':
@@ -214,6 +217,26 @@ export class ProviderController {
         if (open)
             return open;
         const started = this.requestAccountsOnce(origin, force).finally(() => this.pendingConnects.delete(origin));
+        this.pendingConnects.set(origin, started);
+        return started;
+    }
+    async requestConnection(origin) {
+        const open = this.pendingConnects.get(origin);
+        if (open)
+            return open;
+        const started = this.o.approvals.request({ kind: 'connect', origin, summary: `${origin} wants to connect to your wallet`, details: { origin, confirm: true } }, async () => {
+            if (!this.o.session.isUnlocked())
+                throw Object.assign(new Error('The wallet is locked.'), { name: 'VaultLockedError' });
+            // what the site already sees stays; a site with nothing yet sees the active account
+            const already = await this.visibleAccounts(origin);
+            if (already.length)
+                return already;
+            const active = this.o.accounts.activeAddress();
+            if (!active)
+                throw new ProviderRpcError(PROVIDER_ERROR.unauthorized, 'The wallet has no account.');
+            await this.o.permissions.set(origin, [active]);
+            return [active];
+        }).finally(() => this.pendingConnects.delete(origin));
         this.pendingConnects.set(origin, started);
         return started;
     }

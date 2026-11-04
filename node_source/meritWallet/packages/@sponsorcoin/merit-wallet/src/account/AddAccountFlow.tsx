@@ -17,7 +17,7 @@ import type { Wallet } from '../wallet/wallet';
 import { WALLET_SLUG_ID } from '../wallet/walletSlugs';
 import { approvalWaiting } from '../auth/approvalWaiting';
 import { addEntryReasons, readAddTargets, type AddTarget } from '../wallet/addTarget';
-import { WalletSelectDropDown, WALLET_SELECT_DISPLAY, getWalletAssetBaseUrl } from '@sponsorcoin/spcoin-panels';
+import { WalletSelectDropDown, WALLET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 
 export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectHardware';
 
@@ -273,7 +273,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   const connection: Record<string, boolean> = {};
   for (const slug of walletSlugs) connection[slug] = slug === nativeSlug ? true : !!walletConnection?.[slug];
   // 2026-11-01 (owner: "it takes a long time, it should throb while disconnecting"): a disconnect under way is marked on its row until it ends (or 10 s, whichever is first)
-  const [disconnecting, setDisconnecting] = useState<Record<string, boolean>>({});
+  const [disconnecting, setDisconnecting] = useState<Record<string, boolean | 'connecting'>>({});
   const toggleWallet = (slug: string) => {
     if (slug === nativeSlug) return;
     if (connection[slug]) {
@@ -289,9 +289,13 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
       openPanel(SP.CONNECT_ACCOUNT, 'AddAccountFlow:walletList:connectMetaMask');
     }
     else if (slug === 'meritExtension' && !unavailable.connectMeritExtension && host.connectApprover) {
+      // 2026-11-03 (owner request): stay on the wallet list while the extension decides; its row throbs "Waiting…" until the request ends. The refusal, if any, is the approval notice's.
       host.bringWalletForward?.('connectMeritExtension');
-      returnToList.current = true;
-      openPanel(SP.CONNECT_MERIT_EXTENSION, 'AddAccountFlow:walletList:connectMeritExtension');
+      setError('');
+      setDisconnecting((d) => ({ ...d, [slug]: 'connecting' }));
+      void Promise.resolve(host.connectApprover('connectMeritExtension'))
+        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
+        .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
     }
     else if (slug === 'merit') {
       // the web app's dev keystore lives on its server: a host that is not the web app has no way to reach it yet
@@ -338,6 +342,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         </div>
       )}
       {menuVisible && (
+        <div style={addAccountStyle.listBleed}>
         <AddWalletMenu
           onImportWallet={open('importWallet', SP.IMPORT_A_WALLET)}
           onImportAccount={open('importAccount', SP.IMPORT_AN_ACCOUNT)}
@@ -347,14 +352,16 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
           onConnectHardware={openHardware}
           // like the web app: connecting MetaMask, the Merit extension and a hardware wallet is done from the wallet list (the pill's chevron), not from this menu
           hide={{ connectMetaMask: true, connectMeritExtension: true, connectHardware: true }}
-          // the wallet pill's job (open the wallet list above this page) is this last row
-          attachRemoteWallet={{ iconSrc: `${getWalletAssetBaseUrl()}/assets/miscellaneous/meritWallet.png`, onClick: () => { openPanel(SP.ADD_WALLET_ACCOUNT, 'AddAccountFlow:attachRemoteWallet'); openPanel(SP.WALLET_LIST_SELECT_PANEL, 'AddAccountFlow:attachRemoteWallet'); } }}
           unavailable={unavailable}
           error={error}
         />
+        </div>
       )}
       {flow.walletListVisible && (
-        <WalletListPanel onSelect={() => undefined} wallets={walletSlugs} connection={connection} busy={disconnecting} onToggleConnection={toggleWallet} />
+        <div style={addAccountStyle.listBleed}>
+          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs} connection={connection} busy={disconnecting} onToggleConnection={toggleWallet} />
+          {error && <p style={addAccountStyle.error}>{error}</p>}
+        </div>
       )}
       {connectEntry && (
         <ConnectMetaMaskLeaf

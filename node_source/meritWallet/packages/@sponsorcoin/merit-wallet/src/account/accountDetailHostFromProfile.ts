@@ -8,14 +8,16 @@ import type { AccountDetailHost } from './AccountDetailScreen';
 
 /** What a host that signs profile saves itself provides (the extension: its vault signs the server's challenge). */
 export interface AccountProfileHost {
-  /** The hosted app's origin ('' for the same origin). */
-  baseUrl: string;
   /** May the wallet sign for this account (is it one of its own)? Others are shown read-only. */
   canEdit(address: string): boolean;
   /** Sign the server's challenge with the account (personal_sign); throw a readable message on rejection. */
   signMessage(address: string, message: string): Promise<string>;
   /** Called after a successful save with what was saved, so the host can update (or drop) its cached copy of the profile. `avatarChanged` is true when a new image was uploaded. */
   onSaved?(address: string, saved: ProfileFormData, avatarChanged: boolean): void;
+  /** The account's avatar as the host's image cache holds it (the single source of truth for avatars). */
+  resolveAvatar?(address: string): Promise<string | undefined>;
+  /** The picked image was published: keep it in the host's image cache. */
+  onLogoSaved?(address: string, file: File): void;
 }
 
 export interface AccountProfileInitial extends Partial<ProfileFormData> {
@@ -29,8 +31,10 @@ export function accountDetailHostFromProfile(
 ): AccountDetailHost {
   return {
     form: {
-      baseUrl: profile.baseUrl,
       signerLabel: 'This wallet',
+      resolveAvatar: profile.resolveAvatar,
+      onSaved: profile.onSaved,
+      onLogoSaved: profile.onLogoSaved,
       processLogo: async (file) => new File([await processLogoFile(file)], 'avatar.png', { type: 'image/png' }),
       async signIn(target) {
         if (!profile.canEdit(target)) throw new Error("This account is not one of this wallet's, so it cannot be edited here.");
@@ -39,7 +43,6 @@ export function accountDetailHostFromProfile(
     },
     connected: false,
     canEdit: (address) => profile.canEdit(address),
-    onSaved: profile.onSaved,
     revealPrivateKey: extra.revealPrivateKey,
     canReveal: extra.canReveal,
   };

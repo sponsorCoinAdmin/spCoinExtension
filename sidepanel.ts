@@ -27,6 +27,8 @@ import {
   loadSpCoinDeploymentMap,
   setHostApiBase,
   disableHostApi,
+  setEngineTrace,
+  ACCOUNT_REGISTRY_UPDATED_EVENT,
   setSpCoinReadStep,
   getPreferredSpCoinContractAddress,
   fetchServerActiveSpCoin,
@@ -49,6 +51,7 @@ import {
 } from './src/panelVisibilityStorage';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import { fetchAccountMetadata, getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
+import { IMAGE_CACHE_UPDATED_EVENT } from '@sponsorcoin/spcoin-feeds/shared';
 import { openOrFocusApp } from './src/openApp';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { registerExtensionEngineHosts } from './src/engineHosts';
@@ -57,7 +60,7 @@ import { extensionTradeHost } from './src/tradeHost';
 
 // 2026-10-11 (row 13): the shared panels' hooks (quotes, balances) read through React Query; one client for the side panel.
 const queryClient = new QueryClient();
-import { readOpenTarget, writeOpenTarget, type OpenTarget } from './src/openTargetStorage';
+import { readOpenTarget, writeOpenTarget, getServerUrl, initServerSetting, onServerChange, setServerTarget, type OpenTarget } from './src/openTargetStorage';
 import { readMeritWalletUiState, writeMeritWalletUiState } from './src/meritWalletUiStorage';
 import {
   readMeritWalletConfigState,
@@ -73,11 +76,12 @@ import {
   type EngineVisibility,
 } from './src/meritWalletConfigEngineStore';
 import { MeritWalletConfigBridge } from './src/MeritWalletConfigBridge';
-import { getCachedAccountIconDataUrl } from './src/accountIconCache';
 import { chromeIconCacheStorage } from './src/chromeIconCacheStorage';
 import { loadExtensionAccountProfile } from './src/accountProfile';
+import { readAvatar, registerLocalProfiles, saveLocalAvatar, saveLocalProfile, syncFromServer } from './src/publishedProfiles';
 import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
-import { TransactionConfirmOrchestrator } from './src/TransactionConfirmOrchestrator';
+import { buildApprovalPage } from './src/TransactionConfirmOrchestrator';
+import { subscribePendingSignRequest } from './src/pendingSignRequestStore';
 import { TransferApprovalHost } from './src/TransferApprovalHost';
 import { sendNativeMerit } from './src/sendNative';
 import { signMessageWithVault } from './src/localSigning';
@@ -95,6 +99,8 @@ import { parseAbi } from 'viem';
 restoreLedger();
 mountDebugOverlay();
 traceFrom('panel', 'side panel loaded');
+// the engine's own trace lines (the account record reads) go to the same log
+setEngineTrace((message, data) => traceFrom('engine', data ? `${message} ${JSON.stringify(data)}` : message));
 
 // docs/meritMigration.txt row 27: the Hardhat RPC is the wallet's network registry's (src/chainRpc.ts), the one place it is written; this file had its own copy of the URL and of the V0 spCoin address.
 
@@ -134,6 +140,8 @@ let activeChainId: number = MERIT_WALLET_HARDHAT_CHAIN_ID;
 
 // the app origin follows the open-target setting, so it is read from currentBaseUrl, which every render refreshes
 let currentBaseUrl = '';
+// 2026-11-04 (owner decision): which server the extension reads from and publishes to is ONE thing, the wallet's Local/Prod setting (getServerUrl, src/openTargetStorage.ts); there is no other address and no copy of it. The wallet component gets it as its accountServiceUrl prop,
+// the same as every other host does. Any server that implements /api/spCoin/auth and /api/spCoin/accounts will do.
 // who is waiting for the wallet to be unlocked (shown on the login page); refreshed while the wallet is locked
 let lockedRequestNotice = '';
 
@@ -290,7 +298,9 @@ async function renderWallet() {
   // 2026-10-11 (owner: "I do not want any dependency on the web app"): the extension uses its own bundle and the chain, never the hosted app. `baseUrl` is what the libraries fetch hosted data from: empty, so none of them requests anything from the web app;
   // the Open button has its own address (src/openApp.ts, urlForOpenTarget) and is unaffected.
   const baseUrl = '';
-  void openTarget;
+  initServerSetting(openTarget);
+  // the profiles edited in this wallet are read from this device, like the bundled ones
+  await registerLocalProfiles();
   currentBaseUrl = baseUrl;
   // 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 2, capability "api"): the hosted app's origin, registered once for every library that reads the hosted API.
   disableHostApi();
@@ -418,6 +428,9 @@ async function renderWallet() {
   startDappApprovals();
   // the remote account selector (a site asked to connect) shows in the wallet's own list: re-render whenever its state changes
   remoteSelectionStore.subscribe(() => render());
+  onServerChange(render);
+  // a request the person must answer (connect this site, sign, send) is a page inside the wallet's chrome: re-render whenever one comes or goes
+  subscribePendingSignRequest(() => render());
   // While this screen is open the worker holds a port to it: the port going away is how the worker learns the screen was closed, and it then rejects every page still waiting (walletProvider.ts). A worker the browser stopped
   // drops the port too; the screen is still here, so it connects again.
   const holdPortOpen = () => {
@@ -501,23 +514,30 @@ async function renderWallet() {
     deleteButton: 'deleteWallet',
   };
   const accountProfileHost: AccountProfileHost = {
-    baseUrl,
     canEdit: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),
+    resolveAvatar: (address) => readAvatar(address),
     // the vault is an authenticator like any other: the profile save asks it to sign, with its own words on the confirmation screen
     signMessage: (address, message) =>
       localVaultAuthenticator.signMessage(address, message, {
         title: 'Save account profile',
-        message: 'Sign in to the hosted app to save this account profile. This does not send a transaction.',
+        message: 'Sign in to the account service to publish this account profile. This does not send a transaction.',
       }),
-    onSaved: (address, saved, avatarChanged) => {
+    onSaved: (address, saved) => {
       void (async () => {
-        const avatarSrc = await getCachedAccountIconDataUrl(getAccountAvatarURL(address), baseUrl, avatarChanged);
         const key = address.toLowerCase();
-        vaultMeta.set(key, { symbol: saved.symbol || undefined, name: saved.name || undefined, iconSrc: avatarSrc ?? vaultMeta.get(key)?.iconSrc });
-        accountDetail = { address, avatarSrc: avatarSrc ?? accountDetail?.avatarSrc, ...saved, recipientNetwork: accountDetail?.recipientNetwork };
+        traceFrom('panel', `profile saved ${key} name=${saved.name} symbol=${saved.symbol}`);
+        // what was published is kept on this device and every reader sees it now: the list, the details and the header
+        const profile = { name: saved.name || undefined, symbol: saved.symbol || undefined, website: saved.website || undefined, description: saved.description || undefined, email: saved.email || undefined };
+        await saveLocalProfile(address, profile).catch(() => undefined);
+        vaultMeta.set(key, { symbol: profile.symbol, name: profile.name, iconSrc: vaultMeta.get(key)?.iconSrc });
+        accountDetail = { address, avatarSrc: accountDetail?.avatarSrc, ...saved, recipientNetwork: accountDetail?.recipientNetwork };
+        // the engine reads the active account's profile again on this event: the header shows the saved name and symbol
+        window.dispatchEvent(new CustomEvent(ACCOUNT_REGISTRY_UPDATED_EVENT, { detail: { address } }));
         render();
       })();
     },
+    // the picked image is kept in the image cache too (the put tells the header, the list and the details)
+    onLogoSaved: (address, file) => void saveLocalAvatar(address, file),
   };
   // docs/meritWallet row 14: the shared account detail screen (avatar, profile table, Private Key row) over this vault: the profile host above signs and says which accounts the wallet may edit; a key is revealed by the vault behind the wallet password.
   const accountDetailHost = accountDetailHostFromProfile(accountProfileHost, {
@@ -620,15 +640,39 @@ async function renderWallet() {
       addresses.map(async (address) => {
         const key = address.toLowerCase();
         if (vaultMeta.has(key)) return;
-        const [meta, iconSrc] = await Promise.all([
-          fetchAccountMetadata(address, { baseUrl }).catch(() => null),
-          getCachedAccountIconDataUrl(getAccountAvatarURL(address), baseUrl).catch(() => undefined),
-        ]);
+        const [meta, iconSrc] = await Promise.all([fetchAccountMetadata(address, { baseUrl }).catch(() => null), readAvatar(address)]);
         vaultMeta.set(key, { symbol: meta?.symbol || undefined, name: meta?.name || undefined, iconSrc: iconSrc || undefined });
       }),
     );
     render();
+    void syncVaultRowsFromServer(addresses);
   }
+  // the server's copy (Local or Prod, the setting) refreshes the device's: what differs is read again by the list and the header; a server that does not answer changes nothing
+  async function syncVaultRowsFromServer(addresses: string[]) {
+    await Promise.all(
+      addresses.map(async (address) => {
+        if (!(await syncFromServer(address, getServerUrl()))) return;
+        vaultMeta.delete(address.toLowerCase());
+        await enrichVaultRows([address]);
+        window.dispatchEvent(new CustomEvent(ACCOUNT_REGISTRY_UPDATED_EVENT, { detail: { address } }));
+      }),
+    );
+  }
+  window.addEventListener('focus', () => {
+    if (vaultRows) void syncVaultRowsFromServer(vaultRows.map((a) => a.address));
+  });
+  // 2026-11-04: the avatar cache announces every image it is given or drops (IMAGE_CACHE_UPDATED_EVENT); the list reads a vault account's avatar again when its own was the one that changed
+  window.addEventListener(IMAGE_CACHE_UPDATED_EVENT, (event) => {
+    const url = (event as CustomEvent<{ url?: string }>).detail?.url;
+    const row = vaultRows?.find((r) => getAccountAvatarURL(r.address) === url);
+    if (!url || !row) return;
+    if (vaultActive && getAccountAvatarURL(vaultActive) === url) window.dispatchEvent(new CustomEvent(ACCOUNT_REGISTRY_UPDATED_EVENT, { detail: { address: vaultActive } }));
+    void readAvatar(row.address).then((iconSrc) => {
+      const key = row.address.toLowerCase();
+      vaultMeta.set(key, { ...vaultMeta.get(key), iconSrc });
+      render();
+    });
+  });
   async function loadVaultAccounts() {
     const status = await vaultStatus();
     if (!status.initialized || !status.unlocked) {
@@ -789,7 +833,6 @@ async function renderWallet() {
         // real, ready capability the moment that lands. Sibling of
         // MeritWallet/PasswordPanel below, not nested under either, since
         // it needs to overlay regardless of which of those two is showing.
-        React.createElement(TransactionConfirmOrchestrator),
         React.createElement(TransferApprovalHost),
         // 2026-10-19 (docs/meritMigration.txt rows 27 / 28): this host draws no wallet screen. First-run setup (lock.onboarding) and the legacy unlock prompt (the component's own lock props) are data and functions the component draws itself.
         React.createElement(MeritWalletHostView, {
@@ -838,12 +881,16 @@ async function renderWallet() {
                 initialMenuOpen: uiState.menuOpen,
                 onMenuOpenChange: (open: boolean) => void writeMeritWalletUiState({ menuOpen: open }),
                 initialOpenTarget: openTarget,
-                onOpenTargetChange: (target: OpenTarget) => void writeOpenTarget(target),
+                onOpenTargetChange: (target: OpenTarget) => {
+                  setServerTarget(target);
+                  void writeOpenTarget(target);
+                },
               },
               data: {
                 // The wallet brand assets are bundled in deploy/assets/wallets. Resolve them
                 // from this extension so its wallet list and details need no web app origin.
                 walletAssetBaseUrl: chrome.runtime.getURL(''),
+                accountServiceUrl: getServerUrl(),
                 // The host's real active account; '' means none selected, so the header reads "Select Account".
                 activeAccountAddress: walletSource.address ?? '',
                 // 2026-10-11 (authenticationDesign.txt section 15.7, W1): the wallet (its backends behind one object); the lock screen, the lock button, the authentication type and the Wallet Security section come from it.
@@ -886,6 +933,7 @@ async function renderWallet() {
                 accountDetail,
                 accountDetailHost,
                 addAccountHost,
+                approvalPage: buildApprovalPage(),
                 remoteSelection: (() => {
                   const pending = remoteSelectionStore.get();
                   return pending ? { ...pending, onToggle: remoteSelectionStore.toggle, onCancel: remoteSelectionStore.cancel } : undefined;
@@ -1064,10 +1112,7 @@ async function renderWallet() {
   async function handleAccountIconClick(address: string) {
     accountDetail = null;
     render();
-    const [avatarSrc, metadata] = await Promise.all([
-      getCachedAccountIconDataUrl(getAccountAvatarURL(address), baseUrl),
-      fetchAccountMetadata(address, { baseUrl }).catch(() => null),
-    ]);
+    const [avatarSrc, metadata] = await Promise.all([readAvatar(address), fetchAccountMetadata(address, { baseUrl }).catch(() => null)]);
     accountDetail = {
       address,
       avatarSrc,

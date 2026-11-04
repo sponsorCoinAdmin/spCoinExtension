@@ -24,16 +24,24 @@ export interface MeritWalletNetworkRow {
      *  three props' own doc comments). */
     iconSrc?: string;
 }
-/**
- * One real set of icon caches, built from whatever storage the caller
- * supplies (defaults to a safe in-memory-only fallback). Callers of the
- * functions below should build exactly one of these per component instance
- * (not per call) so repeat fetches actually hit the cache.
- */
+/** One image cache per storage: a host that builds this with its storage, and the component given the same storage, share one instance (one set of sections, one write queue). */
 export declare function createMeritWalletIconCaches(storage?: IconCacheStorage): {
-    getCachedNetworkIconDataUrl: (url: string, baseUrl: string, forceRefresh?: boolean) => Promise<string | undefined>;
-    getCachedAccountIconDataUrl: (url: string, baseUrl: string, forceRefresh?: boolean) => Promise<string | undefined>;
-    getCachedTokenIconDataUrl: (url: string, baseUrl: string, forceRefresh?: boolean) => Promise<string | undefined>;
+    getCachedNetworkIconDataUrl: ((url: string, baseUrl: string, forceRefresh?: boolean) => Promise<string | undefined>) & {
+        put: (url: string, dataUrl: string) => Promise<void>;
+        drop: (url: string) => Promise<void>;
+    };
+    getCachedAccountIconDataUrl: ((url: string, baseUrl: string, forceRefresh?: boolean) => Promise<string | undefined>) & {
+        put: (url: string, dataUrl: string) => Promise<void>;
+        drop: (url: string) => Promise<void>;
+    };
+    getCachedTokenIconDataUrl: ((url: string, baseUrl: string, forceRefresh?: boolean) => Promise<string | undefined>) & {
+        put: (url: string, dataUrl: string) => Promise<void>;
+        drop: (url: string) => Promise<void>;
+    };
+    getCachedWalletIconDataUrl: ((url: string, baseUrl: string, forceRefresh?: boolean) => Promise<string | undefined>) & {
+        put: (url: string, dataUrl: string) => Promise<void>;
+        drop: (url: string) => Promise<void>;
+    };
 };
 export type MeritWalletIconCaches = ReturnType<typeof createMeritWalletIconCaches>;
 export declare function buildNetworkRows(chainId: number, baseUrl: string, caches: MeritWalletIconCaches, forceRefresh?: boolean): Promise<MeritWalletNetworkRow[]>;

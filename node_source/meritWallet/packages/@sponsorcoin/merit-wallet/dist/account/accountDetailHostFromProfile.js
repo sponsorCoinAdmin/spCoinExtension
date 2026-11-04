@@ -6,8 +6,10 @@ import { processLogoFile } from './logoImage';
 export function accountDetailHostFromProfile(profile, extra = {}) {
     return {
         form: {
-            baseUrl: profile.baseUrl,
             signerLabel: 'This wallet',
+            resolveAvatar: profile.resolveAvatar,
+            onSaved: profile.onSaved,
+            onLogoSaved: profile.onLogoSaved,
             processLogo: async (file) => new File([await processLogoFile(file)], 'avatar.png', { type: 'image/png' }),
             async signIn(target) {
                 if (!profile.canEdit(target))
@@ -17,7 +19,6 @@ export function accountDetailHostFromProfile(profile, extra = {}) {
         },
         connected: false,
         canEdit: (address) => profile.canEdit(address),
-        onSaved: profile.onSaved,
         revealPrivateKey: extra.revealPrivateKey,
         canReveal: extra.canReveal,
     };

@@ -1,4 +1,4 @@
-import { readOpenTarget, urlForOpenTarget } from './openTargetStorage';
+import { readServerUrl } from './openTargetStorage';
 
 // Used by sidepanel.ts's "Open" button (2026-09-10: no longer shared with
 // background.ts — the extension icon click now opens the side panel
@@ -15,8 +15,7 @@ import { readOpenTarget, urlForOpenTarget } from './openTargetStorage';
 // own Config tab), so the same built extension can point at either without
 // a rebuild.
 export async function openOrFocusApp(): Promise<void> {
-  const target = await readOpenTarget();
-  const appUrl = urlForOpenTarget(target);
+  const appUrl = await readServerUrl();
   const existing = await chrome.tabs.query({ url: `${appUrl}/*` });
   const found = existing[0];
 

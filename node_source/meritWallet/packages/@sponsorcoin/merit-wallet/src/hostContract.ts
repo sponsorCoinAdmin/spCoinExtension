@@ -35,13 +35,13 @@ export type HostData = Pick<
   MeritWalletProps,
   | 'networkRows' | 'accountGroups' | 'tokenRows' | 'chainId' | 'baseUrl' | 'storage'
   | 'activeAccountName' | 'activeAccountSymbol' | 'activeAccountLogoURL'
-  | 'wallet' | 'walletDerives' | 'approverHost' | 'peers' | 'accountListNotice' | 'activeWalletName' | 'activeWalletId' | 'nativeWalletId' | 'walletConnection' | 'onDisconnectWallet' | 'showWalletSelect' | 'walletAssetBaseUrl' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'rewardsExtras' | 'stakingHost' | 'activeAccountAddress'
+  | 'wallet' | 'walletDerives' | 'approverHost' | 'peers' | 'accountListNotice' | 'activeWalletName' | 'activeWalletId' | 'nativeWalletId' | 'walletConnection' | 'onDisconnectWallet' | 'showWalletSelect' | 'walletAssetBaseUrl' | 'accountServiceUrl' | 'fetchBalance' | 'sellBalanceText' | 'buyBalanceText' | 'rewardsHost' | 'rewardsExtras' | 'stakingHost' | 'activeAccountAddress'
 >;
 
 /** What the host does when the user picks or inspects a row. */
 export type HostSelection = Pick<
   MeritWalletProps,
-  | 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'accountDetail' | 'accountDetailHost' | 'addAccountHost' | 'remoteSelection'
+  | 'onAccountRowSelect' | 'onNetworkRowSelect' | 'onAccountIconClick' | 'onAddAccount' | 'accountDetail' | 'accountDetailHost' | 'addAccountHost' | 'remoteSelection' | 'approvalPage'
   | 'onNetworkIconClick'
 >;
 

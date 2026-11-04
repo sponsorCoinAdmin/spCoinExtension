@@ -7,7 +7,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
-import { useExchangeContext, usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
+import { useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { approvalWaiting, approvalWaitingText } from './approvalWaiting';
 const SOURCE = 'ApprovalWaiting';
 export function useApprovalMessagePanel(store = approvalWaiting) {
@@ -16,7 +16,9 @@ export function useApprovalMessagePanel(store = approvalWaiting) {
     const { exchangeContext, setErrorMessage } = useExchangeContext();
     const { openPanel, closePanel } = usePanelTree();
     const waitingText = approvalWaitingText(pending);
-    const text = waitingText || outcome?.text || '';
+    // 2026-11-03 (owner request): while the wallet list is on screen the wait is shown on the wallet's own row (it throbs), not by covering the list with this page. A refusal or failure still shows here.
+    const walletListShowing = usePanelVisible(SP_COIN_DISPLAY.WALLET_LIST_SELECT_PANEL);
+    const text = (walletListShowing ? '' : waitingText) || outcome?.text || '';
     const shown = useRef('');
     const currentSource = exchangeContext?.errorMessage?.source;
     // the effect below runs when the request ENDS, and by then the render it closed over may carry an older message: read the latest source
@@ -36,7 +38,7 @@ export function useApprovalMessagePanel(store = approvalWaiting) {
         if (shown.current) {
             const source = latestSource.current;
             if (!source || source === SOURCE)
-                closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'NAV_POP:ApprovalWaiting:approved');
+                closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'ApprovalWaiting:approved'); // by name, never a pop of whatever screen is on top (that closed a wallet list opened just before)
         }
         shown.current = '';
         // eslint-disable-next-line react-hooks/exhaustive-deps

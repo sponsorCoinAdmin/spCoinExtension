@@ -29,6 +29,8 @@ export interface InjectedAuthenticatorOptions {
   icon?: string;
   /** Find the wallet's provider now: undefined when it is not installed. */
   getProvider(): InjectedProvider | undefined | Promise<InjectedProvider | undefined>;
+  /** 2026-11-03: the request connect() sends. Default eth_requestAccounts (the wallet's account picker). The Merit extension takes merit_requestConnection: a plain "connect this site?" confirmation, no account choice. */
+  connectMethod?: string;
 }
 
 const utf8Hex = (text: string) => `0x${Array.from(new TextEncoder().encode(text), (b) => b.toString(16).padStart(2, '0')).join('')}`;
@@ -56,7 +58,7 @@ export function translateProviderError(error: unknown, id: AuthenticatorId, labe
   }
 }
 
-export function createInjectedAuthenticator({ id, label, displayName, badge, icon, getProvider }: InjectedAuthenticatorOptions): Authenticator {
+export function createInjectedAuthenticator({ id, label, displayName, badge, icon, getProvider, connectMethod = 'eth_requestAccounts' }: InjectedAuthenticatorOptions): Authenticator {
   const need = async (): Promise<InjectedProvider> => {
     const provider = await getProvider();
     if (!provider) throw new AuthenticatorError('unreachable', `${label} is not installed in this browser.`, id);
@@ -99,15 +101,16 @@ export function createInjectedAuthenticator({ id, label, displayName, badge, ico
       return toAccounts(await call('eth_accounts'));
     },
     async connect() {
-      // already permitted: eth_requestAccounts would return at once, so ask for the permission again (the wallet's account picker) to let the person change which accounts are shared
-      if (toAccounts(await call('eth_accounts')).length > 0) {
-        try {
-          await call('wallet_requestPermissions', [{ eth_accounts: {} }]);
-          return toAccounts(await call('eth_accounts'));
-        } catch (error) {
-          const code = (error as { code?: unknown } | null)?.code;
-          if (code !== -32601 && code !== 4200) throw error;
-        }
+      return toAccounts(await call(connectMethod));
+    },
+    // already permitted: eth_requestAccounts would return at once, so ask for the permission again (the wallet's account picker) to let the person change which accounts are shared
+    async selectAccounts() {
+      try {
+        await call('wallet_requestPermissions', [{ eth_accounts: {} }]);
+        return toAccounts(await call('eth_accounts'));
+      } catch (error) {
+        const code = (error as { code?: unknown } | null)?.code;
+        if (code !== -32601 && code !== 4200) throw error;
       }
       return toAccounts(await call('eth_requestAccounts'));
     },

@@ -17,7 +17,7 @@
 //     eth_requestAccounts round trip all work); and the tab the person is actually on never changes, not even for an instant -- confirmed by polling chrome.tabs.query throughout an entire real approval.
 //     This does not work if the iframe's parent is an EXTENSION page (also confirmed live: nesting it inside the side panel itself gets no MetaMask injection at all -- a real Chrome isolation boundary,
 //     not a bug), which is why it has to be a tab the person already has open (or one opened for them), never the side panel.
-import { readOpenTarget, urlForOpenTarget } from './openTargetStorage';
+import { readServerUrl } from './openTargetStorage';
 
 export const RELAY_PATH = '/metamaskRelay.html';
 export const METAMASK_ACCOUNTS_KEY = 'meritMetaMaskAccounts';
@@ -186,7 +186,7 @@ async function hideApprovalBanner(tabId: number): Promise<void> {
 }
 
 async function ensureTab(): Promise<number> {
-  const base = urlForOpenTarget(await readOpenTarget());
+  const base = await readServerUrl();
   const url = `${base}${RELAY_PATH}`;
   const tabId = await findOrOpenAppTab(base);
   await injectRelayFrame(tabId, url);

@@ -1,16 +1,6 @@
 // File: src/accountIconCache.ts
-// 2026-09-29 — createIconCache itself moved to @sponsorcoin/spcoin-feeds/
-// shared (portable — any consumer can use it, not just this extension); this
-// file now just supplies this extension's own chrome.storage.local backend
-// (chromeIconCacheStorage.ts) as the 4th argument. Behavior unchanged.
-
-import { fetchAccountAvatarBlob } from '@sponsorcoin/spcoin-feeds/accounts';
-import { createIconCache } from '@sponsorcoin/spcoin-feeds/shared';
+// 2026-11-04 (owner decision): the extension's account avatar cache is the avatars section of the ONE image cache the wallet component uses (createMeritWalletIconCaches, one instance per storage). It was a second cache of its own on the same storage key.
+import { createMeritWalletIconCaches } from '@sponsorcoin/merit-wallet';
 import { chromeIconCacheStorage } from './chromeIconCacheStorage';
 
-export const getCachedAccountIconDataUrl = createIconCache(
-  'spcoin_account_icon_cache',
-  fetchAccountAvatarBlob,
-  'account',
-  chromeIconCacheStorage,
-);
+export const getCachedAccountIconDataUrl = createMeritWalletIconCaches(chromeIconCacheStorage).getCachedAccountIconDataUrl;

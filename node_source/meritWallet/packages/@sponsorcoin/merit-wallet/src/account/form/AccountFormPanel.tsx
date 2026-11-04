@@ -129,7 +129,7 @@ export default function CreateAccountFormPanel({
   const errorValueClasses = errorValueDisplay ? accountFormClass.errorValue : '';
   const loadingFieldClasses = accountFormClass.loadingField;
   const lockedInputMessage = isLoading ? loadingInputMessage : disconnectedInputMessage;
-  const noChangesToUpdate = submitLabel !== 'Create Account' && !hasUnsavedChanges;
+  const noChangesToUpdate = submitLabel !== 'Publish Account' && !hasUnsavedChanges;
   const getLoadingClassesForField = (fieldName: string): string =>
     isLoading && hoveredInput === fieldName ? loadingFieldClasses : '';
   const fieldId = (fieldName: string) => `${idPrefix}${fieldName}`;
@@ -361,7 +361,7 @@ export default function CreateAccountFormPanel({
                     aria-disabled={disableSubmit}
                     className={accountFormClass.saveButton({ noChangesToUpdate, isEditMode, hoverCreate: hoverTarget === 'createAccount', disableSubmit, hasUnsavedChanges, canCreateMissingAccount })}
                     title={
-                      submitLabel === 'Create Account'
+                      submitLabel === 'Publish Account'
                         ? undefined
                         : !hasUnsavedChanges
                         ? submitLabel === 'Edit Account'

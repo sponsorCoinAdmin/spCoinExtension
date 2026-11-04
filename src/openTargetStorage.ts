@@ -47,3 +47,36 @@ export async function writeOpenTarget(target: OpenTarget): Promise<void> {
 export function urlForOpenTarget(target: OpenTarget): string {
   return target === 'local' ? LOCAL_APP_URL : PROD_APP_URL;
 }
+
+// 2026-11-04 (owner decision): the ONE answer to "which server does the extension read from and publish to?" is the Local/Prod setting above. Every server read asks getServerUrl(), which is synchronous and always the current setting; nothing keeps a copy of the address.
+// The panel starts it once with the stored value (initServerSetting); a change made from the Config tab, or by any other page of the extension, arrives through chrome.storage and is announced to onServerChange listeners.
+let currentTarget: OpenTarget = DEFAULT_TARGET;
+const serverListeners = new Set<() => void>();
+
+export function getServerUrl(): string {
+  return urlForOpenTarget(currentTarget);
+}
+
+/** For code with no running panel (the service worker, the relay): the setting as stored right now. */
+export async function readServerUrl(): Promise<string> {
+  return urlForOpenTarget(await readOpenTarget());
+}
+
+export function onServerChange(listener: () => void): () => void {
+  serverListeners.add(listener);
+  return () => serverListeners.delete(listener);
+}
+
+export function setServerTarget(target: OpenTarget): void {
+  if (target === currentTarget) return;
+  currentTarget = target;
+  serverListeners.forEach((listener) => listener());
+}
+
+export function initServerSetting(initial: OpenTarget): void {
+  currentTarget = initial;
+  chrome.storage.onChanged.addListener((changes, area) => {
+    const next = changes[STORAGE_KEY]?.newValue;
+    if (area === 'local' && (next === 'local' || next === 'prod')) setServerTarget(next);
+  });
+}

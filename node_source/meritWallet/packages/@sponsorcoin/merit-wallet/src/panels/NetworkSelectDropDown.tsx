@@ -53,6 +53,10 @@ export interface NetworkSelectDropDownProps {
    *  showing — same chevronUp convention the real trigger-mode file uses.
    *  Defaults false (closed). */
   chevronUp?: boolean;
+  /** 2026-11-03 (owner request): the chain's symbol, name and id. With an id the pill reads like the account pill: "$symbol | $name" over the id (31337), instead of the name alone in the pill. */
+  symbol?: string;
+  name?: string;
+  id?: string | number;
 }
 
 export default function NetworkSelectDropDown({
@@ -61,7 +65,11 @@ export default function NetworkSelectDropDown({
   onSelectClick,
   onIconClick,
   chevronUp = false,
+  symbol,
+  name,
+  id,
 }: NetworkSelectDropDownProps) {
+  const twoLines = id !== undefined && id !== '';
   return (
     <AssetSelectDropDown
       rootId="WALLET_NETWORK_HEADER"
@@ -70,10 +78,13 @@ export default function NetworkSelectDropDown({
       // Fed into the address slot (not symbol/name), same as the real
       // trigger-mode file — renders inside the solid pill together with
       // the icon, copy button, and chevron.
-      address={label}
-      copyLabel="Copy network"
+      address={twoLines ? String(id) : label}
+      symbol={twoLines ? symbol || 'N/A' : undefined}
+      name={twoLines ? name || label : undefined}
+      copyLabel={twoLines ? 'Copy chain id' : 'Copy network'}
       showDisplay={
         ASSET_SELECT_DISPLAY.ICON |
+        (twoLines ? ASSET_SELECT_DISPLAY.SYMBOL | ASSET_SELECT_DISPLAY.NAME : 0) |
         ASSET_SELECT_DISPLAY.ADDRESS |
         ASSET_SELECT_DISPLAY.COPY |
         (chevronUp ? ASSET_SELECT_DISPLAY.CHEVRON_UP : ASSET_SELECT_DISPLAY.CHEVRON_DN) |

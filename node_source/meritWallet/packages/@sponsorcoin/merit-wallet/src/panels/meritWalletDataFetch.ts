@@ -86,11 +86,31 @@ export interface MeritWalletNetworkRow {
  * functions below should build exactly one of these per component instance
  * (not per call) so repeat fetches actually hit the cache.
  */
+const cachesByStorage = new WeakMap<IconCacheStorage, ReturnType<typeof buildMeritWalletIconCaches>>();
+
+/** One image cache per storage: a host that builds this with its storage, and the component given the same storage, share one instance (one set of sections, one write queue). */
 export function createMeritWalletIconCaches(storage: IconCacheStorage = createInMemoryIconCacheStorage()) {
+  let caches = cachesByStorage.get(storage);
+  if (!caches) {
+    caches = buildMeritWalletIconCaches(storage);
+    cachesByStorage.set(storage, caches);
+  }
+  return caches;
+}
+
+function buildMeritWalletIconCaches(storage: IconCacheStorage) {
+  // 2026-11-04 (owner decision): the ONE image cache, in sections by kind: avatars (every role of an account), tokens, networks, wallets. One storage and one write queue (iconCache.ts); a section is its own keys.
+  // put(url, dataUrl) adds an image the moment it is saved, and IMAGE_CACHE_UPDATED_EVENT tells whatever shows it.
+  const wallets = createIconCache('spcoin_wallet_icon_cache', async (url: string, config: { baseUrl: string }) => {
+    const response = await fetch(`${config.baseUrl ?? ''}${url}`);
+    if (!response.ok) throw new Error(`Request failed with ${response.status}`);
+    return response.blob();
+  }, 'wallet', storage);
   return {
     getCachedNetworkIconDataUrl: createIconCache('spcoin_network_icon_cache', fetchNetworkIconBlob, 'network', storage),
     getCachedAccountIconDataUrl: createIconCache('spcoin_account_icon_cache', fetchAccountAvatarBlob, 'account', storage),
     getCachedTokenIconDataUrl: createIconCache('spcoin_token_icon_cache', fetchTokenIconBlob, 'token', storage),
+    getCachedWalletIconDataUrl: wallets,
   };
 }
 

@@ -89,7 +89,7 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
                     return;
                 }
                 if (id !== host.nativeWalletId)
-                    void Promise.resolve(wallet.registry.get(id)?.connect?.()).catch(() => undefined).then(load);
+                    void Promise.resolve((wallet.registry.get(id)?.selectAccounts ?? wallet.registry.get(id)?.connect)?.call(wallet.registry.get(id))).catch(() => undefined).then(load);
             },
         });
         return result;

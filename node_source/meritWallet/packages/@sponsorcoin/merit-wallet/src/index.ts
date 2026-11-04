@@ -195,3 +195,4 @@ export { createSyncTokenProvider, parseTokenExpiresAt, REFRESH_LEAD_MS, type Syn
 export { pushContextPatch, type PushHost, type PushHooks, type PushPlan } from './sync/pushContextPatch';
 export { reconcileChain, decideWalletChainChanged, type WalletChainChangedDecision, type ChainReconcileInput, type ChainReconcileRefs, type ChainReconcileHost, type SwitchPhase } from './chain/chainReconcile';
 export { default as CopyIcon } from './account/form/CopyIcon';
+export { createMeritWalletIconCaches } from './panels/meritWalletDataFetch';

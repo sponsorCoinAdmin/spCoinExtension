@@ -28,12 +28,14 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { dropDownStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
-export default function NetworkSelectDropDown({ icon, label = 'Not Connected', onSelectClick, onIconClick, chevronUp = false, }) {
+export default function NetworkSelectDropDown({ icon, label = 'Not Connected', onSelectClick, onIconClick, chevronUp = false, symbol, name, id, }) {
+    const twoLines = id !== undefined && id !== '';
     return (_jsx(AssetSelectDropDown, { rootId: "WALLET_NETWORK_HEADER", hasEntity: true, icon: icon, 
         // Fed into the address slot (not symbol/name), same as the real
         // trigger-mode file — renders inside the solid pill together with
         // the icon, copy button, and chevron.
-        address: label, copyLabel: "Copy network", showDisplay: ASSET_SELECT_DISPLAY.ICON |
+        address: twoLines ? String(id) : label, symbol: twoLines ? symbol || 'N/A' : undefined, name: twoLines ? name || label : undefined, copyLabel: twoLines ? 'Copy chain id' : 'Copy network', showDisplay: ASSET_SELECT_DISPLAY.ICON |
+            (twoLines ? ASSET_SELECT_DISPLAY.SYMBOL | ASSET_SELECT_DISPLAY.NAME : 0) |
             ASSET_SELECT_DISPLAY.ADDRESS |
             ASSET_SELECT_DISPLAY.COPY |
             (chevronUp ? ASSET_SELECT_DISPLAY.CHEVRON_UP : ASSET_SELECT_DISPLAY.CHEVRON_DN) |

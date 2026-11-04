@@ -40,15 +40,16 @@ import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
-import { engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
+import { setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { StakeConfirmPopup } from '@sponsorcoin/spcoin-panels';
 import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, PACKAGE_BUILD, SHOW_BUILD_MARKERS, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
-import { MeritPlatformContext } from './platform/platform';
+import { MeritPlatformContext, usePlatform } from './platform/platform';
 import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps } from './wallet/walletProps';
 import { useApproverAccounts } from './wallet/approverAccountsReact';
 import { useApprovalMessagePanel } from './auth/useApprovalMessagePanel';
+import { useChainInfo } from './panels/useChainInfo';
 import { walletName } from './auth/authenticator';
 import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, WalletRadioPanels, TradingStationPanel, SendTabPanel, NetworkDetailPanel, MeritInfoPanelReal } from './panels';
 import TokenPanel from './TokenPanel';
@@ -237,7 +238,7 @@ const SAMPLE_NETWORK_ROWS = [
 // the header account list now renders AccountListCard directly, which takes
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
-function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, showWalletSelect = true, walletAssetBaseUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccounts, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
+function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, showWalletSelect = true, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccounts, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
     // reads), not owned local state. useEnforceRadioPanelGroups/
@@ -377,6 +378,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         engineTrace('MeritWallet:stepContent', { stepContentUp, messageVisible, stepTitle });
     }, [stepContentUp, messageVisible, stepTitle]);
     // 2026-10-13: where the wallet asset files are served from, for the pill, the list and the panel alike (a host on another origin, the extension, passes the web app's address)
+    if (accountServiceUrl !== undefined)
+        setAccountStoreBaseUrl(accountServiceUrl); // the same kind of module setting, read by the account form's sign-in and save
     if (walletAssetBaseUrl !== undefined)
         setWalletAssetBaseUrl(walletAssetBaseUrl); // set while rendering (an idempotent module setting), so the children's first render already reads it
     // 2026-11-01 (owner rule: a panel is drawn only while the panel tree says its branch is open). The detail screens below (account, agent, sponsor, recipient, token, network, wallet) are members of ASSET_RADIO_PANELS: their own flag outlives the branch now (closing a panel closes
@@ -440,13 +443,20 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // per-domain isolation meritWalletDataFetch.ts's own functions already
     // guarantee.
     const hasFetchedOnceRef = useRef(false);
+    // 2026-11-04: an image put in (or dropped from) the cache changes this, so the rows are read again from the cache, not refetched
+    const [imageVersion, setImageVersion] = useState(0);
+    const imageVersionSeenRef = useRef(0);
+    const imagePlatform = usePlatform();
+    useEffect(() => imagePlatform.onImageCacheUpdated?.(() => setImageVersion((n) => n + 1)), [imagePlatform]);
     const tokenRowsChainRef = useRef(undefined);
     useEffect(() => {
         if (chainId == null)
             return;
         const caches = iconCachesRef.current;
         const resolvedBaseUrl = baseUrl ?? '';
-        const forceRefresh = hasFetchedOnceRef.current;
+        const imageOnly = imageVersionSeenRef.current !== imageVersion;
+        imageVersionSeenRef.current = imageVersion;
+        const forceRefresh = hasFetchedOnceRef.current && !imageOnly;
         hasFetchedOnceRef.current = true;
         let cancelled = false;
         if (networkRows === undefined) {
@@ -484,7 +494,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         // these two deps includes is exactly what a targeted lint-disable
         // here is for).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chainId, baseUrl, refreshToken]);
+    }, [chainId, baseUrl, refreshToken, imageVersion]);
     // Layering: explicit prop > self-fetched > (existing SAMPLE_* fallback,
     // applied further down at each of these 3's own point of use, unchanged).
     const resolvedNetworkRows = networkRows ?? selfFetchedNetworkRows;
@@ -1489,6 +1499,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // isActive flag the list overlays already use, just read once more here
     // rather than duplicated as separate props.
     const activeNetworkRow = networkRowsSource.find((row) => row.isActive);
+    // the pill's "$symbol | $name" is the chain's own meta (assets/blockchains/<id>/info.json); the row's symbol and name stand in until it is read
+    const activeChainInfo = useChainInfo(activeNetworkRow?.id, walletAssetBaseUrl ?? '');
     const flatAccountRows = effectiveAccountGroups.flatMap((group) => group.accounts);
     // 2026-10-13 (owner request): the wallet pill names the wallet whose group is ACTIVE in the list below it (the web's list keys its groups 'hardhat' = the dev keystore, 'metamask'), whenever the host has no
     // active account address to derive it from.
@@ -1898,7 +1910,17 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     remoteWasOpen.current = !!remoteSelection;
     const addFlowOpenedSinceRemote = addFlowTop !== remoteStart.current.top || (addMenuVisible && !remoteStart.current.menu);
     const remoteOverlay = remoteSelection && !addFlowOpenedSinceRemote ? renderAccountManagement() : null;
-    const body = messageOverlay ?? passwordOverlayWithReset ?? remoteOverlay ?? panelTreeOverlay ?? meritInfoOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (activeChild != null ? sharedListHost : null) ?? listOverlay ?? null;
+    const validateRemoteVisible = usePanelVisible(SP_COIN_DISPLAY.VALIDATE_REMOTE_CONNECT);
+    const approvalPending = !!approvalPage;
+    useEffect(() => {
+        if (approvalPending)
+            openPanel(SP_COIN_DISPLAY.VALIDATE_REMOTE_CONNECT, 'MeritWallet:approvalPage:open');
+        else
+            closePanel(SP_COIN_DISPLAY.VALIDATE_REMOTE_CONNECT, 'MeritWallet:approvalPage:close');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [approvalPending]);
+    const approvalOverlay = approvalPage && validateRemoteVisible && !passwordOverlay ? approvalPage.element : null;
+    const body = messageOverlay ?? passwordOverlayWithReset ?? approvalOverlay ?? remoteOverlay ?? panelTreeOverlay ?? meritInfoOverlay ?? addAccountOverlay ?? accountDetailOverlay ?? tokenDetailOverlay ?? networkDetailOverlay ?? walletPanelOverlay ?? (activeChild != null ? sharedListHost : null) ?? listOverlay ?? null;
     // The tab body always sits in the SAME slot of one Fragment ([overlay, tab body]): while a step popup is drawn in MESSAGE_PANEL it stays there (hidden) beside
     // the panel, so the popup's owner (the Sponsor trade button's confirm flow) is not unmounted by the panel opening. Switching between a bare element and a
     // Fragment instead would remount the whole tab.
@@ -1923,42 +1945,44 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         ? stepTitle
         : passwordOverlay
             ? passwordMode === 'setup' ? 'Create Account' : 'Account Login'
-            : remoteSelection
-                ? `Remote ${remoteSelection.caller} Account Selector`
-                : walletListLeafVisible
-                    ? walletListScreenTitle
-                    : addMenuVisible && panelTreeListOpen
-                        ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
-                        : panelTreeVisible
-                            ? 'Panel Tree'
-                            : meritInfoVisible
-                                ? 'About Merit Wallet'
-                                : accountDetailVisible
-                                    ? 'Account Details'
-                                    : tokenDetailVisible
-                                        ? 'Token Details'
-                                        : networkDetailVisible
-                                            ? 'Network Details'
-                                            : activeListMode === 'sellToken' ||
-                                                activeListMode === 'buyToken' ||
-                                                activeListMode === 'sendToken'
-                                                ? 'Select a Token'
-                                                : activeListMode === 'sendRecipient'
-                                                    ? 'Select Recipient'
-                                                    : activeListMode === 'account'
-                                                        ? 'Active Account Selection'
-                                                        : activeListMode === 'network'
-                                                            ? 'Select Network'
-                                                            : activeTab === 'SWAP'
-                                                                ? 'Trading Station'
-                                                                : activeTab === 'SEND'
-                                                                    ? 'Send Token'
-                                                                    : activeTab === 'SPONSOR'
-                                                                        ? 'Add Sponsorship'
-                                                                        : activeTab === 'REWARDS'
-                                                                            ? 'Rewards Management'
-                                                                            : 'Wallet Config';
-    return (_jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.LOGIN_HEADER, lazyLoad: false, children: _jsx(LoginHeader, { title: recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login', onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_NETWORK_HEADER, lazyLoad: false, children: _jsx(WalletNetworkHeader, { mode: "normal", leftSlot: _jsx(NetworkSelectDropDown, { label: activeNetworkRow?.name, 
+            : approvalOverlay
+                ? approvalPage.title
+                : remoteSelection
+                    ? `Remote ${remoteSelection.caller} Account Selector`
+                    : walletListLeafVisible
+                        ? walletListScreenTitle
+                        : addMenuVisible && panelTreeListOpen
+                            ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
+                            : panelTreeVisible
+                                ? 'Panel Tree'
+                                : meritInfoVisible
+                                    ? 'About Merit Wallet'
+                                    : accountDetailVisible
+                                        ? 'Account Details'
+                                        : tokenDetailVisible
+                                            ? 'Token Details'
+                                            : networkDetailVisible
+                                                ? 'Network Details'
+                                                : activeListMode === 'sellToken' ||
+                                                    activeListMode === 'buyToken' ||
+                                                    activeListMode === 'sendToken'
+                                                    ? 'Select a Token'
+                                                    : activeListMode === 'sendRecipient'
+                                                        ? 'Select Recipient'
+                                                        : activeListMode === 'account'
+                                                            ? 'Active Account Selection'
+                                                            : activeListMode === 'network'
+                                                                ? 'Select Network'
+                                                                : activeTab === 'SWAP'
+                                                                    ? 'Trading Station'
+                                                                    : activeTab === 'SEND'
+                                                                        ? 'Send Token'
+                                                                        : activeTab === 'SPONSOR'
+                                                                            ? 'Add Sponsorship'
+                                                                            : activeTab === 'REWARDS'
+                                                                                ? 'Rewards Management'
+                                                                                : 'Wallet Config';
+    return (_jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.LOGIN_HEADER, lazyLoad: false, children: _jsx(LoginHeader, { title: recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login', onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_NETWORK_HEADER, lazyLoad: false, children: _jsx(WalletNetworkHeader, { mode: "normal", leftSlot: _jsx(NetworkSelectDropDown, { label: activeNetworkRow?.name, symbol: activeChainInfo?.symbol ?? activeNetworkRow?.symbol, name: activeChainInfo?.name ?? activeNetworkRow?.name, id: activeNetworkRow?.id, 
                                     // 2026-09-16, on live report ("the NetworkSelectDropDown is
                                     // not showing the network icon in the WALLET_NETWORK_HEADER")
                                     // — activeNetworkRow.iconSrc was already real (same value the
@@ -2000,47 +2024,49 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                         // stack (usePanelTree.ts's closePanel pop-top branch). No-ops
                                         // safely when the stack is empty. Same call shape as the web
                                         // app's own ActiveWalletPanelTitle back button.
-                                        onBackClick: remoteSelection
-                                            ? remoteSelection.onCancel
-                                            : accountDetailVisible
-                                                ? () => {
-                                                    setAccountDetailAddress(null);
-                                                    closePanel('NAV_POP:MeritWallet:accountDetailBack');
-                                                }
-                                                : tokenDetailVisible
+                                        onBackClick: approvalOverlay
+                                            ? approvalPage.onCancel
+                                            : remoteSelection
+                                                ? remoteSelection.onCancel
+                                                : accountDetailVisible
                                                     ? () => {
-                                                        if (previewToken)
-                                                            setPreviewTokenContract(undefined);
-                                                        closePanel('NAV_POP:MeritWallet:tokenDetailBack');
+                                                        setAccountDetailAddress(null);
+                                                        closePanel('NAV_POP:MeritWallet:accountDetailBack');
                                                     }
-                                                    : networkDetailVisible
+                                                    : tokenDetailVisible
                                                         ? () => {
-                                                            setNetworkDetailId(null);
-                                                            closePanel('NAV_POP:MeritWallet:networkDetailBack');
+                                                            if (previewToken)
+                                                                setPreviewTokenContract(undefined);
+                                                            closePanel('NAV_POP:MeritWallet:tokenDetailBack');
                                                         }
-                                                        : addFlowTop != null
-                                                            ? () => closePanel(addFlowTop, 'NAV_POP:MeritWallet:addFlowBack')
-                                                            // 2026-10-28, real bug fix (live report, Test page:
-                                                            // "the down chevron points up" after Back from the
-                                                            // Sponsor tab's recipient list, and never reverts) —
-                                                            // activeListMode is null for a list opened directly
-                                                            // through openActiveListPanel rather than this
-                                                            // component's own setActiveList (RecipientSelectDropDown.tsx's
-                                                            // REMOTE_ACCOUNT_RECIPIENT_LIST among them — it only ever
-                                                            // recognizes its own 'account'/'network' fallback modes,
-                                                            // see this file's own activeListMode derivation comment),
-                                                            // so Back fell through to the generic stack-pop below,
-                                                            // which never calls closeActiveListPanel — the list's
-                                                            // flags stayed stuck true, and the chevron (which reads
-                                                            // REMOTE_ACCOUNT_RECIPIENT_LIST's own visibility) stayed
-                                                            // pointing up forever. activeChild (useActiveListPanelChild,
-                                                            // already this file's own single source of truth
-                                                            // elsewhere) covers all six ACTIVE_LIST_PANEL_MODES
-                                                            // members, not just two — same close action already
-                                                            // proven correct for account/network.
-                                                            : activeListMode || activeChild != null
-                                                                ? () => setActiveList(null)
-                                                                : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && walletListVisible && !addMenuVisible && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: bodyWithTab })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { "data-build-marker": "", style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] }))] }) }) }) }));
+                                                        : networkDetailVisible
+                                                            ? () => {
+                                                                setNetworkDetailId(null);
+                                                                closePanel('NAV_POP:MeritWallet:networkDetailBack');
+                                                            }
+                                                            : addFlowTop != null
+                                                                ? () => closePanel(addFlowTop, 'NAV_POP:MeritWallet:addFlowBack')
+                                                                // 2026-10-28, real bug fix (live report, Test page:
+                                                                // "the down chevron points up" after Back from the
+                                                                // Sponsor tab's recipient list, and never reverts) —
+                                                                // activeListMode is null for a list opened directly
+                                                                // through openActiveListPanel rather than this
+                                                                // component's own setActiveList (RecipientSelectDropDown.tsx's
+                                                                // REMOTE_ACCOUNT_RECIPIENT_LIST among them — it only ever
+                                                                // recognizes its own 'account'/'network' fallback modes,
+                                                                // see this file's own activeListMode derivation comment),
+                                                                // so Back fell through to the generic stack-pop below,
+                                                                // which never calls closeActiveListPanel — the list's
+                                                                // flags stayed stuck true, and the chevron (which reads
+                                                                // REMOTE_ACCOUNT_RECIPIENT_LIST's own visibility) stayed
+                                                                // pointing up forever. activeChild (useActiveListPanelChild,
+                                                                // already this file's own single source of truth
+                                                                // elsewhere) covers all six ACTIVE_LIST_PANEL_MODES
+                                                                // members, not just two — same close action already
+                                                                // proven correct for account/network.
+                                                                : activeListMode || activeChild != null
+                                                                    ? () => setActiveList(null)
+                                                                    : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && walletListVisible && !addMenuVisible && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: bodyWithTab })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false })), SHOW_BUILD_MARKERS && (_jsxs("div", { "data-build-marker": "", style: walletFrameStyle.buildMarker, children: ["\u27E8@sponsorcoin/merit-wallet/MeritWallet.tsx \u00B7 build ", PACKAGE_BUILD, "\u27E9"] }))] }) }) }) }));
 }
 let warnedNoAccountSource = false;
 /**

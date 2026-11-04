@@ -16,7 +16,9 @@ export interface InjectedAuthenticatorOptions {
     icon?: string;
     /** Find the wallet's provider now: undefined when it is not installed. */
     getProvider(): InjectedProvider | undefined | Promise<InjectedProvider | undefined>;
+    /** 2026-11-03: the request connect() sends. Default eth_requestAccounts (the wallet's account picker). The Merit extension takes merit_requestConnection: a plain "connect this site?" confirmation, no account choice. */
+    connectMethod?: string;
 }
 /** EIP-1193 / JSON-RPC error codes -> the wallet's error set. Anything not recognised is rethrown as it came. */
 export declare function translateProviderError(error: unknown, id: AuthenticatorId, label: string): unknown;
-export declare function createInjectedAuthenticator({ id, label, displayName, badge, icon, getProvider }: InjectedAuthenticatorOptions): Authenticator;
+export declare function createInjectedAuthenticator({ id, label, displayName, badge, icon, getProvider, connectMethod }: InjectedAuthenticatorOptions): Authenticator;

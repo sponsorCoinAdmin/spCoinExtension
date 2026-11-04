@@ -94,7 +94,7 @@ export function startDappApprovals(): void {
           continue;
         }
         // 2026-10-31 (owner design): a site asking to connect opens the wallet's own account list (the remote account selector): the person ticks which accounts the site may see and presses Done.
-        if (next.kind === 'connect') {
+        if (next.kind === 'connect' && !next.details?.confirm) {
           traceFrom('panel', `account selector opened for ${next.origin}`);
           // 2026-11-01: the wallet is unlocked and its account selector is what the person sees: only now is the page told ONCE (its waiting notice and its "Connecting..." screen close); while the wallet shows its login, the page keeps waiting
           traceFrom('panel', `telling ${next.origin} its request is on the wallet screen`);
@@ -124,6 +124,8 @@ export function startDappApprovals(): void {
           }
           continue;
         }
+        // 2026-11-03 (owner): connecting the WALLET is the plain confirmation page (the site, Cancel / Connect); the page is told once it is on screen
+        if (next.kind === 'connect') void worker({ type: 'merit/connect/presented', origin: next.origin } as never).catch(() => undefined);
         const chainId = (await worker({ type: 'merit/network/get' }).catch(() => undefined))?.chainId ?? 31337;
         const active = (await worker({ type: 'merit/accounts/list' }).catch(() => undefined))?.active ?? '';
         let approved = false;

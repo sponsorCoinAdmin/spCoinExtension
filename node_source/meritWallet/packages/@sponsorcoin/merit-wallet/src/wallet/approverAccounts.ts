@@ -101,6 +101,8 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
     const accounts: AccountListEntry[] = held.map((entry) => {
       const known = host.describeAccount?.(entry.address);
       const label = splitNameSymbol(entry.name);
+      // 2026-11-03: a default label ("Account 1", "Wallet 2 Account 3") is no name the person chose; the public profile's name, when there is one, wins over it
+      if (label.name && /^(Wallet \d+ )?Account \d+$/i.test(label.name) && known?.name) label.name = undefined;
       return {
         id: entry.address,
         symbol: label.symbol || known?.symbol || 'N/A',

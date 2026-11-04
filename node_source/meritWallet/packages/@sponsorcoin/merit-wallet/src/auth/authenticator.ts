@@ -93,6 +93,8 @@ export interface Authenticator {
   accounts(onPartial?: (accounts: AuthenticatorAccount[]) => void): Promise<AuthenticatorAccount[]>;
   /** Ask the user to connect (remote ones: the wallet's own connect popup). */
   connect?(): Promise<AuthenticatorAccount[]>;
+  /** 2026-11-03: ask the wallet again which accounts to share, even when it already shares some (the "Add Account(s)" button). A plain connect() must stay the wallet's ordinary connect request: a wallet that keeps its permission after a disconnect would otherwise open its account selector instead of its connect page. */
+  selectAccounts?(): Promise<AuthenticatorAccount[]>;
   /** Optional: give up whatever permission connect() was granted (MetaMask: revoke the page's access). Never touches keys or the wallet's account list. */
   disconnect?(): Promise<void>;
   /** Always behind this authenticator's own approval. */

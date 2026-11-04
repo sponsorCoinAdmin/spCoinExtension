@@ -97,8 +97,8 @@ function loadRelay(opts) {
   // the extension's TypeScript is the native one (no JS API), so the file is compiled with the transform the build uses (oxc, in rolldown) and turned into a function over a fake chrome
   let code = transformSync('metamaskRelay.ts', relaySrc, { lang: 'ts', sourceType: 'module', target: 'es2022' }).code;
   const NLC = String.fromCharCode(10);
-  code = code.replace(/^import \{[^}]*\} from ['"]\.\/openTargetStorage['"];?$/m, 'const { readOpenTarget, urlForOpenTarget } = deps;').replace(/^export (async function|function|const) /gm, '$1 ');
-  const mod = { exports: new Function('chrome', 'deps', code + NLC + 'return { RELAY_PATH, METAMASK_ACCOUNTS_KEY, RELAY_METHODS, relayRequest, acceptRelayResult, readMetaMaskAccounts, writeMetaMaskAccounts };')(env.chromeMock, { readOpenTarget: async () => 'local', urlForOpenTarget: () => APP_URL }) };
+  code = code.replace(/^import \{[^}]*\} from ['"]\.\/openTargetStorage['"];?$/m, 'const { readServerUrl } = deps;').replace(/^export (async function|function|const) /gm, '$1 ');
+  const mod = { exports: new Function('chrome', 'deps', code + NLC + 'return { RELAY_PATH, METAMASK_ACCOUNTS_KEY, RELAY_METHODS, relayRequest, acceptRelayResult, readMetaMaskAccounts, writeMetaMaskAccounts };')(env.chromeMock, { readServerUrl: async () => APP_URL }) };
   const handle = (message, sender) => new Promise((resolve) => {
     let answered = false;
     const done = (r) => { answered = true; resolve(r); };

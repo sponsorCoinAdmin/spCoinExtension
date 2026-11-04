@@ -21,6 +21,7 @@ import {
 import { extensionPublicAccountStore } from './extensionPublicAccountStore';
 import { signMessageWithVault, signWithVault, type ConfirmCopy } from './localSigning';
 import { metamaskAuthenticator } from './metamaskAuthenticator';
+import { webAppAuthenticator } from './webAppAuthenticator';
 import { ledgerAuthenticator } from './hardwareLedger';
 
 type WorkerReply = { ok: boolean; initialized?: boolean; unlocked?: boolean; accounts?: Array<{ address: string; name?: string; devOrigin?: boolean }> };
@@ -104,6 +105,8 @@ extensionAuthenticatorRegistry.register(localVaultAuthenticator);
 // 2026-10-26 (owner report): MetaMask decides in its own window, off-screen from the side panel's point of view, so without this wrapper the panel just sits there while the relay tab is open -- the same
 // "Waiting for MetaMask to approve ..." notice the web app already shows (lib/spCoin/webAuthenticators.ts) was simply never wired up here.
 extensionAuthenticatorRegistry.register(withApprovalNotice(metamaskAuthenticator));
+// 2026-11-04 (docs/design/remoteWalletSigning.txt step B): the Merit web app, asked through the worker's relay (src/webAppRelay.ts); it decides in its own window, so the same notice shows while it does
+extensionAuthenticatorRegistry.register(withApprovalNotice(webAppAuthenticator));
 // 2026-10-13 (docs/connectionDesign.txt item 12): a Ledger over WebHID (the package's shared hardware layer); the device shows every request on its own screen, so the panel says where to look while it waits.
 extensionAuthenticatorRegistry.register(withApprovalNotice(ledgerAuthenticator));
 

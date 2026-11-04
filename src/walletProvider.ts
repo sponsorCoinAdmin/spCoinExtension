@@ -18,6 +18,7 @@ import {
 } from '@sponsorcoin/merit-wallet/vault';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import { rpcUrlForChain } from './chainRpc';
+import { createWebAppRelay } from './webAppRelay';
 
 const PERMISSIONS_KEY = 'spcoin_merit_permissions';
 const CHAIN_KEY = 'spcoin_merit_active_chain';
@@ -236,6 +237,12 @@ export function installProvider({ session, accounts, approvals, signer, ready }:
       sendResponse({ ok: true, result: null });
       return false;
     }
+    if (m.method === 'merit_remoteResponse') {
+      const accepted = webAppRelay.accept({ tabId: sender.tab.id, origin }, Array.isArray(m.params) ? m.params[0] : undefined);
+      trace('worker', `web app answer ${accepted ? 'taken' : 'refused'} (tab ${sender.tab.id}, ${origin})`);
+      sendResponse({ ok: true, result: accepted });
+      return false;
+    }
     // The page gave up waiting (Cancel, or its own time limit): its waiting requests end with "rejected", so no approval is left behind in the wallet. Only this site's own requests are touched.
     if (m.method === 'merit_cancelRequest') {
       for (const p of approvals.list()) if (p.origin === origin) approvals.reject(p.id, 'The site cancelled the request.');
@@ -268,6 +275,15 @@ trace('worker', 'worker started');
 const webApps = new Map<number, { origin: string; loggedOn: boolean; fresh: boolean }>();
 const webAppsChanged = () => chrome.runtime.sendMessage({ type: 'merit/web/changed' }).catch(() => undefined);
 
+// 2026-11-04 (docs/design/remoteWalletSigning.txt, step A): requests to the web app and its answers; the rules are in src/webAppRelay.ts (tested without a browser)
+const webAppRelay = createWebAppRelay({
+  targets: () => Array.from(webApps, ([tabId, entry]) => ({ tabId, origin: entry.origin, loggedOn: entry.loggedOn })),
+  sendToTab: (tabId, message) => chrome.tabs.sendMessage(tabId, message),
+  setTimer: (fn, ms) => setTimeout(fn, ms),
+  clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  newId: () => crypto.randomUUID(),
+});
+
 function reportWebApp(tabId: number | undefined, origin: string, loggedOn: boolean, detached: boolean, at: number) {
   if (tabId === undefined) return;
   const before = webApps.get(tabId);
@@ -279,6 +295,7 @@ function reportWebApp(tabId: number | undefined, origin: string, loggedOn: boole
 }
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  webAppRelay.dropTab(tabId);
   if (webApps.delete(tabId)) {
     trace('worker', `web app tab ${tabId} closed`);
     void webAppsChanged();
@@ -287,11 +304,21 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
   const type = (message as { type?: string } | null)?.type;
-  if (type !== 'merit/web/status' && type !== 'merit/web/choice') return false;
+  if (type !== 'merit/web/status' && type !== 'merit/web/choice' && type !== 'merit/web/request') return false;
   // only the extension's own pages (the side panel) may ask
   if (sender.id !== chrome.runtime.id || typeof sender.url !== 'string' || !sender.url.startsWith(chrome.runtime.getURL(''))) {
     sendResponse({ ok: false, error: 'forbidden' });
     return false;
+  }
+  // a request for the web app's wallet (accounts, a signature, a transaction): it goes to ONE web app page, and the answer comes back through merit_remoteResponse
+  if (type === 'merit/web/request') {
+    const call = message as { method?: unknown; params?: unknown };
+    trace('worker', `web app request ${String(call.method)}`);
+    void webAppRelay.request(typeof call.method === 'string' ? call.method : '', call.params).then((reply) => {
+      trace('worker', `web app request ${String(call.method)} ${reply.ok ? 'answered' : `FAILED ${reply.error.code}`}`);
+      sendResponse(reply);
+    });
+    return true;
   }
   // the person disconnected / connected the web app in the panel: every web app page hears it, so the link is cut or made on both sides
   if (type === 'merit/web/choice') {

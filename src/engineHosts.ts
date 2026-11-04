@@ -116,7 +116,6 @@ function useExtensionUniswapSwapIo() {
       const buy = (request?.tokens ?? []).find((tk: any) => String(tk.label).startsWith('Receive'))?.token;
       const minReceived = `${formatUnits(params.amountOutMinimum, buy?.decimals ?? 18)} ${buy?.symbol ?? ''}`.trim();
       const result = await executeUniswapV3Swap({
-        baseUrl: '',
         rpcUrl: params.rpcUrl,
         chainId: params.chainId,
         tokenIn: params.tokenIn,

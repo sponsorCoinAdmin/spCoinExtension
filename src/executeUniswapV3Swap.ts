@@ -22,7 +22,6 @@ import { buildMeritTradeExecutorContext } from './tradeExecutorMerit';
 import type { TradeExecutorContext, TradeExecutorAccount } from '@sponsorcoin/spcoin-exchange-engine';
 
 interface ExecuteUniswapV3SwapParamsExt {
-  baseUrl: string;
   rpcUrl: string;
   chainId: number;
   tokenIn: string;
@@ -39,7 +38,6 @@ interface ExecuteUniswapV3SwapParamsExt {
 export type { ExecuteUniswapV3SwapResult };
 
 export async function executeUniswapV3Swap({
-  baseUrl,
   rpcUrl,
   chainId,
   tokenIn,

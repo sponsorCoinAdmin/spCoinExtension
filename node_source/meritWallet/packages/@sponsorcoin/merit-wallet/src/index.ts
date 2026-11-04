@@ -103,7 +103,6 @@ export * from './sponsor/sponsorReads';
 export { unstakeSpCoin } from './sponsor/unstakeWalk';
 export type { UnstakeSend, UnstakeMethod, UnstakeSpCoinResult } from './sponsor/unstakeWalk';
 export type { AccountProfileHost, AccountProfileInitial } from './account/accountDetailHostFromProfile';
-export { saveAccountProfile } from './account/accountProfileClient';
 export * from './account/profileForm';
 
 export * from './auth/authenticator';

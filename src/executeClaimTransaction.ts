@@ -10,7 +10,6 @@ export { CLAIM_METHODS, SPOIN_CLAIM_ABI };
 export type { ClaimMethod, ExecuteClaimTransactionResult };
 
 interface ExecuteClaimTransactionParams {
-  baseUrl: string;
   rpcUrl: string;
   /** The accountAddress whose rewards are being claimed. */
   accountKey: string;
@@ -28,7 +27,7 @@ interface ExecuteClaimTransactionParams {
   onConfirmed?: () => void | Promise<void>;
 }
 
-export async function executeClaimTransaction({ baseUrl, rpcUrl, accountKey, method, abi, contractAddress, chainId, fromAddress, onConfirmed }: ExecuteClaimTransactionParams): Promise<ExecuteClaimTransactionResult> {
+export async function executeClaimTransaction({ rpcUrl, accountKey, method, abi, contractAddress, chainId, fromAddress, onConfirmed }: ExecuteClaimTransactionParams): Promise<ExecuteClaimTransactionResult> {
   const context: TradeExecutorContext = buildMeritTradeExecutorContext({ rpcUrl }, { address: fromAddress, isConnected: Boolean(fromAddress), chainId } as TradeExecutorAccount);
   return executeClaimTransactionCore({ accountKey, method, contractAddress, chainId, rpcUrl, fromAddress, context, abi, onConfirmed });
 }

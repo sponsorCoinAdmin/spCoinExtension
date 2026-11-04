@@ -38,12 +38,10 @@ import {
   withCacheBust,
 } from './formHelpers';
 import { useAccountFormDerivedState } from './useAccountFormDerivedState';
-import { usePlatform } from '../../platform/platform';
+import { useAccountLiveRefresh } from './useAccountLiveRefresh';
 
 /** The part of saving an account that differs per host. */
 export interface AccountFormHost {
-  /** Origin of the hosted API for the sign-in calls ('' = same origin, as in the web app). */
-  baseUrl?: string;
   /** The account that signs a save for `target` (`active` = the connected account, if any): its address and a personal_sign function. Throw a readable Error when none is available. */
   signIn(target: string, active: string): Promise<{ signerAddress: string; signMessage(message: string): Promise<string> }>;
   /** May this signer save this target's record? Default: only when they are the same account. */
@@ -114,15 +112,6 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- an empty-string logoURL is not a usable URL and should fall back too, same as unset
   const [serverLogoURL, setServerLogoURL] = useState(initialLogoURL || DEFAULT_ACCOUNT_LOGO_URL);
   const initialLogoURLRef = useRef(initialLogoURL);
-  const resolveAvatarRef = useRef(host.resolveAvatar);
-  resolveAvatarRef.current = host.resolveAvatar;
-  const platform = usePlatform();
-  // the avatar to show for an account: the cache's, else the record's own address
-  const showServerLogo = (url: string, address: string | undefined) => {
-    const resolve = resolveAvatarRef.current;
-    if (resolve && address) void resolve(address).then((src) => setServerLogoURL(src ?? url));
-    else setServerLogoURL(url);
-  };
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -181,28 +170,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     setPublicKey(initialAccountAddress);
   }, [sessionWithoutConnection, initialAccountAddress]);
 
-  useEffect(() => {
-    if (!initialAccountAddress || !resolveAvatarRef.current) return undefined;
-    return platform.onImageCacheUpdated?.(() => void resolveAvatarRef.current?.(initialAccountAddress).then((src) => { if (src) setServerLogoURL(src); }));
-  }, [initialAccountAddress, platform]);
-
-  const baselineRef = useRef(baselineData);
-  baselineRef.current = baselineData;
-  useEffect(() => {
-    if (!initialAccountAddress) return undefined;
-    return platform.onAccountRecordUpdated?.((address) => {
-      if (address.toLowerCase() !== initialAccountAddress.toLowerCase()) return;
-      engineTrace('accountForm: record updated, read again', { address });
-      void loadAccountRecord(initialAccountAddress)
-        .then((record) => {
-          const fresh = accountFormDataFromRecord(record as AccountRegistryRecord);
-          // what the person has typed is never replaced: only a form with no edits takes the new record
-          setFormData((current) => (JSON.stringify(current) === JSON.stringify(baselineRef.current) ? fresh : current));
-          setBaselineData(fresh);
-        })
-        .catch(() => undefined);
-    });
-  }, [initialAccountAddress, platform]);
+  const showServerLogo = useAccountLiveRefresh({ address: initialAccountAddress, resolveAvatar: host.resolveAvatar, baselineData, formDataFromRecord: accountFormDataFromRecord, setFormData, setBaselineData, setServerLogoURL });
 
   // Keep ref current so the address-change effect always reads the latest value
   useEffect(() => { initialLogoURLRef.current = initialLogoURL; });
@@ -531,7 +499,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
       }
 
       // the one shared sign-in (src/account/signIn.ts): the challenge, the signature, the token
-      const authToken = await signInForToken({ baseUrl: host.baseUrl ?? getAccountServiceUrl(), address: normalizedSignerAddress, signMessage });
+      const authToken = await signInForToken({ baseUrl: getAccountServiceUrl(), address: normalizedSignerAddress, signMessage });
 
       const shouldSaveAccount = derived.hasDataChanges || !accountExists;
       const shouldSaveLogo = Boolean(logoFile);
@@ -590,7 +558,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     } catch (err) {
       // a browser fetch that never reached a server says only "Failed to fetch": say what was being reached and why it may not answer
       const unreachable = err instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(err.message);
-      const serviceUrl = host.baseUrl ?? getAccountServiceUrl();
+      const serviceUrl = getAccountServiceUrl();
       showStatusMessage(
         unreachable
           ? serviceUrl

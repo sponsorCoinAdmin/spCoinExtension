@@ -11,7 +11,7 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { getAccountLogoURL, loadAccountRecord, saveAccountLogo, saveAccountRecord, useCacheRefreshHandler, useErrorMessage, usePanelTree, getAccountServiceUrl, engineTrace, } from '@sponsorcoin/spcoin-exchange-engine';
 import { DEFAULT_ACCOUNT_LOGO_URL, EMPTY_FORM_DATA, FORM_ERROR_FOCUS_ORDER, FORM_FIELDS, ensureAbsoluteAssetURL, getAbsoluteFieldError, getFieldTooLargeMessage, isValidEmail, isValidWebsite, normalizeAddress, shouldBlockAdditionalInput, trimForm, withCacheBust, } from './formHelpers';
 import { useAccountFormDerivedState } from './useAccountFormDerivedState';
-import { usePlatform } from '../../platform/platform';
+import { useAccountLiveRefresh } from './useAccountLiveRefresh';
 function isAddress(value) {
     return /^0[xX][0-9a-fA-F]{40}$/.test(String(value ?? '').trim());
 }
@@ -50,17 +50,6 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- an empty-string logoURL is not a usable URL and should fall back too, same as unset
     const [serverLogoURL, setServerLogoURL] = useState(initialLogoURL || DEFAULT_ACCOUNT_LOGO_URL);
     const initialLogoURLRef = useRef(initialLogoURL);
-    const resolveAvatarRef = useRef(host.resolveAvatar);
-    resolveAvatarRef.current = host.resolveAvatar;
-    const platform = usePlatform();
-    // the avatar to show for an account: the cache's, else the record's own address
-    const showServerLogo = (url, address) => {
-        const resolve = resolveAvatarRef.current;
-        if (resolve && address)
-            void resolve(address).then((src) => setServerLogoURL(src ?? url));
-        else
-            setServerLogoURL(url);
-    };
     const logoFileInputRef = useRef(null);
     const descriptionTextareaRef = useRef(null);
     const [, setStatusMessage] = useErrorMessage();
@@ -109,31 +98,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         }
         setPublicKey(initialAccountAddress);
     }, [sessionWithoutConnection, initialAccountAddress]);
-    useEffect(() => {
-        if (!initialAccountAddress || !resolveAvatarRef.current)
-            return undefined;
-        return platform.onImageCacheUpdated?.(() => void resolveAvatarRef.current?.(initialAccountAddress).then((src) => { if (src)
-            setServerLogoURL(src); }));
-    }, [initialAccountAddress, platform]);
-    const baselineRef = useRef(baselineData);
-    baselineRef.current = baselineData;
-    useEffect(() => {
-        if (!initialAccountAddress)
-            return undefined;
-        return platform.onAccountRecordUpdated?.((address) => {
-            if (address.toLowerCase() !== initialAccountAddress.toLowerCase())
-                return;
-            engineTrace('accountForm: record updated, read again', { address });
-            void loadAccountRecord(initialAccountAddress)
-                .then((record) => {
-                const fresh = accountFormDataFromRecord(record);
-                // what the person has typed is never replaced: only a form with no edits takes the new record
-                setFormData((current) => (JSON.stringify(current) === JSON.stringify(baselineRef.current) ? fresh : current));
-                setBaselineData(fresh);
-            })
-                .catch(() => undefined);
-        });
-    }, [initialAccountAddress, platform]);
+    const showServerLogo = useAccountLiveRefresh({ address: initialAccountAddress, resolveAvatar: host.resolveAvatar, baselineData, formDataFromRecord: accountFormDataFromRecord, setFormData, setBaselineData, setServerLogoURL });
     // Keep ref current so the address-change effect always reads the latest value
     useEffect(() => { initialLogoURLRef.current = initialLogoURL; });
     // When the target account changes, immediately show the known logo rather than
@@ -460,7 +425,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
                 throw new Error(`Connected account mismatch. ${signerLabel}=${normalizedSignerAddress}, Target=${derived.publicKeyTrimmed}`);
             }
             // the one shared sign-in (src/account/signIn.ts): the challenge, the signature, the token
-            const authToken = await signInForToken({ baseUrl: host.baseUrl ?? getAccountServiceUrl(), address: normalizedSignerAddress, signMessage });
+            const authToken = await signInForToken({ baseUrl: getAccountServiceUrl(), address: normalizedSignerAddress, signMessage });
             const shouldSaveAccount = derived.hasDataChanges || !accountExists;
             const shouldSaveLogo = Boolean(logoFile);
             if (shouldSaveAccount) {
@@ -510,7 +475,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         catch (err) {
             // a browser fetch that never reached a server says only "Failed to fetch": say what was being reached and why it may not answer
             const unreachable = err instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(err.message);
-            const serviceUrl = host.baseUrl ?? getAccountServiceUrl();
+            const serviceUrl = getAccountServiceUrl();
             showStatusMessage(unreachable
                 ? serviceUrl
                     ? `Could not reach the account service at ${serviceUrl}. Check that it is running; nothing was published.`

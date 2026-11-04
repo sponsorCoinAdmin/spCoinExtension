@@ -12,9 +12,8 @@ import { remoteSelectionStore } from './src/remoteSelectionStore';
 import { extensionPeers } from './src/extensionPeers';
 import { traceFrom } from './src/debugTrace';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, ChangePasswordPanel, DeleteWalletDialog, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
+import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
 import { persistedTimeoutMs } from '@sponsorcoin/merit-wallet';
-import { type AssetListEntry } from '@sponsorcoin/spcoin-panels';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
   ExchangeProviderCore,
@@ -25,10 +24,9 @@ import {
   type ExchangeProviderHost,
   PanelBootstrap,
   loadSpCoinDeploymentMap,
-  setHostApiBase,
   disableHostApi,
   setEngineTrace,
-  ACCOUNT_REGISTRY_UPDATED_EVENT,
+  emitAccountRegistryUpdated,
   setSpCoinReadStep,
   getPreferredSpCoinContractAddress,
   fetchServerActiveSpCoin,
@@ -50,7 +48,7 @@ import {
   bootstrapPanelVisibility,
 } from './src/panelVisibilityStorage';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
-import { fetchAccountMetadata, getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
+import { getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
 import { IMAGE_CACHE_UPDATED_EVENT } from '@sponsorcoin/spcoin-feeds/shared';
 import { openOrFocusApp } from './src/openApp';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
@@ -68,7 +66,6 @@ import {
   passwordDescriptionFor,
   syncDescriptionFor,
   extensionDownloadPathFor,
-  type MeritWalletConfigState,
 } from './src/meritWalletConfigStorage';
 import {
   getEngineSetters,
@@ -77,14 +74,13 @@ import {
 } from './src/meritWalletConfigEngineStore';
 import { MeritWalletConfigBridge } from './src/MeritWalletConfigBridge';
 import { chromeIconCacheStorage } from './src/chromeIconCacheStorage';
-import { loadExtensionAccountProfile } from './src/accountProfile';
-import { readAvatar, registerLocalProfiles, saveLocalAvatar, saveLocalProfile, syncFromServer } from './src/publishedProfiles';
+import { loadExtensionAccountProfile, readAccountView } from './src/accountProfile';
+import { readAvatar, registerLocalProfiles, saveLocalAvatar, saveLocalProfile, syncFromServer } from './src/localProfiles';
 import { hydrateAccountFromAddress } from './src/hydrateAccountFromAddress';
 import { buildApprovalPage } from './src/TransactionConfirmOrchestrator';
 import { subscribePendingSignRequest } from './src/pendingSignRequestStore';
 import { TransferApprovalHost } from './src/TransferApprovalHost';
 import { sendNativeMerit } from './src/sendNative';
-import { signMessageWithVault } from './src/localSigning';
 import { encodeFunctionData } from 'viem';
 import { runSpCoinReadStep } from './src/runSpCoinReadStep';
 import { buildMeritTradeExecutorContext } from './src/tradeExecutorMerit';
@@ -92,7 +88,6 @@ import { makeFetchBalance } from './src/fetchBalance';
 import { rpcUrlForChain } from './src/chainRpc';
 import { SPOIN_STAKE_ABI } from './src/spCoinStakeAbi';
 import { executeClaimTransaction, SPOIN_CLAIM_ABI } from './src/executeClaimTransaction';
-import { parseAbi } from 'viem';
 
 
 // 2026-10-13 (docs/connectionDesign.txt item 12): bring a Ledger the person granted earlier back after a reload (no prompt).
@@ -138,8 +133,6 @@ let activeChainId: number = MERIT_WALLET_HARDHAT_CHAIN_ID;
 (globalThis as unknown as { __spcoinAuthenticators?: typeof extensionAuthenticatorRegistry }).__spcoinAuthenticators = extensionAuthenticatorRegistry;
 
 
-// the app origin follows the open-target setting, so it is read from currentBaseUrl, which every render refreshes
-let currentBaseUrl = '';
 // 2026-11-04 (owner decision): which server the extension reads from and publishes to is ONE thing, the wallet's Local/Prod setting (getServerUrl, src/openTargetStorage.ts); there is no other address and no copy of it. The wallet component gets it as its accountServiceUrl prop,
 // the same as every other host does. Any server that implements /api/spCoin/auth and /api/spCoin/accounts will do.
 // who is waiting for the wallet to be unlocked (shown on the login page); refreshed while the wallet is locked
@@ -301,7 +294,6 @@ async function renderWallet() {
   initServerSetting(openTarget);
   // the profiles edited in this wallet are read from this device, like the bundled ones
   await registerLocalProfiles();
-  currentBaseUrl = baseUrl;
   // 2026-10-11 (docs/nodeSourceMigrationPlan.txt row 2, capability "api"): the hosted app's origin, registered once for every library that reads the hosted API.
   disableHostApi();
   // docs/meritMigrationFinal.txt row I2: the engine's sponsor reads (isSponsor, getAccountRecord, the keys and rate lists) go through this extension's own read step, which reads the chain itself; without this they asked the web app's run-script route
@@ -532,7 +524,7 @@ async function renderWallet() {
         vaultMeta.set(key, { symbol: profile.symbol, name: profile.name, iconSrc: vaultMeta.get(key)?.iconSrc });
         accountDetail = { address, avatarSrc: accountDetail?.avatarSrc, ...saved, recipientNetwork: accountDetail?.recipientNetwork };
         // the engine reads the active account's profile again on this event: the header shows the saved name and symbol
-        window.dispatchEvent(new CustomEvent(ACCOUNT_REGISTRY_UPDATED_EVENT, { detail: { address } }));
+        emitAccountRegistryUpdated(address);
         render();
       })();
     },
@@ -595,7 +587,6 @@ async function renderWallet() {
     readAccountRecord: (accountKey) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: chainRpcUrl(), accessSource: 'local', readMode: 'hardhat' }, 'getAccountRecord', [{ key: 'Account Key', value: accountKey }], baseUrl),
     claim: async (method, accountKey) => {
       const result = await executeClaimTransaction({
-        baseUrl,
         rpcUrl: chainRpcUrl(),
         accountKey,
         method: method as Parameters<typeof executeClaimTransaction>[0]['method'],
@@ -635,38 +626,41 @@ async function renderWallet() {
   // Public profile of each vault account (name, symbol, avatar) from the hosted app's account.json / avatar files, the same source the web wallet's list reads,
   // so a Hardhat test account shows as "Doggie | Hot Dog" with its picture in both apps. Accounts with no profile keep the vault's own name.
   const vaultMeta = new Map<string, { symbol?: string; name?: string; iconSrc?: string }>();
-  async function enrichVaultRows(addresses: string[]) {
+  // reads the accounts not yet known (or all, with force) from this device; returns the ones it read
+  async function enrichVaultRows(addresses: string[], force = false): Promise<string[]> {
+    const fresh = addresses.filter((address) => force || !vaultMeta.has(address.toLowerCase()));
     await Promise.all(
-      addresses.map(async (address) => {
-        const key = address.toLowerCase();
-        if (vaultMeta.has(key)) return;
-        const [meta, iconSrc] = await Promise.all([fetchAccountMetadata(address, { baseUrl }).catch(() => null), readAvatar(address)]);
-        vaultMeta.set(key, { symbol: meta?.symbol || undefined, name: meta?.name || undefined, iconSrc: iconSrc || undefined });
+      fresh.map(async (address) => {
+        const { metadata, avatar } = await readAccountView(address, baseUrl);
+        vaultMeta.set(address.toLowerCase(), { symbol: metadata?.symbol || undefined, name: metadata?.name || undefined, iconSrc: avatar || undefined });
       }),
     );
-    render();
-    void syncVaultRowsFromServer(addresses);
+    if (fresh.length) render();
+    return fresh;
   }
   // the server's copy (Local or Prod, the setting) refreshes the device's: what differs is read again by the list and the header; a server that does not answer changes nothing
   async function syncVaultRowsFromServer(addresses: string[]) {
     await Promise.all(
       addresses.map(async (address) => {
         if (!(await syncFromServer(address, getServerUrl()))) return;
-        vaultMeta.delete(address.toLowerCase());
-        await enrichVaultRows([address]);
-        window.dispatchEvent(new CustomEvent(ACCOUNT_REGISTRY_UPDATED_EVENT, { detail: { address } }));
+        await enrichVaultRows([address], true);
+        emitAccountRegistryUpdated(address);
       }),
     );
   }
+  // when the window comes back to the front, at most every 15 seconds
+  let lastServerSync = 0;
   window.addEventListener('focus', () => {
-    if (vaultRows) void syncVaultRowsFromServer(vaultRows.map((a) => a.address));
+    if (!vaultRows || Date.now() - lastServerSync < 15_000) return;
+    lastServerSync = Date.now();
+    void syncVaultRowsFromServer(vaultRows.map((a) => a.address));
   });
   // 2026-11-04: the avatar cache announces every image it is given or drops (IMAGE_CACHE_UPDATED_EVENT); the list reads a vault account's avatar again when its own was the one that changed
   window.addEventListener(IMAGE_CACHE_UPDATED_EVENT, (event) => {
     const url = (event as CustomEvent<{ url?: string }>).detail?.url;
     const row = vaultRows?.find((r) => getAccountAvatarURL(r.address) === url);
     if (!url || !row) return;
-    if (vaultActive && getAccountAvatarURL(vaultActive) === url) window.dispatchEvent(new CustomEvent(ACCOUNT_REGISTRY_UPDATED_EVENT, { detail: { address: vaultActive } }));
+    if (vaultActive && getAccountAvatarURL(vaultActive) === url) emitAccountRegistryUpdated(vaultActive);
     void readAvatar(row.address).then((iconSrc) => {
       const key = row.address.toLowerCase();
       vaultMeta.set(key, { ...vaultMeta.get(key), iconSrc });
@@ -683,7 +677,7 @@ async function renderWallet() {
     const result = await vaultAccountsApi.list();
     vaultRows = result.accounts;
     vaultActive = result.active;
-    void enrichVaultRows(result.accounts.map((a) => a.address));
+    void enrichVaultRows(result.accounts.map((a) => a.address)).then((fresh) => syncVaultRowsFromServer(fresh));
     // MetaMask's account stays the active one while MetaMask still shares it; otherwise the vault's choice is.
     if (externalActive && !(await isExternalAccount(externalActive))) setExternalActive(undefined);
     const wanted = externalActive ?? vaultActive;
@@ -1112,7 +1106,7 @@ async function renderWallet() {
   async function handleAccountIconClick(address: string) {
     accountDetail = null;
     render();
-    const [avatarSrc, metadata] = await Promise.all([readAvatar(address), fetchAccountMetadata(address, { baseUrl }).catch(() => null)]);
+    const { metadata, avatar: avatarSrc } = await readAccountView(address, baseUrl);
     accountDetail = {
       address,
       avatarSrc,

@@ -5,11 +5,17 @@
 // its default loader reads the hosted account files.
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
 import { fetchAccountMetadata, getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
-import { readAvatar } from './publishedProfiles';
+import { readAvatar } from './localProfiles';
+
+/** What this device knows of an account: its profile (the bundle's, laid over by what was saved here) and its avatar (the image cache's). The one way the header, the list and the details read an account. */
+export async function readAccountView(address: string, baseUrl: string) {
+  const [metadata, avatar] = await Promise.all([fetchAccountMetadata(address, { baseUrl }).catch(() => null), readAvatar(address)]);
+  return { metadata, avatar };
+}
 
 export async function loadExtensionAccountProfile(address: string, baseUrl: string): Promise<Partial<spCoinAccount>> {
-  const metadata = await fetchAccountMetadata(address, { baseUrl }).catch(() => null);
-  const profile: Partial<spCoinAccount> = { logoURL: (await readAvatar(address)) ?? `${baseUrl}${getAccountAvatarURL(address)}` };
+  const { metadata, avatar } = await readAccountView(address, baseUrl);
+  const profile: Partial<spCoinAccount> = { logoURL: avatar ?? `${baseUrl}${getAccountAvatarURL(address)}` };
   // only what is known: an unknown field must not blank what the account already has
   if (metadata?.name) profile.name = metadata.name;
   if (metadata?.symbol) profile.symbol = metadata.symbol;

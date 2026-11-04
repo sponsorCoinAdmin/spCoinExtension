@@ -7,7 +7,7 @@
 // executeStakeTransactionCore (from @sponsorcoin/spcoin-onchain) calls
 // for rate-key resolution (getRecipientRateIncrement, getAgentRateIncrement).
 
-import type { RunScriptParams, ReadStepFn } from '@sponsorcoin/spcoin-onchain';
+import type { RunScriptParams } from '@sponsorcoin/spcoin-onchain';
 import { createDirectReadStep } from '@sponsorcoin/merit-wallet';
 import { SPOIN_STAKE_ABI } from './spCoinStakeAbi';
 import { canReadLocally, readSpCoinLocally } from './localReads';

@@ -1,8 +1,6 @@
 import type { AccountFormData, AccountFormField } from './formTypes';
 /** The part of saving an account that differs per host. */
 export interface AccountFormHost {
-    /** Origin of the hosted API for the sign-in calls ('' = same origin, as in the web app). */
-    baseUrl?: string;
     /** The account that signs a save for `target` (`active` = the connected account, if any): its address and a personal_sign function. Throw a readable Error when none is available. */
     signIn(target: string, active: string): Promise<{
         signerAddress: string;

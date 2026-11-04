@@ -49,7 +49,6 @@ export { default as WalletSecuritySection } from './WalletSecuritySection';
 export { default as ConnectedSponsorStakingList } from './sponsor/ConnectedSponsorStakingList';
 export * from './sponsor/sponsorReads';
 export { unstakeSpCoin } from './sponsor/unstakeWalk';
-export { saveAccountProfile } from './account/accountProfileClient';
 export * from './account/profileForm';
 export * from './auth/authenticator';
 export * from './auth/resolve';

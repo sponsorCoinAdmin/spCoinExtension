@@ -1,4 +1,4 @@
-// File: src/publishedProfiles.ts
+// File: src/localProfiles.ts
 //
 // 2026-11-04 (owner rule: no merit app depends on another): the profile of an account edited in this wallet is kept HERE, on this device (chrome.storage.local), and registered with the feeds as that account's own account.json, the same way the bundled data is. Every reader (the
 // header, the list, the details form) then answers from the device with no request, and the avatar is kept the same way in the image cache. The account service is asked for one thing only: to publish.
@@ -7,7 +7,7 @@ import { getAccountAvatarURL } from '@sponsorcoin/spcoin-feeds/accounts';
 import { engineTrace, loadAccountRecord } from '@sponsorcoin/spcoin-exchange-engine';
 import { getCachedAccountIconDataUrl } from './accountIconCache';
 
-export interface PublishedProfile {
+export interface LocalProfile {
   name?: string;
   symbol?: string;
   website?: string;
@@ -17,27 +17,27 @@ export interface PublishedProfile {
 
 const KEY = 'spcoin_published_profiles';
 
-async function readAll(): Promise<Record<string, PublishedProfile>> {
+async function readAll(): Promise<Record<string, LocalProfile>> {
   const stored = (await chrome.storage.local.get(KEY))[KEY];
-  return stored && typeof stored === 'object' ? (stored as Record<string, PublishedProfile>) : {};
+  return stored && typeof stored === 'object' ? (stored as Record<string, LocalProfile>) : {};
 }
 
-function accountJson(address: string, profile: PublishedProfile): Record<string, unknown> {
+function accountJson(address: string, profile: LocalProfile): Record<string, unknown> {
   return { address: address.toLowerCase(), name: profile.name ?? '', symbol: profile.symbol ?? '', email: profile.email ?? '', website: profile.website ?? '', description: profile.description ?? '', recipientNetwork: [] };
 }
 
-function register(address: string, profile: PublishedProfile): void {
+function register(address: string, profile: LocalProfile): void {
   registerBundledFeeds({ [`/assets/accounts/${address.toLowerCase()}/account.json`]: accountJson(address, profile) });
 }
 
 /** At startup: every profile edited in this wallet is registered, laid over the bundle's. */
 export async function registerLocalProfiles(): Promise<void> {
-  const all = await readAll().catch(() => ({}) as Record<string, PublishedProfile>);
+  const all = await readAll().catch(() => ({}) as Record<string, LocalProfile>);
   for (const [address, profile] of Object.entries(all)) register(address, profile);
 }
 
 /** Keep a profile on this device and make every reader see it now. */
-export async function saveLocalProfile(address: string, profile: PublishedProfile): Promise<void> {
+export async function saveLocalProfile(address: string, profile: LocalProfile): Promise<void> {
   const all = await readAll();
   all[address.toLowerCase()] = profile;
   await chrome.storage.local.set({ [KEY]: all });
@@ -69,7 +69,7 @@ export async function syncFromServer(address: string, serverUrl: string): Promis
     if (response.ok) {
       const data = ((await response.json()) as { data?: Record<string, unknown> }).data ?? {};
       const pick = (field: string): string | undefined => (typeof data[field] === 'string' && (data[field] as string).trim() ? (data[field] as string).trim() : undefined);
-      const profile: PublishedProfile = { name: pick('name'), symbol: pick('symbol'), website: pick('website'), description: pick('description'), email: pick('email') };
+      const profile: LocalProfile = { name: pick('name'), symbol: pick('symbol'), website: pick('website'), description: pick('description'), email: pick('email') };
       if (Object.values(profile).some(Boolean) && JSON.stringify((await readAll())[address.toLowerCase()]) !== JSON.stringify(profile)) {
         await saveLocalProfile(address, profile);
         changed = true;

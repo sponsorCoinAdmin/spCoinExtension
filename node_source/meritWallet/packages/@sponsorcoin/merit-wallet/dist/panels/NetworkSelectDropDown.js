@@ -34,10 +34,11 @@ export default function NetworkSelectDropDown({ icon, label = 'Not Connected', o
         // Fed into the address slot (not symbol/name), same as the real
         // trigger-mode file — renders inside the solid pill together with
         // the icon, copy button, and chevron.
-        address: twoLines ? String(id) : label, symbol: twoLines ? symbol || 'N/A' : undefined, name: twoLines ? name || label : undefined, copyLabel: twoLines ? 'Copy chain id' : 'Copy network', showDisplay: ASSET_SELECT_DISPLAY.ICON |
+        address: twoLines ? String(id) : label, symbol: twoLines ? symbol || 'N/A' : undefined, name: twoLines ? name || label : undefined, copyLabel: "Copy network", showDisplay: ASSET_SELECT_DISPLAY.ICON |
             (twoLines ? ASSET_SELECT_DISPLAY.SYMBOL | ASSET_SELECT_DISPLAY.NAME : 0) |
             ASSET_SELECT_DISPLAY.ADDRESS |
-            ASSET_SELECT_DISPLAY.COPY |
+            // the two-line pill has no copy button (nobody copies a chain id): its centre is then the pill itself, so a click anywhere on it opens the network list (a click on a copy icon at the centre only copied)
+            (twoLines ? 0 : ASSET_SELECT_DISPLAY.COPY) |
             (chevronUp ? ASSET_SELECT_DISPLAY.CHEVRON_UP : ASSET_SELECT_DISPLAY.CHEVRON_DN) |
             ASSET_SELECT_DISPLAY.ADDR_COMP, onRowClick: onSelectClick, 
         // 2026-09-16, on live report ("the select dropdown ... is so

@@ -57,12 +57,7 @@
     </style>
   </head>
   <body>
-    <!-- 2026-09-13, on request — a visible build marker, deliberately
-         OUTSIDE #scale-root, positioned fixed so it survives any
-         scrolling inside the panel. Bump BUILD_TAG's text every time a
-         real change is rebuilt into deploy/, and check this label after
-         reloading the extension before evaluating anything else. -->
-    <div id="build-tag" style="position: fixed; bottom: 2px; right: 4px; z-index: 999999; font: 9px monospace; color: #475569; background: rgba(0,0,0,0.35); padding: 1px 4px; border-radius: 3px; pointer-events: none;">build 132</div>
+    <!-- 2026-11-05 (owner request): the page-level build tag is gone; the build identifier shows only at the bottom of the wallet's Config page. -->
     <div id="scale-root">
     <!-- Single MeritWallet mount point (2026-09-14) — sidepanel.ts renders
          the whole wallet (header/subtitle/tab-strip/active panel body)

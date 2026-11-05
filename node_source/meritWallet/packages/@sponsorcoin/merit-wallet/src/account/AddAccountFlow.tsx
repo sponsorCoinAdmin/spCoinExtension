@@ -48,6 +48,11 @@ export interface AddAccountHost {
    */
   connectApprover?(entry: ConnectApproverEntry): Promise<void>;
   /**
+   * 2026-11-04 (owner report: connecting MetaMask from the wallet list changed the panel): the WALLET-level connect behind a row of the wallet list (Connect), which connects the wallet and changes nothing else: no account becomes active, no screen changes. A host without it falls back to connectApprover (the
+   * account-level connect, which may activate an account).
+   */
+  connectWallet?(slug: string): Promise<void>;
+  /**
    * 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
    * a host that omits them keeps the single connectApprover('connectHardware') row.
    */
@@ -107,7 +112,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   const resetForm = () => { setKey(''); setPhrase(''); setPhraseValid(false); setBusy(false); setError(''); setProfile(EMPTY_PROFILE); };
   const flow = useAddWalletFlow({ resetState: resetForm, resetOnMount: false });
   const menuVisible = flow.addWalletVisible && !flow.isLeafVisible;
-  const { openPanel, closePanel } = usePanelTree();
+  const { closePanel } = usePanelTree();
   // the connect screens (MetaMask, the Merit extension): opened from the wallet list, they start the connect once, say when it is slow, and on success pop ONLY themselves, back to the wallet list
   const connectEntry: ConnectApproverEntry | undefined = flow.connectMetaMaskVisible ? 'connectMetaMask' : flow.connectMeritExtensionVisible ? 'connectMeritExtension' : undefined;
   const connectLeaf = connectEntry === 'connectMetaMask' ? SP.CONNECT_ACCOUNT : SP.CONNECT_MERIT_EXTENSION;
@@ -158,8 +163,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestPresented]);
   const startedEntry = useRef<ConnectApproverEntry | undefined>(undefined);
-  /** The connect screen was opened from the wallet list: wherever it closes (Cancel, Back, connected), the list is what shows next. The stack's own restore does not always bring it back. */
-  const returnToList = useRef(false);
   useEffect(() => {
     if (!connectEntry) {
       // the screen is gone while its connect still waits (the back arrow): end it here and in the other wallet, unless the other wallet already has it on its own screen (dismissedEarly: it goes on in the background)
@@ -168,10 +171,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         connectStop.current?.();
       }
       startedEntry.current = undefined;
-      if (returnToList.current) {
-        returnToList.current = false;
-        openPanel(SP.WALLET_LIST_SELECT_PANEL, 'AddAccountFlow:connectClosed:backToWalletList');
-      }
       return;
     }
     if (startedEntry.current === connectEntry) return;
@@ -284,10 +283,13 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
       void Promise.resolve(onDisconnectWallet?.(slug)).catch(() => undefined).finally(() => { clearTimeout(timer); done(); });
       return;
     }
-    // in the click itself (a browser lets an extension open its side panel only in answer to one), then the connect screen pushed above the wallet list
+    // 2026-11-04 (owner request): the panel is not changed at all while MetaMask decides: its row throbs "Waiting…" and turns Connected, like the Merit extension's. The connect call is made in the click itself (a browser lets a page open a wallet's window only in answer to one).
     if (slug === 'metamask' && !unavailable.connectMetaMask && host.connectApprover) {
-      returnToList.current = true;
-      openPanel(SP.CONNECT_ACCOUNT, 'AddAccountFlow:walletList:connectMetaMask');
+      setError('');
+      setDisconnecting((d) => ({ ...d, [slug]: 'connecting' }));
+      void Promise.resolve(host.connectWallet ? host.connectWallet(slug) : host.connectApprover('connectMetaMask'))
+        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
+        .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
     }
     else if (slug === 'meritExtension' && !unavailable.connectMeritExtension && host.connectApprover) {
       // 2026-11-03 (owner request): stay on the wallet list while the extension decides; its row throbs "Waiting…" until the request ends. The refusal, if any, is the approval notice's.
@@ -367,7 +369,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
       )}
       {flow.walletListVisible && (
         <div style={addAccountStyle.listBleed}>
-          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs} connection={connection} busy={disconnecting} onToggleConnection={toggleWallet} />
+          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs} connection={connection} fixed={nativeSlug} busy={disconnecting} onToggleConnection={toggleWallet} />
           {error && <p style={addAccountStyle.error}>{error}</p>}
         </div>
       )}

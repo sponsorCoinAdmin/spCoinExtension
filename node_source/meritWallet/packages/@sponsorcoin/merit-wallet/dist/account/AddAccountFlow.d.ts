@@ -26,6 +26,11 @@ export interface AddAccountHost {
      */
     connectApprover?(entry: ConnectApproverEntry): Promise<void>;
     /**
+     * 2026-11-04 (owner report: connecting MetaMask from the wallet list changed the panel): the WALLET-level connect behind a row of the wallet list (Connect), which connects the wallet and changes nothing else: no account becomes active, no screen changes. A host without it falls back to connectApprover (the
+     * account-level connect, which may activate an account).
+     */
+    connectWallet?(slug: string): Promise<void>;
+    /**
      * 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
      * a host that omits them keeps the single connectApprover('connectHardware') row.
      */

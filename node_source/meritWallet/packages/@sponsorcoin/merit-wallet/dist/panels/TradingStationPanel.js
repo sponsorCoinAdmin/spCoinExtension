@@ -49,7 +49,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ExchangeTradingPair } from '@sponsorcoin/spcoin-panels';
-import { TradingStationLayout, PACKAGE_BUILD, TabBodyMarker, ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
+import { TradingStationLayout, ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
 export default function TradingStationPanel({ onSubmit, submitLabel = 'Enter an Amount', affiliateFeeContent, ...exchangeTradingPairProps }) {
     // 2026-10-09: no active account -> the placeholder trade button is a Connect button (ConnectContext in spcoin-panels).
     const { connectMode } = useConnectMode();
@@ -58,5 +58,5 @@ export default function TradingStationPanel({ onSubmit, submitLabel = 'Enter an 
     // the CONNECT_TRADE_BUTTON slot's default content until that panel was
     // removed 2026-10-05.)
     const placeholderTradeButton = connectMode ? (_jsx(ConnectButton, { id: "SWAP_CONNECT_BUTTON" })) : (_jsx("button", { type: "button", onClick: onSubmit, style: panelBoxStyle.submit(!!onSubmit), children: submitLabel }));
-    return (_jsx(TradingStationLayout, { marker: _jsx(TabBodyMarker, { path: "TradingStationPanel.tsx", build: PACKAGE_BUILD }), pair: _jsx(ExchangeTradingPair, { ...exchangeTradingPairProps, zeroXTradeButtonContent: exchangeTradingPairProps.zeroXTradeButtonContent ?? placeholderTradeButton }), affiliateFee: affiliateFeeContent }));
+    return (_jsx(TradingStationLayout, { pair: _jsx(ExchangeTradingPair, { ...exchangeTradingPairProps, zeroXTradeButtonContent: exchangeTradingPairProps.zeroXTradeButtonContent ?? placeholderTradeButton }), affiliateFee: affiliateFeeContent }));
 }

@@ -18,7 +18,7 @@
 
 import React from 'react';
 import { PANEL_GAP, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { PACKAGE_BUILD, TabBodyMarker, TradeAmountRow, PanelGate, SendButton } from '@sponsorcoin/spcoin-panels';
+import { TradeAmountRow, PanelGate, SendButton } from '@sponsorcoin/spcoin-panels';
 
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 
@@ -126,7 +126,6 @@ export default function SendTabPanel({
     // separately hardcoded `4` in this file/TradingStationPanel.tsx/
     // SponsorshipPanel.tsx.
     <div style={panelBoxStyle.stack(PANEL_GAP)}>
-      <TabBodyMarker path="SendTabPanel.tsx" build={PACKAGE_BUILD} />
       {/* 2026-10-03 — gated on the same panel-tree flags as the web app's Send tab
           (SEND_SELECT_PANEL around the amount row, SEND_BUTTON around the submit
           button), so a flag toggle changes both apps the same way. */}

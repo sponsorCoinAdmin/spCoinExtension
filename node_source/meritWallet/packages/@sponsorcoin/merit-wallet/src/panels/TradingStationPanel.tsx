@@ -52,7 +52,7 @@
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import { ExchangeTradingPair, type ExchangeTradingPairProps } from '@sponsorcoin/spcoin-panels';
-import { TradingStationLayout, PACKAGE_BUILD, TabBodyMarker, ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
+import { TradingStationLayout, ConnectButton, useConnectMode } from '@sponsorcoin/spcoin-panels';
 
 
 
@@ -90,7 +90,6 @@ export default function TradingStationPanel({
 
   return (
     <TradingStationLayout
-      marker={<TabBodyMarker path="TradingStationPanel.tsx" build={PACKAGE_BUILD} />}
       pair={
         <ExchangeTradingPair
           {...exchangeTradingPairProps}

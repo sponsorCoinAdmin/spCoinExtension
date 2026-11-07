@@ -73,6 +73,9 @@ export { default as SendComponent } from './send/SendComponent';
 export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownWithAvatar';
 export { connectAccount, disconnectAccount, ConnectChoiceRequired } from './auth/connect';
 export { createInjectedAuthenticator, translateProviderError } from './auth/injectedAuthenticator';
+export { withKeptAccounts } from './auth/keptAccounts';
+export { withMeritConnection } from './auth/meritConnection';
+export { accountNoticeStore } from './auth/accountNoticeStore';
 export { requestMeritWriteApproval, subscribeMeritApproval, getPendingMeritApproval, resolveMeritApproval, requestReauthentication, clearSettledMeritApproval, } from './approval/meritApproval';
 // 2026-10-29: ApprovalResponder (the standalone password/approval backdrop) is retired — a Merit
 // write needing a person now shows through MESSAGE_PANEL instead (see useMeritApprovalMessagePanel's
@@ -84,6 +87,7 @@ export { signInForToken, signInWithWallet } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { createPeerConnection, usePeerStates } from './peer/peerConnection';
+export { registerApprovingWalletHook } from './auth/registerApprovingWallet';
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, outcomeText, withApprovalNotice } from './auth/approvalWaiting';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons } from './wallet/addTarget';

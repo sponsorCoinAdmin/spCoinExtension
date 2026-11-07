@@ -42,6 +42,16 @@ export interface ApproverGroupsInput {
     canConnect: (approverId: AuthenticatorId) => boolean;
     /** 2026-11-03 (owner request): every group's badge reads "Add Account(s)"; a click calls this with the wallet's id (open its account selection). The native wallet may have no action: return nothing. Omitted: the badges keep their Connected / Connect words. */
     onAddAccounts?: (approverId: AuthenticatorId) => void;
+    /** The accounts of a wallet whose accounts belong to another Merit wallet, each connected or disconnected (Authenticator.knownAccounts). That wallet's rows come from here and show a Connect / Disconnect button. */
+    known?: Partial<Record<AuthenticatorId, Array<{
+        address: string;
+        name?: string;
+        connected: boolean;
+    }>>>;
+    /** A row's Connect / Disconnect button: set that account's state in the wallet. */
+    onToggleAccount?: (approverId: AuthenticatorId, address: string, connected: boolean) => void;
+    /** Whether a wallet can change an account's state (Authenticator.setAccountConnected): only those rows get the button. Omitted: every wallet with known accounts. */
+    canToggleAccount?: (approverId: AuthenticatorId) => boolean;
     /** Also list the wallets that are not connected (no accounts here), with their Install / Connect badges. Default false: they are not on the list. */
     showDisconnected?: boolean;
 }

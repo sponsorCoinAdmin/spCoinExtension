@@ -18,7 +18,7 @@ import {
 } from '@sponsorcoin/merit-wallet/vault';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import { rpcUrlForChain } from './chainRpc';
-import { createWebAppRelay } from './webAppRelay';
+import { createWorkerHub } from '@sponsorcoin/merit-connect';
 
 const PERMISSIONS_KEY = 'spcoin_merit_permissions';
 const CHAIN_KEY = 'spcoin_merit_active_chain';
@@ -237,10 +237,11 @@ export function installProvider({ session, accounts, approvals, signer, ready }:
       sendResponse({ ok: true, result: null });
       return false;
     }
-    if (m.method === 'merit_remoteResponse') {
-      const accepted = webAppRelay.accept({ tabId: sender.tab.id, origin }, Array.isArray(m.params) ? m.params[0] : undefined);
-      trace('worker', `web app answer ${accepted ? 'taken' : 'refused'} (tab ${sender.tab.id}, ${origin})`);
-      sendResponse({ ok: true, result: accepted });
+    // 2026-11-06 (docs/design/meritConnectDesign.txt, row M8): the web app's answers (merit_remoteResponse) and the changes it pushes to its shared list while a selection is open (merit_remoteSelection) belong to @sponsorcoin/merit-connect, which takes them
+    // only from the page and origin the request went to (what the browser says), and returns undefined for any other method
+    const taken = webAppHub.handlePageCall(m.method, m.params, { tabId: sender.tab.id, origin });
+    if (taken !== undefined) {
+      sendResponse({ ok: true, result: taken });
       return false;
     }
     // The page gave up waiting (Cancel, or its own time limit): its waiting requests end with "rejected", so no approval is left behind in the wallet. Only this site's own requests are touched.
@@ -275,14 +276,42 @@ trace('worker', 'worker started');
 const webApps = new Map<number, { origin: string; loggedOn: boolean; fresh: boolean }>();
 const webAppsChanged = () => chrome.runtime.sendMessage({ type: 'merit/web/changed' }).catch(() => undefined);
 
-// 2026-11-04 (docs/design/remoteWalletSigning.txt, step A): requests to the web app and its answers; the rules are in src/webAppRelay.ts (tested without a browser)
-const webAppRelay = createWebAppRelay({
-  targets: () => Array.from(webApps, ([tabId, entry]) => ({ tabId, origin: entry.origin, loggedOn: entry.loggedOn })),
-  sendToTab: (tabId, message) => chrome.tabs.sendMessage(tabId, message),
-  setTimer: (fn, ms) => setTimeout(fn, ms),
-  clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
-  newId: () => crypto.randomUUID(),
+// 2026-11-06 (docs/design/meritConnectDesign.txt, row M8; first built 2026-11-04 as src/webAppRelay.ts): requests to the web app and its answers. The rules (one page per request, an answer only from that page and origin, once, in time, selections that stay open for pushes) are
+// in @sponsorcoin/merit-connect and tested there without a browser; this file only supplies the tabs and where an accepted change to the shared list is kept.
+/** Where the side panel keeps the accounts the web app shared (the same key as src/webAppAuthenticator.ts). */
+const WEB_APP_ACCOUNTS_STORAGE_KEY = 'meritWebAppAccounts';
+/** The web app accounts the extension kept in its list but disconnected (the same key as src/webAppAuthenticator.ts). */
+const WEB_APP_DISCONNECTED_STORAGE_KEY = 'meritWebAppDisconnected';
+const webAppHub = createWorkerHub({
+  tabs: { sendMessage: (tabId, message) => chrome.tabs.sendMessage(tabId, message) },
+  targets: () => Array.from(webApps, ([tabId, entry]) => ({ id: tabId, origin: entry.origin, ready: entry.loggedOn })),
+  // the web app owns the accounts: what it connects replaces the connected list (an account it disconnected is REMOVED from the extension), and an account it connected is no longer one the extension holds disconnected
+  onSelection: (change) => {
+    if (!('accounts' in change)) return;
+    const connected = change.accounts;
+    void chrome.storage.local.get([WEB_APP_DISCONNECTED_STORAGE_KEY, WEB_APP_ACCOUNTS_STORAGE_KEY]).then((stored) => {
+      // 2026-11-06 (owner): the web app disconnected accounts this wallet held connected: the person is told (the panel shows the notice)
+      const before = Array.isArray(stored[WEB_APP_ACCOUNTS_STORAGE_KEY]) ? (stored[WEB_APP_ACCOUNTS_STORAGE_KEY] as unknown[]).filter((a): a is string => typeof a === 'string') : [];
+      const gone = before.filter((a) => !connected.some((c) => c.toLowerCase() === a.toLowerCase()));
+      if (gone.length) void chrome.storage.local.set({ meritWebAppNotice: { at: Date.now(), message: 'Disconnected by Remote', addresses: gone } });
+      const kept =Array.isArray(stored[WEB_APP_DISCONNECTED_STORAGE_KEY]) ? (stored[WEB_APP_DISCONNECTED_STORAGE_KEY] as unknown[]).filter((a): a is string => typeof a === 'string') : [];
+      const stillKept = kept.filter((a) => !connected.some((c) => c.toLowerCase() === a.toLowerCase()));
+      return chrome.storage.local.set({ [WEB_APP_ACCOUNTS_STORAGE_KEY]: connected, [WEB_APP_DISCONNECTED_STORAGE_KEY]: stillKept });
+    });
+  },
+  trace: (event, detail) => trace('worker', `${event} ${JSON.stringify(detail)}`),
 });
+
+/** The open tabs on the web app's origins (the manifest's host permissions): a tab there that has not reported in is a page that is open but silent. */
+async function openWebAppTabs(): Promise<chrome.tabs.Tab[]> {
+  const patterns = chrome.runtime.getManifest().host_permissions ?? [];
+  if (!patterns.length) return [];
+  try {
+    return await chrome.tabs.query({ url: patterns });
+  } catch {
+    return [];
+  }
+}
 
 function reportWebApp(tabId: number | undefined, origin: string, loggedOn: boolean, detached: boolean, at: number) {
   if (tabId === undefined) return;
@@ -295,7 +324,7 @@ function reportWebApp(tabId: number | undefined, origin: string, loggedOn: boole
 }
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  webAppRelay.dropTab(tabId);
+  webAppHub.dropTab(tabId);
   if (webApps.delete(tabId)) {
     trace('worker', `web app tab ${tabId} closed`);
     void webAppsChanged();
@@ -310,14 +339,11 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
     sendResponse({ ok: false, error: 'forbidden' });
     return false;
   }
-  // a request for the web app's wallet (accounts, a signature, a transaction): it goes to ONE web app page, and the answer comes back through merit_remoteResponse
+  // a request for the web app's wallet (accounts, a signature, a transaction): the hub sends it to ONE web app page and the answer comes back through merit_remoteResponse; every step is traced with the request id
   if (type === 'merit/web/request') {
-    const call = message as { method?: unknown; params?: unknown };
-    trace('worker', `web app request ${String(call.method)}`);
-    void webAppRelay.request(typeof call.method === 'string' ? call.method : '', call.params).then((reply) => {
-      trace('worker', `web app request ${String(call.method)} ${reply.ok ? 'answered' : `FAILED ${reply.error.code}`}`);
-      sendResponse(reply);
-    });
+    const answer = webAppHub.handlePanelMessage(message);
+    if (!answer) return false;
+    void answer.then(sendResponse);
     return true;
   }
   // the person disconnected / connected the web app in the panel: every web app page hears it, so the link is cut or made on both sides
@@ -341,8 +367,12 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
       }
     }
     const all = Array.from(webApps.values());
-    // reachable = a web app page answers (the disconnect is the shared link flag, kept by each side peer)
-    sendResponse({ ok: true, reachable: all.length > 0, loggedOn: all.some((e) => e.loggedOn) });
+    // 2026-11-06 (docs/design/meritConnectDesign.txt, row M13): besides reachable (a web app page answers; the disconnect is the shared link flag, kept by each side peer) the answer says how many pages of the web app are OPEN and did NOT answer
+    // (`candidates`): a page whose content script died when the extension was reloaded looks exactly like that, and the panel tells the person to reload it
+    void openWebAppTabs().then((open) => {
+      const candidates = open.filter((tab) => tab.id !== undefined && !webApps.has(tab.id)).length;
+      sendResponse({ ok: true, reachable: all.length > 0, reporting: all.length, candidates, loggedOn: all.some((e) => e.loggedOn) });
+    });
     if (dropped) void webAppsChanged();
   }, WEB_APP_ANSWER_MS);
   return true;

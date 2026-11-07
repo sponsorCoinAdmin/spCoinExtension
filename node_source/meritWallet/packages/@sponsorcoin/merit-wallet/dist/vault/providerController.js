@@ -118,8 +118,25 @@ export class ProviderController {
                 return this.o.session.isUnlocked();
             case 'eth_accounts':
                 return this.visibleAccounts(origin);
-            case 'eth_requestAccounts':
+            case 'eth_requestAccounts': {
+                // 2026-11-06 (owner: whoever initiates the connect supplies the list of accounts to set connected here): a caller that sends the accounts it holds (merit-connect) has them applied BEFORE the account selector opens, so the selector starts from them
+                const held = params[0]?.shared;
+                if (Array.isArray(held)) {
+                    await this.adoptHeld(origin, held);
+                    return this.requestAccounts(origin, true);
+                }
                 return this.requestAccounts(origin);
+            }
+            // 2026-11-06 (owner): the caller re-sends (or changes) the accounts it holds connected: exactly those that exist here are connected, every other account here is disconnected. Nobody is asked; the answer is what is connected now.
+            case 'merit_syncAccounts': {
+                if (!this.o.session.isUnlocked())
+                    throw new ProviderRpcError(PROVIDER_ERROR.unauthorized, 'The wallet is locked.');
+                const connected = params[0]?.connected;
+                if (!Array.isArray(connected))
+                    throw new ProviderRpcError(PROVIDER_ERROR.invalidParams, 'merit_syncAccounts needs the connected accounts.');
+                await this.adoptHeld(origin, connected);
+                return this.visibleAccounts(origin);
+            }
             // 2026-10-31: like MetaMask, wallet_requestPermissions always asks again (the person changes which accounts the site sees); eth_requestAccounts asks only when the site has none yet
             case 'wallet_requestPermissions':
                 return this.requestAccounts(origin, true);
@@ -271,6 +288,21 @@ export class ProviderController {
         this.emit({ origin, event: 'merit_requestPresented', data: null });
     }
     /** 2026-10-31 (owner design: connect live from the account selector): the person changes which accounts a site sees, after the site's connect was approved. No accounts left = the site is disconnected. */
+    /** 2026-11-06: the accounts a caller holds connected become this site's accounts, the ones that exist in this wallet (quietly: the caller made the change, it is not told as an event). */
+    async adoptHeld(origin, held) {
+        if (!this.o.session.isUnlocked())
+            return;
+        const inWallet = this.o.accounts.list().map((a) => a.address);
+        const kept = held.filter((a) => typeof a === 'string' && inWallet.some((w) => lower(w) === lower(a)));
+        if (kept.length)
+            await this.o.permissions.set(origin, kept);
+        else
+            await this.o.permissions.remove(origin);
+    }
+    /** 2026-11-06: the accounts this site holds connected now (what the account selector it opened starts from). */
+    siteAccounts(origin) {
+        return this.visibleAccounts(origin);
+    }
     async setSiteAccounts(origin, accounts) {
         const inWallet = this.o.accounts.list().map((a) => a.address);
         const kept = accounts.filter((a) => inWallet.some((w) => lower(w) === lower(a)));

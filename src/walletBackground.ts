@@ -86,6 +86,7 @@ type VaultRequest =
   | { type: 'merit/signing/pending' }
   | { type: 'merit/signing/approve'; id: string; input?: unknown }
   | { type: 'merit/signing/reject'; id: string }
+  | { type: 'merit/permissions/get'; origin: string }
   | { type: 'merit/permissions/set'; origin: string; accounts: string[] }
   | { type: 'merit/connect/presented'; origin: string }
   | { type: 'merit/network/get' }
@@ -240,6 +241,9 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
         if (typeof request.origin !== 'string') return { ok: false, error: 'invalid-request' };
         provider.notifyRequestPresented(request.origin);
         return snapshot({});
+      case 'merit/permissions/get':
+        if (typeof request.origin !== 'string') return { ok: false, error: 'invalid-request' };
+        return snapshot({ accounts: await provider.siteAccounts(request.origin) });
       case 'merit/permissions/set':
         if (typeof request.origin !== 'string' || !Array.isArray(request.accounts)) return { ok: false, error: 'invalid-request' };
         await provider.setSiteAccounts(request.origin, request.accounts);

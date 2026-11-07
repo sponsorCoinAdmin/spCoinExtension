@@ -53,6 +53,31 @@ export function buildApproverGroups(input) {
                 isActive: isActiveSource && same(entry.address, activeAddress),
             };
         });
+        // 2026-11-06 (owner rule): a wallet whose accounts belong to another Merit wallet lists them with a state; the accounts kept but disconnected are rows too, and every row has a Connect / Disconnect button
+        const knownHere = input.known?.[backend.id];
+        if (knownHere && input.onToggleAccount && (input.canToggleAccount?.(backend.id) ?? true)) {
+            const toggle = input.onToggleAccount;
+            for (const row of accounts) {
+                const state = knownHere.find((k) => same(k.address, row.address));
+                if (state)
+                    row.connection = { connected: state.connected, onToggle: () => toggle(backend.id, state.address, !state.connected) };
+            }
+            for (const state of knownHere) {
+                if (accounts.some((row) => same(row.address, state.address)))
+                    continue;
+                const known = host.describeAccount?.(state.address);
+                const label = splitNameSymbol(state.name);
+                accounts.push({
+                    id: state.address,
+                    symbol: label.symbol || known?.symbol || 'N/A',
+                    name: label.name || known?.name || 'N/A',
+                    iconSrc: known?.iconSrc,
+                    address: state.address,
+                    isActive: false,
+                    connection: { connected: state.connected, onToggle: () => toggle(backend.id, state.address, !state.connected) },
+                });
+            }
+        }
         const group = {
             id: backend.id,
             label: backend.name,
@@ -102,9 +127,11 @@ export function buildApproverGroups(input) {
         : groups.filter((g) => {
             if (g.id === native || g.isActiveSource)
                 return true;
+            // 2026-11-06 (owner design): a wallet whose accounts are KEPT (MetaMask) stays on the list with its disconnected accounts after a disconnect
+            const keeps = (input.known?.[g.id]?.length ?? 0) > 0;
             const connected = host.isConnected?.(g.id);
             if (connected !== undefined)
-                return connected;
+                return connected || keeps;
             return g.accounts.length > 0 || g.connectLabel === 'Unlock';
         });
     // the native wallet first, the others in the wallet's own order

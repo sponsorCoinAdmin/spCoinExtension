@@ -9,6 +9,8 @@ export interface ApprovalWaiting {
     startedAt: number;
     /** True for a wallet whose own approval screen is on this page: it is tracked for its outcome only and never shown as "waiting". */
     silent?: boolean;
+    /** True for the running wallet's own approval screen (the browser wallet): never named as "another wallet" to approve on. */
+    own?: boolean;
 }
 /** How the last request ended, when it ended in a refusal or a failure (shown for a few seconds, then gone). */
 export interface ApprovalOutcome {

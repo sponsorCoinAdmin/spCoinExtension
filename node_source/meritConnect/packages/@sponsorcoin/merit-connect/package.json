@@ -1,0 +1,30 @@
+{
+  "name": "@sponsorcoin/merit-connect",
+  "version": "0.0.1",
+  "description": "Merit Connect: the protocol one Merit wallet uses to ask another Merit wallet who is connected, for its accounts, and for signatures. No dependencies; the transport (Chrome extension messaging, a web page, a test loopback) is injected.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run build && node test/protocol.test.mjs && node test/relay.test.mjs && node test/responder.test.mjs && node test/client.test.mjs && node test/transports.test.mjs && node test/mutants.mjs"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  },
+  "license": "ISC"
+}

@@ -7,7 +7,7 @@
 import { requestSignApproval, type PendingSignRequest } from './pendingSignRequestStore';
 import { clearPendingSignRequest } from './pendingSignRequestStore';
 import { requestTransferApproval } from './transferApprovalStore';
-import { requestRemoteSelection } from './remoteSelectionStore';
+import { remoteSelectionStore, requestRemoteSelection } from './remoteSelectionStore';
 import { traceFrom } from './debugTrace';
 
 interface PendingItem {
@@ -19,6 +19,32 @@ interface PendingItem {
 }
 type Reply = { ok: boolean; unlocked?: boolean; initialized?: boolean; pending?: PendingItem[]; chainId?: number; active?: string };
 const worker = (message: unknown) => chrome.runtime.sendMessage(message) as Promise<Reply>;
+
+/** The chain's native token (the address every token list uses for ETH). */
+const NATIVE_TOKEN_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+
+/** The names of the calls a person is most likely asked to approve, by their 4-byte selector (Uniswap V3 SwapRouter02 and the ERC-20 basics). Anything else shows its selector. */
+const METHOD_NAMES: Record<string, string> = {
+  '0x04e45aaf': 'exactInputSingle',
+  '0xb858183f': 'exactInput',
+  '0x5023b4df': 'exactOutputSingle',
+  '0x09b81346': 'exactOutput',
+  '0x5ae401dc': 'multicall',
+  '0xac9650d8': 'multicall',
+  '0xa9059cbb': 'transfer',
+  '0x095ea7b3': 'approve',
+  '0x23b872dd': 'transferFrom',
+};
+const methodNameOf = (data: string): string => METHOD_NAMES[data.slice(0, 10).toLowerCase()] ?? data.slice(0, 10);
+
+/** A whole-number string of base units as a decimal string (7000000000000 with 18 decimals is 0.000007). */
+function formatUnits(value: string, decimals: number): string {
+  if (!/^\d+$/.test(value)) return value;
+  const padded = value.padStart(decimals + 1, '0');
+  const whole = padded.slice(0, padded.length - decimals);
+  const fraction = padded.slice(padded.length - decimals).replace(/0+$/, '');
+  return fraction ? `${whole}.${fraction}` : whole;
+}
 
 function confirmCopy(item: PendingItem, chainId: number, activeAddress: string): Omit<PendingSignRequest, 'id'> {
   const d = item.details ?? {};
@@ -36,13 +62,23 @@ function confirmCopy(item: PendingItem, chainId: number, activeAddress: string):
   }
   if (item.kind === 'transaction') {
     const wei = d.value ? String(d.value) : '0';
+    const txChain = Number(d.chainId ?? chainId);
+    const assetChain = txChain === 31337 ? 8453 : txChain; // the dev chain shows the Base images
+    const isContractCall = !!d.data && d.data !== '0x' && !!d.to;
+    // 2026-11-05 (owner request): the contract appears once, with its own image, then the method, the amount in wei and the amount in the chain's token (with its image)
+    const rows: NonNullable<PendingSignRequest['rows']> = [];
+    if (isContractCall) {
+      rows.push({ label: 'To Contract', value: String(d.to), token: { address: String(d.to), chainId: assetChain }, copy: true, mono: true });
+      rows.push({ label: 'Method', value: methodNameOf(String(d.data)) });
+    }
+    rows.push({ label: 'Amount in Wei', value: wei });
+    rows.push({ label: 'Amount in token', value: `${formatUnits(wei, 18)} ETH`, token: { address: NATIVE_TOKEN_ADDRESS, chainId: assetChain } });
     return {
       title: `Transaction from ${item.origin}`,
       signerAddress: String(d.from ?? activeAddress),
-      chainId: Number(d.chainId ?? chainId),
-      contractAddress: d.data && d.data !== '0x' && d.to ? String(d.to) : undefined,
-      amount: { label: 'Amount', value: `${wei} wei` },
-      accounts: d.to ? [{ role: 'TO', address: String(d.to) }] : undefined,
+      chainId: txChain,
+      accounts: !isContractCall && d.to ? [{ role: 'TO', address: String(d.to) }] : undefined,
+      rows,
     };
   }
   const shown = d.typedData ? JSON.stringify(d.typedData, null, 1).slice(0, 600) : String(d.message ?? '');
@@ -116,7 +152,28 @@ export function startDappApprovals(): void {
               await worker({ type: 'merit/permissions/set', origin: next.origin, accounts: selected } as never).catch(() => undefined);
             });
           };
-          await requestRemoteSelection({ caller: 'Merit (Web)', origin: next.origin, selected: [], onChange: apply });
+          // 2026-11-06 (owner: the caller's connected accounts show as connected when the selector opens): the selector starts from the accounts the site already holds, and a site that holds some is answered with them at once
+          const held = (((await worker({ type: 'merit/permissions/get', origin: next.origin } as never).catch(() => undefined)) as { accounts?: unknown } | undefined)?.accounts ?? []) as string[];
+          if (held.length) {
+            answered = true;
+            traceFrom('panel', `account selector opened with ${held.length} account(s) already connected for ${next.origin}`);
+            await worker({ type: 'merit/signing/approve', id: next.id, input: { accounts: held } } as never).catch(() => undefined);
+          }
+          // the caller (the web app) may change the connected accounts while the selector is open (its own Connect / Disconnect): the extension stores that as the site's permission, and the rows follow it
+          const followCaller = (changes: Record<string, { newValue?: unknown }>, area: string) => {
+            const all = changes.spcoin_merit_permissions?.newValue as Record<string, unknown> | undefined;
+            if (area !== 'local' || !all) return;
+            const list = Array.isArray(all[next.origin]) ? (all[next.origin] as unknown[]).filter((a): a is string => typeof a === 'string') : [];
+            traceFrom('panel', `account selector follows ${next.origin}: ${list.length} account(s) connected`);
+            remoteSelectionStore.sync(list);
+            if (!answered && list.length) apply(list);
+          };
+          chrome.storage.onChanged.addListener(followCaller as never);
+          try {
+            await requestRemoteSelection({ caller: 'Merit (Web)', origin: next.origin, selected: held, onChange: apply });
+          } finally {
+            chrome.storage.onChanged.removeListener(followCaller as never);
+          }
           await queue;
           if (!answered) {
             traceFrom('panel', 'account selector cancelled');

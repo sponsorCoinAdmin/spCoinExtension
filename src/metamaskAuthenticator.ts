@@ -9,8 +9,10 @@ import {
   type AuthenticatorAccount,
   type AuthenticatorChange,
   type InjectedProvider,
+  withKeptAccounts,
 } from '@sponsorcoin/merit-wallet';
 import { METAMASK_ACCOUNTS_KEY } from './metamaskRelay';
+import { extensionKeptAccountsStore } from './keptAccountsStorage';
 
 export const METAMASK_ID = 'injected:io.metamask' as const;
 
@@ -45,7 +47,7 @@ export async function isMetaMaskAccount(address: string | undefined): Promise<bo
   return (await metamaskAccounts()).some((a) => a.toLowerCase() === lower);
 }
 
-export const metamaskAuthenticator: Authenticator = {
+const metamaskBase: Authenticator = {
   ...base,
   async status() {
     return { available: true, unlocked: (await metamaskAccounts()).length > 0 };
@@ -71,4 +73,7 @@ export const metamaskAuthenticator: Authenticator = {
     return () => chrome.storage.onChanged.removeListener(handler);
   },
 };
+
+// 2026-11-06 (owner design): MetaMask's accounts are KEPT and PERSISTED whether it is connected or not; a disconnect turns them all into disconnected accounts that stay listed (the shared package, src/auth/keptAccounts.ts)
+export const metamaskAuthenticator: Authenticator = withKeptAccounts(metamaskBase, extensionKeptAccountsStore(METAMASK_ID));
 

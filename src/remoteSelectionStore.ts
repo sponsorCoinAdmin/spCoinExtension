@@ -29,6 +29,14 @@ export const remoteSelectionStore = {
     emit();
     current.onChange?.(current.selected);
   },
+  /** 2026-11-06 (owner report: the web app connected an account and the open selector still said Connect): the caller changed the connected accounts while the selector is open; the rows follow. Not an answer: `onChange` is not called. */
+  sync(accounts: string[]): void {
+    if (!current) return;
+    const same = accounts.length === current.selected.length && accounts.every((a) => current!.selected.some((b) => b.toLowerCase() === a.toLowerCase()));
+    if (same) return;
+    current = { ...current, selected: [...accounts] };
+    emit();
+  },
   cancel(): void {
     finish();
   },

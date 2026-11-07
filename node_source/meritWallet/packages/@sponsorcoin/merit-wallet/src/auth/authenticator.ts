@@ -95,6 +95,13 @@ export interface Authenticator {
   connect?(): Promise<AuthenticatorAccount[]>;
   /** 2026-11-03: ask the wallet again which accounts to share, even when it already shares some (the "Add Account(s)" button). A plain connect() must stay the wallet's ordinary connect request: a wallet that keeps its permission after a disconnect would otherwise open its account selector instead of its connect page. */
   selectAccounts?(): Promise<AuthenticatorAccount[]>;
+  /**
+   * 2026-11-06 (owner rule): an authenticator whose accounts belong to ANOTHER Merit wallet (the Merit web app, seen from the extension) lists them with a state. The list has the connected accounts AND the ones this wallet kept but disconnected; the
+   * wallet shows each with a Connect / Disconnect button. Only the connected ones are usable accounts (accounts() lists just those).
+   */
+  knownAccounts?(): Promise<Array<{ address: string; name?: string; connected: boolean }>>;
+  /** Connect or disconnect ONE account of the other wallet from this wallet. A disconnected account stays listed; the other wallet is the one that removes accounts. */
+  setAccountConnected?(address: string, connected: boolean): Promise<void>;
   /** Optional: give up whatever permission connect() was granted (MetaMask: revoke the page's access). Never touches keys or the wallet's account list. */
   disconnect?(): Promise<void>;
   /** Always behind this authenticator's own approval. */
@@ -104,6 +111,10 @@ export interface Authenticator {
   sendTransaction(tx: AuthenticatorTransaction): Promise<{ hash: string }>;
   /** Lock / unlock / accountsChanged / chainChanged / availability. Returns the unsubscribe function. */
   onChange(listener: (change: AuthenticatorChange) => void): () => void;
+  /** 2026-11-06 (owner): the other wallet took accounts out of this wallet's list ("Disconnected by Remote", ...): a message for the person. Returns the unsubscribe function. */
+  /** 2026-11-06: this wallet is the view of ANOTHER Merit wallet (withMeritConnection): its group in the account list shows the link's state, DISCONNECTED (red) / CONNECTED (green). */
+  meritRemote?: boolean;
+  onNotice?(listener: (message: string, addresses?: string[]) => void): () => void;
 }
 
 /** What the wallet knows about an account that matters for choosing its authenticator. */

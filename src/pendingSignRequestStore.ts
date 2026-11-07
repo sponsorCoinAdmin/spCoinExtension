@@ -47,6 +47,8 @@ export interface PendingSignRequest {
   accounts?: PendingSignRequestAccountEntry[];
   tokens?: PendingSignRequestTokenEntry[];
   amount?: { label: string; value: string };
+  /** Labelled rows with an optional token image (2026-11-05): a transaction request's To Contract, Method, Amount in Wei and Amount in token. */
+  rows?: { label: string; value: string; token?: { address: string; chainId: number }; copy?: boolean; mono?: boolean }[];
   /** Button wording for a request that is not a transaction (the connect page). */
   approveLabel?: string;
   rejectLabel?: string;

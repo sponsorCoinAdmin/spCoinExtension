@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AccountListGroup } from '@sponsorcoin/spcoin-panels';
 import type { AuthenticatorId, AuthenticatorStatus } from '../auth/authenticator';
 import type { Wallet, WalletAccountEntry } from './wallet';
+import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
+import { accountNoticeStore } from '../auth/accountNoticeStore';
 import { domPlatform } from '../platform/domPlatform';
 import type { MeritPlatform } from '../platform/platform';
 import { buildApproverGroups, createApproverController, type ApproverController, type ApproverHost } from './approverAccounts';
@@ -22,6 +24,8 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
   const [entries, setEntries] = useState<WalletAccountEntry[] | undefined>(undefined);
   const [statuses, setStatuses] = useState<Partial<Record<AuthenticatorId, AuthenticatorStatus>>>({});
   const [notice, setNotice] = useState('');
+  // 2026-11-06 (owner rule): the accounts of a wallet that belongs to another Merit wallet, each connected or disconnected (Authenticator.knownAccounts)
+  const [known, setKnown] = useState<Partial<Record<AuthenticatorId, Array<{ address: string; name?: string; connected: boolean }>>>>({});
   const activeRef = useRef(activeAddress);
   activeRef.current = activeAddress;
   const hostRef = useRef(host);
@@ -53,7 +57,17 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
       .catch(() => {
         if (current()) setEntries([] as WalletAccountEntry[]);
       });
-    await Promise.all([...statusJobs, accountsJob]);
+    const knownJobs = wallet.backends().map(async (backend) => {
+      const listed = wallet.registry.get(backend.id)?.knownAccounts;
+      if (!listed) return;
+      try {
+        const accountsKnown = await listed.call(wallet.registry.get(backend.id));
+        if (current()) setKnown((previous) => ({ ...previous, [backend.id]: accountsKnown }));
+      } catch {
+        /* the list stays as it was */
+      }
+    });
+    await Promise.all([...statusJobs, accountsJob, ...knownJobs]);
   }, [wallet]);
 
   useEffect(() => {
@@ -61,7 +75,13 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
     void load();
     const off = wallet.onChange(() => void load());
     const offForeground = platform.onForeground(() => void load());
+    // a wallet that tells the person the other wallet took accounts out of its list: a popup in MESSAGE_PANEL with the accounts' icons (src/auth/useAccountNoticeMessagePanel.ts)
+    const offNotices = wallet.backends().map((backend) => wallet.registry.get(backend.id)?.onNotice?.((message, addresses) => {
+      engineTrace('accountNotice:heard', { id: backend.id, message, accounts: addresses?.length ?? 0 });
+      accountNoticeStore.publish(message, addresses ?? []);
+    }));
     return () => {
+      offNotices.forEach((stop) => stop?.());
       off();
       offForeground();
     };
@@ -100,14 +120,31 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
       onDisconnect: (id) => void controller.disconnect(id).then(load),
       canConnect: (id) => typeof wallet.registry.get(id)?.connect === 'function',
       // "Add Account(s)": the wallet's own account selection (the native wallet holds its accounts here: nothing to ask)
+      known,
+      canToggleAccount: (id) => typeof wallet.registry.get(id)?.setAccountConnected === 'function',
+      onToggleAccount: (id, address, connected) => {
+        const approver = wallet.registry.get(id);
+        engineTrace('approverAccounts:toggleAccount', { id, address, connected, hasHandler: typeof approver?.setAccountConnected === 'function' });
+        void Promise.resolve(approver?.setAccountConnected?.(address, connected))
+          .catch((error: unknown) => setNotice(error instanceof Error && error.message ? error.message : 'That account could not be changed.'))
+          .then(load);
+      },
       onAddAccounts: (id) => {
+        engineTrace('approverAccounts:onAddAccounts', { id, nativeWalletId: host.nativeWalletId, platform: host.platform, hasOpenAddMenu: !!host.openAddMenu });
         // the running app's own wallet (web or extension): the Add menu. Every other wallet, and a host of any other kind: the wallet's own account selection.
         if (id === host.nativeWalletId && (host.platform === 'web' || host.platform === 'extension') && host.openAddMenu) { host.openAddMenu(); return; }
-        if (id !== host.nativeWalletId) void Promise.resolve((wallet.registry.get(id)?.selectAccounts ?? wallet.registry.get(id)?.connect)?.call(wallet.registry.get(id))).catch(() => undefined).then(load);
+        // 2026-11-06 (owner report: Add Account(s) on Merit (Web App) did nothing until pressed twice): the failure was swallowed without a trace, so a first press that threw was invisible; it is traced now
+        if (id !== host.nativeWalletId) {
+          const approver = wallet.registry.get(id);
+          engineTrace('approverAccounts:addAccounts', { id, hasSelect: typeof approver?.selectAccounts === 'function', hasConnect: typeof approver?.connect === 'function' });
+          void Promise.resolve((approver?.selectAccounts ?? approver?.connect)?.call(approver))
+            .catch((error: unknown) => engineTrace('approverAccounts:addAccounts:failed', { id, code: (error as { code?: unknown } | null)?.code, message: error instanceof Error ? error.message : String(error) }))
+            .then(load);
+        }
       },
     });
     return result;
-  }, [wallet, host, entries, statuses, activeAddress, controller, load, platform]);
+  }, [wallet, host, entries, statuses, activeAddress, controller, load, platform, known]);
 
   return { groups, notice, clearNotice: () => setNotice(''), controller };
 }

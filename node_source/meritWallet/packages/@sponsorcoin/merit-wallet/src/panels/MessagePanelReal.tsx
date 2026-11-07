@@ -15,16 +15,39 @@
 // two rows can't move.
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { ErrorMessage, MessageAccountEntry, MessageTokenEntry } from '@sponsorcoin/spcoin-common/context';
 import { MESSAGE_ACCOUNTS_MARKER } from '@sponsorcoin/spcoin-common/context';
-import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen, useAppChainId } from '@sponsorcoin/spcoin-exchange-engine';
 import { errorPanelDisplayStore } from './errorPanelDisplayStore';
-import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton } from '@sponsorcoin/spcoin-panels';
+import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import MessageDetailsSection from './MessageDetailsSection';
-import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle } from '@sponsorcoin/spcoin-common/styles';
+import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle, messageContractLogoStyle } from '@sponsorcoin/spcoin-common/styles';
+
+/** The text of a message, with the small image of the contract after every "Contract: 0x…" line (the Uniswap router's logo on a swap receipt); every other line is plain text. */
+function MessageText({ text, chainId }: { text: string; chainId: number }) {
+  const lines = text.split('\n');
+  return (
+    <>
+      {lines.map((line, i) => {
+        const newline = i < lines.length - 1 ? '\n' : '';
+        const match = /^(Contract: )(0x[0-9a-fA-F]{40})\s*$/.exec(line);
+        if (!match) return <React.Fragment key={i}>{line}{newline}</React.Fragment>;
+        // a row of its own (its end is the line break, so no newline follows it)
+        return (
+          <span key={i} style={messageContractLogoStyle.row}>
+            <span style={messageContractLogoStyle.box}>
+              <TokenLogo address={match[2]} chainId={chainId} className="" style={messageContractLogoStyle.img} />
+            </span>
+            <span style={messageContractLogoStyle.text}>{match[1]}{match[2]}</span>
+          </span>
+        );
+      })}
+    </>
+  );
+}
 
 /**
  * 2026-10-29, on request ("it should be in the Message panel" — the
@@ -111,6 +134,7 @@ export default function MessagePanelReal({
   // Copy reads the rendered body (not the header row), so the account/token breakdown is included.
   const bodyRef = useRef<HTMLDivElement>(null);
   const platform = usePlatform();
+  const [appChainId] = useAppChainId();
   const [copyLabel, setCopyLabel] = useState('Copy');
   const wrap = useSyncExternalStore(
     errorPanelDisplayStore.subscribe,
@@ -210,7 +234,7 @@ export default function MessagePanelReal({
         <div ref={bodyRef} className={messagePanelClass.body}>
         <div className={messagePanelClass.block}>
           <p className={messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : '')}>
-            {bodyHead}
+            <MessageText text={bodyHead} chainId={appChainId} />
           </p>
         </div>
 

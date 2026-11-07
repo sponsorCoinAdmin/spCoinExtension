@@ -81,7 +81,7 @@ export function approvalWaitingText(all) {
 /** The same authenticator, with each request that needs the person's decision registered in the store while it is open. Everything else (id, label, capabilities, status, accounts, events) is the authenticator's own. */
 export function withApprovalNotice(authenticator, store = approvalWaiting, options = {}) {
     const track = async (action, run) => {
-        const end = store.begin({ authenticatorId: authenticator.id, label: authenticatorName(authenticator), action, silent: options.showWaiting === false });
+        const end = store.begin({ authenticatorId: authenticator.id, label: authenticatorName(authenticator), action, silent: options.showWaiting === false, own: options.showWaiting === false });
         // 2026-11-01 (owner report: the wallet connect notice stayed up while the extension's account selector was open): once the wallet shows the request on its own screen the notice closes. Subscribed per request, when the provider is surely there.
         const off = authenticator.onChange?.((change) => {
             if (change !== 'requestPresented')

@@ -56,6 +56,12 @@ export interface ApproverGroupsInput {
   canConnect: (approverId: AuthenticatorId) => boolean;
   /** 2026-11-03 (owner request): every group's badge reads "Add Account(s)"; a click calls this with the wallet's id (open its account selection). The native wallet may have no action: return nothing. Omitted: the badges keep their Connected / Connect words. */
   onAddAccounts?: (approverId: AuthenticatorId) => void;
+  /** The accounts of a wallet whose accounts belong to another Merit wallet, each connected or disconnected (Authenticator.knownAccounts). That wallet's rows come from here and show a Connect / Disconnect button. */
+  known?: Partial<Record<AuthenticatorId, Array<{ address: string; name?: string; connected: boolean }>>>;
+  /** A row's Connect / Disconnect button: set that account's state in the wallet. */
+  onToggleAccount?: (approverId: AuthenticatorId, address: string, connected: boolean) => void;
+  /** Whether a wallet can change an account's state (Authenticator.setAccountConnected): only those rows get the button. Omitted: every wallet with known accounts. */
+  canToggleAccount?: (approverId: AuthenticatorId) => boolean;
   /** Also list the wallets that are not connected (no accounts here), with their Install / Connect badges. Default false: they are not on the list. */
   showDisconnected?: boolean;
 }
@@ -112,6 +118,29 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
         isActive: isActiveSource && same(entry.address, activeAddress),
       };
     });
+    // 2026-11-06 (owner rule): a wallet whose accounts belong to another Merit wallet lists them with a state; the accounts kept but disconnected are rows too, and every row has a Connect / Disconnect button
+    const knownHere = input.known?.[backend.id];
+    if (knownHere && input.onToggleAccount && (input.canToggleAccount?.(backend.id) ?? true)) {
+      const toggle = input.onToggleAccount;
+      for (const row of accounts) {
+        const state = knownHere.find((k) => same(k.address, row.address));
+        if (state) row.connection = { connected: state.connected, onToggle: () => toggle(backend.id, state.address, !state.connected) };
+      }
+      for (const state of knownHere) {
+        if (accounts.some((row) => same(row.address, state.address))) continue;
+        const known = host.describeAccount?.(state.address);
+        const label = splitNameSymbol(state.name);
+        accounts.push({
+          id: state.address,
+          symbol: label.symbol || known?.symbol || 'N/A',
+          name: label.name || known?.name || 'N/A',
+          iconSrc: known?.iconSrc,
+          address: state.address,
+          isActive: false,
+          connection: { connected: state.connected, onToggle: () => toggle(backend.id, state.address, !state.connected) },
+        });
+      }
+    }
     const group: AccountListGroup = {
       id: backend.id,
       label: backend.name,
@@ -156,8 +185,10 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
     ? groups
     : groups.filter((g) => {
         if (g.id === native || g.isActiveSource) return true;
+        // 2026-11-06 (owner design): a wallet whose accounts are KEPT (MetaMask) stays on the list with its disconnected accounts after a disconnect
+        const keeps = (input.known?.[g.id as AuthenticatorId]?.length ?? 0) > 0;
         const connected = host.isConnected?.(g.id as AuthenticatorId);
-        if (connected !== undefined) return connected;
+        if (connected !== undefined) return connected || keeps;
         return g.accounts.length > 0 || g.connectLabel === 'Unlock';
       });
   // the native wallet first, the others in the wallet's own order

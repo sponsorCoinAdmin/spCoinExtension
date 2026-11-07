@@ -136,6 +136,9 @@ export { default as SendComponent } from './send/SendComponent';
 export { default as AgentSelectDropDownWithAvatar } from './AgentSelectDropDownWithAvatar';
 export { connectAccount, disconnectAccount, ConnectChoiceRequired, type ConnectHost, type ConnectParams, type DisconnectParams } from './auth/connect';
 export { createInjectedAuthenticator, translateProviderError, type InjectedProvider, type InjectedAuthenticatorOptions } from './auth/injectedAuthenticator';
+export { withKeptAccounts, type KeptAccountsState, type KeptAccountsStore } from './auth/keptAccounts';
+export { withMeritConnection, type MeritConnectionClient, type MeritConnectionOptions } from './auth/meritConnection';
+export { accountNoticeStore, type AccountNotice } from './auth/accountNoticeStore';
 export {
   requestMeritWriteApproval,
   subscribeMeritApproval,
@@ -155,6 +158,7 @@ export { signInForToken, signInWithWallet, type SignInParams } from './account/s
 export { readSigningChoices, chooseSigner, signingWarning, type SigningChoices, type SigningHolder, type HolderState } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { createPeerConnection, usePeerStates, type PeerConnection, type PeerState, type PeerTransport } from './peer/peerConnection';
+export { registerApprovingWalletHook } from './auth/registerApprovingWallet';
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, outcomeText, withApprovalNotice, type ApprovalWaiting, type ApprovalOutcome, type ApprovalWaitingStore, type ApprovalAction } from './auth/approvalWaiting';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';
 export { readAddTargets, addEntryReasons, type AddTarget, type AddTargets, type AddKeyEntry } from './wallet/addTarget';

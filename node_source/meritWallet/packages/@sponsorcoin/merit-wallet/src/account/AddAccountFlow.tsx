@@ -6,16 +6,14 @@
 'use client';
 
 import { addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
-import { usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
-import { AddWalletMenu, ConnectMetaMaskLeaf, HardwareDeviceMenu, ImportAccountForm, ImportWalletForm, WalletListPanel, useAddWalletFlow } from '@sponsorcoin/spcoin-panels';
+import { AddWalletMenu, ImportAccountForm, ImportWalletForm, WalletListPanel, useAddWalletFlow } from '@sponsorcoin/spcoin-panels';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
 import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
 import type { AuthenticatorId } from '../auth/authenticator';
 import type { Wallet } from '../wallet/wallet';
 import { WALLET_SLUG_ID } from '../wallet/walletSlugs';
-import { approvalWaiting } from '../auth/approvalWaiting';
 import { addEntryReasons, readAddTargets, type AddTarget } from '../wallet/addTarget';
 import { WalletSelectDropDown, WALLET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 
@@ -52,15 +50,9 @@ export interface AddAccountHost {
    * account-level connect, which may activate an account).
    */
   connectWallet?(slug: string): Promise<void>;
-  /**
-   * 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
-   * a host that omits them keeps the single connectApprover('connectHardware') row.
-   */
-  hardwareDevices?: { id: string; title: string; subtitle?: string; unavailable?: string }[];
+  /** 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12): connect one hardware device by id (Ledger, Trezor, ...), from its row of the wallet list. */
   connectHardwareDevice?(id: string): Promise<void>;
-  /** Stop a connect that is still waiting (the Cancel button of the connect screen): tell the other wallet to drop its request. The flow itself stops waiting either way. */
-  cancelConnect?(entry: ConnectApproverEntry): void;
-  /** Bring the other wallet's own window forward (the connect screen's button after a long wait). Called from a click. */
+  /** Bring the other wallet's own window forward when its Connect is pressed on the wallet list. Called from a click. */
   bringWalletForward?(entry: ConnectApproverEntry): void;
   /** The wallets this host can really add keys to (it routes createAccount / importAccount by the target id). Omitted: every reachable wallet that keeps keys. */
   targets?: readonly AuthenticatorId[];
@@ -80,9 +72,6 @@ export const DEFAULT_CONNECT_UNAVAILABLE: Record<ConnectApproverEntry, string> =
   connectMeritWeb: 'Available in the extension',
   connectHardware: 'Available in the web app',
 };
-
-/** The connect screen says it is still waiting after this long (the wallet is probably locked); the host owns the hard limit. */
-export const CONNECT_SOFT_WAIT_MS = 60_000;
 
 const EMPTY_PROFILE: NewAccountProfile = { name: '', symbol: '', description: '', logo: null };
 
@@ -112,72 +101,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   const resetForm = () => { setKey(''); setPhrase(''); setPhraseValid(false); setBusy(false); setError(''); setProfile(EMPTY_PROFILE); };
   const flow = useAddWalletFlow({ resetState: resetForm, resetOnMount: false });
   const menuVisible = flow.addWalletVisible && !flow.isLeafVisible;
-  const { closePanel } = usePanelTree();
-  // the connect screens (MetaMask, the Merit extension): opened from the wallet list, they start the connect once, say when it is slow, and on success pop ONLY themselves, back to the wallet list
-  const connectEntry: ConnectApproverEntry | undefined = flow.connectMetaMaskVisible ? 'connectMetaMask' : flow.connectMeritExtensionVisible ? 'connectMeritExtension' : undefined;
-  const connectLeaf = connectEntry === 'connectMetaMask' ? SP.CONNECT_ACCOUNT : SP.CONNECT_MERIT_EXTENSION;
-  const [connecting, setConnecting] = useState(false);
-  const [waitingLong, setWaitingLong] = useState(false);
-  const connectRunning = useRef(false);
-  // 2026-11-01 (owner: "it should not say Connecting to Merit (Extension) as we are finished with that"): the wallet-level connect is done when the other wallet has the request on its own screen (approvalWaiting.markPresented). This screen
-  // then leaves, back to the wallet list; the open request goes on in the background (the person picks the accounts in the other wallet) and its end is reported by the approval notice.
-  const waitingRequests = useSyncExternalStore(approvalWaiting.subscribe, approvalWaiting.getState, approvalWaiting.getState);
-  const dismissedEarly = useRef(false);
-  /** Ends the wait that is running (Cancel); null when none runs. */
-  const connectStop = useRef<(() => void) | null>(null);
-  const attemptConnect = (entry: ConnectApproverEntry, leaf: SP) => {
-    if (connectRunning.current || !host.connectApprover) return;
-    connectRunning.current = true;
-    setConnecting(true);
-    setWaitingLong(false);
-    setError('');
-    void (async () => {
-      const soft = setTimeout(() => setWaitingLong(true), CONNECT_SOFT_WAIT_MS);
-      let connected = false;
-      try {
-        const stopped = new Promise<'stopped'>((resolve) => { connectStop.current = () => resolve('stopped'); });
-        const outcome = await Promise.race([host.connectApprover!(entry).then(() => 'connected' as const), stopped]);
-        connected = outcome === 'connected';
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'The wallet could not be connected.');
-      }
-      clearTimeout(soft);
-      connectStop.current = null;
-      connectRunning.current = false;
-      setWaitingLong(false);
-      setConnecting(false);
-      const leftEarly = dismissedEarly.current;
-      dismissedEarly.current = false;
-      if (connected && !leftEarly) {
-        // the effect below shows the wallet list again once the screen is gone
-        closePanel(leaf, 'AddAccountFlow:connected');
-      }
-    })();
-  };
-  const presentedId = connectEntry === 'connectMeritExtension' ? 'injected:org.sponsorcoin.merit' : undefined;
-  const requestPresented = !!presentedId && connecting && waitingRequests.some((e) => e.action === 'connect' && e.silent && e.authenticatorId === presentedId);
-  useEffect(() => {
-    if (!requestPresented || dismissedEarly.current) return;
-    dismissedEarly.current = true;
-    closePanel(connectLeaf, 'AddAccountFlow:presented');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestPresented]);
-  const startedEntry = useRef<ConnectApproverEntry | undefined>(undefined);
-  useEffect(() => {
-    if (!connectEntry) {
-      // the screen is gone while its connect still waits (the back arrow): end it here and in the other wallet, unless the other wallet already has it on its own screen (dismissedEarly: it goes on in the background)
-      if (connectRunning.current && !dismissedEarly.current && startedEntry.current) {
-        host.cancelConnect?.(startedEntry.current);
-        connectStop.current?.();
-      }
-      startedEntry.current = undefined;
-      return;
-    }
-    if (startedEntry.current === connectEntry) return;
-    startedEntry.current = connectEntry;
-    attemptConnect(connectEntry, connectLeaf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectEntry]);
   // docs/design/accountAuthDesign.txt section 18 section 5: the wallet this screen adds to: the active wallet by default; the person may point it at another wallet that keeps keys (this visit only)
   // a host that builds its `targets` array on every render must not restart the read each time: the list is keyed by its content
   const hostTargets = host.targets?.join(',');
@@ -251,7 +174,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   if (!host.importWallet) unavailable.importWallet ??= 'Importing a wallet is not available here.';
   if (!host.connectApprover) {
     for (const entry of Object.keys(DEFAULT_CONNECT_UNAVAILABLE) as ConnectApproverEntry[]) {
-      if (entry === 'connectHardware' && host.hardwareDevices?.length && host.connectHardwareDevice) continue;
+      if (entry === 'connectHardware' && host.connectHardwareDevice) continue;
       unavailable[entry] ??= DEFAULT_CONNECT_UNAVAILABLE[entry];
     }
   }
@@ -317,11 +240,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     }
   };
 
-  const openHardware = () => {
-    if (host.hardwareDevices?.length && host.connectHardwareDevice) open('connectHardware', SP.CONNECT_HARDWARE_WALLET)();
-    else connect('connectHardware')();
-  };
-
   return (
     <div style={addAccountStyle.screen}>
       {menuVisible && target && targets.length > 1 && (
@@ -359,7 +277,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
           onCreateAccount={open('createAccount', SP.CREATE_ACCOUNT)}
           onConnectMetaMask={connect('connectMetaMask')}
           onConnectMeritExtension={host.connectApprover ? connect('connectMeritExtension') : undefined}
-          onConnectHardware={openHardware}
+          onConnectHardware={connect('connectHardware')}
           // like the web app: connecting MetaMask, the Merit extension and a hardware wallet is done from the wallet list (the pill's chevron), not from this menu
           hide={{ connectMetaMask: true, connectMeritExtension: true, connectHardware: true }}
           unavailable={unavailable}
@@ -372,21 +290,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
           <WalletListPanel onSelect={() => undefined} wallets={walletSlugs} connection={connection} fixed={nativeSlug} busy={disconnecting} onToggleConnection={toggleWallet} />
           {error && <p style={addAccountStyle.error}>{error}</p>}
         </div>
-      )}
-      {connectEntry && (
-        <ConnectMetaMaskLeaf
-          walletName={connectEntry === 'connectMetaMask' ? 'MetaMask' : 'Merit (Extension)'}
-          isConnecting={connecting}
-          message={error}
-          onRetry={() => attemptConnect(connectEntry, connectLeaf)}
-          waitingLong={waitingLong}
-          onBringForward={host.bringWalletForward ? () => host.bringWalletForward!(connectEntry) : undefined}
-          onCancel={() => {
-            host.cancelConnect?.(connectEntry);
-            connectStop.current?.();
-            closePanel(connectLeaf, 'AddAccountFlow:connectCancelled');
-          }}
-        />
       )}
       {flow.importAccountVisible && (
         <ImportAccountForm
@@ -409,9 +312,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
           isImporting={busy}
           onImport={() => void run(() => host.importWallet!(normalizeMnemonic(phrase), target?.id))}
         />
-      )}
-      {flow.connectHardhatVisible && host.hardwareDevices && host.connectHardwareDevice && (
-        <HardwareDeviceMenu devices={host.hardwareDevices} busy={busy} error={error} onChoose={(id) => void run(() => host.connectHardwareDevice!(id))} />
       )}
       {flow.createAccountVisible && (
         <div style={addAccountStyle.createBox}>

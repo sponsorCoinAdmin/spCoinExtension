@@ -1,0 +1,77 @@
+// File: src/index.ts
+//
+// The public surface of @sponsorcoin/merit-connect (docs/design/meritConnectDesign.txt). Everything not exported here is internal.
+export {
+  APPROVAL_METHODS,
+  APPROVAL_TIMEOUT_MS,
+  ERROR,
+  MAX_PENDING,
+  MAX_SHARED,
+  METHODS,
+  MeritConnectError,
+  PROTOCOL_VERSION,
+  READ_METHODS,
+  READ_TIMEOUT_MS,
+  SELECTION_SESSION_MS,
+  SUPPORTED_VERSIONS,
+  fail,
+  isAddress,
+  isRid,
+  ok,
+  parsePush,
+  parseReply,
+  parseRequest,
+  type ErrorCode,
+  type Parsed,
+  type ProtocolError,
+  type Reply,
+  type Request,
+  type SelectionPush,
+  type Side,
+  type StateReport,
+} from './protocol.js';
+export { createTrace, type Trace, type TraceFn } from './trace.js';
+export { createRelay, type Relay, type RelayDeps, type RelayTarget, type SelectionChange, type Sender } from './relay.js';
+export { createResponder, type Responder, type ResponderDeps, type ResponderHandlers, type SelectionRequest } from './responder.js';
+export {
+  HANDSHAKE_MIN_GAP_MS,
+  HANDSHAKE_MS,
+  LINK_WAIT_MS,
+  createMeritConnect,
+  type Connections,
+  type HandshakeResult,
+  type ListedAccount,
+  type LinkState,
+  type MeritConnect,
+  type RequestFn,
+  type SideConfig,
+} from './client.js';
+export { createLoopback, type Direction, type Loopback, type LoopbackOptions } from './loopback.js';
+export {
+  PAGE_EVENT,
+  PAGE_PUSH_METHOD,
+  PAGE_REPLY_METHOD,
+  PANEL_REQUEST_TYPE,
+  PROVIDER_EVENT_TYPE,
+  attachWebPageResponder,
+  createPanelRequest,
+  createWorkerHub,
+  type PageProviderLike,
+  type PageSender,
+  type RuntimeLike,
+  type TabsLike,
+  type WebPageResponderOptions,
+  type WorkerHub,
+  type WorkerHubOptions,
+} from './transports.js';
+export {
+  CONNECT_POLL_MS,
+  CONNECT_WAIT_MS,
+  createConnectionMonitor,
+  describeConnection,
+  type ConnectionMonitor,
+  type ConnectionMonitorDeps,
+  type ConnectionState,
+  type ConnectionStatus,
+  type ProbeResult,
+} from './connection.js';

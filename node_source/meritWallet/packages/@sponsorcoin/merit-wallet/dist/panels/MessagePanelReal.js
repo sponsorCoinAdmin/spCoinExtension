@@ -14,16 +14,28 @@
 // MessageDetailsSection.tsx's own header comment for why those specific
 // two rows can't move.
 'use client';
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { jsxs as _jsxs, jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { MESSAGE_ACCOUNTS_MARKER } from '@sponsorcoin/spcoin-common/context';
-import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen, useAppChainId } from '@sponsorcoin/spcoin-exchange-engine';
 import { errorPanelDisplayStore } from './errorPanelDisplayStore';
-import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton } from '@sponsorcoin/spcoin-panels';
+import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import MessageDetailsSection from './MessageDetailsSection';
-import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle } from '@sponsorcoin/spcoin-common/styles';
+import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle, messageContractLogoStyle } from '@sponsorcoin/spcoin-common/styles';
+/** The text of a message, with the small image of the contract after every "Contract: 0x…" line (the Uniswap router's logo on a swap receipt); every other line is plain text. */
+function MessageText({ text, chainId }) {
+    const lines = text.split('\n');
+    return (_jsx(_Fragment, { children: lines.map((line, i) => {
+            const newline = i < lines.length - 1 ? '\n' : '';
+            const match = /^(Contract: )(0x[0-9a-fA-F]{40})\s*$/.exec(line);
+            if (!match)
+                return _jsxs(React.Fragment, { children: [line, newline] }, i);
+            // a row of its own (its end is the line break, so no newline follows it)
+            return (_jsxs("span", { style: messageContractLogoStyle.row, children: [_jsx("span", { style: messageContractLogoStyle.box, children: _jsx(TokenLogo, { address: match[2], chainId: chainId, className: "", style: messageContractLogoStyle.img }) }), _jsxs("span", { style: messageContractLogoStyle.text, children: [match[1], match[2]] })] }, i));
+        }) }));
+}
 /** The password field + Reject/Approve row — same shape/styling TransactionConfirmPanel.tsx's own password section uses (shared transactionConfirmPanelStyle tokens), kept local here rather than rendering that whole component a second time: this panel already shows the title/accounts/tokens/amount itself via MessageDetailsSection above, so only the decision controls are needed. */
 function ApprovalDecisionRow({ pendingApproval }) {
     const { requirePassword, passwordError, busy, onApprove, onReject } = pendingApproval;
@@ -41,6 +53,7 @@ export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PAN
     // Copy reads the rendered body (not the header row), so the account/token breakdown is included.
     const bodyRef = useRef(null);
     const platform = usePlatform();
+    const [appChainId] = useAppChainId();
     const [copyLabel, setCopyLabel] = useState('Copy');
     const wrap = useSyncExternalStore(errorPanelDisplayStore.subscribe, errorPanelDisplayStore.getSnapshot, errorPanelDisplayStore.getServerSnapshot);
     // 2026-10-13 (owner request: catch and log this properly): this panel can become visible with NO message behind it (a stale display-stack entry restored by a pop, an open that never set errorMessage). That used to
@@ -95,5 +108,5 @@ export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PAN
                                             setCopyLabel('Copy Failed');
                                             setTimeout(() => setCopyLabel('Copy'), 1800);
                                         }
-                                    }, children: copyLabel }), _jsx(SmallYellowButton, { title: pendingApproval ? 'Reject' : 'Close message', "aria-label": pendingApproval ? 'Reject' : 'Close message', onClick: () => (pendingApproval ? pendingApproval.onReject() : closePanel(panelId, 'MessagePanel:close')), children: "X" })] })] }), _jsxs("div", { ref: bodyRef, className: messagePanelClass.body, children: [_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : ''), children: bodyHead }) }), _jsx(MessageDetailsSection, { errorMessage: errorMessage, renderAccountRow: renderAccountRow, renderTokenRow: renderTokenRow }), pendingApproval && _jsx(ApprovalDecisionRow, { pendingApproval: pendingApproval }), bodyTail && (_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap), children: bodyTail }) })), hasSource && (_jsx("div", { className: messagePanelClass.source, children: errorMessage?.source && (_jsxs("div", { children: [_jsx("span", { className: messagePanelClass.sourceLabel, children: "Source:" }), " ", errorMessage.source] })) }))] })] }) }));
+                                    }, children: copyLabel }), _jsx(SmallYellowButton, { title: pendingApproval ? 'Reject' : 'Close message', "aria-label": pendingApproval ? 'Reject' : 'Close message', onClick: () => (pendingApproval ? pendingApproval.onReject() : closePanel(panelId, 'MessagePanel:close')), children: "X" })] })] }), _jsxs("div", { ref: bodyRef, className: messagePanelClass.body, children: [_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : ''), children: _jsx(MessageText, { text: bodyHead, chainId: appChainId }) }) }), _jsx(MessageDetailsSection, { errorMessage: errorMessage, renderAccountRow: renderAccountRow, renderTokenRow: renderTokenRow }), pendingApproval && _jsx(ApprovalDecisionRow, { pendingApproval: pendingApproval }), bodyTail && (_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap), children: bodyTail }) })), hasSource && (_jsx("div", { className: messagePanelClass.source, children: errorMessage?.source && (_jsxs("div", { children: [_jsx("span", { className: messagePanelClass.sourceLabel, children: "Source:" }), " ", errorMessage.source] })) }))] })] }) }));
 }

@@ -18,6 +18,8 @@ export interface ApprovalWaiting {
   startedAt: number;
   /** True for a wallet whose own approval screen is on this page: it is tracked for its outcome only and never shown as "waiting". */
   silent?: boolean;
+  /** True for the running wallet's own approval screen (the browser wallet): never named as "another wallet" to approve on. */
+  own?: boolean;
 }
 
 /** How the last request ended, when it ended in a refusal or a failure (shown for a few seconds, then gone). */
@@ -115,7 +117,7 @@ export function approvalWaitingText(all: readonly ApprovalWaiting[]): string {
 /** The same authenticator, with each request that needs the person's decision registered in the store while it is open. Everything else (id, label, capabilities, status, accounts, events) is the authenticator's own. */
 export function withApprovalNotice(authenticator: Authenticator, store: ApprovalWaitingStore = approvalWaiting, options: { showWaiting?: boolean } = {}): Authenticator {
   const track = async <T>(action: ApprovalAction, run: () => Promise<T>): Promise<T> => {
-    const end = store.begin({ authenticatorId: authenticator.id, label: authenticatorName(authenticator), action, silent: options.showWaiting === false });
+    const end = store.begin({ authenticatorId: authenticator.id, label: authenticatorName(authenticator), action, silent: options.showWaiting === false, own: options.showWaiting === false });
     // 2026-11-01 (owner report: the wallet connect notice stayed up while the extension's account selector was open): once the wallet shows the request on its own screen the notice closes. Subscribed per request, when the provider is surely there.
     const off = authenticator.onChange?.((change) => {
       if (change !== 'requestPresented') return;

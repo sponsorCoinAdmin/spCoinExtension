@@ -30,20 +30,9 @@ export interface AddAccountHost {
      * account-level connect, which may activate an account).
      */
     connectWallet?(slug: string): Promise<void>;
-    /**
-     * 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12): the hardware wallets this host offers (Ledger, Trezor, ...). When given, "Connect a hardware wallet" opens a screen with one row per device and the chosen device is connected with connectHardwareDevice (the same flow for every device);
-     * a host that omits them keeps the single connectApprover('connectHardware') row.
-     */
-    hardwareDevices?: {
-        id: string;
-        title: string;
-        subtitle?: string;
-        unavailable?: string;
-    }[];
+    /** 2026-10-13 (docs/design/accountAuthDesign.txt section 17 item 12): connect one hardware device by id (Ledger, Trezor, ...), from its row of the wallet list. */
     connectHardwareDevice?(id: string): Promise<void>;
-    /** Stop a connect that is still waiting (the Cancel button of the connect screen): tell the other wallet to drop its request. The flow itself stops waiting either way. */
-    cancelConnect?(entry: ConnectApproverEntry): void;
-    /** Bring the other wallet's own window forward (the connect screen's button after a long wait). Called from a click. */
+    /** Bring the other wallet's own window forward when its Connect is pressed on the wallet list. Called from a click. */
     bringWalletForward?(entry: ConnectApproverEntry): void;
     /** The wallets this host can really add keys to (it routes createAccount / importAccount by the target id). Omitted: every reachable wallet that keeps keys. */
     targets?: readonly AuthenticatorId[];
@@ -57,8 +46,6 @@ export interface AddAccountHost {
 }
 /** What a disabled connect row says when the host gave no reason of its own. */
 export declare const DEFAULT_CONNECT_UNAVAILABLE: Record<ConnectApproverEntry, string>;
-/** The connect screen says it is still waiting after this long (the wallet is probably locked); the host owns the hard limit. */
-export declare const CONNECT_SOFT_WAIT_MS = 60000;
 export default function AddAccountFlow({ host, onDone, wallet, activeAddress, nativeWalletId, walletConnection, onDisconnectWallet }: {
     host: AddAccountHost;
     onDone(): void;

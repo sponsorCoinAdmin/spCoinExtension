@@ -91,6 +91,10 @@ export declare class ProviderController {
     /** 2026-11-01: this site's open request is now on the wallet's own screen: tell the page ONCE, so its "waiting for the wallet" notice can close (the request itself stays open until the person decides). */
     notifyRequestPresented(origin: string): void;
     /** 2026-10-31 (owner design: connect live from the account selector): the person changes which accounts a site sees, after the site's connect was approved. No accounts left = the site is disconnected. */
+    /** 2026-11-06: the accounts a caller holds connected become this site's accounts, the ones that exist in this wallet (quietly: the caller made the change, it is not told as an event). */
+    private adoptHeld;
+    /** 2026-11-06: the accounts this site holds connected now (what the account selector it opened starts from). */
+    siteAccounts(origin: string): Promise<string[]>;
     setSiteAccounts(origin: string, accounts: string[]): Promise<void>;
     /** The user (or a page) moved the wallet to another network: tell every connected page. */
     setChain(chainId: number): Promise<void>;

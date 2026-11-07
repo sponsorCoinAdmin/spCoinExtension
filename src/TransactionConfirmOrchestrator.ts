@@ -35,6 +35,7 @@ export function buildApprovalPage(): { title: string; element: ReturnType<typeof
     message: request.message,
     accounts: isConnect ? undefined : request.accounts,
     tokens: request.tokens,
+    rows: request.rows,
     amount: request.amount,
     chainId: isConnect || !request.chainId ? undefined : request.chainId,
     contractAddress: request.contractAddress,

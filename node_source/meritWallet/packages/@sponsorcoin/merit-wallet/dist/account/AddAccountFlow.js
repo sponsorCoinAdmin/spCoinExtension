@@ -6,14 +6,12 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
-import { usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
-import { AddWalletMenu, ConnectMetaMaskLeaf, HardwareDeviceMenu, ImportAccountForm, ImportWalletForm, WalletListPanel, useAddWalletFlow } from '@sponsorcoin/spcoin-panels';
+import { AddWalletMenu, ImportAccountForm, ImportWalletForm, WalletListPanel, useAddWalletFlow } from '@sponsorcoin/spcoin-panels';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
 import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
 import { WALLET_SLUG_ID } from '../wallet/walletSlugs';
-import { approvalWaiting } from '../auth/approvalWaiting';
 import { addEntryReasons, readAddTargets } from '../wallet/addTarget';
 import { WalletSelectDropDown, WALLET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 /** What a disabled connect row says when the host gave no reason of its own. */
@@ -23,8 +21,6 @@ export const DEFAULT_CONNECT_UNAVAILABLE = {
     connectMeritWeb: 'Available in the extension',
     connectHardware: 'Available in the web app',
 };
-/** The connect screen says it is still waiting after this long (the wallet is probably locked); the host owns the hard limit. */
-export const CONNECT_SOFT_WAIT_MS = 60000;
 const EMPTY_PROFILE = { name: '', symbol: '', description: '', logo: null };
 const KEY_FORMAT = /^0x[0-9a-fA-F]{64}$/;
 /** The wallets the wallet list offers (WALLET_LIST_SELECT_PANEL), by asset folder, and the authenticator each one is. */
@@ -50,76 +46,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     const resetForm = () => { setKey(''); setPhrase(''); setPhraseValid(false); setBusy(false); setError(''); setProfile(EMPTY_PROFILE); };
     const flow = useAddWalletFlow({ resetState: resetForm, resetOnMount: false });
     const menuVisible = flow.addWalletVisible && !flow.isLeafVisible;
-    const { closePanel } = usePanelTree();
-    // the connect screens (MetaMask, the Merit extension): opened from the wallet list, they start the connect once, say when it is slow, and on success pop ONLY themselves, back to the wallet list
-    const connectEntry = flow.connectMetaMaskVisible ? 'connectMetaMask' : flow.connectMeritExtensionVisible ? 'connectMeritExtension' : undefined;
-    const connectLeaf = connectEntry === 'connectMetaMask' ? SP.CONNECT_ACCOUNT : SP.CONNECT_MERIT_EXTENSION;
-    const [connecting, setConnecting] = useState(false);
-    const [waitingLong, setWaitingLong] = useState(false);
-    const connectRunning = useRef(false);
-    // 2026-11-01 (owner: "it should not say Connecting to Merit (Extension) as we are finished with that"): the wallet-level connect is done when the other wallet has the request on its own screen (approvalWaiting.markPresented). This screen
-    // then leaves, back to the wallet list; the open request goes on in the background (the person picks the accounts in the other wallet) and its end is reported by the approval notice.
-    const waitingRequests = useSyncExternalStore(approvalWaiting.subscribe, approvalWaiting.getState, approvalWaiting.getState);
-    const dismissedEarly = useRef(false);
-    /** Ends the wait that is running (Cancel); null when none runs. */
-    const connectStop = useRef(null);
-    const attemptConnect = (entry, leaf) => {
-        if (connectRunning.current || !host.connectApprover)
-            return;
-        connectRunning.current = true;
-        setConnecting(true);
-        setWaitingLong(false);
-        setError('');
-        void (async () => {
-            const soft = setTimeout(() => setWaitingLong(true), CONNECT_SOFT_WAIT_MS);
-            let connected = false;
-            try {
-                const stopped = new Promise((resolve) => { connectStop.current = () => resolve('stopped'); });
-                const outcome = await Promise.race([host.connectApprover(entry).then(() => 'connected'), stopped]);
-                connected = outcome === 'connected';
-            }
-            catch (e) {
-                setError(e instanceof Error ? e.message : 'The wallet could not be connected.');
-            }
-            clearTimeout(soft);
-            connectStop.current = null;
-            connectRunning.current = false;
-            setWaitingLong(false);
-            setConnecting(false);
-            const leftEarly = dismissedEarly.current;
-            dismissedEarly.current = false;
-            if (connected && !leftEarly) {
-                // the effect below shows the wallet list again once the screen is gone
-                closePanel(leaf, 'AddAccountFlow:connected');
-            }
-        })();
-    };
-    const presentedId = connectEntry === 'connectMeritExtension' ? 'injected:org.sponsorcoin.merit' : undefined;
-    const requestPresented = !!presentedId && connecting && waitingRequests.some((e) => e.action === 'connect' && e.silent && e.authenticatorId === presentedId);
-    useEffect(() => {
-        if (!requestPresented || dismissedEarly.current)
-            return;
-        dismissedEarly.current = true;
-        closePanel(connectLeaf, 'AddAccountFlow:presented');
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [requestPresented]);
-    const startedEntry = useRef(undefined);
-    useEffect(() => {
-        if (!connectEntry) {
-            // the screen is gone while its connect still waits (the back arrow): end it here and in the other wallet, unless the other wallet already has it on its own screen (dismissedEarly: it goes on in the background)
-            if (connectRunning.current && !dismissedEarly.current && startedEntry.current) {
-                host.cancelConnect?.(startedEntry.current);
-                connectStop.current?.();
-            }
-            startedEntry.current = undefined;
-            return;
-        }
-        if (startedEntry.current === connectEntry)
-            return;
-        startedEntry.current = connectEntry;
-        attemptConnect(connectEntry, connectLeaf);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [connectEntry]);
     // docs/design/accountAuthDesign.txt section 18 section 5: the wallet this screen adds to: the active wallet by default; the person may point it at another wallet that keeps keys (this visit only)
     // a host that builds its `targets` array on every render must not restart the read each time: the list is keyed by its content
     const hostTargets = host.targets?.join(',');
@@ -201,7 +127,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         unavailable.importWallet ?? (unavailable.importWallet = 'Importing a wallet is not available here.');
     if (!host.connectApprover) {
         for (const entry of Object.keys(DEFAULT_CONNECT_UNAVAILABLE)) {
-            if (entry === 'connectHardware' && host.hardwareDevices?.length && host.connectHardwareDevice)
+            if (entry === 'connectHardware' && host.connectHardwareDevice)
                 continue;
             unavailable[entry] ?? (unavailable[entry] = DEFAULT_CONNECT_UNAVAILABLE[entry]);
         }
@@ -272,17 +198,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
                 connect('connectHardware')();
         }
     };
-    const openHardware = () => {
-        if (host.hardwareDevices?.length && host.connectHardwareDevice)
-            open('connectHardware', SP.CONNECT_HARDWARE_WALLET)();
-        else
-            connect('connectHardware')();
-    };
-    return (_jsxs("div", { style: addAccountStyle.screen, children: [menuVisible && target && targets.length > 1 && (_jsxs("div", { style: addAccountStyle.targetLine, children: [_jsx("span", { children: "Adding to" }), targets.length > 1 ? (_jsxs("div", { style: addAccountStyle.targetPickerAnchor, children: [_jsx(WalletSelectDropDown, { walletId: target.id, displayName: target.name, showDisplay: WALLET_SELECT_DISPLAY.ICON | WALLET_SELECT_DISPLAY.ADDRESS | WALLET_SELECT_DISPLAY.COPY | (targetPickerOpen ? WALLET_SELECT_DISPLAY.CHEVRON_UP : WALLET_SELECT_DISPLAY.CHEVRON_DN), restrictRowClickToChevron: true, onSelectClick: () => setTargetPickerOpen((open) => !open), label: "Change wallet", collapseKey: target.id }), targetPickerOpen && (_jsx("div", { role: "listbox", "aria-label": "Wallets that can add accounts", style: addAccountStyle.targetPickerList, children: targets.map((option) => (_jsx("button", { type: "button", role: "option", "aria-selected": option.id === target.id, onClick: () => { setPickedTarget(option.id); setTargetPickerOpen(false); }, style: addAccountStyle.targetOption(option.id === target.id), children: option.name }, option.id))) }))] })) : _jsx("strong", { style: addAccountStyle.targetName, children: target.name })] })), menuVisible && (_jsx("div", { style: addAccountStyle.listBleed, children: _jsx(AddWalletMenu, { onImportWallet: open('importWallet', SP.IMPORT_A_WALLET), onImportAccount: open('importAccount', SP.IMPORT_AN_ACCOUNT), onCreateAccount: open('createAccount', SP.CREATE_ACCOUNT), onConnectMetaMask: connect('connectMetaMask'), onConnectMeritExtension: host.connectApprover ? connect('connectMeritExtension') : undefined, onConnectHardware: openHardware, 
+    return (_jsxs("div", { style: addAccountStyle.screen, children: [menuVisible && target && targets.length > 1 && (_jsxs("div", { style: addAccountStyle.targetLine, children: [_jsx("span", { children: "Adding to" }), targets.length > 1 ? (_jsxs("div", { style: addAccountStyle.targetPickerAnchor, children: [_jsx(WalletSelectDropDown, { walletId: target.id, displayName: target.name, showDisplay: WALLET_SELECT_DISPLAY.ICON | WALLET_SELECT_DISPLAY.ADDRESS | WALLET_SELECT_DISPLAY.COPY | (targetPickerOpen ? WALLET_SELECT_DISPLAY.CHEVRON_UP : WALLET_SELECT_DISPLAY.CHEVRON_DN), restrictRowClickToChevron: true, onSelectClick: () => setTargetPickerOpen((open) => !open), label: "Change wallet", collapseKey: target.id }), targetPickerOpen && (_jsx("div", { role: "listbox", "aria-label": "Wallets that can add accounts", style: addAccountStyle.targetPickerList, children: targets.map((option) => (_jsx("button", { type: "button", role: "option", "aria-selected": option.id === target.id, onClick: () => { setPickedTarget(option.id); setTargetPickerOpen(false); }, style: addAccountStyle.targetOption(option.id === target.id), children: option.name }, option.id))) }))] })) : _jsx("strong", { style: addAccountStyle.targetName, children: target.name })] })), menuVisible && (_jsx("div", { style: addAccountStyle.listBleed, children: _jsx(AddWalletMenu, { onImportWallet: open('importWallet', SP.IMPORT_A_WALLET), onImportAccount: open('importAccount', SP.IMPORT_AN_ACCOUNT), onCreateAccount: open('createAccount', SP.CREATE_ACCOUNT), onConnectMetaMask: connect('connectMetaMask'), onConnectMeritExtension: host.connectApprover ? connect('connectMeritExtension') : undefined, onConnectHardware: connect('connectHardware'), 
                     // like the web app: connecting MetaMask, the Merit extension and a hardware wallet is done from the wallet list (the pill's chevron), not from this menu
-                    hide: { connectMetaMask: true, connectMeritExtension: true, connectHardware: true }, unavailable: unavailable, error: error }) })), flow.walletListVisible && (_jsxs("div", { style: addAccountStyle.listBleed, children: [_jsx(WalletListPanel, { onSelect: () => undefined, wallets: walletSlugs, connection: connection, fixed: nativeSlug, busy: disconnecting, onToggleConnection: toggleWallet }), error && _jsx("p", { style: addAccountStyle.error, children: error })] })), connectEntry && (_jsx(ConnectMetaMaskLeaf, { walletName: connectEntry === 'connectMetaMask' ? 'MetaMask' : 'Merit (Extension)', isConnecting: connecting, message: error, onRetry: () => attemptConnect(connectEntry, connectLeaf), waitingLong: waitingLong, onBringForward: host.bringWalletForward ? () => host.bringWalletForward(connectEntry) : undefined, onCancel: () => {
-                    host.cancelConnect?.(connectEntry);
-                    connectStop.current?.();
-                    closePanel(connectLeaf, 'AddAccountFlow:connectCancelled');
-                } })), flow.importAccountVisible && (_jsx(ImportAccountForm, { value: key, onChange: setKey, formatInvalid: formatInvalid, previewAddress: previewAddress, error: error, isImporting: busy, onImport: () => void run(() => host.importAccount(trimmed, target?.id)) })), flow.importWalletVisible && (_jsx(ImportWalletForm, { value: phrase, onChange: setPhrase, invalid: phraseInvalid, previewAddress: phrasePreview, error: error, isImporting: busy, onImport: () => void run(() => host.importWallet(normalizeMnemonic(phrase), target?.id)) })), flow.connectHardhatVisible && host.hardwareDevices && host.connectHardwareDevice && (_jsx(HardwareDeviceMenu, { devices: host.hardwareDevices, busy: busy, error: error, onChoose: (id) => void run(() => host.connectHardwareDevice(id)) })), flow.createAccountVisible && (_jsxs("div", { style: addAccountStyle.createBox, children: [_jsx("p", { style: addAccountStyle.hint, children: "Create a new account: a new address and private key, kept under this wallet." }), host.createProfile && (_jsxs("div", { style: addAccountStyle.profileBox, children: [logoUrl ? _jsx("img", { src: logoUrl, alt: "Account avatar preview", style: addAccountStyle.avatarPreview }) : null, _jsxs("label", { style: addAccountStyle.pickImageLabel, children: ["Select Preview Image", _jsx("input", { type: "file", accept: "image/*", "aria-label": "Account avatar", style: addAccountStyle.hiddenInput, onChange: (event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null })) })] }), _jsx("input", { "aria-label": "Account name", placeholder: "Name", value: profile.name, onChange: (event) => setProfile((p) => ({ ...p, name: event.target.value })), style: addAccountStyle.field }), _jsx("input", { "aria-label": "Account symbol", placeholder: "Symbol", value: profile.symbol, onChange: (event) => setProfile((p) => ({ ...p, symbol: event.target.value })), style: addAccountStyle.field }), _jsx("textarea", { "aria-label": "Account description", placeholder: "Description", rows: 3, value: profile.description, onChange: (event) => setProfile((p) => ({ ...p, description: event.target.value })), style: addAccountStyle.fieldTall })] })), error && _jsx("p", { style: addAccountStyle.error, children: error }), _jsx("button", { type: "button", disabled: busy, onClick: () => void run(() => host.createAccount(target?.id, host.createProfile ? profile : undefined)), style: addAccountStyle.primaryDim(busy), children: busy ? 'Creating…' : 'Create Account' })] }))] }));
+                    hide: { connectMetaMask: true, connectMeritExtension: true, connectHardware: true }, unavailable: unavailable, error: error }) })), flow.walletListVisible && (_jsxs("div", { style: addAccountStyle.listBleed, children: [_jsx(WalletListPanel, { onSelect: () => undefined, wallets: walletSlugs, connection: connection, fixed: nativeSlug, busy: disconnecting, onToggleConnection: toggleWallet }), error && _jsx("p", { style: addAccountStyle.error, children: error })] })), flow.importAccountVisible && (_jsx(ImportAccountForm, { value: key, onChange: setKey, formatInvalid: formatInvalid, previewAddress: previewAddress, error: error, isImporting: busy, onImport: () => void run(() => host.importAccount(trimmed, target?.id)) })), flow.importWalletVisible && (_jsx(ImportWalletForm, { value: phrase, onChange: setPhrase, invalid: phraseInvalid, previewAddress: phrasePreview, error: error, isImporting: busy, onImport: () => void run(() => host.importWallet(normalizeMnemonic(phrase), target?.id)) })), flow.createAccountVisible && (_jsxs("div", { style: addAccountStyle.createBox, children: [_jsx("p", { style: addAccountStyle.hint, children: "Create a new account: a new address and private key, kept under this wallet." }), host.createProfile && (_jsxs("div", { style: addAccountStyle.profileBox, children: [logoUrl ? _jsx("img", { src: logoUrl, alt: "Account avatar preview", style: addAccountStyle.avatarPreview }) : null, _jsxs("label", { style: addAccountStyle.pickImageLabel, children: ["Select Preview Image", _jsx("input", { type: "file", accept: "image/*", "aria-label": "Account avatar", style: addAccountStyle.hiddenInput, onChange: (event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null })) })] }), _jsx("input", { "aria-label": "Account name", placeholder: "Name", value: profile.name, onChange: (event) => setProfile((p) => ({ ...p, name: event.target.value })), style: addAccountStyle.field }), _jsx("input", { "aria-label": "Account symbol", placeholder: "Symbol", value: profile.symbol, onChange: (event) => setProfile((p) => ({ ...p, symbol: event.target.value })), style: addAccountStyle.field }), _jsx("textarea", { "aria-label": "Account description", placeholder: "Description", rows: 3, value: profile.description, onChange: (event) => setProfile((p) => ({ ...p, description: event.target.value })), style: addAccountStyle.fieldTall })] })), error && _jsx("p", { style: addAccountStyle.error, children: error }), _jsx("button", { type: "button", disabled: busy, onClick: () => void run(() => host.createAccount(target?.id, host.createProfile ? profile : undefined)), style: addAccountStyle.primaryDim(busy), children: busy ? 'Creating…' : 'Create Account' })] }))] }));
 }

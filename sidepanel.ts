@@ -9,7 +9,7 @@ import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger'
 import { startDappApprovals } from './src/dappApprovals';
 import { mountDebugOverlay } from './src/debugOverlay';
 import { remoteSelectionStore } from './src/remoteSelectionStore';
-import { extensionPeers } from './src/extensionPeers';
+import { extensionPeers, meritWebConnection } from './src/extensionPeers';
 import { traceFrom } from './src/debugTrace';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
 import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
@@ -471,11 +471,7 @@ async function renderWallet() {
       if (entry !== 'connectMetaMask') throw new Error('You are already in the Merit extension.');
       await connectExternalFromMenu(METAMASK_ID);
     },
-    // "Connect a hardware wallet" asks which device (the same screen as the web app). A Ledger works over USB; a Trezor needs the web app for now.
-    hardwareDevices: [
-      { id: LEDGER_ID, title: 'Ledger', subtitle: ledgerTransport.isSupported() ? 'Connect with USB' : undefined, unavailable: ledgerTransport.isSupported() ? undefined : 'This browser cannot talk to a USB device.' },
-      { id: 'hardware:trezor', title: 'Trezor', unavailable: 'Use the Trezor from the web app for now (its connection window cannot run inside the extension yet).' },
-    ],
+    // a hardware device's row of the wallet list. A Ledger works over USB; a Trezor needs the web app for now.
     connectHardwareDevice: async (id) => {
       if (id !== LEDGER_ID) throw new Error('That device is not available in the extension yet.');
       await connectExternalFromMenu(LEDGER_ID);
@@ -513,18 +509,13 @@ async function renderWallet() {
     peer.attach(true);
     peer.start();
     await openOrFocusApp();
-    if (peer.get().connected) return;
-    await new Promise<void>((resolve) => {
-      const done = () => {
-        stop();
-        clearTimeout(timer);
-        resolve();
-      };
-      const stop = peer.subscribe(() => {
-        if (peer.get().connected) done();
-      });
-      const timer = setTimeout(done, 15_000);
-    });
+    // 2026-11-06 (owner report: Connect timed out and nothing said why): the connection monitor waits for the web app (asking again every 2 s, so a page the person reloads meanwhile is noticed) and, when it never answers, says WHY
+    // (no page open / a page open but silent: reload it / disconnected): that sentence is the error the wallet list shows
+    const status = await meritWebConnection.waitForConnected(15_000);
+    if (!status.connected) throw new Error(status.reason);
+    // 2026-11-06 (owner rule S2, docs/design/meritConnectRules.txt): every Connect of a Merit wallet opens the Remote Account Selector, the one screen where accounts are chosen for the local list
+    const approver = extensionAuthenticatorRegistry.get('serverKeystore');
+    await (approver?.selectAccounts ?? approver?.connect)?.call(approver);
   }
   const accountProfileHost: AccountProfileHost = {
     canEdit: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),

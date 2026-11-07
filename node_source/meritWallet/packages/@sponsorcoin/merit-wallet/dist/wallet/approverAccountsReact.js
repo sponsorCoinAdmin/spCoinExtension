@@ -101,8 +101,21 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
             activeAddress,
             activeApproverId,
             host: { ...host, openInstall: host.openInstall ?? ((url) => platform.openUrl(url)) },
-            onConnect: (id) => void controller.connect(id).then(load),
-            onDisconnect: (id) => void controller.disconnect(id).then(load),
+            // a remote Merit wallet connects and disconnects the way the wallet list does (host.walletConnect / walletDisconnect); every other wallet through the controller
+            onConnect: (id) => {
+                const handled = host.walletConnect?.(id);
+                if (handled)
+                    void Promise.resolve(handled).catch((error) => setNotice(error instanceof Error && error.message ? error.message : 'The wallet could not be connected.')).then(load);
+                else
+                    void controller.connect(id).then(load);
+            },
+            onDisconnect: (id) => {
+                const handled = host.walletDisconnect?.(id);
+                if (handled)
+                    void Promise.resolve(handled).catch(() => undefined).then(load);
+                else
+                    void controller.disconnect(id).then(load);
+            },
             canConnect: (id) => typeof wallet.registry.get(id)?.connect === 'function',
             // "Add Account(s)": the wallet's own account selection (the native wallet holds its accounts here: nothing to ask)
             known,

@@ -1,4 +1,5 @@
 import { type Authenticator, type AuthenticatorId } from './authenticator';
+export declare function onInjectedWalletChanged(listener: () => void): () => void;
 export interface InjectedProvider {
     request(args: {
         method: string;

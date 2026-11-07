@@ -163,6 +163,8 @@ export interface MeritWalletProps {
     approverHost?: ApproverHost;
     /** 2026-11-01: the wallets this one is paired with (the other Merit wallet, a phone wallet app), by authenticator id, each a PeerConnection the host built from its own transport (src/peer/peerConnection.ts). A peer's Connected is its `connected` (reachable and logged on); a wallet with no peer keeps the approverHost's rule. */
     peers?: Record<string, PeerConnection>;
+    /** 2026-11-07 (owner request): one connection hook per REMOTE wallet, by authenticator id (web: useMeritExtension and useMetaMask; extension: useMeritWebApp and useMetaMask), each returning true while that wallet is connected. The component calls them every render in the object's key order, so the host passes ONE constant object (never built per render). A wallet's group in the account list reads Disconnected (red; Connect on hover) while its hook says false, and Add Account(s) while it says true. */
+    walletLinkHooks?: Record<string, () => boolean>;
     /** The banner above the account list (a failed connect). Derived when `approverHost` is given; a host may also set it. */
     accountListNotice?: string;
     /** The wallet that signs for the active account (derived from `wallet` when the host does not pass it), shown as the account header's tooltip. */

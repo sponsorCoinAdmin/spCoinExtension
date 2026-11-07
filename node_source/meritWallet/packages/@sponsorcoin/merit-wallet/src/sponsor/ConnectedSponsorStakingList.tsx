@@ -11,7 +11,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract, spCoinAccount } from '@sponsorcoin/spcoin-common/context';
-import { useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { STATUS } from '@sponsorcoin/spcoin-common/context';
+import { useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import {
   SponsorStakingListPanel,
   StakeConfirmPopup,
@@ -25,6 +26,7 @@ import { buildUnstakeReceipt, toMessageAccount, type ReceiptProfile } from '../r
 import { useTransactionReceipt } from '../receipt/useTransactionReceipt';
 import { useActiveAccountProfile } from '../swap/activeAccountProfile';
 import { loadSponsorTree, type ChainRead, type TreeRecipient } from './sponsorReads';
+import { assetListRowClass, listStyle } from '@sponsorcoin/spcoin-common/styles';
 import { unstakeSpCoin, type UnstakeSend } from './unstakeWalk';
 
 // The row's account pill and avatar are the same in every app (they were the web app's slots).
@@ -40,6 +42,13 @@ const ROW_ACCOUNT_CELL: SponsorStakingAccountCellSlot = ({ account, mode, label,
     addrPrePostSize={addrPrePostSize}
     addressSizeClassName={addressSizeClassName}
     panelGateId={null}
+    // 2026-11-07 (owner): the same scale as the account list's rows and the header's dropdown (list icon, name, pill and glyph sizes)
+    iconSizeClassName={assetListRowClass.iconSizeClassName_assetSelectDropDown}
+    pillHeightClassName={assetListRowClass.pillHeightClassName_assetSelectDropDown}
+    pillFontClassName={assetListRowClass.pillFontClassName_assetSelectDropDown}
+    nameLineClassName={assetListRowClass.nameLineClassName_assetSelectDropDown}
+    chevronSize={listStyle.glyphPx}
+    copyIconSize={listStyle.glyphPx}
   />
 );
 const ROW_AVATAR = (account: spCoinAccount) => <AccountAvatarWithOpen account={account} mode={SP_COIN_DISPLAY.RECIPIENT_ACCOUNT} className={panelPartClass.rowAvatar} />;
@@ -77,7 +86,8 @@ const noopRegisterRefresh = () => undefined;
 
 export default function ConnectedSponsorStakingList({ host }: { host: SponsorStakingHost }) {
   const useRegisterRefresh = host.useRegisterRefresh ?? noopRegisterRefresh;
-  const { exchangeContext } = useExchangeContext();
+  const { exchangeContext, setErrorMessage } = useExchangeContext();
+  const { openPanel } = usePanelTree();
   const isVisible = usePanelVisible(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST);
   const showReceipt = useTransactionReceipt();
   const activeProfile = useActiveAccountProfile();
@@ -143,7 +153,13 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
       setStakeInfoByAddress(info);
       snapshots.set(cacheKey, { recipients: rows, stakeInfoByAddress: info });
     } catch (err) {
-      if (mine === generation.current) setError(String((err as Error)?.message ?? err));
+      if (mine === generation.current) {
+        const text = String((err as Error)?.message ?? err);
+        // 2026-11-07 (owner: an RPC failure belongs on the Error page of MESSAGE_PANEL, not as raw text inside the table): the table keeps one short line, the full message is the panel's
+        setError('The recipient list could not be loaded.');
+        setErrorMessage({ errCode: 0, msg: text, source: 'SponsorStakingList', status: STATUS.MESSAGE_ERROR, reason: 'The recipient list could not be loaded.' });
+        openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'SponsorStakingList:loadFailed');
+      }
     } finally {
       if (mine === generation.current) setLoading(false);
     }

@@ -118,14 +118,36 @@ export function buildApproverGroups(input) {
         }
         return group;
     });
-    if (input.onAddAccounts)
-        for (const group of groups)
+    if (input.onAddAccounts) {
+        for (const group of groups) {
+            // a remote wallet whose connection hook says false: Disconnected (Connect on hover), no Add Account(s)
+            if (group.id !== host.nativeWalletId && host.walletLink?.(group.id) === false) {
+                group.walletLink = { connected: false, onConnect: () => input.onConnect(group.id) };
+                continue;
+            }
+            // 2026-11-07 (owner request, docs/design/meritConnectRules.txt G5, G7): a remote wallet (MetaMask, the other Merit wallet) that is connected: Connected, Disconnect on hover (instead of Add Account(s)). The wallet this app IS keeps Add Account(s) (G2).
+            if (group.id !== host.nativeWalletId && host.walletLink?.(group.id) === true) {
+                group.walletLink = { connected: true, onConnect: () => input.onConnect(group.id), onDisconnect: () => input.onDisconnect(group.id), ...(/metamask/i.test(group.id) ? {} : { onAddAccounts: () => input.onAddAccounts(group.id) }) /* 2026-11-07 (owner): MetaMask has no Add Account(s) at all, its accounts are chosen in MetaMask */ };
+                continue;
+            }
             group.addAccounts = { onClick: () => input.onAddAccounts(group.id) };
+        }
+    }
     const native = host.nativeWalletId;
+    // 2026-11-07 (owner, rules W4): a wallet whose box is cleared on the wallet list is not on this list at all
+    const checked = groups.filter((g) => g.id === native || host.isListed?.(g.id) !== false);
     const kept = input.showDisconnected
-        ? groups
-        : groups.filter((g) => {
-            if (g.id === native || g.isActiveSource)
+        ? checked
+        : checked.filter((g) => {
+            if (g.id === native)
+                return true;
+            // a wallet whose box is checked stays on the list, with its Connect, even with no accounts
+            if (host.isListed?.(g.id) === true)
+                return true;
+            if (g.isActiveSource)
+                return true;
+            // a remote wallet with a connection hook stays on the list, Disconnected or not
+            if (host.walletLink?.(g.id) !== undefined)
                 return true;
             // 2026-11-06 (owner design): a wallet whose accounts are KEPT (MetaMask) stays on the list with its disconnected accounts after a disconnect
             const keeps = (input.known?.[g.id]?.length ?? 0) > 0;

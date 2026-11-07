@@ -10,17 +10,21 @@ import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { STATUS } from '@sponsorcoin/spcoin-common/context';
+import { useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { SponsorStakingListPanel, StakeConfirmPopup, formatTokenAmount, } from '@sponsorcoin/spcoin-panels';
 import { AccountAvatarWithOpen, AccountSelectDropDownHosted, ACCOUNT_SELECT_DISPLAY, LoadingText } from '@sponsorcoin/spcoin-panels';
 import { buildUnstakeReceipt, toMessageAccount } from '../receipt/transactionReceipts';
 import { useTransactionReceipt } from '../receipt/useTransactionReceipt';
 import { useActiveAccountProfile } from '../swap/activeAccountProfile';
 import { loadSponsorTree } from './sponsorReads';
+import { assetListRowClass, listStyle } from '@sponsorcoin/spcoin-common/styles';
 import { unstakeSpCoin } from './unstakeWalk';
 // The row's account pill and avatar are the same in every app (they were the web app's slots).
 const ROW_ACCOUNT_SELECT_DISPLAY = ACCOUNT_SELECT_DISPLAY.ICON | ACCOUNT_SELECT_DISPLAY.NAME | ACCOUNT_SELECT_DISPLAY.ADDRESS | ACCOUNT_SELECT_DISPLAY.COPY;
-const ROW_ACCOUNT_CELL = ({ account, mode, label, addrPrePostSize, addressSizeClassName, onAddressClick }) => (_jsx(AccountSelectDropDownHosted, { recipientAccount: account, mode: mode, label: label, showDisplay: ROW_ACCOUNT_SELECT_DISPLAY, onSelectClick: (e) => e.preventDefault(), onAddressClick: onAddressClick, addrPrePostSize: addrPrePostSize, addressSizeClassName: addressSizeClassName, panelGateId: null }));
+const ROW_ACCOUNT_CELL = ({ account, mode, label, addrPrePostSize, addressSizeClassName, onAddressClick }) => (_jsx(AccountSelectDropDownHosted, { recipientAccount: account, mode: mode, label: label, showDisplay: ROW_ACCOUNT_SELECT_DISPLAY, onSelectClick: (e) => e.preventDefault(), onAddressClick: onAddressClick, addrPrePostSize: addrPrePostSize, addressSizeClassName: addressSizeClassName, panelGateId: null, 
+    // 2026-11-07 (owner): the same scale as the account list's rows and the header's dropdown (list icon, name, pill and glyph sizes)
+    iconSizeClassName: assetListRowClass.iconSizeClassName_assetSelectDropDown, pillHeightClassName: assetListRowClass.pillHeightClassName_assetSelectDropDown, pillFontClassName: assetListRowClass.pillFontClassName_assetSelectDropDown, nameLineClassName: assetListRowClass.nameLineClassName_assetSelectDropDown, chevronSize: listStyle.glyphPx, copyIconSize: listStyle.glyphPx }));
 const ROW_AVATAR = (account) => _jsx(AccountAvatarWithOpen, { account: account, mode: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT, className: panelPartClass.rowAvatar });
 // The last list seen per (contract, sponsor): reopening the panel paints it at once and then refreshes (the web app's list cache did the same).
 const snapshots = new Map();
@@ -30,7 +34,8 @@ function account(profile) {
 const noopRegisterRefresh = () => undefined;
 export default function ConnectedSponsorStakingList({ host }) {
     const useRegisterRefresh = host.useRegisterRefresh ?? noopRegisterRefresh;
-    const { exchangeContext } = useExchangeContext();
+    const { exchangeContext, setErrorMessage } = useExchangeContext();
+    const { openPanel } = usePanelTree();
     const isVisible = usePanelVisible(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST);
     const showReceipt = useTransactionReceipt();
     const activeProfile = useActiveAccountProfile();
@@ -94,8 +99,13 @@ export default function ConnectedSponsorStakingList({ host }) {
             snapshots.set(cacheKey, { recipients: rows, stakeInfoByAddress: info });
         }
         catch (err) {
-            if (mine === generation.current)
-                setError(String(err?.message ?? err));
+            if (mine === generation.current) {
+                const text = String(err?.message ?? err);
+                // 2026-11-07 (owner: an RPC failure belongs on the Error page of MESSAGE_PANEL, not as raw text inside the table): the table keeps one short line, the full message is the panel's
+                setError('The recipient list could not be loaded.');
+                setErrorMessage({ errCode: 0, msg: text, source: 'SponsorStakingList', status: STATUS.MESSAGE_ERROR, reason: 'The recipient list could not be loaded.' });
+                openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'SponsorStakingList:loadFailed');
+            }
         }
         finally {
             if (mine === generation.current)

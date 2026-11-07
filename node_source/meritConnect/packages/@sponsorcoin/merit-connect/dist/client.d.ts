@@ -65,6 +65,8 @@ export declare function createMeritConnect(sides: Partial<Record<Side, SideConfi
         refresh?: boolean;
     }) => Promise<Connections>;
     requestAccounts: (side: Side) => Promise<string[]>;
+    /** Connect this wallet to the other: its own Connect page (Cancel / Connect), no accounts. */
+    requestConnection: (side: Side) => Promise<void>;
     handshake: (side: Side, options?: {
         force?: boolean;
     }) => Promise<HandshakeResult>;

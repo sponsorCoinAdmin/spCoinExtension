@@ -61,6 +61,8 @@ interface Props {
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onFieldBlur: (field: AccountFormField) => void;
   onRevert: () => void;
+  /** The words of the second button. Default "Revert Changes"; the Add New Account screen says "Cancel". */
+  revertLabel?: string;
 }
 
 export default function CreateAccountFormPanel({
@@ -97,6 +99,7 @@ export default function CreateAccountFormPanel({
   onChange,
   onFieldBlur,
   onRevert,
+  revertLabel = 'Revert Changes',
 }: Props) {
   const [hoveredInput, setHoveredInput] = useState<string | null>(null);
   const [hoveringLinkTextField, setHoveringLinkTextField] = useState<
@@ -371,11 +374,9 @@ export default function CreateAccountFormPanel({
                     }
                     disabled={disableSubmit}
                     onMouseEnter={() => {
-                      if (noChangesToUpdate) return;
                       setHoverTarget('createAccount');
                     }}
                     onMouseLeave={() => {
-                      if (noChangesToUpdate) return;
                       setHoverTarget(null);
                     }}
                   >
@@ -396,15 +397,13 @@ export default function CreateAccountFormPanel({
                       onRevert();
                     }}
                     onMouseEnter={() => {
-                      if (isRevertNoop) return;
                       setHoverTarget('revertChanges');
                     }}
                     onMouseLeave={() => {
-                      if (isRevertNoop) return;
                       setHoverTarget(null);
                     }}
                   >
-                    Revert Changes
+                    {revertLabel}
                   </button>
                 </div>
               )}

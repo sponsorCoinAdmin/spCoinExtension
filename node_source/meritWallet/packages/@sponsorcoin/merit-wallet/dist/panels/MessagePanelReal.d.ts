@@ -20,6 +20,9 @@ export interface MessagePanelPendingApproval {
     busy: boolean;
     onApprove: (password?: string) => void;
     onReject: () => void;
+    /** 2026-11-07: the words of the two buttons when a message is a question that is not a write ("Continue" / "Cancel"). Default Approve / Reject. */
+    approveLabel?: string;
+    rejectLabel?: string;
 }
 export interface MessagePanelRealProps {
     panelId?: SP_COIN_DISPLAY;

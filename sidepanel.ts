@@ -4,6 +4,7 @@ import './src/tailwind.css';
 import { bundledFeedData } from './src/bundledFeeds';
 import { extensionAuthenticatorRegistry, extensionWallet, localVaultAuthenticator } from './src/localVaultAuthenticator';
 import { METAMASK_ID } from './src/metamaskAuthenticator';
+import { extensionWalletLinkHooks } from './src/walletLinkHooks';
 import { isExternalAccount } from './src/externalAccounts';
 import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger';
 import { startDappApprovals } from './src/dappApprovals';
@@ -513,9 +514,9 @@ async function renderWallet() {
     // (no page open / a page open but silent: reload it / disconnected): that sentence is the error the wallet list shows
     const status = await meritWebConnection.waitForConnected(15_000);
     if (!status.connected) throw new Error(status.reason);
-    // 2026-11-06 (owner rule S2, docs/design/meritConnectRules.txt): every Connect of a Merit wallet opens the Remote Account Selector, the one screen where accounts are chosen for the local list
+    // 2026-11-07 (owner: Connect has its own page, like MetaMask; rules S2 and G4): connecting is the web app's Connect page (Cancel / Connect), no account choice; the accounts are chosen with Add Account(s)
     const approver = extensionAuthenticatorRegistry.get('serverKeystore');
-    await (approver?.selectAccounts ?? approver?.connect)?.call(approver);
+    await approver?.connect?.();
   }
   const accountProfileHost: AccountProfileHost = {
     canEdit: (address) => !!vaultRows?.some((row) => row.address.toLowerCase() === address.toLowerCase()),
@@ -919,6 +920,8 @@ async function renderWallet() {
                 },
                 // 2026-11-01: the wallets this one is paired with, checked by the package (see src/extensionPeers.ts)
                 peers: extensionPeers,
+                // each remote wallet's connection hook (useMeritWebApp, useMetaMask): the account list's Disconnected / Add Account(s) badges
+                walletLinkHooks: extensionWalletLinkHooks,
                 // 2026-09-29, stage 8 — tokenRows/recipientRows no longer passed
                 // explicitly; MeritWallet self-fetches them via these 4 props
                 // instead (same underlying spcoin-feeds calls this file used to

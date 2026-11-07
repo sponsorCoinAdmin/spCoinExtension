@@ -41,7 +41,7 @@ import { getAddress, formatUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import { registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
-import { StakeConfirmPopup } from '@sponsorcoin/spcoin-panels';
+import { StakeConfirmPopup, useWalletListed } from '@sponsorcoin/spcoin-panels';
 import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
@@ -1932,6 +1932,10 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // the panel, so the popup's owner (the Sponsor trade button's confirm flow) is not unmounted by the panel opening. Switching between a bare element and a
     // Fragment instead would remount the whole tab.
     const showTabBody = body == null || (stepContentUp && body === messageOverlay);
+    // the Rewards list opened by Unstake: it self-gates on SPONSOR_STAKING_LIST and is drawn inside WALLET_RADIO_PANELS (below the tab strip), skipped while the login page shows (the flag is remembered across sessions)
+    const stakingListNode = !passwordPanelShowing
+        ? (stakingHost ? React.createElement(ConnectedSponsorStakingList, { host: stakingHost }) : React.createElement(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false }))
+        : null;
     const bodyWithTab = React.createElement(React.Fragment, null, body, showTabBody ? gatedTabBody : null);
     // Matches the real app's own per-tab titles (useActiveWalletPanelTitle.tsx,
     // its `sponsorshipPanelVisible`/`tradingTabVisible`/`sendTabVisible`/
@@ -1955,40 +1959,44 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
             : approvalOverlay
                 ? approvalPage.title
                 : remoteSelection
-                    ? `Remote ${remoteSelection.caller} Account Selector`
+                    // 2026-11-07 (owner): "Add Merit <app> Account(s)", the app whose accounts the person is choosing from (this one: the extension's vault, or the web app)
+                    ? `Add Merit ${nativeWalletId === 'localVault' ? 'Extension' : 'Web App'} Account(s)`
                     : walletListLeafVisible
                         ? walletListScreenTitle
-                        : addMenuVisible && panelTreeListOpen
-                            ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
-                            : panelTreeVisible
-                                ? 'Panel Tree'
-                                : meritInfoVisible
-                                    ? 'About Merit Wallet'
-                                    : accountDetailVisible
-                                        ? 'Account Details'
-                                        : tokenDetailVisible
-                                            ? 'Token Details'
-                                            : networkDetailVisible
-                                                ? 'Network Details'
-                                                : activeListMode === 'sellToken' ||
-                                                    activeListMode === 'buyToken' ||
-                                                    activeListMode === 'sendToken'
-                                                    ? 'Select a Token'
-                                                    : activeListMode === 'sendRecipient'
-                                                        ? 'Select Recipient'
-                                                        : activeListMode === 'account'
-                                                            ? 'Active Account Selection'
-                                                            : activeListMode === 'network'
-                                                                ? 'Select Network'
-                                                                : activeTab === 'SWAP'
-                                                                    ? 'Trading Station'
-                                                                    : activeTab === 'SEND'
-                                                                        ? 'Send Token'
-                                                                        : activeTab === 'SPONSOR'
-                                                                            ? 'Add Sponsorship'
-                                                                            : activeTab === 'REWARDS'
-                                                                                ? 'Rewards Management'
-                                                                                : 'Wallet Config';
+                        : createAccountLeafVisible && addMenuVisible && panelTreeListOpen
+                            // 2026-11-07 (owner): Create a Merit Account is the Account Details screen in add mode
+                            ? 'Add New Account'
+                            : addMenuVisible && panelTreeListOpen
+                                ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
+                                : panelTreeVisible
+                                    ? 'Panel Tree'
+                                    : meritInfoVisible
+                                        ? 'About Merit Wallet'
+                                        : accountDetailVisible
+                                            ? 'Account Details'
+                                            : tokenDetailVisible
+                                                ? 'Token Details'
+                                                : networkDetailVisible
+                                                    ? 'Network Details'
+                                                    : activeListMode === 'sellToken' ||
+                                                        activeListMode === 'buyToken' ||
+                                                        activeListMode === 'sendToken'
+                                                        ? 'Select a Token'
+                                                        : activeListMode === 'sendRecipient'
+                                                            ? 'Select Recipient'
+                                                            : activeListMode === 'account'
+                                                                ? 'Active Account Selection'
+                                                                : activeListMode === 'network'
+                                                                    ? 'Select Network'
+                                                                    : activeTab === 'SWAP'
+                                                                        ? 'Trading Station'
+                                                                        : activeTab === 'SEND'
+                                                                            ? 'Send Token'
+                                                                            : activeTab === 'SPONSOR'
+                                                                                ? 'Add Sponsorship'
+                                                                                : activeTab === 'REWARDS'
+                                                                                    ? 'Rewards Management'
+                                                                                    : 'Wallet Config';
     return (_jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.LOGIN_HEADER, lazyLoad: false, children: _jsx(LoginHeader, { title: recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login', onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_NETWORK_HEADER, lazyLoad: false, children: _jsx(WalletNetworkHeader, { mode: "normal", leftSlot: _jsx(NetworkSelectDropDown, { label: activeNetworkRow?.name, symbol: activeChainInfo?.symbol ?? activeNetworkRow?.symbol, name: activeChainInfo?.name ?? activeNetworkRow?.name, id: activeNetworkRow?.id, 
                                     // 2026-09-16, on live report ("the NetworkSelectDropDown is
                                     // not showing the network icon in the WALLET_NETWORK_HEADER")
@@ -2073,7 +2081,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                                 // proven correct for account/network.
                                                                 : activeListMode || activeChild != null
                                                                     ? () => setActiveList(null)
-                                                                    : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && walletListVisible && !addMenuVisible && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsx(WalletRadioPanels, { children: bodyWithTab })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession }), !passwordPanelShowing && (stakingHost ? _jsx(ConnectedSponsorStakingList, { host: stakingHost }) : _jsx(SponsorStakingListPanel, { recipients: [], stakeInfoByAddress: {}, decimals: 18, loading: false }))] }) }) }) }));
+                                                                    : () => closePanel('MeritWallet:back') }) })), _jsxs(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: [showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && walletListVisible && !addMenuVisible && !walletListLeafVisible && (_jsx("div", { id: "WALLET_SELECT_ROW", style: walletFrameStyle.walletSelectRow, children: _jsx(WalletSelectDropDownHosted, { walletId: pillWalletId, displayName: pillWalletId ? walletName(pillWalletId) : undefined, baseUrl: walletAssetBaseUrl }) })), _jsxs(WalletRadioPanels, { children: [bodyWithTab, stakingListNode] })] })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession })] }) }) }) }));
 }
 let warnedNoAccountSource = false;
 /**
@@ -2092,6 +2100,24 @@ function MeritWalletWired(props) {
     }, [props.wallet, props.accountGroups, props.chainId]);
     const derived = useWalletDerivedProps(props.wallet, props.activeAccountAddress, props.walletDerives);
     const peerStates = usePeerStates(props.peers);
+    // the host's connection hooks (props.walletLinkHooks): a constant object, so the hooks run in the same order every render
+    const walletLinks = {};
+    /* eslint-disable react-hooks/rules-of-hooks */
+    for (const [id, useLink] of Object.entries(props.walletLinkHooks ?? {}))
+        walletLinks[id] = useLink();
+    /* eslint-enable react-hooks/rules-of-hooks */
+    // 2026-11-07 (owner: Connected must come from the remote, not from the click): while a Connect of a remote wallet waits for the person's answer THERE, its badge stays Disconnected, whatever the link flag says meanwhile
+    const [connectingWallets, setConnectingWallets] = React.useState({});
+    // 2026-11-07 (owner, rules W4): the wallets CHECKED on the wallet list are the groups on the Active Account Selection page
+    const listedWallets = useWalletListed();
+    const listedKey = JSON.stringify(listedWallets);
+    for (const id of Object.keys(walletLinks))
+        if (connectingWallets[id])
+            walletLinks[id] = false;
+    const walletLinksKey = JSON.stringify(walletLinks);
+    // read at click time, so a host that rebuilds these each render does not rebuild the approver list
+    const approversRef = React.useRef(undefined);
+    const addHostRef = React.useRef(undefined);
     const { openPanel: openWalletListPanel } = usePanelTree();
     // the running app's own "Add Account(s)": the Add menu (Add Wallet Authenticator or Account)
     const openAddMenu = useCallback(() => {
@@ -2100,16 +2126,64 @@ function MeritWalletWired(props) {
     const approverHost = useMemo(() => {
         if (!props.approverHost)
             return props.approverHost;
-        const withList = { ...props.approverHost, openAddMenu: props.approverHost.openAddMenu ?? openAddMenu };
+        const withList = {
+            ...props.approverHost,
+            openAddMenu: props.approverHost.openAddMenu ?? openAddMenu,
+            walletLink: (id) => (id in walletLinks ? walletLinks[id] : props.approverHost.walletLink?.(id)),
+            isListed: (id) => {
+                const slug = Object.keys(WALLET_SLUG_ID).find((s) => WALLET_SLUG_ID[s] === id);
+                return slug && id !== (props.nativeWalletId ?? props.approverHost.nativeWalletId) ? !!listedWallets[slug] : undefined;
+            },
+            // 2026-11-07 (rules G4, G6): the OTHER Merit wallet's group badge connects and disconnects it exactly as the wallet list does
+            walletConnect: (id) => {
+                const addHost = addHostRef.current;
+                if (!addHost || id === (props.nativeWalletId ?? props.approverHost.nativeWalletId))
+                    return undefined;
+                // 2026-11-07 (owner, rules W5): what the wallet list's Connect used to do now happens here. Every call is made in the click itself (a browser lets a page open another wallet's window, or its device chooser, only in answer to one).
+                // MetaMask: the wallet-level connect (no account becomes active, no screen changes)
+                if (id === WALLET_SLUG_ID.metamask && addHost.connectWallet)
+                    return addHost.connectWallet('metamask');
+                // a hardware wallet: its device chooser (Chrome's "wants to connect to a HID device")
+                if (id.startsWith('hardware:')) {
+                    if (addHost.connectHardwareDevice)
+                        return addHost.connectHardwareDevice(id);
+                    return addHost.connectApprover?.('connectHardware');
+                }
+                if (!addHost.connectApprover)
+                    return undefined;
+                const entry = id === WALLET_SLUG_ID.meritExtension ? 'connectMeritExtension' : id === WALLET_SLUG_ID.merit ? 'connectMeritWeb' : undefined;
+                if (!entry)
+                    return undefined;
+                if (entry === 'connectMeritExtension')
+                    addHost.bringWalletForward?.('connectMeritExtension');
+                setConnectingWallets((c) => ({ ...c, [id]: true }));
+                return Promise.resolve(addHost.connectApprover(entry))
+                    // the person cancelled (or it failed) there: the link flag a connect sets on the way is undone, the wallet was never connected
+                    .catch((error) => { props.peers?.[id]?.detach(); throw error; })
+                    .finally(() => setConnectingWallets((c) => ({ ...c, [id]: false })));
+            },
+            walletDisconnect: (id) => {
+                const peer = props.peers?.[id];
+                if (!peer || id === (props.nativeWalletId ?? props.approverHost.nativeWalletId))
+                    return undefined;
+                peer.detach();
+                // a peer this wallet has no backend for (the extension's Merit (Web App)) has no permission to revoke: the link flag is the whole disconnect
+                return props.wallet?.backend(id) ? approversRef.current?.controller?.disconnect(id) ?? Promise.resolve() : Promise.resolve();
+            },
+        };
         return props.peers
             ? {
                 ...withList,
                 isConnected: (id) => (id in peerStates ? peerStates[id].connected : props.approverHost.isConnected?.(id)),
             }
             : withList;
-    }, [props.approverHost, props.peers, peerStates, openAddMenu]);
+    }, 
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- walletLinks is rebuilt every render; walletLinksKey is its value
+    [props.approverHost, props.peers, props.wallet, props.nativeWalletId, peerStates, openAddMenu, walletLinksKey, listedKey]);
     const wantsAccounts = !!approverHost && (props.walletDerives ?? ALL_WALLET_DERIVATIONS).includes('accounts');
     const approvers = useApproverAccounts(wantsAccounts ? props.wallet : undefined, approverHost, props.activeAccountAddress, platform);
+    approversRef.current = approvers;
+    addHostRef.current = props.addAccountHost;
     // 2026-11-06 (owner): the other wallet took accounts out of this wallet's list: a MESSAGE_PANEL popup with the accounts' icons
     useAccountNoticeMessagePanel(approverHost?.describeAccount);
     const accountDerived = approvers.groups

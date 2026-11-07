@@ -41,6 +41,8 @@ interface Props {
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     onFieldBlur: (field: AccountFormField) => void;
     onRevert: () => void;
+    /** The words of the second button. Default "Revert Changes"; the Add New Account screen says "Cancel". */
+    revertLabel?: string;
 }
-export default function CreateAccountFormPanel({ panelMarginClass, accountPanelBorderClass, contentWidthClass, idPrefix, formHeading, topRowContent, connected, publicKey, publicKeyLocked, roleTable, privateKeyRow, connectButton, footer, formData, errors, descriptionTextareaRef, inputLocked, isLoading, loadingInputMessage, isSaving, isEditMode, submitLabel, hasUnsavedChanges, canCreateMissingAccount, disableSubmit, disableRevert, isRevertNoop, errorValueDisplay, onPublicKeyChange, onPublicKeyBlur, onChange, onFieldBlur, onRevert, }: Props): React.JSX.Element;
+export default function CreateAccountFormPanel({ panelMarginClass, accountPanelBorderClass, contentWidthClass, idPrefix, formHeading, topRowContent, connected, publicKey, publicKeyLocked, roleTable, privateKeyRow, connectButton, footer, formData, errors, descriptionTextareaRef, inputLocked, isLoading, loadingInputMessage, isSaving, isEditMode, submitLabel, hasUnsavedChanges, canCreateMissingAccount, disableSubmit, disableRevert, isRevertNoop, errorValueDisplay, onPublicKeyChange, onPublicKeyBlur, onChange, onFieldBlur, onRevert, revertLabel, }: Props): React.JSX.Element;
 export {};

@@ -68,6 +68,9 @@ export interface MessagePanelPendingApproval {
   busy: boolean;
   onApprove: (password?: string) => void;
   onReject: () => void;
+  /** 2026-11-07: the words of the two buttons when a message is a question that is not a write ("Continue" / "Cancel"). Default Approve / Reject. */
+  approveLabel?: string;
+  rejectLabel?: string;
 }
 
 export interface MessagePanelRealProps {
@@ -106,7 +109,7 @@ function ApprovalDecisionRow({ pendingApproval }: { pendingApproval: MessagePane
       )}
       <div style={transactionConfirmPanelStyle.div14}>
         <button type="button" onClick={onReject} disabled={busy} style={transactionConfirmPanelStyle.button(busy)}>
-          Reject
+          {pendingApproval.rejectLabel ?? 'Reject'}
         </button>
         <button
           type="button"
@@ -114,7 +117,7 @@ function ApprovalDecisionRow({ pendingApproval }: { pendingApproval: MessagePane
           disabled={!canApprove}
           style={transactionConfirmPanelStyle.button2(canApprove)}
         >
-          {busy ? 'Signing…' : 'Approve'}
+          {busy ? (pendingApproval.approveLabel ? 'Working…' : 'Signing…') : pendingApproval.approveLabel ?? 'Approve'}
         </button>
       </div>
     </div>

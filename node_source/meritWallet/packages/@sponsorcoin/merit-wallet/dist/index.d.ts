@@ -39,6 +39,8 @@ export { readContractDirect, toRunScriptShape, createDirectReadStep } from './ch
 export type { DirectReadParams, DirectReadStepParams } from './chain/directReads';
 export { MERIT_RDNS, discoverWallets, findMeritWallet, createInjectedWalletApi } from './provider/injectedWallet';
 export type { Eip1193Provider, Eip6963Detail, DiscoveryWindow, InjectedWalletApi } from './provider/injectedWallet';
+export { useMetaMask, METAMASK_RDNS, type UseMetaMask } from './provider/useMetaMask';
+export { useMeritLink, type MeritLinkSource } from './provider/useMeritLink';
 export { createQuoteClient, QuoteServiceError } from './swap/quoteClient';
 export type { QuoteRequest, QuoteClient } from './swap/quoteClient';
 export { default as TokenPanel } from './TokenPanel';

@@ -42,6 +42,8 @@ export interface ResponderHandlers {
   offered(): string[] | Promise<string[]>;
   /** Optional: the shared list was set from outside while a selection may be open (the caller synced it); the open selector shows these as connected. */
   refreshSelection?(selected: string[]): void;
+  /** 2026-11-07: the person confirms connecting the OTHER wallet to this one (its own page: Cancel / Connect, no account choice). Resolves when confirmed; throws a MeritConnectError to refuse. Absent: the connection is accepted without a page. */
+  confirmConnection?(request: { rid: string }): Promise<void>;
   /** Open the wallet's account selector; resolves when it is closed. */
   openSelection(selection: SelectionRequest): Promise<void>;
   /** Approve (the person decides) and perform a signature or a transaction; throws a MeritConnectError to refuse. Absent: those methods answer 4200. */
@@ -137,6 +139,10 @@ export function createResponder(deps: ResponderDeps) {
       }
       case 'eth_requestAccounts':
         return selectAccounts(request);
+      // 2026-11-07 (owner: Connect has its own page, like MetaMask): connecting the wallet is a confirmation here; the accounts are chosen separately (eth_requestAccounts) and kept in step by merit_syncAccounts
+      case 'merit_requestConnection':
+        await handlers.confirmConnection?.({ rid: request.rid });
+        return handlers.shared();
       case 'personal_sign':
       case 'eth_signTypedData_v4':
       case 'eth_sendTransaction': {

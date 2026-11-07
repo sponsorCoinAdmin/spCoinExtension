@@ -174,6 +174,16 @@ function createSideClient(side, config) {
         await config.setShared(accounts);
         return accounts;
     }
+    /** 2026-11-07 (owner: Connect has its own page, like MetaMask): connect THIS wallet to the other. The other wallet shows its own Connect page (Cancel / Connect); no account is chosen or changed here. Rejects when the person cancels there. */
+    async function requestConnection() {
+        const rid = config.newRid();
+        trace('request', { side, rid, method: 'merit_requestConnection' });
+        const reply = await config.request('merit_requestConnection', [], rid);
+        if (!reply.ok) {
+            trace('failed', { side, rid, method: 'merit_requestConnection', code: reply.error.code });
+            throw new MeritConnectError(reply.error.code, reply.error.message, reply.error.data);
+        }
+    }
     /**
      * Change one account's state from THIS wallet. Connect: the other wallet is told (it must be reachable) and answers with what really is connected. Disconnect: the account STAYS in this list as disconnected; the other wallet is told when it can
      * be (when it cannot, the next handshake tells it: this wallet's choice wins).
@@ -231,7 +241,7 @@ function createSideClient(side, config) {
             trace('revoke', { side, rid, failed: error instanceof Error ? error.message : String(error) });
         }
     }
-    return { handshake, fetchMeritConnections, requestAccounts, revoke, setAccountConnected, listAccounts };
+    return { handshake, fetchMeritConnections, requestAccounts, requestConnection, revoke, setAccountConnected, listAccounts };
 }
 /** The standard calls, for the sides this host can reach. A side that was not configured throws 4900. */
 export function createMeritConnect(sides) {
@@ -250,6 +260,8 @@ export function createMeritConnect(sides) {
     return {
         fetchMeritConnections: async (side, options) => client(side).fetchMeritConnections(options),
         requestAccounts: async (side) => client(side).requestAccounts(),
+        /** Connect this wallet to the other: its own Connect page (Cancel / Connect), no accounts. */
+        requestConnection: async (side) => client(side).requestConnection(),
         handshake: async (side, options) => client(side).handshake(options),
         revoke: async (side) => client(side).revoke(),
         /** Connect or disconnect ONE account from this wallet (a disconnected account stays in the list). */

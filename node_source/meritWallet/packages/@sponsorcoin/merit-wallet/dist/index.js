@@ -31,6 +31,8 @@ export { validateLogin, isLoginGateClosed, deriveLoginState, resolveLoginState }
 export { useWalletSession } from './session/walletSessionReact';
 export { readContractDirect, toRunScriptShape, createDirectReadStep } from './chain/directReads';
 export { MERIT_RDNS, discoverWallets, findMeritWallet, createInjectedWalletApi } from './provider/injectedWallet';
+export { useMetaMask, METAMASK_RDNS } from './provider/useMetaMask';
+export { useMeritLink } from './provider/useMeritLink';
 export { createQuoteClient, QuoteServiceError } from './swap/quoteClient';
 export { default as TokenPanel } from './TokenPanel';
 export { tokenDetailRows, CopyBtn } from './TokenSlotPanels';

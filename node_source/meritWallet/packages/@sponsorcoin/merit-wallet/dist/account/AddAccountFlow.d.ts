@@ -8,6 +8,9 @@ export interface NewAccountProfile {
     name: string;
     symbol: string;
     description: string;
+    /** The Add New Account screen is the Account Details table, which also has these two rows; a host that does not keep them ignores them. */
+    email?: string;
+    website?: string;
     /** The picked avatar image, if any. */
     logo: File | null;
 }

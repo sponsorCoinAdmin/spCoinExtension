@@ -12,6 +12,8 @@ export interface MeritConnectionClient {
     }>>;
     setAccountConnected(side: never, address: string, connected: boolean): Promise<void>;
     requestAccounts(side: never): Promise<string[]>;
+    /** The other wallet's Connect page (Cancel / Connect), no accounts. Absent: connect() opens the account selector, as before. */
+    requestConnection?(side: never): Promise<void>;
     revoke(side: never): Promise<void>;
     onConnectionChange(side: never, listener: () => void): () => void;
 }

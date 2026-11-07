@@ -6,6 +6,12 @@
 // connect() is eth_requestAccounts (the wallet's own account picker, so MetaMask shows which accounts to share), accounts() is eth_accounts (no popup), disconnect() revokes the site's permission when the wallet supports that, signMessage() is personal_sign with the
 // message as UTF-8 hex, sendTransaction() is eth_sendTransaction after making sure the wallet is on the right chain.
 import { AuthenticatorError, } from './authenticator';
+/** Told after this page disconnects an injected wallet (its connection state changed without the wallet saying so). An in-package bus, not a window event, so this file touches no device (test/platformBoundary). */
+const injectedChangedListeners = new Set();
+export function onInjectedWalletChanged(listener) {
+    injectedChangedListeners.add(listener);
+    return () => injectedChangedListeners.delete(listener);
+}
 const utf8Hex = (text) => `0x${Array.from(new TextEncoder().encode(text), (b) => b.toString(16).padStart(2, '0')).join('')}`;
 /** EIP-1193 / JSON-RPC error codes -> the wallet's error set. Anything not recognised is rethrown as it came. */
 export function translateProviderError(error, id, label) {
@@ -101,6 +107,10 @@ export function createInjectedAuthenticator({ id, label, displayName, badge, ico
                 if (code === -32601 || code === 4200)
                     return;
                 throw error;
+            }
+            finally {
+                // 2026-11-07 (owner: Disconnect did not switch to Disconnected): MetaMask does not always emit accountsChanged for a revoke, so the page's own disconnect says it changed (useMetaMask re-reads eth_accounts on it)
+                injectedChangedListeners.forEach((listener) => listener());
             }
         },
         async signMessage(address, message) {

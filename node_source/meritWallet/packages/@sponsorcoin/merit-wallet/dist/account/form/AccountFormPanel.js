@@ -12,7 +12,7 @@ import { Check } from 'lucide-react';
 import { msTableTw } from '@sponsorcoin/spcoin-panels';
 import { FIELD_PLACEHOLDERS, FIELD_TITLES, getAbsoluteFieldError, shouldOpenLinkFromInputClick, toPreviewHref, } from './formHelpers';
 import CopyIcon from './CopyIcon';
-export default function CreateAccountFormPanel({ panelMarginClass, accountPanelBorderClass, contentWidthClass = 'max-w-[56rem]', idPrefix = '', formHeading = 'Account Meta Data', topRowContent, connected, publicKey, publicKeyLocked = false, roleTable, privateKeyRow, connectButton, footer, formData, errors, descriptionTextareaRef, inputLocked, isLoading, loadingInputMessage, isSaving, isEditMode, submitLabel, hasUnsavedChanges, canCreateMissingAccount, disableSubmit, disableRevert, isRevertNoop, errorValueDisplay = false, onPublicKeyChange, onPublicKeyBlur, onChange, onFieldBlur, onRevert, }) {
+export default function CreateAccountFormPanel({ panelMarginClass, accountPanelBorderClass, contentWidthClass = 'max-w-[56rem]', idPrefix = '', formHeading = 'Account Meta Data', topRowContent, connected, publicKey, publicKeyLocked = false, roleTable, privateKeyRow, connectButton, footer, formData, errors, descriptionTextareaRef, inputLocked, isLoading, loadingInputMessage, isSaving, isEditMode, submitLabel, hasUnsavedChanges, canCreateMissingAccount, disableSubmit, disableRevert, isRevertNoop, errorValueDisplay = false, onPublicKeyChange, onPublicKeyBlur, onChange, onFieldBlur, onRevert, revertLabel = 'Revert Changes', }) {
     const [hoveredInput, setHoveredInput] = useState(null);
     const [hoveringLinkTextField, setHoveringLinkTextField] = useState(null);
     const [hoverTarget, setHoverTarget] = useState(null);
@@ -106,12 +106,8 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
                                                         ? 'No changes to Edit'
                                                         : 'No changes to Update'
                                                     : submitLabel, disabled: disableSubmit, onMouseEnter: () => {
-                                                if (noChangesToUpdate)
-                                                    return;
                                                 setHoverTarget('createAccount');
                                             }, onMouseLeave: () => {
-                                                if (noChangesToUpdate)
-                                                    return;
                                                 setHoverTarget(null);
                                             }, children: isSaving ? 'Saving...' : submitLabel }), _jsx("button", { type: "button", "aria-disabled": disableRevert, className: accountFormClass.revertButton({ isRevertNoop, isEditMode, hoverRevert: hoverTarget === 'revertChanges', disableRevert, hasUnsavedChanges }), title: disableRevert || !hasUnsavedChanges
                                                 ? 'No changes to revert'
@@ -120,12 +116,8 @@ export default function CreateAccountFormPanel({ panelMarginClass, accountPanelB
                                                     return;
                                                 onRevert();
                                             }, onMouseEnter: () => {
-                                                if (isRevertNoop)
-                                                    return;
                                                 setHoverTarget('revertChanges');
                                             }, onMouseLeave: () => {
-                                                if (isRevertNoop)
-                                                    return;
                                                 setHoverTarget(null);
-                                            }, children: "Revert Changes" })] })) }) })] }) }), footer] }));
+                                            }, children: revertLabel })] })) }) })] }) }), footer] }));
 }

@@ -18,6 +18,13 @@ export interface ApproverHost extends Pick<ConnectHost, 'setActiveAccount' | 'cl
     openAddMenu?: () => void;
     /** 2026-10-15: is this wallet CONNECTED to the app? The host's one definition (the same its wallet list screen shows). undefined: no opinion, the default applies (it holds accounts here, or it is locked and offers Unlock). */
     isConnected?: (approverId: AuthenticatorId) => boolean | undefined;
+    /** 2026-11-07 (owner request): the connection state of a REMOTE wallet (MetaMask, the other Merit wallet) from the host's connection hooks (MeritWalletProps.walletLinkHooks). Defined: the group's badge reads Disconnected (red, Connect on hover) while false and Add Account(s) while true, and the group stays on the list either way. undefined: no hook for this wallet, Add Account(s) as before. */
+    walletLink?: (approverId: AuthenticatorId) => boolean | undefined;
+    /** 2026-11-07 (owner, rules W4): is this wallet CHECKED on the wallet list? false: its group is not on the list; true: it is, even with no accounts (so its Connect shows). undefined: the wallet is not one the list offers (the wallet this app is), nothing to decide. */
+    isListed?: (approverId: AuthenticatorId) => boolean | undefined;
+    /** 2026-11-07 (rules G4, G6): how a group's Connect / Disconnect badge reaches a remote MERIT wallet: the same Connect and Disconnect the wallet list makes (the link, the remote's window, the remote's connect). Return undefined for a wallet this does not handle: the controller's connect / disconnect is used. */
+    walletConnect?: (approverId: AuthenticatorId) => Promise<unknown> | undefined;
+    walletDisconnect?: (approverId: AuthenticatorId) => Promise<unknown> | undefined;
     /** Open an install page. The component supplies the platform's openUrl when the host gives none. */
     openInstall?: (url: string) => void;
     /** The words for a row's name, symbol and avatar when the host knows more than the approver does (the account profiles). */
@@ -35,7 +42,7 @@ export interface ApproverGroupsInput {
     activeAddress?: string;
     /** The approver of the active account (wallet.backendIdFor(active)). */
     activeApproverId?: AuthenticatorId;
-    host: Pick<ApproverHost, 'installUrl' | 'onUnlock' | 'openInstall' | 'describeAccount' | 'nativeWalletId' | 'isConnected'>;
+    host: Pick<ApproverHost, 'installUrl' | 'onUnlock' | 'openInstall' | 'describeAccount' | 'nativeWalletId' | 'isConnected' | 'walletLink' | 'isListed'>;
     onConnect: (approverId: AuthenticatorId) => void;
     onDisconnect: (approverId: AuthenticatorId) => void;
     /** Whether a backend can connect an account by asking (remote approvers); keys kept here are chosen from the list instead. */

@@ -17,6 +17,8 @@ export interface MeritConnectionClient {
   listAccounts(side: never): Promise<Array<{ address: string; connected: boolean }>>;
   setAccountConnected(side: never, address: string, connected: boolean): Promise<void>;
   requestAccounts(side: never): Promise<string[]>;
+  /** The other wallet's Connect page (Cancel / Connect), no accounts. Absent: connect() opens the account selector, as before. */
+  requestConnection?(side: never): Promise<void>;
   revoke(side: never): Promise<void>;
   onConnectionChange(side: never, listener: () => void): () => void;
 }
@@ -76,9 +78,15 @@ export function withMeritConnection<T extends Authenticator>(base: T, options: M
   return {
     ...base,
     ...overrides,
-    // connecting the wallet is choosing its accounts: the other wallet's selector
+    // 2026-11-07 (owner: Connect has its own page, like MetaMask): connecting the wallet is the other wallet's Connect page (Cancel / Connect), no account choice; choosing accounts is selectAccounts (the Add Account(s) button)
     async connect() {
-      return overrides.selectAccounts!();
+      if (!client.requestConnection) return overrides.selectAccounts!();
+      try {
+        await client.requestConnection(side);
+      } catch (error) {
+        throw translateProviderError(error, base.id, base.label);
+      }
+      return overrides.accounts!();
     },
   } as T;
 }

@@ -14,6 +14,13 @@ import {
   type AuthenticatorTransaction,
 } from './authenticator';
 
+/** Told after this page disconnects an injected wallet (its connection state changed without the wallet saying so). An in-package bus, not a window event, so this file touches no device (test/platformBoundary). */
+const injectedChangedListeners = new Set<() => void>();
+export function onInjectedWalletChanged(listener: () => void): () => void {
+  injectedChangedListeners.add(listener);
+  return () => injectedChangedListeners.delete(listener);
+}
+
 export interface InjectedProvider {
   request(args: { method: string; params?: unknown }): Promise<unknown>;
   on?(event: string, listener: (...args: unknown[]) => void): unknown;
@@ -122,6 +129,9 @@ export function createInjectedAuthenticator({ id, label, displayName, badge, ico
         // A wallet without wallet_revokePermissions (older MetaMask, other wallets) has nothing to revoke: that is not a failure.
         if (code === -32601 || code === 4200) return;
         throw error;
+      } finally {
+        // 2026-11-07 (owner: Disconnect did not switch to Disconnected): MetaMask does not always emit accountsChanged for a revoke, so the page's own disconnect says it changed (useMetaMask re-reads eth_accounts on it)
+        injectedChangedListeners.forEach((listener) => listener());
       }
     },
     async signMessage(address, message) {

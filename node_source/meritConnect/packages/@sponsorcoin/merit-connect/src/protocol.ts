@@ -68,7 +68,8 @@ export interface StateReport {
 // needs the person's approval on the remote.
 export const READ_METHODS: readonly string[] = ['eth_chainId', 'eth_accounts', 'wallet_revokePermissions', 'merit_syncAccounts'];
 /** The person approves in the wallet that holds the key (time limit APPROVAL_TIMEOUT_MS). */
-export const APPROVAL_METHODS: readonly string[] = ['eth_requestAccounts', 'personal_sign', 'eth_signTypedData_v4', 'eth_sendTransaction'];
+// merit_requestConnection (2026-11-07, owner: like MetaMask, Connect has its own page): connecting the WALLET is a plain "Connect <wallet> with <wallet>" confirmation in the remote, Cancel / Connect, with no account choice.
+export const APPROVAL_METHODS: readonly string[] = ['eth_requestAccounts', 'merit_requestConnection', 'personal_sign', 'eth_signTypedData_v4', 'eth_sendTransaction'];
 export const METHODS: ReadonlySet<string> = new Set([...READ_METHODS, ...APPROVAL_METHODS]);
 
 export const READ_TIMEOUT_MS = 20_000;

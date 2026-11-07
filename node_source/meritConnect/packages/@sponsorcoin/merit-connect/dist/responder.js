@@ -90,6 +90,10 @@ export function createResponder(deps) {
             }
             case 'eth_requestAccounts':
                 return selectAccounts(request);
+            // 2026-11-07 (owner: Connect has its own page, like MetaMask): connecting the wallet is a confirmation here; the accounts are chosen separately (eth_requestAccounts) and kept in step by merit_syncAccounts
+            case 'merit_requestConnection':
+                await handlers.confirmConnection?.({ rid: request.rid });
+                return handlers.shared();
             case 'personal_sign':
             case 'eth_signTypedData_v4':
             case 'eth_sendTransaction': {

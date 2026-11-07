@@ -5,10 +5,15 @@
 // the reason (shown disabled, docs/design/accountAuthDesign.txt section 17.2.7). Whatever is added is made the active account by the host's callback, never by this component (docs/design/accountAuthDesign.txt section 17.2.6: the app does not choose the active account).
 'use client';
 
-import { addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
-import { useEffect, useState } from 'react';
+import { accountDetailClass, addAccountStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import AccountAvatarPanel from './form/AccountAvatarPanel';
+import AccountFormPanel from './form/AccountFormPanel';
+import { useEffect, useRef, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
-import { AddWalletMenu, ImportAccountForm, ImportWalletForm, WalletListPanel, useAddWalletFlow } from '@sponsorcoin/spcoin-panels';
+import { AddWalletMenu, ImportAccountForm, ImportWalletForm, WalletListPanel, useAddWalletFlow, useWalletListed, walletListedStore } from '@sponsorcoin/spcoin-panels';
+import { STATUS } from '@sponsorcoin/spcoin-common/context';
+import { useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { pendingApprovalMessageStore } from '../approval/pendingApprovalMessageStore';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
 import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
 import type { AuthenticatorId } from '../auth/authenticator';
@@ -27,6 +32,9 @@ export interface NewAccountProfile {
   name: string;
   symbol: string;
   description: string;
+  /** The Add New Account screen is the Account Details table, which also has these two rows; a host that does not keep them ignores them. */
+  email?: string;
+  website?: string;
   /** The picked avatar image, if any. */
   logo: File | null;
 }
@@ -79,6 +87,9 @@ const KEY_FORMAT = /^0x[0-9a-fA-F]{64}$/;
 
 /** The wallets the wallet list offers (WALLET_LIST_SELECT_PANEL), by asset folder, and the authenticator each one is. */
 /** The list row of the wallet THIS host is: always connected, nothing to connect or disconnect from it. */
+/** The wallet's name for the warning (the wallet list's own names). */
+const WALLET_NAMES: Record<string, string> = { merit: 'Merit (Web App)', meritExtension: 'Merit (Extension)', metamask: 'MetaMask', ledger: 'Ledger', trezor: 'Trezor' };
+const walletAssetName = (slug: string): string => WALLET_NAMES[slug] ?? slug;
 const nativeSlugOf = (nativeWalletId: string | undefined): string | undefined => (nativeWalletId === 'serverKeystore' ? 'merit' : nativeWalletId === 'localVault' ? 'meritExtension' : undefined);
 
 export default function AddAccountFlow({ host, onDone, wallet, activeAddress, nativeWalletId, walletConnection, onDisconnectWallet }: { host: AddAccountHost; onDone(): void; wallet?: Wallet; activeAddress?: string; nativeWalletId?: string; walletConnection?: Record<string, boolean>; onDisconnectWallet?(slug: string): void | Promise<unknown> }) {
@@ -89,6 +100,8 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   const [error, setError] = useState('');
   const [profile, setProfile] = useState<NewAccountProfile>(EMPTY_PROFILE);
   const [logoUrl, setLogoUrl] = useState('');
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (!profile.logo) {
       setLogoUrl('');
@@ -193,51 +206,53 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   const nativeSlug = nativeSlugOf(nativeWalletId);
   // 2026-10-31 (owner question): every wallet is listed in every host, Merit (Web App) in the extension too (it used to be hidden there, which made the two lists differ)
   const walletSlugs = Object.keys(WALLET_SLUG_ID);
-  const connection: Record<string, boolean> = {};
-  for (const slug of walletSlugs) connection[slug] = slug === nativeSlug ? true : !!walletConnection?.[slug];
-  // 2026-11-01 (owner: "it takes a long time, it should throb while disconnecting"): a disconnect under way is marked on its row until it ends (or 10 s, whichever is first)
-  const [disconnecting, setDisconnecting] = useState<Record<string, boolean | 'connecting'>>({});
-  const toggleWallet = (slug: string) => {
+  // 2026-11-07 (owner, docs/design/meritConnectRules.txt W1 to W6): the wallet list no longer connects or disconnects anything. Each row has a CHECK BOX: a checked wallet is a group on the Active Account Selection page, where its
+  // Connect / Disconnect now live (MeritWallet's group badge). Nothing is checked at first; each app keeps its own choice (walletListedStore). The wallet this app IS is always listed (checked, locked).
+  const listed = useWalletListed();
+  const { setErrorMessage } = useExchangeContext();
+  const { openPanel, closePanel } = usePanelTree();
+  const messageVisible = usePanelVisible(SP.MESSAGE_PANEL);
+  const warnedFor = useRef<string | null>(null);
+  // the warning is answered only by its two buttons: closing it (the X, back) does nothing: the box stays checked and the wallet connected
+  useEffect(() => {
+    if (!messageVisible && warnedFor.current) {
+      warnedFor.current = null;
+      pendingApprovalMessageStore.set(null);
+    }
+  }, [messageVisible]);
+  const toggleListed = (slug: string) => {
     if (slug === nativeSlug) return;
-    if (connection[slug]) {
-      setDisconnecting((d) => ({ ...d, [slug]: true }));
-      const done = () => setDisconnecting((d) => ({ ...d, [slug]: false }));
-      const timer = setTimeout(done, 10_000);
-      void Promise.resolve(onDisconnectWallet?.(slug)).catch(() => undefined).finally(() => { clearTimeout(timer); done(); });
+    if (!listed[slug]) {
+      walletListedStore.set(slug, true);
       return;
     }
-    // 2026-11-04 (owner request): the panel is not changed at all while MetaMask decides: its row throbs "Waiting…" and turns Connected, like the Merit extension's. The connect call is made in the click itself (a browser lets a page open a wallet's window only in answer to one).
-    if (slug === 'metamask' && !unavailable.connectMetaMask && host.connectApprover) {
-      setError('');
-      setDisconnecting((d) => ({ ...d, [slug]: 'connecting' }));
-      void Promise.resolve(host.connectWallet ? host.connectWallet(slug) : host.connectApprover('connectMetaMask'))
-        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
-        .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
+    // clearing a box of a wallet that is CONNECTED: a warning in MESSAGE_PANEL first; Continue hides it and disconnects it, Cancel (or closing the warning) does nothing
+    if (walletConnection?.[slug]) {
+      const name = walletAssetName(slug);
+      warnedFor.current = slug;
+      const done = () => {
+        warnedFor.current = null;
+        pendingApprovalMessageStore.set(null);
+        closePanel(SP.MESSAGE_PANEL, 'AddAccountFlow:disconnectWarning:done');
+      };
+      pendingApprovalMessageStore.set({
+        requirePassword: false,
+        passwordError: '',
+        busy: false,
+        approveLabel: 'Continue',
+        rejectLabel: 'Cancel',
+        onReject: done,
+        onApprove: () => {
+          walletListedStore.set(slug, false);
+          done();
+          void Promise.resolve(onDisconnectWallet?.(slug)).catch(() => undefined);
+        },
+      });
+      setErrorMessage({ errCode: 0, msg: `${name} is connected. Removing it from the account list will disconnect it.\n\nContinue?`, source: 'WalletListDisconnect', status: STATUS.WARNING });
+      openPanel(SP.MESSAGE_PANEL, 'AddAccountFlow:disconnectWarning');
+      return;
     }
-    else if (slug === 'meritExtension' && !unavailable.connectMeritExtension && host.connectApprover) {
-      // 2026-11-03 (owner request): stay on the wallet list while the extension decides; its row throbs "Waiting…" until the request ends. The refusal, if any, is the approval notice's.
-      host.bringWalletForward?.('connectMeritExtension');
-      setError('');
-      setDisconnecting((d) => ({ ...d, [slug]: 'connecting' }));
-      void Promise.resolve(host.connectApprover('connectMeritExtension'))
-        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
-        .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
-    }
-    else if (slug === 'merit' && !unavailable.connectMeritWeb && host.connectApprover) {
-      // 2026-11-04 (owner request: any Merit wallet attaches to any other, through the server, Local or Prod): the host makes the link and brings the other wallet's app forward; the row is Connected when that wallet answers logged on
-      setError('');
-      setDisconnecting((d) => ({ ...d, [slug]: 'connecting' }));
-      void Promise.resolve(host.connectApprover('connectMeritWeb'))
-        .catch((e: unknown) => setError(e instanceof Error ? e.message : 'The wallet could not be connected.'))
-        .finally(() => setDisconnecting((d) => ({ ...d, [slug]: false })));
-    }
-    else if (slug === 'merit') {
-      setError('Merit (Web App) cannot be connected from here.');
-    }
-    else if (slug === 'ledger' || slug === 'trezor') {
-      if (host.connectHardwareDevice) void run(() => host.connectHardwareDevice!(`hardware:${slug}`));
-      else connect('connectHardware')();
-    }
+    walletListedStore.set(slug, false);
   };
 
   return (
@@ -287,7 +302,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
       )}
       {flow.walletListVisible && (
         <div style={addAccountStyle.listBleed}>
-          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs} connection={connection} fixed={nativeSlug} busy={disconnecting} onToggleConnection={toggleWallet} />
+          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs} listed={listed} fixed={nativeSlug} onToggleListed={toggleListed} />
           {error && <p style={addAccountStyle.error}>{error}</p>}
         </div>
       )}
@@ -314,24 +329,87 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         />
       )}
       {flow.createAccountVisible && (
-        <div style={addAccountStyle.createBox}>
-          <p style={addAccountStyle.hint}>Create a new account: a new address and private key, kept under this wallet.</p>
-          {host.createProfile && (
-            <div style={addAccountStyle.profileBox}>
-              {logoUrl ? <img src={logoUrl} alt="Account avatar preview" style={addAccountStyle.avatarPreview} /> : null}
-              <label style={addAccountStyle.pickImageLabel}>
-                Select Preview Image
-                <input type="file" accept="image/*" aria-label="Account avatar" style={addAccountStyle.hiddenInput} onChange={(event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null }))} />
-              </label>
-              <input aria-label="Account name" placeholder="Name" value={profile.name} onChange={(event) => setProfile((p) => ({ ...p, name: event.target.value }))} style={addAccountStyle.field} />
-              <input aria-label="Account symbol" placeholder="Symbol" value={profile.symbol} onChange={(event) => setProfile((p) => ({ ...p, symbol: event.target.value }))} style={addAccountStyle.field} />
-              <textarea aria-label="Account description" placeholder="Description" rows={3} value={profile.description} onChange={(event) => setProfile((p) => ({ ...p, description: event.target.value }))} style={addAccountStyle.fieldTall} />
+        // 2026-11-07 (owner: "we are removing redundancy here"): Create a Merit Account is the ACCOUNT DETAILS screen (the same avatar panel and the same table, AccountDetailScreen) in add mode: its own small form is gone. The title is Add New Account and the button Add Account.
+        <div id="ACCOUNT_INFO" className={accountDetailClass.screen}>
+          <form
+            className={accountDetailClass.form}
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!busy) void run(() => host.createAccount(target?.id, profile));
+            }}
+          >
+            <div id="ACTIVE_ACCOUNT_BODY" className={walletPartClass.accountBody(true)}>
+              <div id="ACCOUNT_LOGO" className={accountDetailClass.block}>
+                <AccountAvatarPanel
+                  panelMarginClass="mb-0 min-h-0"
+                  avatarPanelBorderClass=""
+                  avatarHeading=""
+                  logoPreviewSrc={logoUrl}
+                  connected
+                  isEditMode
+                  inputLocked={false}
+                  previewButtonLabel="Select Preview Image"
+                  loadingInputMessage=""
+                  isLoading={false}
+                  acceptedInput="image/*"
+                  logoFileInputRef={logoFileInputRef}
+                  onFileChange={(event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null }))}
+                  showImage
+                  showButton
+                  minPreviewSize={180}
+                  overflowMinPreviewSize={96}
+                  maxPreviewSize={420}
+                  minControlWidth={220}
+                  uploadControlTextClassName={walletPartClass.uploadControlText}
+                  previewSizeBuffer={0}
+                  previewHeightBuffer={8}
+                  sectionBottomBuffer={0}
+                  lockSectionHeight={false}
+                  fillParentHeight={false}
+                  sizingBoundarySelector="#ACTIVE_ACCOUNT_BODY"
+                  resizeSignal="create"
+                />
+              </div>
+              <div id="ACCOUNT_META_DATA" className={accountDetailClass.block}>
+                <AccountFormPanel
+                  panelMarginClass="mb-0 !h-auto"
+                  accountPanelBorderClass=""
+                  contentWidthClass="max-w-[56rem]"
+                  idPrefix="account-component-"
+                  formHeading=""
+                  connected
+                  // the address and the private key do not exist until the account is added
+                  publicKey="Made when the account is added"
+                  publicKeyLocked
+                  formData={{ name: profile.name, symbol: profile.symbol, email: profile.email ?? '', website: profile.website ?? '', description: profile.description, recipientNetwork: [] }}
+                  errors={{}}
+                  descriptionTextareaRef={descriptionRef}
+                  inputLocked={false}
+                  isLoading={false}
+                  loadingInputMessage=""
+                  isSaving={busy}
+                  isEditMode
+                  submitLabel="Add Account"
+                  hasUnsavedChanges
+                  canCreateMissingAccount
+                  disableSubmit={busy}
+                  disableRevert={busy}
+                  isRevertNoop={false}
+                  onPublicKeyChange={() => undefined}
+                  onPublicKeyBlur={() => undefined}
+                  onChange={(event) => {
+                    const { name, value } = event.target;
+                    if (name === 'name' || name === 'symbol' || name === 'email' || name === 'website' || name === 'description') setProfile((p) => ({ ...p, [name]: value }));
+                  }}
+                  onFieldBlur={() => undefined}
+                  // 2026-11-07 (owner): the second button reads Cancel: nothing is added, the form is cleared and the Add menu is back
+                  revertLabel="Cancel"
+                  onRevert={() => { setProfile(EMPTY_PROFILE); flow.goToAddMenu(); }}
+                />
+                {error && <p style={addAccountStyle.error}>{error}</p>}
+              </div>
             </div>
-          )}
-          {error && <p style={addAccountStyle.error}>{error}</p>}
-          <button type="button" disabled={busy} onClick={() => void run(() => host.createAccount(target?.id, host.createProfile ? profile : undefined))} style={addAccountStyle.primaryDim(busy)}>
-            {busy ? 'Creating…' : 'Create Account'}
-          </button>
+          </form>
         </div>
       )}
     </div>

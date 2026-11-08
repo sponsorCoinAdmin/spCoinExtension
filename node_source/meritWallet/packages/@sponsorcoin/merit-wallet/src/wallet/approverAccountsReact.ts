@@ -118,6 +118,8 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
       host: { ...host, openInstall: host.openInstall ?? ((url: string) => platform.openUrl(url)) },
       // a remote Merit wallet connects and disconnects the way the wallet list does (host.walletConnect / walletDisconnect); every other wallet through the controller
       onConnect: (id) => {
+        // 2026-11-07 (owner: a Ledger connect appeared after Add Account(s) on Merit (Extension)): who asked, with the call path
+        engineTrace('approverAccounts:onConnect', { id, stack: String(new Error().stack ?? '').split(String.fromCharCode(10)).slice(2, 8).join(' | ') });
         const handled = host.walletConnect?.(id);
         if (handled) void Promise.resolve(handled).catch((error: unknown) => setNotice(error instanceof Error && error.message ? error.message : 'The wallet could not be connected.')).then(load);
         else void controller.connect(id).then(load);

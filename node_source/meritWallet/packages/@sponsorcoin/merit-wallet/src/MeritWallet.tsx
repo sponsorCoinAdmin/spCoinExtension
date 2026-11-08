@@ -3147,6 +3147,7 @@ function MeritWalletWired(props: MeritWalletProps) {
         accountListNotice: approvers.notice || undefined,
         onAccountRowSelect: async (accountId: string, groupId?: string) => {
           const approverId = (groupId ?? (props.wallet ? props.wallet.backendIdFor(accountId) : undefined)) as AuthenticatorId | undefined;
+          engineTrace('MeritWallet:onAccountRowSelect', { accountId, groupId, approverId, stack: String(new Error().stack ?? '').split(String.fromCharCode(10)).slice(2, 7).join(' | ') });
           if (!approverId || !approvers.controller) return false;
           return approvers.controller.connect(approverId, accountId);
         },

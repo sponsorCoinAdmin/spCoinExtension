@@ -2192,6 +2192,7 @@ function MeritWalletWired(props) {
             accountListNotice: approvers.notice || undefined,
             onAccountRowSelect: async (accountId, groupId) => {
                 const approverId = (groupId ?? (props.wallet ? props.wallet.backendIdFor(accountId) : undefined));
+                engineTrace('MeritWallet:onAccountRowSelect', { accountId, groupId, approverId, stack: String(new Error().stack ?? '').split(String.fromCharCode(10)).slice(2, 7).join(' | ') });
                 if (!approverId || !approvers.controller)
                     return false;
                 return approvers.controller.connect(approverId, accountId);

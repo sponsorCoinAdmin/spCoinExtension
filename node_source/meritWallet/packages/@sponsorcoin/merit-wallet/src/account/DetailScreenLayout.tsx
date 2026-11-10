@@ -13,14 +13,10 @@ import React from 'react';
 import { accountDetailClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible, useSetPanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
-import AccountAvatarPanel, { type AccountAvatarPanelProps } from './form/AccountAvatarPanel';
+import DetailImageBlock, { type DetailAvatarProps } from './DetailImageBlock';
 import { RefreshBranch } from '../refresh/refreshReact';
 
-/** What a screen decides about its avatar; everything else (sizes, buffers, the sizing boundary, the toggle's state) is the layout's. */
-export type DetailAvatarProps = Pick<
-  AccountAvatarPanelProps,
-  'logoPreviewSrc' | 'previewAlt' | 'previewBoxClass' | 'connected' | 'isEditMode' | 'inputLocked' | 'previewButtonLabel' | 'loadingInputMessage' | 'isLoading' | 'logoFileInputRef' | 'onFileChange' | 'hideUpload' | 'toggleLabel' | 'imageKind' | 'fitImageShape'
->;
+export type { DetailAvatarProps };
 
 /** 2026-11-09 (owner): the space (px) kept clear around the image inside its box when a screen does not set its own: 20 above, 5 below, 20 left and right. */
 export const DEFAULT_IMAGE_BUFFER = { t: 20, b: 5, l: 20, r: 20 } as const;
@@ -33,8 +29,8 @@ export interface DetailScreenLayoutProps {
   logoId: string;
   metaId: string;
   avatar: DetailAvatarProps;
-  /** The meta block's content; told whether the logo block is showing above it. */
-  meta: (state: { logoVisible: boolean }) => React.ReactNode;
+  /** 2026-11-09 (owner): the table, built by the screen and passed in. The base puts it in its table block (a flex column, shown when the meta flag is on); the table is a flex item of that block. */
+  table: React.ReactNode;
   /** The id of the screen's outer box. */
   screenId?: string;
   /** Draw the screen as a <form> that submits here (the editable account screen); omitted: a plain box. */
@@ -52,46 +48,31 @@ export interface DetailScreenLayoutProps {
   lBuffer?: number;
 }
 
-export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, meta, screenId, onSubmit, activeBody = true, resizeKey = '', toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }: DetailScreenLayoutProps) {
+export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, table, screenId, onSubmit, activeBody = true, resizeKey = '', toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }: DetailScreenLayoutProps) {
   const menuTabHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
   const activeAccountHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
   const logoVisible = usePanelVisible(logoFlag);
   const metaVisible = usePanelVisible(metaFlag);
   const setPanelVisible = useSetPanelVisible();
   const resizeSignal = [menuTabHeaderOpen, activeAccountHeaderOpen, resizeKey].join(':');
+  // 2026-11-09 (owner: no unnecessary wrappers): screen -> body -> block -> picture box -> picture. The screen is the <form> itself when it submits; the body is the shared stacked column; the logo block is DetailImageBlock.
   const body = (
     <div id="ACTIVE_ACCOUNT_BODY" className={walletPartClass.accountBody(activeBody)}>
       {logoVisible ? (
-        <div id={logoId} className={metaVisible || !activeBody ? accountDetailClass.block : accountDetailClass.blockLast}>
-          <AccountAvatarPanel
-            panelMarginClass="mb-0 min-h-0"
-            avatarPanelBorderClass=""
-            avatarHeading=""
-            {...avatar}
-            acceptedInput="image/*"
-            showImage
-            showButton
-            minPreviewSize={180}
-            overflowMinPreviewSize={96}
-            maxPreviewSize={420}
-            minControlWidth={220}
-            uploadControlTextClassName={walletPartClass.uploadControlText}
-            previewSizeBuffer={0}
-            previewHeightBuffer={8}
-            sectionBottomBuffer={activeBody ? 18 : 8}
-            lockSectionHeight={false}
-            fillParentHeight={false}
-            sizingBoundarySelector="#ACTIVE_ACCOUNT_BODY"
-            resizeSignal={resizeSignal}
-            imageBuffer={{ t: tBuffer ?? DEFAULT_IMAGE_BUFFER.t, b: bBuffer ?? DEFAULT_IMAGE_BUFFER.b, r: rBuffer ?? DEFAULT_IMAGE_BUFFER.r, l: lBuffer ?? DEFAULT_IMAGE_BUFFER.l }}
-            toggleOn={metaVisible}
-            onToggle={() => setPanelVisible(metaFlag, !metaVisible, toggleTrace)}
-          />
-        </div>
+        <DetailImageBlock
+          id={logoId}
+          last={!metaVisible && activeBody}
+          {...avatar}
+          imageBuffer={{ t: tBuffer ?? DEFAULT_IMAGE_BUFFER.t, b: bBuffer ?? DEFAULT_IMAGE_BUFFER.b, r: rBuffer ?? DEFAULT_IMAGE_BUFFER.r, l: lBuffer ?? DEFAULT_IMAGE_BUFFER.l }}
+          toggleOn={metaVisible}
+          onToggle={() => setPanelVisible(metaFlag, !metaVisible, toggleTrace)}
+          sectionBottomBuffer={activeBody ? 18 : 8}
+          resizeSignal={resizeSignal}
+        />
       ) : null}
       {metaVisible ? (
-        <div id={metaId} className={accountDetailClass.block}>
-          {meta({ logoVisible })}
+        <div id={metaId} className={accountDetailClass.metaBlock}>
+          {table}
         </div>
       ) : null}
     </div>
@@ -99,15 +80,15 @@ export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId,
   // the screen is a branch of the refresh tree (named by its logo block: ACCOUNT_LOGO -> ACCOUNT_PANEL); the image and any table inside it are its children
   return (
     <RefreshBranch id={logoId.replace(/_LOGO$/, '_PANEL')}>
-    <div id={screenId} className={accountDetailClass.screen}>
       {onSubmit ? (
-        <form onSubmit={onSubmit} className={accountDetailClass.form}>
+        <form id={screenId} onSubmit={onSubmit} className={accountDetailClass.screen}>
           {body}
         </form>
       ) : (
-        <div className={accountDetailClass.form}>{body}</div>
+        <div id={screenId} className={accountDetailClass.screen}>
+          {body}
+        </div>
       )}
-    </div>
     </RefreshBranch>
   );
 }

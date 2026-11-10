@@ -28,6 +28,8 @@ export interface MetaDetailScreenProps {
   imageKind: CachedImageKind;
   /** Draw the image without the navy box (a network logo is a complete round brand mark). */
   plainLogo?: boolean;
+  /** The id of the screen's own element (NETWORK_PANEL, TOKEN_PANEL): there is no box around the screen to carry it. */
+  screenId?: string;
   /** The image's box follows the image's own proportions (a wide logo has no empty bands above and below it). */
   fitImageShape?: boolean;
   /** Px kept clear around the image (see DetailScreenLayout). */
@@ -39,11 +41,12 @@ export interface MetaDetailScreenProps {
 
 const noop = () => undefined;
 
-export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, logoSrc, logoAlt, toggleLabel, rows, plainLogo, fitImageShape, imageKind, tBuffer, bBuffer, rBuffer, lBuffer }: MetaDetailScreenProps) {
+export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, logoSrc, logoAlt, toggleLabel, rows, plainLogo, fitImageShape, imageKind, screenId, tBuffer, bBuffer, rBuffer, lBuffer }: MetaDetailScreenProps) {
   // the avatar panel wants a file input ref; nothing is uploaded here
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <DetailScreenLayout
+      screenId={screenId}
       logoFlag={logoFlag}
       metaFlag={metaFlag}
       logoId={logoId}
@@ -71,7 +74,7 @@ export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, l
         fitImageShape,
         toggleLabel,
       }}
-      meta={() => <ReadOnlyMetaDataTable rows={rows} logoVisible={false} />}
+      table={<ReadOnlyMetaDataTable rows={rows} logoVisible={false} />}
     />
   );
 }

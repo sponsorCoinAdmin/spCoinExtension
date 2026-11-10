@@ -41,6 +41,8 @@ interface Props {
   connectButton?: React.ReactNode;
   /** Anything the host needs after the table (the web app's password modal for the private key). */
   footer?: React.ReactNode;
+  /** 2026-11-09 (owner: no unnecessary wrappers): no box of its own: the heading (if any), the table and the footer are returned as they are, to be placed in the base layout's table block. The table is one element, a flex item of that block. */
+  bare?: boolean;
   formData: AccountFormData;
   errors: AccountFormErrors;
   descriptionTextareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -79,6 +81,7 @@ export default function CreateAccountFormPanel({
   privateKeyRow,
   connectButton,
   footer,
+  bare = false,
   formData,
   errors,
   descriptionTextareaRef,
@@ -148,11 +151,8 @@ export default function CreateAccountFormPanel({
     { label: 'Website', name: 'website', labelTitle: FIELD_TITLES.website },
   ];
 
-  return (
-    <section
-      className={accountFormClass.section(panelMarginClass, accountPanelBorderClass)}
-      data-account-form-ready={isLoading ? 'false' : 'true'}
-    >
+  const content = (
+    <>
       {formHeading || topRowContent ? (
         <div className={accountFormClass.headingBox(contentWidthClass)}>
           {formHeading ? (
@@ -168,8 +168,7 @@ export default function CreateAccountFormPanel({
           {topRowContent ? <div className={accountFormClass.topRow(!!formHeading)}>{topRowContent}</div> : null}
         </div>
       ) : null}
-      <div className={footer ? accountFormClass.tableBoxWithFooter : accountFormClass.tableBox}>
-        <div className={accountFormClass.grid(tableGrid)}>
+        <div className={accountFormClass.table(tableGrid, { footer: !!footer, bare })} data-account-form-ready={isLoading ? 'false' : 'true'}>
           <div className={accountFormClass.contents}>
             <div className={accountFormClass.headCellName(msTableTw.theadRow, th)}>Field Name</div>
             <div className={accountFormClass.headCellValue(msTableTw.theadRow, th)}>
@@ -410,9 +409,13 @@ export default function CreateAccountFormPanel({
             </div>
           </div>
         </div>
-      </div>
 
       {footer}
+    </>
+  );
+  return bare ? content : (
+    <section className={accountFormClass.section(panelMarginClass, accountPanelBorderClass)}>
+      {content}
     </section>
   );
 }

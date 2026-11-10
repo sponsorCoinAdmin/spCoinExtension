@@ -166,22 +166,21 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
     return { label: f.label, value: f.value };
   });
 
+  // 2026-11-09 (owner): drawn by the shared read-only screen, the twin of the Account Details screen. Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind them.
   return (
-    <div id="NETWORK_PANEL">
-      {/* 2026-11-09 (owner): drawn by the shared read-only screen, the twin of the Account Details screen. Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind them. */}
-      <MetaDetailScreen
-        logoFlag={SP_COIN_DISPLAY.NETWORK_LOGO}
-        metaFlag={SP_COIN_DISPLAY.NETWORK_META_DATA}
-        logoId="NETWORK_LOGO"
-        metaId="NETWORK_META_DATA"
-        logoSrc={logoURL || defaultStaticImage}
-        logoAlt={name}
-        toggleLabel="Network Meta"
-        imageKind="network"
-        rows={rows}
-        plainLogo
-        fitImageShape
-      />
-    </div>
+    <MetaDetailScreen
+      screenId="NETWORK_PANEL"
+      logoFlag={SP_COIN_DISPLAY.NETWORK_LOGO}
+      metaFlag={SP_COIN_DISPLAY.NETWORK_META_DATA}
+      logoId="NETWORK_LOGO"
+      metaId="NETWORK_META_DATA"
+      logoSrc={logoURL || defaultStaticImage}
+      logoAlt={name}
+      toggleLabel="Network Meta"
+      imageKind="network"
+      rows={rows}
+      plainLogo
+      fitImageShape
+    />
   );
 }

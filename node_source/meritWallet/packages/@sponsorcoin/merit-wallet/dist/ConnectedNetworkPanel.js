@@ -113,5 +113,6 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
         }
         return { label: f.label, value: f.value };
     });
-    return (_jsx("div", { id: "NETWORK_PANEL", children: _jsx(MetaDetailScreen, { logoFlag: SP_COIN_DISPLAY.NETWORK_LOGO, metaFlag: SP_COIN_DISPLAY.NETWORK_META_DATA, logoId: "NETWORK_LOGO", metaId: "NETWORK_META_DATA", logoSrc: logoURL || defaultStaticImage, logoAlt: name, toggleLabel: "Network Meta", imageKind: "network", rows: rows, plainLogo: true, fitImageShape: true }) }));
+    // 2026-11-09 (owner): drawn by the shared read-only screen, the twin of the Account Details screen. Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind them.
+    return (_jsx(MetaDetailScreen, { screenId: "NETWORK_PANEL", logoFlag: SP_COIN_DISPLAY.NETWORK_LOGO, metaFlag: SP_COIN_DISPLAY.NETWORK_META_DATA, logoId: "NETWORK_LOGO", metaId: "NETWORK_META_DATA", logoSrc: logoURL || defaultStaticImage, logoAlt: name, toggleLabel: "Network Meta", imageKind: "network", rows: rows, plainLogo: true, fitImageShape: true }));
 }

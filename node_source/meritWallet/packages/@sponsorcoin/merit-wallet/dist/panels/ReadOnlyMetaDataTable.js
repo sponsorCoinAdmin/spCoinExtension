@@ -8,9 +8,14 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { msTableTw } from '@sponsorcoin/spcoin-panels';
 import { metaTableClass } from '@sponsorcoin/spcoin-common/styles';
 export default function ReadOnlyMetaDataTable({ rows, logoURL, logoAlt = '', logoVisible = true, id, className = '', logoBackgroundClassName = metaTableClass.logoBackground, logoContainerClassName = metaTableClass.logoContainer, logoRoundedClassName = metaTableClass.logoRounded, logoContainerSizeClassName = metaTableClass.logoContainerSize, logoSizeClassName = metaTableClass.logoSize, }) {
-    return (_jsxs("div", { id: id, className: metaTableClass.root(className), children: [logoVisible && logoURL ? (_jsx("div", { className: metaTableClass.logoBox(logoContainerSizeClassName, logoContainerClassName), children: _jsx("img", { src: logoURL, alt: logoAlt, className: metaTableClass.logoImage(logoSizeClassName, logoRoundedClassName, logoBackgroundClassName) }) })) : null, _jsx("div", { className: metaTableClass.frame, children: _jsxs("div", { className: metaTableClass.gridBox(metaTableClass.grid), children: [_jsxs("div", { className: metaTableClass.contents, children: [_jsx("div", { className: metaTableClass.headCell(msTableTw.theadRow, metaTableClass.th, true), children: "Field Name" }), _jsx("div", { className: metaTableClass.headCell(msTableTw.theadRow, metaTableClass.th, false), children: "Value" })] }), rows.map(({ label, value }, index) => {
-                            const zebra = index % 2 === 0 ? metaTableClass.zebraA : metaTableClass.zebraB;
-                            const isLast = index === rows.length - 1;
-                            return (_jsxs("div", { className: metaTableClass.contents, children: [_jsx("div", { className: metaTableClass.labelCell(zebra, metaTableClass.cell, isLast), children: label }), _jsx("div", { className: metaTableClass.valueCell(zebra, metaTableClass.cell, isLast), children: value })] }, label));
-                        })] }) })] }));
+    const logoShown = logoVisible && !!logoURL;
+    // 2026-11-09 (owner: no unnecessary wrappers): the table is ONE element; with no logo above it, it is all there is (the id and the class go on it)
+    const table = (_jsxs("div", { id: logoShown ? undefined : id, className: metaTableClass.table(metaTableClass.grid, logoShown ? '' : className), children: [_jsxs("div", { className: metaTableClass.contents, children: [_jsx("div", { className: metaTableClass.headCell(msTableTw.theadRow, metaTableClass.th, true), children: "Field Name" }), _jsx("div", { className: metaTableClass.headCell(msTableTw.theadRow, metaTableClass.th, false), children: "Value" })] }), rows.map(({ label, value }, index) => {
+                const zebra = index % 2 === 0 ? metaTableClass.zebraA : metaTableClass.zebraB;
+                const isLast = index === rows.length - 1;
+                return (_jsxs("div", { className: metaTableClass.contents, children: [_jsx("div", { className: metaTableClass.labelCell(zebra, metaTableClass.cell, isLast), children: label }), _jsx("div", { className: metaTableClass.valueCell(zebra, metaTableClass.cell, isLast), children: value })] }, label));
+            })] }));
+    if (!logoShown)
+        return table;
+    return (_jsxs("div", { id: id, className: metaTableClass.root(className), children: [_jsx("div", { className: metaTableClass.logoBox(logoContainerSizeClassName, logoContainerClassName), children: _jsx("img", { src: logoURL, alt: logoAlt, className: metaTableClass.logoImage(logoSizeClassName, logoRoundedClassName, logoBackgroundClassName) }) }), table] }));
 }

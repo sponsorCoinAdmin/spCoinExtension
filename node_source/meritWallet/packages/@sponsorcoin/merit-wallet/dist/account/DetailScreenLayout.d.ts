@@ -1,8 +1,7 @@
 import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { type AccountAvatarPanelProps } from './form/AccountAvatarPanel';
-/** What a screen decides about its avatar; everything else (sizes, buffers, the sizing boundary, the toggle's state) is the layout's. */
-export type DetailAvatarProps = Pick<AccountAvatarPanelProps, 'logoPreviewSrc' | 'previewAlt' | 'previewBoxClass' | 'connected' | 'isEditMode' | 'inputLocked' | 'previewButtonLabel' | 'loadingInputMessage' | 'isLoading' | 'logoFileInputRef' | 'onFileChange' | 'hideUpload' | 'toggleLabel' | 'imageKind' | 'fitImageShape'>;
+import { type DetailAvatarProps } from './DetailImageBlock';
+export type { DetailAvatarProps };
 /** 2026-11-09 (owner): the space (px) kept clear around the image inside its box when a screen does not set its own: 20 above, 5 below, 20 left and right. */
 export declare const DEFAULT_IMAGE_BUFFER: {
     readonly t: 20;
@@ -18,10 +17,8 @@ export interface DetailScreenLayoutProps {
     logoId: string;
     metaId: string;
     avatar: DetailAvatarProps;
-    /** The meta block's content; told whether the logo block is showing above it. */
-    meta: (state: {
-        logoVisible: boolean;
-    }) => React.ReactNode;
+    /** 2026-11-09 (owner): the table, built by the screen and passed in. The base puts it in its table block (a flex column, shown when the meta flag is on); the table is a flex item of that block. */
+    table: React.ReactNode;
     /** The id of the screen's outer box. */
     screenId?: string;
     /** Draw the screen as a <form> that submits here (the editable account screen); omitted: a plain box. */
@@ -38,4 +35,4 @@ export interface DetailScreenLayoutProps {
     rBuffer?: number;
     lBuffer?: number;
 }
-export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, meta, screenId, onSubmit, activeBody, resizeKey, toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }: DetailScreenLayoutProps): React.JSX.Element;
+export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, table, screenId, onSubmit, activeBody, resizeKey, toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }: DetailScreenLayoutProps): React.JSX.Element;

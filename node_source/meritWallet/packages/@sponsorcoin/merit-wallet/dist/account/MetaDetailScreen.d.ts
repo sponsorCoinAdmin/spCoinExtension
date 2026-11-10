@@ -18,6 +18,8 @@ export interface MetaDetailScreenProps {
     imageKind: CachedImageKind;
     /** Draw the image without the navy box (a network logo is a complete round brand mark). */
     plainLogo?: boolean;
+    /** The id of the screen's own element (NETWORK_PANEL, TOKEN_PANEL): there is no box around the screen to carry it. */
+    screenId?: string;
     /** The image's box follows the image's own proportions (a wide logo has no empty bands above and below it). */
     fitImageShape?: boolean;
     /** Px kept clear around the image (see DetailScreenLayout). */
@@ -26,4 +28,4 @@ export interface MetaDetailScreenProps {
     rBuffer?: number;
     lBuffer?: number;
 }
-export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, logoSrc, logoAlt, toggleLabel, rows, plainLogo, fitImageShape, imageKind, tBuffer, bBuffer, rBuffer, lBuffer }: MetaDetailScreenProps): React.JSX.Element;
+export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, logoSrc, logoAlt, toggleLabel, rows, plainLogo, fitImageShape, imageKind, screenId, tBuffer, bBuffer, rBuffer, lBuffer }: MetaDetailScreenProps): React.JSX.Element;

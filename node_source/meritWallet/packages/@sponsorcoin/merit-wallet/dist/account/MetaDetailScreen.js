@@ -10,10 +10,10 @@ import { avatarPanelClass } from '@sponsorcoin/spcoin-common/styles';
 import DetailScreenLayout from './DetailScreenLayout';
 import ReadOnlyMetaDataTable from '../panels/ReadOnlyMetaDataTable';
 const noop = () => undefined;
-export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, logoSrc, logoAlt, toggleLabel, rows, plainLogo, fitImageShape, imageKind, tBuffer, bBuffer, rBuffer, lBuffer }) {
+export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, logoSrc, logoAlt, toggleLabel, rows, plainLogo, fitImageShape, imageKind, screenId, tBuffer, bBuffer, rBuffer, lBuffer }) {
     // the avatar panel wants a file input ref; nothing is uploaded here
     const fileInputRef = useRef(null);
-    return (_jsx(DetailScreenLayout, { logoFlag: logoFlag, metaFlag: metaFlag, logoId: logoId, metaId: metaId, resizeKey: String(logoFlag), toggleTrace: "MetaDetailScreen:toggleMeta", tBuffer: tBuffer, bBuffer: bBuffer, rBuffer: rBuffer, lBuffer: lBuffer, avatar: {
+    return (_jsx(DetailScreenLayout, { screenId: screenId, logoFlag: logoFlag, metaFlag: metaFlag, logoId: logoId, metaId: metaId, resizeKey: String(logoFlag), toggleTrace: "MetaDetailScreen:toggleMeta", tBuffer: tBuffer, bBuffer: bBuffer, rBuffer: rBuffer, lBuffer: lBuffer, avatar: {
             logoPreviewSrc: logoSrc,
             previewAlt: logoAlt,
             previewBoxClass: plainLogo ? avatarPanelClass.previewBoxPlain : undefined,
@@ -29,5 +29,5 @@ export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, l
             imageKind,
             fitImageShape,
             toggleLabel,
-        }, meta: () => _jsx(ReadOnlyMetaDataTable, { rows: rows, logoVisible: false }) }));
+        }, table: _jsx(ReadOnlyMetaDataTable, { rows: rows, logoVisible: false }) }));
 }

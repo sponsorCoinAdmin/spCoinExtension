@@ -112,10 +112,11 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
         onFileChange: form.handleLogoFileChange,
         toggleLabel: 'Account Meta', imageKind: 'account',
       }}
-      meta={({ logoVisible }) => (
+      table={(
         <>
           <AccountFormPanel
-            panelMarginClass={logoVisible ? 'mb-0 !h-auto !pt-0' : 'mb-0 !h-auto'}
+            bare
+            panelMarginClass=""
             accountPanelBorderClass=""
             contentWidthClass="max-w-[56rem]"
             idPrefix="account-component-"

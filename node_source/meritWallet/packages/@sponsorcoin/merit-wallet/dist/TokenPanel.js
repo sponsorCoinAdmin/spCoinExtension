@@ -7,7 +7,7 @@
 // nothing to show. Inputs that came from web-only hooks now come from the engine: the chain id from the exchange context (as TokenSlotPanels does),
 // the token hooks and panel-tree hooks from @sponsorcoin/spcoin-exchange-engine. The web app's debug traces were dropped on the move.
 'use client';
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useState } from 'react';
@@ -126,5 +126,5 @@ export default function TokenPanel(_props) {
     const resolvedContract = displayContract ?? tokenContract;
     const logoURL = (resolvedContract.logoURL ?? '').toString().trim();
     const name = (resolvedContract.name ?? '').toString().trim();
-    return (_jsxs("div", { id: "TOKEN_PANEL", children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), _jsx(MetaDetailScreen, { logoFlag: SP_COIN_DISPLAY.TOKEN_LOGO, metaFlag: SP_COIN_DISPLAY.TOKEN_META_DATA, logoId: "TOKEN_LOGO", metaId: "TOKEN_META_DATA", logoSrc: logoURL || defaultStaticImage, logoAlt: name, toggleLabel: "Token Meta", imageKind: "token", rows: tokenDetailRows(resolvedContract) })] }));
+    return (_jsxs(_Fragment, { children: [isPreviewMode && _jsx("div", { id: "TOKEN_META_DATA_PREVIEW", className: panelPartClass.hidden, "aria-hidden": "true" }), _jsx(MetaDetailScreen, { screenId: "TOKEN_PANEL", logoFlag: SP_COIN_DISPLAY.TOKEN_LOGO, metaFlag: SP_COIN_DISPLAY.TOKEN_META_DATA, logoId: "TOKEN_LOGO", metaId: "TOKEN_META_DATA", logoSrc: logoURL || defaultStaticImage, logoAlt: name, toggleLabel: "Token Meta", imageKind: "token", rows: tokenDetailRows(resolvedContract) })] }));
 }

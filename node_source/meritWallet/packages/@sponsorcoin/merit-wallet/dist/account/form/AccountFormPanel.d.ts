@@ -21,6 +21,8 @@ interface Props {
     connectButton?: React.ReactNode;
     /** Anything the host needs after the table (the web app's password modal for the private key). */
     footer?: React.ReactNode;
+    /** 2026-11-09 (owner: no unnecessary wrappers): no box of its own: the heading (if any), the table and the footer are returned as they are, to be placed in the base layout's table block. The table is one element, a flex item of that block. */
+    bare?: boolean;
     formData: AccountFormData;
     errors: AccountFormErrors;
     descriptionTextareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -44,5 +46,5 @@ interface Props {
     /** The words of the second button. Default "Revert Changes"; the Add New Account screen says "Cancel". */
     revertLabel?: string;
 }
-export default function CreateAccountFormPanel({ panelMarginClass, accountPanelBorderClass, contentWidthClass, idPrefix, formHeading, topRowContent, connected, publicKey, publicKeyLocked, roleTable, privateKeyRow, connectButton, footer, formData, errors, descriptionTextareaRef, inputLocked, isLoading, loadingInputMessage, isSaving, isEditMode, submitLabel, hasUnsavedChanges, canCreateMissingAccount, disableSubmit, disableRevert, isRevertNoop, errorValueDisplay, onPublicKeyChange, onPublicKeyBlur, onChange, onFieldBlur, onRevert, revertLabel, }: Props): React.JSX.Element;
+export default function CreateAccountFormPanel({ panelMarginClass, accountPanelBorderClass, contentWidthClass, idPrefix, formHeading, topRowContent, connected, publicKey, publicKeyLocked, roleTable, privateKeyRow, connectButton, footer, bare, formData, errors, descriptionTextareaRef, inputLocked, isLoading, loadingInputMessage, isSaving, isEditMode, submitLabel, hasUnsavedChanges, canCreateMissingAccount, disableSubmit, disableRevert, isRevertNoop, errorValueDisplay, onPublicKeyChange, onPublicKeyBlur, onChange, onFieldBlur, onRevert, revertLabel, }: Props): React.JSX.Element;
 export {};

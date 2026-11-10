@@ -4,9 +4,9 @@
 // the entries a host can offer. A host passes an AddAccountHost: what each entry does for ITS approver (the extension: create = derive the next vault account, import = a private key into the vault) and, for every entry it cannot offer,
 // the reason (shown disabled, docs/design/accountAuthDesign.txt section 17.2.7). Whatever is added is made the active account by the host's callback, never by this component (docs/design/accountAuthDesign.txt section 17.2.6: the app does not choose the active account).
 'use client';
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { accountDetailClass, addAccountStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
-import AccountAvatarPanel from './form/AccountAvatarPanel';
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
+import DetailScreenLayout from './DetailScreenLayout';
 import AccountFormPanel from './form/AccountFormPanel';
 import { useEffect, useRef, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
@@ -210,18 +210,29 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     return (_jsxs("div", { style: addAccountStyle.screen, children: [menuVisible && target && targets.length > 1 && (_jsxs("div", { style: addAccountStyle.targetLine, children: [_jsx("span", { children: "Adding to" }), targets.length > 1 ? (_jsxs("div", { style: addAccountStyle.targetPickerAnchor, children: [_jsx(WalletSelectDropDown, { walletId: target.id, displayName: target.name, showDisplay: WALLET_SELECT_DISPLAY.ICON | WALLET_SELECT_DISPLAY.ADDRESS | WALLET_SELECT_DISPLAY.COPY | (targetPickerOpen ? WALLET_SELECT_DISPLAY.CHEVRON_UP : WALLET_SELECT_DISPLAY.CHEVRON_DN), restrictRowClickToChevron: true, onSelectClick: () => setTargetPickerOpen((open) => !open), label: "Change wallet", collapseKey: target.id }), targetPickerOpen && (_jsx("div", { role: "listbox", "aria-label": "Wallets that can add accounts", style: addAccountStyle.targetPickerList, children: targets.map((option) => (_jsx("button", { type: "button", role: "option", "aria-selected": option.id === target.id, onClick: () => { setPickedTarget(option.id); setTargetPickerOpen(false); }, style: addAccountStyle.targetOption(option.id === target.id), children: option.name }, option.id))) }))] })) : _jsx("strong", { style: addAccountStyle.targetName, children: target.name })] })), menuVisible && (_jsx("div", { style: addAccountStyle.listBleed, children: _jsx(AddWalletMenu, { onImportWallet: open('importWallet', SP.IMPORT_A_WALLET), onImportAccount: open('importAccount', SP.IMPORT_AN_ACCOUNT), onCreateAccount: open('createAccount', SP.CREATE_ACCOUNT), onConnectMetaMask: connect('connectMetaMask'), onConnectMeritExtension: host.connectApprover ? connect('connectMeritExtension') : undefined, onConnectHardware: connect('connectHardware'), 
                     // like the web app: connecting MetaMask, the Merit extension and a hardware wallet is done from the wallet list (the pill's chevron), not from this menu
                     hide: { connectMetaMask: true, connectMeritExtension: true, connectHardware: true }, unavailable: unavailable, error: error }) })), flow.walletListVisible && (_jsxs("div", { style: addAccountStyle.listBleed, children: [_jsx(WalletListPanel, { onSelect: () => undefined, wallets: walletSlugs.filter((slug) => slug !== nativeSlug), listed: listed, onToggleListed: toggleListed, headerLabel: "Remote Wallet" }), error && _jsx("p", { style: addAccountStyle.error, children: error })] })), flow.importAccountVisible && (_jsx(ImportAccountForm, { value: key, onChange: setKey, formatInvalid: formatInvalid, previewAddress: previewAddress, error: error, isImporting: busy, onImport: () => void run(() => host.importAccount(trimmed, target?.id)) })), flow.importWalletVisible && (_jsx(ImportWalletForm, { value: phrase, onChange: setPhrase, invalid: phraseInvalid, previewAddress: phrasePreview, error: error, isImporting: busy, onImport: () => void run(() => host.importWallet(normalizeMnemonic(phrase), target?.id)) })), flow.createAccountVisible && (
-            // 2026-11-07 (owner: "we are removing redundancy here"): Create a Merit Account is the ACCOUNT DETAILS screen (the same avatar panel and the same table, AccountDetailScreen) in add mode: its own small form is gone. The title is Add New Account and the button Add Account.
-            _jsx("div", { id: "ACCOUNT_INFO", className: accountDetailClass.screen, children: _jsx("form", { className: accountDetailClass.form, onSubmit: (event) => {
-                        event.preventDefault();
-                        if (!busy)
-                            void run(() => host.createAccount(target?.id, profile));
-                    }, children: _jsxs("div", { id: "ACTIVE_ACCOUNT_BODY", className: walletPartClass.accountBody(true), children: [_jsx("div", { id: "ACCOUNT_LOGO", className: accountDetailClass.block, children: _jsx(AccountAvatarPanel, { panelMarginClass: "mb-0 min-h-0", avatarPanelBorderClass: "", avatarHeading: "", logoPreviewSrc: logoUrl, connected: true, isEditMode: true, inputLocked: false, previewButtonLabel: "Select Preview Image", loadingInputMessage: "", isLoading: false, acceptedInput: "image/*", logoFileInputRef: logoFileInputRef, onFileChange: (event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null })), showImage: true, showButton: true, minPreviewSize: 180, overflowMinPreviewSize: 96, maxPreviewSize: 420, minControlWidth: 220, uploadControlTextClassName: walletPartClass.uploadControlText, previewSizeBuffer: 0, previewHeightBuffer: 8, sectionBottomBuffer: 0, lockSectionHeight: false, fillParentHeight: false, sizingBoundarySelector: "#ACTIVE_ACCOUNT_BODY", resizeSignal: "create" }) }), _jsxs("div", { id: "ACCOUNT_META_DATA", className: accountDetailClass.block, children: [_jsx(AccountFormPanel, { panelMarginClass: "mb-0 !h-auto", accountPanelBorderClass: "", contentWidthClass: "max-w-[56rem]", idPrefix: "account-component-", formHeading: "", connected: true, 
-                                        // the address and the private key do not exist until the account is added
-                                        publicKey: "Made when the account is added", publicKeyLocked: true, formData: { name: profile.name, symbol: profile.symbol, email: profile.email ?? '', website: profile.website ?? '', description: profile.description, recipientNetwork: [] }, errors: {}, descriptionTextareaRef: descriptionRef, inputLocked: false, isLoading: false, loadingInputMessage: "", isSaving: busy, isEditMode: true, submitLabel: "Add Account", hasUnsavedChanges: true, canCreateMissingAccount: true, disableSubmit: busy, disableRevert: busy, isRevertNoop: false, onPublicKeyChange: () => undefined, onPublicKeyBlur: () => undefined, onChange: (event) => {
-                                            const { name, value } = event.target;
-                                            if (name === 'name' || name === 'symbol' || name === 'email' || name === 'website' || name === 'description')
-                                                setProfile((p) => ({ ...p, [name]: value }));
-                                        }, onFieldBlur: () => undefined, 
-                                        // 2026-11-07 (owner): the second button reads Cancel: nothing is added, the form is cleared and the Add menu is back
-                                        revertLabel: "Cancel", onRevert: () => { setProfile(EMPTY_PROFILE); flow.goToAddMenu(); } }), error && _jsx("p", { style: addAccountStyle.error, children: error })] })] }) }) }))] }));
+            // 2026-11-07 (owner: "we are removing redundancy here"): Create a Merit Account is the ACCOUNT DETAILS screen in add mode. 2026-11-09 (owner: one base): it is drawn by the same base layout (DetailScreenLayout) as Account Details, with its picture and its table passed in; its own small form is gone. The title is Add New Account and the button Add Account.
+            _jsx(DetailScreenLayout, { screenId: "ACCOUNT_INFO", onSubmit: (event) => {
+                    event.preventDefault();
+                    if (!busy)
+                        void run(() => host.createAccount(target?.id, profile));
+                }, logoFlag: SP.ACCOUNT_LOGO, metaFlag: SP.ACCOUNT_META_DATA, logoId: "ACCOUNT_LOGO", metaId: "ACCOUNT_META_DATA", resizeKey: "create", toggleTrace: "AddAccountFlow:toggleAccountMeta", avatar: {
+                    logoPreviewSrc: logoUrl,
+                    connected: true,
+                    isEditMode: true,
+                    inputLocked: false,
+                    previewButtonLabel: 'Select Preview Image',
+                    loadingInputMessage: '',
+                    isLoading: false,
+                    logoFileInputRef,
+                    onFileChange: (event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null })),
+                    toggleLabel: 'Account Meta',
+                }, table: (_jsxs(_Fragment, { children: [_jsx(AccountFormPanel, { bare: true, panelMarginClass: "", accountPanelBorderClass: "", contentWidthClass: "max-w-[56rem]", idPrefix: "account-component-", formHeading: "", connected: true, 
+                            // the address and the private key do not exist until the account is added
+                            publicKey: "Made when the account is added", publicKeyLocked: true, formData: { name: profile.name, symbol: profile.symbol, email: profile.email ?? '', website: profile.website ?? '', description: profile.description, recipientNetwork: [] }, errors: {}, descriptionTextareaRef: descriptionRef, inputLocked: false, isLoading: false, loadingInputMessage: "", isSaving: busy, isEditMode: true, submitLabel: "Add Account", hasUnsavedChanges: true, canCreateMissingAccount: true, disableSubmit: busy, disableRevert: busy, isRevertNoop: false, onPublicKeyChange: () => undefined, onPublicKeyBlur: () => undefined, onChange: (event) => {
+                                const { name, value } = event.target;
+                                if (name === 'name' || name === 'symbol' || name === 'email' || name === 'website' || name === 'description')
+                                    setProfile((p) => ({ ...p, [name]: value }));
+                            }, onFieldBlur: () => undefined, 
+                            // 2026-11-07 (owner): the second button reads Cancel: nothing is added, the form is cleared and the Add menu is back
+                            revertLabel: "Cancel", onRevert: () => { setProfile(EMPTY_PROFILE); flow.goToAddMenu(); } }), error && _jsx("p", { style: addAccountStyle.error, children: error })] })) }))] }));
 }

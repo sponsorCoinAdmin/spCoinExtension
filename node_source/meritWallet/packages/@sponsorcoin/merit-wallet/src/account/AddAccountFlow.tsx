@@ -5,8 +5,8 @@
 // the reason (shown disabled, docs/design/accountAuthDesign.txt section 17.2.7). Whatever is added is made the active account by the host's callback, never by this component (docs/design/accountAuthDesign.txt section 17.2.6: the app does not choose the active account).
 'use client';
 
-import { accountDetailClass, addAccountStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
-import AccountAvatarPanel from './form/AccountAvatarPanel';
+import { addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
+import DetailScreenLayout from './DetailScreenLayout';
 import AccountFormPanel from './form/AccountFormPanel';
 import { useEffect, useRef, useState } from 'react';
 import { privateKeyToAddress } from 'viem/accounts';
@@ -330,88 +330,73 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         />
       )}
       {flow.createAccountVisible && (
-        // 2026-11-07 (owner: "we are removing redundancy here"): Create a Merit Account is the ACCOUNT DETAILS screen (the same avatar panel and the same table, AccountDetailScreen) in add mode: its own small form is gone. The title is Add New Account and the button Add Account.
-        <div id="ACCOUNT_INFO" className={accountDetailClass.screen}>
-          <form
-            className={accountDetailClass.form}
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!busy) void run(() => host.createAccount(target?.id, profile));
-            }}
-          >
-            <div id="ACTIVE_ACCOUNT_BODY" className={walletPartClass.accountBody(true)}>
-              <div id="ACCOUNT_LOGO" className={accountDetailClass.block}>
-                <AccountAvatarPanel
-                  panelMarginClass="mb-0 min-h-0"
-                  avatarPanelBorderClass=""
-                  avatarHeading=""
-                  logoPreviewSrc={logoUrl}
-                  connected
-                  isEditMode
-                  inputLocked={false}
-                  previewButtonLabel="Select Preview Image"
-                  loadingInputMessage=""
-                  isLoading={false}
-                  acceptedInput="image/*"
-                  logoFileInputRef={logoFileInputRef}
-                  onFileChange={(event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null }))}
-                  showImage
-                  showButton
-                  minPreviewSize={180}
-                  overflowMinPreviewSize={96}
-                  maxPreviewSize={420}
-                  minControlWidth={220}
-                  uploadControlTextClassName={walletPartClass.uploadControlText}
-                  previewSizeBuffer={0}
-                  previewHeightBuffer={8}
-                  sectionBottomBuffer={0}
-                  lockSectionHeight={false}
-                  fillParentHeight={false}
-                  sizingBoundarySelector="#ACTIVE_ACCOUNT_BODY"
-                  resizeSignal="create"
-                />
-              </div>
-              <div id="ACCOUNT_META_DATA" className={accountDetailClass.block}>
-                <AccountFormPanel
-                  panelMarginClass="mb-0 !h-auto"
-                  accountPanelBorderClass=""
-                  contentWidthClass="max-w-[56rem]"
-                  idPrefix="account-component-"
-                  formHeading=""
-                  connected
-                  // the address and the private key do not exist until the account is added
-                  publicKey="Made when the account is added"
-                  publicKeyLocked
-                  formData={{ name: profile.name, symbol: profile.symbol, email: profile.email ?? '', website: profile.website ?? '', description: profile.description, recipientNetwork: [] }}
-                  errors={{}}
-                  descriptionTextareaRef={descriptionRef}
-                  inputLocked={false}
-                  isLoading={false}
-                  loadingInputMessage=""
-                  isSaving={busy}
-                  isEditMode
-                  submitLabel="Add Account"
-                  hasUnsavedChanges
-                  canCreateMissingAccount
-                  disableSubmit={busy}
-                  disableRevert={busy}
-                  isRevertNoop={false}
-                  onPublicKeyChange={() => undefined}
-                  onPublicKeyBlur={() => undefined}
-                  onChange={(event) => {
-                    const { name, value } = event.target;
-                    if (name === 'name' || name === 'symbol' || name === 'email' || name === 'website' || name === 'description') setProfile((p) => ({ ...p, [name]: value }));
-                  }}
-                  onFieldBlur={() => undefined}
-                  // 2026-11-07 (owner): the second button reads Cancel: nothing is added, the form is cleared and the Add menu is back
-                  revertLabel="Cancel"
-                  onRevert={() => { setProfile(EMPTY_PROFILE); flow.goToAddMenu(); }}
-                />
-                {error && <p style={addAccountStyle.error}>{error}</p>}
-              </div>
-            </div>
-          </form>
-        </div>
+        // 2026-11-07 (owner: "we are removing redundancy here"): Create a Merit Account is the ACCOUNT DETAILS screen in add mode. 2026-11-09 (owner: one base): it is drawn by the same base layout (DetailScreenLayout) as Account Details, with its picture and its table passed in; its own small form is gone. The title is Add New Account and the button Add Account.
+        <DetailScreenLayout
+          screenId="ACCOUNT_INFO"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!busy) void run(() => host.createAccount(target?.id, profile));
+          }}
+          logoFlag={SP.ACCOUNT_LOGO}
+          metaFlag={SP.ACCOUNT_META_DATA}
+          logoId="ACCOUNT_LOGO"
+          metaId="ACCOUNT_META_DATA"
+          resizeKey="create"
+          toggleTrace="AddAccountFlow:toggleAccountMeta"
+          avatar={{
+            logoPreviewSrc: logoUrl,
+            connected: true,
+            isEditMode: true,
+            inputLocked: false,
+            previewButtonLabel: 'Select Preview Image',
+            loadingInputMessage: '',
+            isLoading: false,
+            logoFileInputRef,
+            onFileChange: (event) => setProfile((p) => ({ ...p, logo: event.target.files?.[0] ?? null })),
+            toggleLabel: 'Account Meta',
+          }}
+          table={(
+            <>
+              <AccountFormPanel
+                bare
+                panelMarginClass=""
+                accountPanelBorderClass=""
+                contentWidthClass="max-w-[56rem]"
+                idPrefix="account-component-"
+                formHeading=""
+                connected
+                // the address and the private key do not exist until the account is added
+                publicKey="Made when the account is added"
+                publicKeyLocked
+                formData={{ name: profile.name, symbol: profile.symbol, email: profile.email ?? '', website: profile.website ?? '', description: profile.description, recipientNetwork: [] }}
+                errors={{}}
+                descriptionTextareaRef={descriptionRef}
+                inputLocked={false}
+                isLoading={false}
+                loadingInputMessage=""
+                isSaving={busy}
+                isEditMode
+                submitLabel="Add Account"
+                hasUnsavedChanges
+                canCreateMissingAccount
+                disableSubmit={busy}
+                disableRevert={busy}
+                isRevertNoop={false}
+                onPublicKeyChange={() => undefined}
+                onPublicKeyBlur={() => undefined}
+                onChange={(event) => {
+                  const { name, value } = event.target;
+                  if (name === 'name' || name === 'symbol' || name === 'email' || name === 'website' || name === 'description') setProfile((p) => ({ ...p, [name]: value }));
+                }}
+                onFieldBlur={() => undefined}
+                // 2026-11-07 (owner): the second button reads Cancel: nothing is added, the form is cleared and the Add menu is back
+                revertLabel="Cancel"
+                onRevert={() => { setProfile(EMPTY_PROFILE); flow.goToAddMenu(); }}
+              />
+              {error && <p style={addAccountStyle.error}>{error}</p>}
+            </>
+          )}
+        />
       )}
     </div>
   );

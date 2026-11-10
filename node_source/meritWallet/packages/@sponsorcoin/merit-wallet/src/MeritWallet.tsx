@@ -2533,6 +2533,9 @@ function MeritWalletInner({
         role: SP_COIN_DISPLAY.ACTIVE_ACCOUNT,
         host: detailHost,
       })
+    // 2026-11-09 (owner: a panel open in the tree must not be blank): ACCOUNT_PANEL with no address to show (nothing picked, no active account) says so, as the role panels do
+    : accountDetailVisible
+    ? React.createElement('div', { style: walletFrameStyle.roleEmpty }, 'No account selected.')
     : null;
 
   // 2026-10-26 (owner report: TOKEN_PANEL's own TOKEN_LOGO/TOKEN_META_DATA
@@ -2548,9 +2551,9 @@ function MeritWalletInner({
   // never actually wired in here. TokenPanel is self-contained (reads
   // previewToken/chain/baseUrl via the engine's own hooks, same as
   // AccountDetailScreen reads its host), so no props are needed.
-  const tokenDetailOverlay = tokenDetailVisible && previewTokenAddress
-    ? React.createElement(TokenPanel, {})
-    : null;
+  // 2026-11-09 (owner: TOKEN_PANEL open in the panel tree but empty on screen; the trace showed tokenDetailVisible true, tokenDetailOverlay false, previewTokenAddress null): it is drawn whenever it is visible, not only when a token is
+  // being previewed. TokenPanel decides what to show: the previewed token, else the buy or sell token, else its own "No token contract selected" notice (it closes itself when it was not opened from the panel tree).
+  const tokenDetailOverlay = tokenDetailVisible ? React.createElement(TokenPanel, {}) : null;
 
   // No loading branch needed — unlike accounts/tokens, this row's own data
   // (networkRowsSource) is already fully in memory the moment the icon is

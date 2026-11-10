@@ -12,18 +12,19 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { accountDetailClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible, useSetPanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
-import AccountAvatarPanel from './form/AccountAvatarPanel';
+import DetailImageBlock from './DetailImageBlock';
 import { RefreshBranch } from '../refresh/refreshReact';
 /** 2026-11-09 (owner): the space (px) kept clear around the image inside its box when a screen does not set its own: 20 above, 5 below, 20 left and right. */
 export const DEFAULT_IMAGE_BUFFER = { t: 20, b: 5, l: 20, r: 20 };
-export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, meta, screenId, onSubmit, activeBody = true, resizeKey = '', toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }) {
+export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, table, screenId, onSubmit, activeBody = true, resizeKey = '', toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }) {
     const menuTabHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
     const activeAccountHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
     const logoVisible = usePanelVisible(logoFlag);
     const metaVisible = usePanelVisible(metaFlag);
     const setPanelVisible = useSetPanelVisible();
     const resizeSignal = [menuTabHeaderOpen, activeAccountHeaderOpen, resizeKey].join(':');
-    const body = (_jsxs("div", { id: "ACTIVE_ACCOUNT_BODY", className: walletPartClass.accountBody(activeBody), children: [logoVisible ? (_jsx("div", { id: logoId, className: metaVisible || !activeBody ? accountDetailClass.block : accountDetailClass.blockLast, children: _jsx(AccountAvatarPanel, { panelMarginClass: "mb-0 min-h-0", avatarPanelBorderClass: "", avatarHeading: "", ...avatar, acceptedInput: "image/*", showImage: true, showButton: true, minPreviewSize: 180, overflowMinPreviewSize: 96, maxPreviewSize: 420, minControlWidth: 220, uploadControlTextClassName: walletPartClass.uploadControlText, previewSizeBuffer: 0, previewHeightBuffer: 8, sectionBottomBuffer: activeBody ? 18 : 8, lockSectionHeight: false, fillParentHeight: false, sizingBoundarySelector: "#ACTIVE_ACCOUNT_BODY", resizeSignal: resizeSignal, imageBuffer: { t: tBuffer ?? DEFAULT_IMAGE_BUFFER.t, b: bBuffer ?? DEFAULT_IMAGE_BUFFER.b, r: rBuffer ?? DEFAULT_IMAGE_BUFFER.r, l: lBuffer ?? DEFAULT_IMAGE_BUFFER.l }, toggleOn: metaVisible, onToggle: () => setPanelVisible(metaFlag, !metaVisible, toggleTrace) }) })) : null, metaVisible ? (_jsx("div", { id: metaId, className: accountDetailClass.block, children: meta({ logoVisible }) })) : null] }));
+    // 2026-11-09 (owner: no unnecessary wrappers): screen -> body -> block -> picture box -> picture. The screen is the <form> itself when it submits; the body is the shared stacked column; the logo block is DetailImageBlock.
+    const body = (_jsxs("div", { id: "ACTIVE_ACCOUNT_BODY", className: walletPartClass.accountBody(activeBody), children: [logoVisible ? (_jsx(DetailImageBlock, { id: logoId, last: !metaVisible && activeBody, ...avatar, imageBuffer: { t: tBuffer ?? DEFAULT_IMAGE_BUFFER.t, b: bBuffer ?? DEFAULT_IMAGE_BUFFER.b, r: rBuffer ?? DEFAULT_IMAGE_BUFFER.r, l: lBuffer ?? DEFAULT_IMAGE_BUFFER.l }, toggleOn: metaVisible, onToggle: () => setPanelVisible(metaFlag, !metaVisible, toggleTrace), sectionBottomBuffer: activeBody ? 18 : 8, resizeSignal: resizeSignal })) : null, metaVisible ? (_jsx("div", { id: metaId, className: accountDetailClass.metaBlock, children: table })) : null] }));
     // the screen is a branch of the refresh tree (named by its logo block: ACCOUNT_LOGO -> ACCOUNT_PANEL); the image and any table inside it are its children
-    return (_jsx(RefreshBranch, { id: logoId.replace(/_LOGO$/, '_PANEL'), children: _jsx("div", { id: screenId, className: accountDetailClass.screen, children: onSubmit ? (_jsx("form", { onSubmit: onSubmit, className: accountDetailClass.form, children: body })) : (_jsx("div", { className: accountDetailClass.form, children: body })) }) }));
+    return (_jsx(RefreshBranch, { id: logoId.replace(/_LOGO$/, '_PANEL'), children: onSubmit ? (_jsx("form", { id: screenId, onSubmit: onSubmit, className: accountDetailClass.screen, children: body })) : (_jsx("div", { id: screenId, className: accountDetailClass.screen, children: body })) }));
 }

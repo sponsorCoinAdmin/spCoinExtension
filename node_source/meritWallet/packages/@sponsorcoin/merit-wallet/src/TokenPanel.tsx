@@ -152,10 +152,11 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
   const name = (resolvedContract.name ?? '').toString().trim();
 
   return (
-    <div id="TOKEN_PANEL">
+    <>
       {isPreviewMode && <div id="TOKEN_META_DATA_PREVIEW" className={panelPartClass.hidden} aria-hidden="true" />}
       {/* 2026-11-09 (owner): drawn by the shared read-only screen, the twin of the Account Details screen (scalable image, "Token Meta" toggle, same table and spacing). TOKEN_LOGO and TOKEN_META_DATA stay two independent flags, as before. */}
       <MetaDetailScreen
+        screenId="TOKEN_PANEL"
         logoFlag={SP_COIN_DISPLAY.TOKEN_LOGO}
         metaFlag={SP_COIN_DISPLAY.TOKEN_META_DATA}
         logoId="TOKEN_LOGO"
@@ -166,6 +167,6 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
         imageKind="token"
         rows={tokenDetailRows(resolvedContract)}
       />
-    </div>
+    </>
   );
 }

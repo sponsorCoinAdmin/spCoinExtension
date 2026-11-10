@@ -5,14 +5,18 @@
 // list, so locked reads as not connected. No MetaMask installed: false.
 import { useCallback, useEffect, useState } from 'react';
 import { discoverWallets } from './injectedWallet';
+import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
 import { onInjectedWalletChanged } from '../auth/injectedAuthenticator';
 export const METAMASK_RDNS = 'io.metamask';
 async function readConnected(provider) {
     try {
         const accounts = await provider.request({ method: 'eth_accounts' });
+        // 2026-11-08 (owner: Merit said connected while MetaMask offered Connect): MetaMask connects PER ACCOUNT, and eth_accounts lists exactly the accounts this site may use
+        engineTrace('useMetaMask:eth_accounts', { accounts });
         return Array.isArray(accounts) && accounts.length > 0;
     }
-    catch {
+    catch (error) {
+        engineTrace('useMetaMask:eth_accounts:failed', { message: error instanceof Error ? error.message : String(error) });
         return false;
     }
 }
@@ -45,7 +49,7 @@ export function useMetaMask(win) {
         const read = () => void readConnected(provider).then((connected) => { if (!cancelled)
             setConnected(connected); });
         // accountsChanged carries the new list; it is trusted over a second request
-        const onAccounts = (accounts) => { if (!cancelled)
+        const onAccounts = (accounts) => { engineTrace('useMetaMask:accountsChanged', { accounts }); if (!cancelled)
             setConnected(Array.isArray(accounts) && accounts.length > 0); };
         read();
         provider.on?.('accountsChanged', onAccounts);

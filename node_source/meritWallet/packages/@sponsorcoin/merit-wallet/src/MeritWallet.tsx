@@ -75,6 +75,8 @@ import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectP
 import type { Wallet } from './wallet/wallet';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, usePlatform, type MeritPlatform } from './platform/platform';
+import { RefreshTreeProvider, ImageCacheContext } from './refresh/refreshReact';
+import { createRefreshTree } from './refresh/refreshTree';
 import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps, type WalletDerivation } from './wallet/walletProps';
 import { useApproverAccounts } from './wallet/approverAccountsReact';
 import { useApprovalMessagePanel } from './auth/useApprovalMessagePanel';
@@ -82,9 +84,11 @@ import { useAccountNoticeMessagePanel } from './auth/useAccountNoticeMessagePane
 import { useChainInfo } from './panels/useChainInfo';
 import type { ApproverHost } from './wallet/approverAccounts';
 import { walletName, type AuthenticatorId } from './auth/authenticator';
+import { STATUS } from '@sponsorcoin/spcoin-common/context';
 import type { IconCacheStorage } from '@sponsorcoin/spcoin-feeds/shared';
-import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, type MenuTabKey, WalletRadioPanels, TradingStationPanel, SendTabPanel, NetworkDetailPanel, MeritInfoPanelReal, type MeritWalletNetworkRow } from './panels';
+import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, type MenuTabKey, WalletRadioPanels, TradingStationPanel, SendTabPanel, MeritInfoPanelReal, type MeritWalletNetworkRow } from './panels';
 import TokenPanel from './TokenPanel';
+import ConnectedNetworkPanel from './ConnectedNetworkPanel';
 // Panel visibility in this component goes through exactly one engine:
 // @sponsorcoin/spcoin-exchange-engine's panelStore, read via PanelGate /
 // usePanelVisible. The package's own separate store (panelState.ts) was
@@ -100,6 +104,7 @@ import { ConnectedTradeButton, type TradeHost } from './trade/tradeHost';
 import WalletSessionDialogs, { sessionConfigHandlers, type WalletSessionDialog } from './config/WalletSessionDialogs';
 import type { WalletSessionHost } from './walletSessionHost';
 import AccountDetailScreen, { type AccountDetailHost } from './account/AccountDetailScreen';
+import { resolveAccountSource } from './account/accountSource';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';
 import WalletOnboardingPanel, { type WalletOnboardingPanelProps } from './WalletOnboardingPanel';
@@ -1646,6 +1651,9 @@ function MeritWalletInner({
   // different trigger (the avatar icon, not the row/chevron). Null when
   // closed; a real address string while showing that account's details.
   const [accountDetailAddress, setAccountDetailAddress] = useState<string | null>(null);
+  // 2026-11-08 (owner): the group of the row the details were opened from (the same address can be in two groups), and what the wallet said about it (the screen's title)
+  const [accountDetailGroup, setAccountDetailGroup] = useState<string | null>(null);
+  const [accountDetailTitle, setAccountDetailTitle] = useState<string | null>(null);
   const accountDetailVisible = usePanelVisible(SP_COIN_DISPLAY.ACCOUNT_PANEL) && assetRadioOpen;
   // The role detail panels (an agent, a sponsor, a recipient) show the same account detail screen for the account the exchange context holds in that role.
   const agentPanelVisible = usePanelVisible(SP_COIN_DISPLAY.AGENT_PANEL) && assetRadioOpen;
@@ -1673,7 +1681,7 @@ function MeritWalletInner({
   // Same idea, for the network-list's own icon (Select Network) — see
   // onNetworkIconClick's own doc comment for why this one needs no
   // separate "detail" data prop from the caller.
-  const [networkDetailId, setNetworkDetailId] = useState<string | null>(null);
+  const [, setNetworkDetailId] = useState<string | null>(null);
   const networkDetailVisible = usePanelVisible(SP_COIN_DISPLAY.NETWORK_PANEL) && assetRadioOpen;
   // 2026-09-21, Path A — ACCOUNT_PANEL/TOKEN_PANEL/NETWORK_PANEL are ALL
   // `MAIN_RADIO_OVERLAY_PANELS` members too (verified the same way as
@@ -1683,8 +1691,9 @@ function MeritWalletInner({
   // interaction as the list-overlay slice already found and fixed for.
   // These addresses/ids identify the selected detail record. The panel
   // tree flags below own whether their detail screens are visible.
-  const openAccountDetail = (address: string) => {
+  const openAccountDetail = (address: string, groupId?: string) => {
     setAccountDetailAddress(address);
+    setAccountDetailGroup(groupId ?? null);
     openPanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'MeritWallet:openAccountDetail');
   };
   // 2026-10-23 — openTokenDetail (the token-row equivalent of
@@ -1744,7 +1753,7 @@ function MeritWalletInner({
     // This used to call closeActiveListPanel(..., { keepContainer: true }) here, which wiped them.
   };
   // The selected detail record is data tied to its panel: it goes when the panel closes, not when the tab changes.
-  useEffect(() => { if (!accountDetailVisible) setAccountDetailAddress(null); }, [accountDetailVisible]);
+  useEffect(() => { if (!accountDetailVisible) { setAccountDetailAddress(null); setAccountDetailGroup(null); setAccountDetailTitle(null); } }, [accountDetailVisible]);
   // 2026-10-26 (owner report, trace-confirmed: right-clicking a token row
   // still showed a blank body even after tokenDetailOverlay was switched to
   // read previewToken) -- a plain `!tokenDetailVisible` check (this
@@ -2373,7 +2382,7 @@ function MeritWalletInner({
             },
             onInfoClick: account.address
               ? () => {
-                  openAccountDetail(account.address!);
+                  openAccountDetail(account.address!, group.id);
                   onAccountIconClick?.(account.address!);
                 }
               : undefined,
@@ -2497,17 +2506,32 @@ function MeritWalletInner({
     : undefined;
   // The active account's detail: the address picked from a list, else the active account (the panel opened from the header).
   const detailAddress = accountDetailAddress ?? String((activeAccountForDetail as { address?: string } | undefined)?.address ?? '').trim() ?? undefined;
-  const accountDetailOverlay = !accountDetailHost
+  // 2026-11-08 (docs/design/removeAccountPlan.txt rows 3 and 5): the screen asks who holds the account (the wallet answers) and leaves when the account was removed
+  const detailHost: AccountDetailHost | undefined = accountDetailHost && wallet
+    ? {
+        ...accountDetailHost,
+        accountSource: accountDetailHost.accountSource ?? (async (address: string, symbol?: string) => {
+          const value = await resolveAccountSource(wallet, address, activeAccountAddress, accountDetailGroup ?? undefined, symbol);
+          setAccountDetailTitle(value?.title ?? null);
+          return value;
+        }),
+        onAccountRemoved: () => {
+          setAccountDetailAddress(null);
+          closePanel('NAV_POP:MeritWallet:accountRemoved');
+        },
+      }
+    : accountDetailHost;
+  const accountDetailOverlay = !detailHost
     ? null
     : roleDetail
     ? roleDetail.account
-      ? React.createElement(AccountDetailScreen, { account: roleDetail.account as spCoinAccount, role: roleDetail.role, host: accountDetailHost })
+      ? React.createElement(AccountDetailScreen, { account: roleDetail.account as spCoinAccount, role: roleDetail.role, host: detailHost })
       : React.createElement('div', { style: walletFrameStyle.roleEmpty }, roleDetail.empty)
     : accountDetailVisible && detailAddress
     ? React.createElement(AccountDetailScreen, {
         account: { address: detailAddress, ...(accountDetail?.address === detailAddress ? { name: accountDetail.name, symbol: accountDetail.symbol, logoURL: accountDetail.avatarSrc } : {}) } as spCoinAccount,
         role: SP_COIN_DISPLAY.ACTIVE_ACCOUNT,
-        host: accountDetailHost,
+        host: detailHost,
       })
     : null;
 
@@ -2531,18 +2555,8 @@ function MeritWalletInner({
   // No loading branch needed — unlike accounts/tokens, this row's own data
   // (networkRowsSource) is already fully in memory the moment the icon is
   // clicked; see onNetworkIconClick's own doc comment on MeritWalletProps.
-  const networkDetailRow = networkDetailVisible && networkDetailId
-    ? networkRowsSource.find((row) => row.id === networkDetailId)
-    : undefined;
-  const networkDetailOverlay = networkDetailRow
-    ? React.createElement(NetworkDetailPanel, {
-        id: networkDetailRow.id,
-        logoSrc: networkDetailRow.iconSrc,
-        name: networkDetailRow.name,
-        symbol: networkDetailRow.symbol,
-        isTestnet: networkDetailRow.isTestnet,
-      })
-    : null;
+  // 2026-11-09 (owner: opened from the panel tree, NETWORK_PANEL showed an empty body): the screen is the shared ConnectedNetworkPanel (the live network, or the previewed chain), drawn by the same base layout as the Account screen, and it shows whenever NETWORK_PANEL is visible, not only after a row click.
+  const networkDetailOverlay = networkDetailVisible ? React.createElement(ConnectedNetworkPanel, {}) : null;
 
   // 2026-09-29, real bug fix — see passwordMode's own doc comment on
   // MeritWalletProps for the full root-cause. Highest priority in this
@@ -2689,7 +2703,7 @@ function MeritWalletInner({
   // wording. PasswordPanel's inner heading is suppressed here because this
   // component already shows the state in PanelTitle; passwordMode drives both.
   // 2026-10-15 (owner request): "Select Software Wallet" / "Select Hardware Wallet" / "Select Wallet", by the list's two footer boxes
-  const walletListScreenTitle = useWalletListTitle();
+  const walletListScreenTitle = useWalletListTitle(nativeWalletId === 'localVault' ? 'Extension' : nativeWalletId === 'serverKeystore' ? 'Web App' : undefined);
   const panelTitle = stepContentUp && stepTitle
     ? stepTitle
     : passwordOverlay
@@ -2711,7 +2725,7 @@ function MeritWalletInner({
     : meritInfoVisible
     ? 'About Merit Wallet'
     : accountDetailVisible
-    ? 'Account Details'
+    ? accountDetailTitle ?? 'Account Details'
     : tokenDetailVisible
       ? 'Token Details'
       : networkDetailVisible
@@ -2736,7 +2750,18 @@ function MeritWalletInner({
                 ? 'Rewards Management'
                 : 'Wallet Config';
 
+  // 2026-11-09 (owner design): the refresh tree of this wallet (refresh/refreshTree.ts); every screen's loaded data is a node in it
+  const refreshTreeRef = useRef<ReturnType<typeof createRefreshTree> | undefined>(undefined);
+  if (!refreshTreeRef.current) refreshTreeRef.current = createRefreshTree();
+  const refreshTree = refreshTreeRef.current;
+  // 2026-11-09 (owner): the Refresh button stays disabled until the tree has finished, not only while the host's own step runs: the token changed and the tree has not reported done yet means busy (no gap between the two)
+  const [treeDoneToken, setTreeDoneToken] = useState(refreshToken ?? 0);
+  const imageCacheValue = useMemo(() => ({ caches: iconCachesRef.current!, baseUrl: baseUrl ?? '' }), [baseUrl]);
+  const refreshBusy = !!refreshing || (refreshToken ?? 0) !== treeDoneToken;
+
   return (
+    <ImageCacheContext.Provider value={imageCacheValue}>
+    <RefreshTreeProvider tree={refreshTree} refreshToken={refreshToken ?? 0} onDone={setTreeDoneToken}>
     <WalletBalanceContext.Provider value={walletBalanceValue}>
     {/* 2026-10-09: connect mode is derived from "no active account"; every action button below turns into a Connect button that opens the account list. */}
     <WalletConnectProvider hasAccount={!!String(activeAccountAddress ?? '').trim()} openAccountList={() => setActiveList('account')}>
@@ -2796,7 +2821,7 @@ function MeritWalletInner({
           }
           titleBadgeSrc={titleBadgeSrc}
           onRefresh={onRefresh}
-          refreshing={refreshing}
+          refreshing={refreshBusy}
           onClose={onClose}
           appType={appType}
           wwwIconSrc={wwwIconSrc}
@@ -3043,6 +3068,8 @@ function MeritWalletInner({
     </ActiveAccountProfileContext.Provider>
     </WalletConnectProvider>
     </WalletBalanceContext.Provider>
+    </RefreshTreeProvider>
+    </ImageCacheContext.Provider>
   );
 }
 
@@ -3138,13 +3165,23 @@ function MeritWalletWired(props: MeritWalletProps) {
   const wantsAccounts = !!approverHost && (props.walletDerives ?? ALL_WALLET_DERIVATIONS).includes('accounts');
   const approvers = useApproverAccounts(wantsAccounts ? props.wallet : undefined, approverHost, props.activeAccountAddress, platform);
   approversRef.current = approvers;
+  // 2026-11-08 (owner): a failed connect is a MESSAGE_PANEL error (source, error, wallet), not a banner over the account list
+  const { setErrorMessage: setApproverError } = useExchangeContext();
+  const { openPanel: openApproverPanel } = usePanelTree();
+  useEffect(() => {
+    if (!approvers.notice) return;
+    const wallet = approvers.noticeWalletId ? walletName(approvers.noticeWalletId) : undefined;
+    setApproverError({ errCode: 0, msg: approvers.notice + (wallet ? String.fromCharCode(10) + 'Wallet: ' + wallet : ''), source: 'Active Account Selection', status: STATUS.MESSAGE_ERROR });
+    openApproverPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'MeritWallet:approverNotice');
+    approvers.clearNotice();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a new notice only
+  }, [approvers.notice]);
   addHostRef.current = props.addAccountHost;
   // 2026-11-06 (owner): the other wallet took accounts out of this wallet's list: a MESSAGE_PANEL popup with the accounts' icons
   useAccountNoticeMessagePanel(approverHost?.describeAccount);
   const accountDerived: Partial<MeritWalletProps> = approvers.groups
     ? {
         accountGroups: approvers.groups,
-        accountListNotice: approvers.notice || undefined,
         onAccountRowSelect: async (accountId: string, groupId?: string) => {
           const approverId = (groupId ?? (props.wallet ? props.wallet.backendIdFor(accountId) : undefined)) as AuthenticatorId | undefined;
           engineTrace('MeritWallet:onAccountRowSelect', { accountId, groupId, approverId, stack: String(new Error().stack ?? '').split(String.fromCharCode(10)).slice(2, 7).join(' | ') });

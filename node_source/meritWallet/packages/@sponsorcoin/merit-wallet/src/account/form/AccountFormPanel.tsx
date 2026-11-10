@@ -168,7 +168,7 @@ export default function CreateAccountFormPanel({
           {topRowContent ? <div className={accountFormClass.topRow(!!formHeading)}>{topRowContent}</div> : null}
         </div>
       ) : null}
-      <div className={accountFormClass.tableBox}>
+      <div className={footer ? accountFormClass.tableBoxWithFooter : accountFormClass.tableBox}>
         <div className={accountFormClass.grid(tableGrid)}>
           <div className={accountFormClass.contents}>
             <div className={accountFormClass.headCellName(msTableTw.theadRow, th)}>Field Name</div>

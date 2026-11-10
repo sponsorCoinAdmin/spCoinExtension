@@ -7,8 +7,9 @@ import { avatarPanelClass, avatarPreviewStyle, lockedSectionStyle } from '@spons
 import React, { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import DisconnectedControl from './DisconnectedControl';
+import { useCachedImage, type CachedImageKind } from '../../refresh/refreshReact';
 
-interface Props {
+export interface AccountAvatarPanelProps {
   panelMarginClass: string;
   avatarPanelBorderClass: string;
   avatarHeading: string;
@@ -40,6 +41,21 @@ interface Props {
   fillParentHeight?: boolean;
   sizingBoundarySelector?: string;
   resizeSignal?: unknown;
+  /** A second button beside the upload button ("Account Meta"): a toggle; omitted = the upload button alone. */
+  toggleLabel?: string;
+  toggleOn?: boolean;
+  onToggle?: () => void;
+  /** 2026-11-09 (owner): a READ-ONLY avatar (the Token and Network screens): no upload button, the toggle alone in the same rounded button box. */
+  hideUpload?: boolean;
+  /** The class of the box the image sits in (default: the navy box); a network logo is drawn without a fill. */
+  previewBoxClass?: string;
+  previewAlt?: string;
+  /** Px kept clear between the image box's edges and the image (top, bottom, right, left); the box keeps its size, the image shrinks inside it. */
+  imageBuffer?: { t?: number; b?: number; r?: number; l?: number };
+  /** Which section of the wallet's image cache the image comes from (a refresh reads it through that cache again); omitted: the URL is shown as it is. */
+  imageKind?: CachedImageKind;
+  /** 2026-11-09 (owner: the empty bands above and below a wide logo): the image's box takes the image's own width-to-height proportion instead of a square. Its width is sized as the square's side was (the room across, and the room down times the proportion). */
+  fitImageShape?: boolean;
   /** Optional sizing trace sink (the web app's debug trace); no tracing when omitted. */
   trace?: { enabled(): boolean; append(label: string, payload: unknown): void };
 }
@@ -76,9 +92,23 @@ export default function AccountAvatarPanel({
   fillParentHeight = true,
   sizingBoundarySelector,
   resizeSignal,
-}: Props) {
+  toggleLabel,
+  toggleOn = true,
+  onToggle,
+  hideUpload = false,
+  previewBoxClass,
+  previewAlt = 'Account logo preview',
+  imageBuffer,
+  imageKind,
+  fitImageShape = false,
+}: AccountAvatarPanelProps) {
+  // the image is read through the wallet's image cache, and is a node of the refresh tree: Refresh fetches it again into that cache (refresh/refreshReact.tsx)
+  const previewSrc = useCachedImage(logoPreviewSrc, imageKind);
   const [isUploadHovered, setIsUploadHovered] = useState(false);
   const [previewSize, setPreviewSize] = useState(560);
+  // the image's width divided by its height, known once it has loaded (1 until then, and always 1 for a square box)
+  const [imageAspect, setImageAspect] = useState(1);
+  const aspect = fitImageShape ? imageAspect : 1;
   const [sectionHeight, setSectionHeight] = useState<number | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
   const previewStageRef = useRef<HTMLDivElement | null>(null);
@@ -114,11 +144,13 @@ export default function AccountAvatarPanel({
         rect: { top: number; bottom: number; height: number };
         clientHeight: number;
         scrollHeight: number;
+        /** The ancestor's own max-height in px (a box that grows with its content up to this), or null when it has none. */
+        maxHeight: number | null;
         clips: boolean;
       }[] = [];
       let current = section.parentElement;
 
-      while (current && current !== document.body && ancestors.length < 12) {
+      while (current && current !== document.body && ancestors.length < 24) {
         const styles = window.getComputedStyle(current);
         const rect = current.getBoundingClientRect();
         const overflowY = styles.overflowY;
@@ -139,6 +171,7 @@ export default function AccountAvatarPanel({
           },
           clientHeight: current.clientHeight,
           scrollHeight: current.scrollHeight,
+          maxHeight: Number.isFinite(parseFloat(styles.maxHeight)) ? parseFloat(styles.maxHeight) : null,
           clips,
         });
 
@@ -157,12 +190,20 @@ export default function AccountAvatarPanel({
       const boundaryRect = boundary?.getBoundingClientRect();
       const sizingAncestors = getSizingAncestors();
       const viewportBottom = window.innerHeight;
+      // 2026-11-09 (owner: hiding Account Meta shrank the image; it must always be as large as the screen allows): with the section height not locked, the boxes around the image size themselves to their
+      // content, so their current bottoms shrink when the content does and would shrink the image again. The room is then the screen's, or the most such a box may grow to (its max-height).
+      // The frame (the outermost ancestor with a max-height) is where the boxes inside stop growing; each clipping box inside it then ends the same distance above the frame's bottom (its padding, border) as it does now,
+      // so its bottom when the frame is at its maximum is the frame's maximum bottom minus that distance. A clipping box OUTSIDE the frame (the page's own scroller) is sized by the page, not by the frame's content, so its bottom is used as it is.
+      const frameIndex = lockSectionHeight ? -1 : sizingAncestors.map((ancestor) => ancestor.maxHeight !== null).lastIndexOf(true);
+      const contentSized = frameIndex >= 0;
+      const frame = contentSized ? sizingAncestors[frameIndex] : undefined;
+      const frameMaxBottom = frame ? frame.rect.top + (frame.maxHeight as number) : 0;
       const clipBottom = Math.floor(
         Math.min(
           viewportBottom,
           ...sizingAncestors
             .filter((ancestor) => ancestor.clips)
-            .map((ancestor) => ancestor.rect.bottom),
+            .map((ancestor) => (frame && sizingAncestors.indexOf(ancestor) <= frameIndex ? frameMaxBottom - (frame.rect.bottom - ancestor.rect.bottom) : ancestor.rect.bottom)),
         ),
       );
       const rect = stage.getBoundingClientRect();
@@ -170,11 +211,11 @@ export default function AccountAvatarPanel({
       const headingHeight = headingRef.current?.getBoundingClientRect().height ?? 0;
       const selectedRowHeight = selectedRowRef.current?.getBoundingClientRect().height ?? 0;
       const measuredBoundaryBottom = boundaryRect?.bottom ?? parentRect?.bottom ?? sectionRect.bottom;
-      const sizingBottom = Math.min(measuredBoundaryBottom, clipBottom);
+      const sizingBottom = contentSized ? clipBottom : Math.min(measuredBoundaryBottom, clipBottom);
       // Cap boundary height to the visible clipped region to prevent a resize loop
       // where lockSectionHeight expands the section → boundary grows → repeat.
       const visibleBoundaryHeight = boundary && boundaryRect
-        ? Math.min(boundary.clientHeight, sizingBottom - boundaryRect.top)
+        ? contentSized ? sizingBottom - boundaryRect.top : Math.min(boundary.clientHeight, sizingBottom - boundaryRect.top)
         : 0;
       const availableSectionHeight = Math.floor(
         Math.max(
@@ -201,7 +242,9 @@ export default function AccountAvatarPanel({
         typeof overflowMinPreviewSize === 'number' && availableHeight < minPreviewSize
           ? overflowMinPreviewSize
           : minPreviewSize;
-      const boundedSize = Math.min(availableWidth, availableHeight, maxPreviewSize);
+      // a box that follows the image's shape is (width - left - right) / aspect + top + bottom high, so the width the height allows is (height - top - bottom) * aspect + left + right
+      const fitWidthFromHeight = fitImageShape ? (availableHeight - (imageBuffer?.t ?? 0) - (imageBuffer?.b ?? 0)) * aspect + (imageBuffer?.l ?? 0) + (imageBuffer?.r ?? 0) : availableHeight;
+      const boundedSize = Math.min(availableWidth, fitWidthFromHeight, maxPreviewSize);
       const nextSize = Math.floor(Math.max(effectiveMinPreviewSize, boundedSize));
       if (traceSizingLabel && trace?.enabled()) {
         const tracePayload = {
@@ -338,12 +381,18 @@ export default function AccountAvatarPanel({
     traceSizingLabel,
     hasSelectedRow,
     resizeSignal,
+    aspect,
+    fitImageShape,
+    imageBuffer?.t,
+    imageBuffer?.b,
+    imageBuffer?.l,
+    imageBuffer?.r,
   ]);
 
   return (
     <section
       ref={sectionRef}
-      className={avatarPanelClass.section(panelMarginClass, avatarPanelBorderClass, fillParentHeight, hasSelectedRow)}
+      className={avatarPanelClass.section(panelMarginClass, avatarPanelBorderClass, fillParentHeight, hasSelectedRow, fitImageShape)}
       style={lockSectionHeight && sectionHeight ? lockedSectionStyle(sectionHeight) : undefined}
     >
 {headingContent ? (
@@ -360,13 +409,14 @@ export default function AccountAvatarPanel({
         <div ref={previewStageRef} className={avatarPanelClass.stage}>
           {showImage ? (
             <div
-              className={avatarPanelClass.previewBox}
-              style={avatarPreviewStyle(previewSize)}
+              className={previewBoxClass ?? avatarPanelClass.previewBox}
+              style={avatarPreviewStyle(previewSize, imageBuffer, fitImageShape ? aspect : undefined)}
             >
               {logoPreviewSrc ? (
                 <img
-                  src={logoPreviewSrc}
-                  alt="Account logo preview"
+                  src={previewSrc}
+                  onLoad={fitImageShape ? (event) => { const { naturalWidth, naturalHeight } = event.currentTarget; if (naturalWidth && naturalHeight) setImageAspect(naturalWidth / naturalHeight); } : undefined}
+                  alt={previewAlt}
                   className={avatarPanelClass.previewImage}
                 />
               ) : (
@@ -394,11 +444,12 @@ export default function AccountAvatarPanel({
                   className={uploadControlClass}
                 />
               ) : (
-                <button
+                <div className={toggleLabel ? avatarPanelClass.buttonSplit : undefined}>
+                {hideUpload ? null : <button
                   type="button"
                   aria-disabled={!connected}
                   disabled={!connected}
-                  className={avatarPanelClass.uploadButton({ isEditMode, isUploadHovered, inputLocked })}
+                  className={toggleLabel ? avatarPanelClass.splitUpload(isUploadHovered) : avatarPanelClass.uploadButton({ isEditMode, isUploadHovered, inputLocked })}
                   title={isLoading ? loadingInputMessage : previewButtonLabel}
                   onClick={() => {
                     if (!isEditMode || inputLocked) return;
@@ -410,7 +461,13 @@ export default function AccountAvatarPanel({
                   onMouseLeave={() => setIsUploadHovered(false)}
                 >
                   <span className={uploadControlTextClass}>{previewButtonLabel}</span>
-                </button>
+                </button>}
+                {toggleLabel ? (
+                  <button type="button" aria-pressed={toggleOn} className={avatarPanelClass.splitToggle(toggleOn)} title={toggleOn ? `Hide ${toggleLabel}` : `Show ${toggleLabel}`} onClick={onToggle}>
+                    <span className={uploadControlTextClass}>{toggleLabel}</span>
+                  </button>
+                ) : null}
+                </div>
               )}
             </div>
           ) : null}

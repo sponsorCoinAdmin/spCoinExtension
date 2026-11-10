@@ -6,11 +6,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
 import { accountNoticeStore } from '../auth/accountNoticeStore';
 import { domPlatform } from '../platform/domPlatform';
-import { buildApproverGroups, createApproverController } from './approverAccounts';
+import { buildApproverGroups, connectNoticeText, createApproverController } from './approverAccounts';
 export function useApproverAccounts(wallet, host, activeAddress, platform = domPlatform) {
     const [entries, setEntries] = useState(undefined);
     const [statuses, setStatuses] = useState({});
-    const [notice, setNotice] = useState('');
+    const [notice, setNoticeText] = useState('');
+    const [noticeWalletId, setNoticeWalletId] = useState(undefined);
+    const setNotice = useCallback((text, id) => { setNoticeText(text); setNoticeWalletId(text ? id : undefined); }, []);
     // 2026-11-06 (owner rule): the accounts of a wallet that belongs to another Merit wallet, each connected or disconnected (Authenticator.knownAccounts)
     const [known, setKnown] = useState({});
     const activeRef = useRef(activeAddress);
@@ -103,11 +105,11 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
             host: { ...host, openInstall: host.openInstall ?? ((url) => platform.openUrl(url)) },
             // a remote Merit wallet connects and disconnects the way the wallet list does (host.walletConnect / walletDisconnect); every other wallet through the controller
             onConnect: (id) => {
-                // 2026-11-07 (owner: a Ledger connect appeared after Add Account(s) on Merit (Extension)): who asked, with the call path
+                // 2026-11-07 (owner: a Ledger connect appeared after Add Account(s) on Merit (Ext)): who asked, with the call path
                 engineTrace('approverAccounts:onConnect', { id, stack: String(new Error().stack ?? '').split(String.fromCharCode(10)).slice(2, 8).join(' | ') });
                 const handled = host.walletConnect?.(id);
                 if (handled)
-                    void Promise.resolve(handled).catch((error) => setNotice(error instanceof Error && error.message ? error.message : 'The wallet could not be connected.')).then(load);
+                    void Promise.resolve(handled).catch((error) => setNotice(connectNoticeText(error), id)).then(load);
                 else
                     void controller.connect(id).then(load);
             },
@@ -126,7 +128,7 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
                 const approver = wallet.registry.get(id);
                 engineTrace('approverAccounts:toggleAccount', { id, address, connected, hasHandler: typeof approver?.setAccountConnected === 'function' });
                 void Promise.resolve(approver?.setAccountConnected?.(address, connected))
-                    .catch((error) => setNotice(error instanceof Error && error.message ? error.message : 'That account could not be changed.'))
+                    .catch((error) => setNotice(error instanceof Error && error.message ? error.message : 'That account could not be changed.', id))
                     .then(load);
             },
             onAddAccounts: (id) => {
@@ -148,5 +150,5 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
         });
         return result;
     }, [wallet, host, entries, statuses, activeAddress, controller, load, platform, known]);
-    return { groups, notice, clearNotice: () => setNotice(''), controller };
+    return { groups, notice, noticeWalletId, clearNotice: () => setNotice(''), controller };
 }

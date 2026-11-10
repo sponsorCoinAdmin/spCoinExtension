@@ -14,6 +14,8 @@ export interface KeptAccountsState {
   known: string[];
   /** The known accounts switched off locally (disconnected). */
   off: string[];
+  /** 2026-11-08 (owner, docs/design/removeAccountPlan.txt X1, X4): accounts the person REMOVED from this wallet. Not listed, not usable; they return only when the person connects them again or the wallet newly starts sharing them. Absent in an older stored record = none. */
+  removed?: string[];
 }
 
 export interface KeptAccountsStore {
@@ -44,7 +46,7 @@ export function withKeptAccounts<T extends Authenticator>(base: T, store: KeptAc
   const adopt = async (shared: AuthenticatorAccount[]): Promise<void> => {
     const state = await store.read();
     const addresses = shared.map((a) => a.address);
-    await save({ known: union(state.known, addresses), off: without(state.off, addresses) });
+    await save({ known: union(state.known, addresses), off: without(state.off, addresses), removed: without(state.removed ?? [], addresses) });
   };
 
   const overrides: Partial<Authenticator> = {
@@ -52,15 +54,17 @@ export function withKeptAccounts<T extends Authenticator>(base: T, store: KeptAc
     async accounts(onPartial) {
       const state = await store.read();
       const listed = await base.accounts(onPartial ? (partial) => onPartial(partial.filter((a) => !has(state.off, a.address))) : undefined);
-      const known = union(state.known, listed.map((a) => a.address));
+      const gone = state.removed ?? [];
+      const known = union(state.known, listed.map((a) => a.address).filter((a) => !has(gone, a)));
       if (known.length !== state.known.length) await store.write({ ...state, known });
-      return listed.filter((a) => !has(state.off, a.address));
+      return listed.filter((a) => !has(state.off, a.address) && !has(gone, a.address));
     },
     // every known account with its state, connected or not
     async knownAccounts() {
       const state = await store.read();
       const live = await reported();
-      const known = union(state.known, live);
+      const gone = state.removed ?? [];
+      const known = without(union(state.known, live), gone);
       if (known.length !== state.known.length) await store.write({ ...state, known });
       return known.map((address) => ({ address, connected: has(live, address) && !has(state.off, address) }));
     },
@@ -71,9 +75,14 @@ export function withKeptAccounts<T extends Authenticator>(base: T, store: KeptAc
       try {
         await base.disconnect?.();
       } finally {
-        const known = union(state.known, live);
-        await save({ known, off: known });
+        const known = without(union(state.known, live), state.removed ?? []);
+        await save({ ...state, known, off: known });
       }
+    },
+    // 2026-11-08 (owner, plan row 2): Remove forgets the account here: it leaves known and off and goes on the removed list. The wallet is not touched (MetaMask keeps sharing it); the account is not listed again until the person connects it or the wallet newly shares it.
+    async removeAccount(address) {
+      const state = await store.read();
+      await save({ known: without(state.known, [address]), off: without(state.off, [address]), removed: union(state.removed ?? [], [address]) });
     },
     async setAccountConnected(address, connected) {
       const state = await store.read();
@@ -83,7 +92,7 @@ export function withKeptAccounts<T extends Authenticator>(base: T, store: KeptAc
       }
       const live = await reported();
       if (has(live, address)) {
-        await save({ ...state, off: without(state.off, [address]) });
+        await save({ ...state, off: without(state.off, [address]), removed: without(state.removed ?? [], [address]) });
         return;
       }
       // the wallet does not share it now (disconnected there, or removed there): only the wallet's own account picker can share an account
@@ -95,7 +104,24 @@ export function withKeptAccounts<T extends Authenticator>(base: T, store: KeptAc
     },
     onChange(listener) {
       listeners.add(listener);
-      const off = base.onChange?.(listener);
+      // 2026-11-08 (owner: connected in MetaMask's own window, this app still said Disconnected): an account the wallet starts sharing that this page did not ask for (MetaMask's own Connect button) was still switched off here from an earlier disconnect.
+      // An account that APPEARS in the wallet's list is adopted (no longer off); one that was shared all along and switched off here stays off.
+      let seen: Promise<string[]> = reported();
+      const off = base.onChange?.((change) => {
+        if (change !== 'accountsChanged') return listener(change);
+        const before = seen;
+        seen = reported();
+        void Promise.all([before, seen])
+          .then(async ([prior, now]) => {
+            const fresh = now.filter((address) => !has(prior, address));
+            if (fresh.length > 0) {
+              const state = await store.read();
+              await store.write({ known: union(state.known, fresh), off: without(state.off, fresh), removed: without(state.removed ?? [], fresh) });
+            }
+          })
+          .catch(() => undefined)
+          .then(() => listener(change));
+      });
       return () => {
         listeners.delete(listener);
         off?.();

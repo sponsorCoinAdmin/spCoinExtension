@@ -28,9 +28,9 @@ function createSideClient(side, config) {
         if (!config.link().connected)
             needsResync = true;
     });
-    const appName = side === 'EXT' ? 'Merit (Extension)' : 'Merit (Web App)';
+    const appName = side === 'EXT' ? 'Merit (Ext)' : 'Merit (Web App)';
     const announce = (addresses, why) => {
-        config.notify?.(why === 'missing' ? `Account Does not Exist on ${appName}\nRemoved from Local` : 'Disconnected by Remote', addresses);
+        config.notify?.(why === 'missing' ? `Account Does not Exist on ${appName}\nRemoved from Local` : `Disconnected by Remote\n${appName}`, addresses);
     };
     /** The link may read "not connected" only because its first answer has not come back: wait for it a moment. */
     function waitForLink() {
@@ -197,6 +197,24 @@ function createSideClient(side, config) {
             changing--;
         }
     }
+    /**
+     * 2026-11-08 (owner, docs/design/removeAccountPlan.txt X3, X4): REMOVE one account of the other wallet from this wallet's list. The other wallet is told to disconnect it first (it must be reachable, else it would bring the account back at the next handshake),
+     * then the account is forgotten here: it is no longer shared, no longer kept disconnected, so it is not listed. It returns only when the other wallet connects it again. The other wallet keeps the account itself.
+     */
+    async function forgetAccount(address) {
+        if (!isAddress(address))
+            throw new MeritConnectError(ERROR.INVALID_PARAMS, 'That is not an account address.');
+        if (!(await waitForLink()))
+            throw new MeritConnectError(ERROR.UNAVAILABLE, 'The other wallet is not connected, so it cannot be told to disconnect this account. Connect it first, then remove the account.');
+        changing++;
+        try {
+            await changeAccount(address, false);
+            await writeDisconnected(without(await readDisconnected(), [address]));
+        }
+        finally {
+            changing--;
+        }
+    }
     async function changeAccount(address, connected) {
         if (!isAddress(address))
             throw new MeritConnectError(ERROR.INVALID_PARAMS, 'That is not an account address.');
@@ -241,7 +259,7 @@ function createSideClient(side, config) {
             trace('revoke', { side, rid, failed: error instanceof Error ? error.message : String(error) });
         }
     }
-    return { handshake, fetchMeritConnections, requestAccounts, requestConnection, revoke, setAccountConnected, listAccounts };
+    return { handshake, fetchMeritConnections, requestAccounts, requestConnection, revoke, setAccountConnected, forgetAccount, listAccounts };
 }
 /** The standard calls, for the sides this host can reach. A side that was not configured throws 4900. */
 export function createMeritConnect(sides) {
@@ -266,6 +284,8 @@ export function createMeritConnect(sides) {
         revoke: async (side) => client(side).revoke(),
         /** Connect or disconnect ONE account from this wallet (a disconnected account stays in the list). */
         setAccountConnected: async (side, address, connected) => client(side).setAccountConnected(address, connected),
+        /** Remove ONE account of the other wallet from this wallet's list (the other wallet is told to disconnect it first and keeps the account). */
+        forgetAccount: async (side, address) => client(side).forgetAccount(address),
         /** The accounts as this wallet lists them, each connected or disconnected. */
         listAccounts: async (side) => client(side).listAccounts(),
         /** The link to that side came up or went down: the host re-runs its list load (which runs the handshake). */

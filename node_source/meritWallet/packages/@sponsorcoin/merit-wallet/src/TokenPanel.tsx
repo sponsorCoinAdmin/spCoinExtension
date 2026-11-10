@@ -8,7 +8,7 @@
 // the token hooks and panel-tree hooks from @sponsorcoin/spcoin-exchange-engine. The web app's debug traces were dropped on the move.
 'use client';
 
-import { panelPartClass, metaTableClass } from '@sponsorcoin/spcoin-common/styles';
+import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -26,7 +26,7 @@ import {
   usePreviewTokenSource,
   useSellTokenContract,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import { ReadOnlyMetaDataTable } from './panels';
+import MetaDetailScreen from './account/MetaDetailScreen';
 import { tokenDetailRows } from './TokenSlotPanels';
 import { useWalletData } from './walletData';
 
@@ -39,7 +39,6 @@ import { useWalletData } from './walletData';
 export default function TokenPanel(_props: { onClose?: () => void }) {
   const vTokenPanel = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
   const vTokenMetaData = usePanelVisible(SP_COIN_DISPLAY.TOKEN_META_DATA);
-  const vTokenLogo = usePanelVisible(SP_COIN_DISPLAY.TOKEN_LOGO);
   // Specifically "is TOKEN_PANEL's own nested token picker open on top of it", not the shared ASSET_SELECT_LIST_PANEL (the list container every
   // list renders through). isTopOfStack tells a stacked picker apart from a list merely left open behind this panel.
   const vTokenList = usePanelVisible(SP_COIN_DISPLAY.REMOTE_TOKEN_LIST);
@@ -155,27 +154,18 @@ export default function TokenPanel(_props: { onClose?: () => void }) {
   return (
     <div id="TOKEN_PANEL">
       {isPreviewMode && <div id="TOKEN_META_DATA_PREVIEW" className={panelPartClass.hidden} aria-hidden="true" />}
-      {/* 2026-10-26 (owner report: TOKEN_META_DATA's panel-tree toggle had no effect — the table stayed on regardless) — `isPreviewMode ||`
-          force-showed this block whenever a token was in preview, which is every time this overlay renders at all (tokenDetailOverlay in
-          MeritWallet.tsx only builds it when previewTokenAddress is set), so vTokenMetaData's actual value was never read. Fixed by reading
-          vTokenMetaData alone — AccountDetailScreen's own ACCOUNT_META_DATA has no such override.
-          2026-10-26 (owner report, same day: "closing TOKEN_META_DATA also closes the logo") — ReadOnlyMetaDataTable bundles the logo and
-          the table into ONE component with ONE visibility gate (the call below), so nesting it under vTokenMetaData alone tied TOKEN_LOGO's
-          own toggle to TOKEN_META_DATA's. AccountDetailScreen's ACCOUNT_LOGO/ACCOUNT_META_DATA are two fully independent sibling divs, each
-          reading only its own flag — TOKEN_LOGO now renders standalone (the same logoBox/logoImage markup ReadOnlyMetaDataTable draws
-          internally), and the table call passes logoVisible={false} so it never draws a second, redundant copy of the image. */}
-      {vTokenLogo && (logoURL || defaultStaticImage) && (
-        <div id="TOKEN_LOGO" className={metaTableClass.logoBox(metaTableClass.logoContainerSize, metaTableClass.logoContainer)}>
-          <img
-            src={logoURL || defaultStaticImage}
-            alt={name}
-            className={metaTableClass.logoImage(metaTableClass.logoSize, metaTableClass.logoRounded, metaTableClass.logoBackground)}
-          />
-        </div>
-      )}
-      {vTokenMetaData && (
-        <ReadOnlyMetaDataTable id="TOKEN_META_DATA" rows={tokenDetailRows(resolvedContract)} logoVisible={false} />
-      )}
+      {/* 2026-11-09 (owner): drawn by the shared read-only screen, the twin of the Account Details screen (scalable image, "Token Meta" toggle, same table and spacing). TOKEN_LOGO and TOKEN_META_DATA stay two independent flags, as before. */}
+      <MetaDetailScreen
+        logoFlag={SP_COIN_DISPLAY.TOKEN_LOGO}
+        metaFlag={SP_COIN_DISPLAY.TOKEN_META_DATA}
+        logoId="TOKEN_LOGO"
+        metaId="TOKEN_META_DATA"
+        logoSrc={logoURL || defaultStaticImage}
+        logoAlt={name}
+        toggleLabel="Token Meta"
+        imageKind="token"
+        rows={tokenDetailRows(resolvedContract)}
+      />
     </div>
   );
 }

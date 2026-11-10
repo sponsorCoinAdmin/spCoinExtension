@@ -9,8 +9,8 @@ const strings = (value: unknown): string[] => (Array.isArray(value) ? value.filt
 export function extensionKeptAccountsStore(walletId: string): KeptAccountsStore {
   return {
     async read(): Promise<KeptAccountsState> {
-      const stored = (await chrome.storage.local.get(key(walletId)))[key(walletId)] as { known?: unknown; off?: unknown } | undefined;
-      return { known: strings(stored?.known), off: strings(stored?.off) };
+      const stored = (await chrome.storage.local.get(key(walletId)))[key(walletId)] as { known?: unknown; off?: unknown; removed?: unknown } | undefined;
+      return { known: strings(stored?.known), off: strings(stored?.off), removed: strings(stored?.removed) };
     },
     async write(state) {
       await chrome.storage.local.set({ [key(walletId)]: state });

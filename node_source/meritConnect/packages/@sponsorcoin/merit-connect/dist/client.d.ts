@@ -73,6 +73,8 @@ export declare function createMeritConnect(sides: Partial<Record<Side, SideConfi
     revoke: (side: Side) => Promise<void>;
     /** Connect or disconnect ONE account from this wallet (a disconnected account stays in the list). */
     setAccountConnected: (side: Side, address: string, connected: boolean) => Promise<void>;
+    /** Remove ONE account of the other wallet from this wallet's list (the other wallet is told to disconnect it first and keeps the account). */
+    forgetAccount: (side: Side, address: string) => Promise<void>;
     /** The accounts as this wallet lists them, each connected or disconnected. */
     listAccounts: (side: Side) => Promise<ListedAccount[]>;
     /** The link to that side came up or went down: the host re-runs its list load (which runs the handshake). */

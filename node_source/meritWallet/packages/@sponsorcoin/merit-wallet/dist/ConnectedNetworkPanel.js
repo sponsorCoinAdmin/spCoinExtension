@@ -12,14 +12,14 @@
 // A host that passes nothing gets the registry defaults, which is what the extension uses.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { tokenRowClass, tokenRowStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CopyBtn } from './TokenSlotPanels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { defaultStaticImage, previewNetworkStore, useExchangeContext, usePanelVisible, usePreviewNetworkChainId, } from '@sponsorcoin/spcoin-exchange-engine';
 import { getNetworkConfiguration } from '@sponsorcoin/spcoin-feeds/networks';
 import { getNetworkMetaData } from '@sponsorcoin/spcoin-panels';
-import { ReadOnlyMetaDataTable } from './panels';
+import MetaDetailScreen from './account/MetaDetailScreen';
 import { useWalletData } from './walletData';
 /** A NetworkElement for a chain id straight from the registry (the default for previewing a chain other than the live one). */
 export function networkElementFromRegistry(chainId) {
@@ -54,8 +54,6 @@ export function useLiveNetworkFromContext() {
 }
 export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkFromContext }) {
     const vNetworkPanel = usePanelVisible(SP_COIN_DISPLAY.NETWORK_PANEL);
-    const vNetworkMetaData = usePanelVisible(SP_COIN_DISPLAY.NETWORK_META_DATA);
-    const vNetworkLogo = usePanelVisible(SP_COIN_DISPLAY.NETWORK_LOGO);
     const { resolveNetwork, loadNetworkInfo } = useWalletData();
     const { network: liveNetwork, chainId: liveChainId } = useLiveNetwork();
     const previewChainId = usePreviewNetworkChainId();
@@ -115,8 +113,5 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
         }
         return { label: f.label, value: f.value };
     });
-    return (_jsx("div", { id: "NETWORK_PANEL", children: vNetworkMetaData && (_jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: logoURL || defaultStaticImage, logoAlt: name, logoVisible: vNetworkLogo, 
-            // Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind
-            // them and no card frame around them (unlike token and account logos).
-            logoBackgroundClassName: walletPartClass.networkLogo.background, logoContainerClassName: walletPartClass.networkLogo.container })) }));
+    return (_jsx("div", { id: "NETWORK_PANEL", children: _jsx(MetaDetailScreen, { logoFlag: SP_COIN_DISPLAY.NETWORK_LOGO, metaFlag: SP_COIN_DISPLAY.NETWORK_META_DATA, logoId: "NETWORK_LOGO", metaId: "NETWORK_META_DATA", logoSrc: logoURL || defaultStaticImage, logoAlt: name, toggleLabel: "Network Meta", imageKind: "network", rows: rows, plainLogo: true, fitImageShape: true }) }));
 }

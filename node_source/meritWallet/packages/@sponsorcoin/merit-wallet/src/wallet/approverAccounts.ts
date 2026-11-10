@@ -225,7 +225,10 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
 
 /** The words a failed connect is reported in. */
 export function connectNoticeText(error: unknown): string {
-  return error instanceof Error && error.message ? error.message : 'That account could not be connected.';
+  const text = error instanceof Error && error.message ? error.message : '';
+  // 2026-11-08 (owner): a wallet already showing an earlier connect request (EIP-1193 code -32002) says so in plain words
+  if (/already pending/i.test(text) || (error as { code?: unknown } | null)?.code === -32002) return 'Connection rejected: the wallet is already waiting on an earlier connection request. Open the wallet, approve or reject that request, then try again.';
+  return text || 'That account could not be connected.';
 }
 
 export interface ApproverController {
@@ -235,7 +238,7 @@ export interface ApproverController {
 }
 
 /** The connect / disconnect operations of one wallet, wired to the host, with failures reported as text. */
-export function createApproverController(wallet: Wallet, host: ApproverHost, onNotice: (text: string) => void, getActiveAddress: () => string | undefined): ApproverController {
+export function createApproverController(wallet: Wallet, host: ApproverHost, onNotice: (text: string, approverId?: AuthenticatorId) => void, getActiveAddress: () => string | undefined): ApproverController {
   const connectHost: ConnectHost = {
     setActiveAccount: host.setActiveAccount,
     setActiveAuthenticator: host.setActiveAuthenticator ?? ((address, id) => wallet.setActiveAuthenticator(address, id)),
@@ -251,7 +254,7 @@ export function createApproverController(wallet: Wallet, host: ApproverHost, onN
       } catch (error) {
         // notify() already told the user for the cases connectAccount knows; a choice among several accounts is not an error here (the list shows them after the connect).
         if (error instanceof ConnectChoiceRequired) return false;
-        onNotice(connectNoticeText(error));
+        onNotice(connectNoticeText(error), approverId);
         return false;
       }
     },
@@ -264,7 +267,7 @@ export function createApproverController(wallet: Wallet, host: ApproverHost, onN
         const holdsActive = !active || !id || wallet.backendIdFor(active) === id;
         await disconnectAccount({ registry: wallet.registry, approverId: id, host: holdsActive ? connectHost : { ...connectHost, clearActiveAccount: () => undefined } });
       } catch (error) {
-        onNotice(connectNoticeText(error));
+        onNotice(connectNoticeText(error), id);
       }
     },
   };

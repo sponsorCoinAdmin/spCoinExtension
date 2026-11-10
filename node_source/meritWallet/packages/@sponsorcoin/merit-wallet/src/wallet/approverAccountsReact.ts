@@ -10,12 +10,14 @@ import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
 import { accountNoticeStore } from '../auth/accountNoticeStore';
 import { domPlatform } from '../platform/domPlatform';
 import type { MeritPlatform } from '../platform/platform';
-import { buildApproverGroups, createApproverController, type ApproverController, type ApproverHost } from './approverAccounts';
+import { buildApproverGroups, connectNoticeText, createApproverController, type ApproverController, type ApproverHost } from './approverAccounts';
 
 export interface ApproverAccounts {
   groups: AccountListGroup[] | undefined;
   /** A failed connect, in words; empty when there is none. */
   notice: string;
+  /** The wallet the notice is about, when known. */
+  noticeWalletId: AuthenticatorId | undefined;
   clearNotice: () => void;
   controller: ApproverController | undefined;
 }
@@ -23,7 +25,9 @@ export interface ApproverAccounts {
 export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHost | undefined, activeAddress: string | undefined, platform: MeritPlatform = domPlatform): ApproverAccounts {
   const [entries, setEntries] = useState<WalletAccountEntry[] | undefined>(undefined);
   const [statuses, setStatuses] = useState<Partial<Record<AuthenticatorId, AuthenticatorStatus>>>({});
-  const [notice, setNotice] = useState('');
+  const [notice, setNoticeText] = useState('');
+  const [noticeWalletId, setNoticeWalletId] = useState<AuthenticatorId | undefined>(undefined);
+  const setNotice = useCallback((text: string, id?: AuthenticatorId) => { setNoticeText(text); setNoticeWalletId(text ? id : undefined); }, []);
   // 2026-11-06 (owner rule): the accounts of a wallet that belongs to another Merit wallet, each connected or disconnected (Authenticator.knownAccounts)
   const [known, setKnown] = useState<Partial<Record<AuthenticatorId, Array<{ address: string; name?: string; connected: boolean }>>>>({});
   const activeRef = useRef(activeAddress);
@@ -118,10 +122,10 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
       host: { ...host, openInstall: host.openInstall ?? ((url: string) => platform.openUrl(url)) },
       // a remote Merit wallet connects and disconnects the way the wallet list does (host.walletConnect / walletDisconnect); every other wallet through the controller
       onConnect: (id) => {
-        // 2026-11-07 (owner: a Ledger connect appeared after Add Account(s) on Merit (Extension)): who asked, with the call path
+        // 2026-11-07 (owner: a Ledger connect appeared after Add Account(s) on Merit (Ext)): who asked, with the call path
         engineTrace('approverAccounts:onConnect', { id, stack: String(new Error().stack ?? '').split(String.fromCharCode(10)).slice(2, 8).join(' | ') });
         const handled = host.walletConnect?.(id);
-        if (handled) void Promise.resolve(handled).catch((error: unknown) => setNotice(error instanceof Error && error.message ? error.message : 'The wallet could not be connected.')).then(load);
+        if (handled) void Promise.resolve(handled).catch((error: unknown) => setNotice(connectNoticeText(error), id)).then(load);
         else void controller.connect(id).then(load);
       },
       onDisconnect: (id) => {
@@ -137,7 +141,7 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
         const approver = wallet.registry.get(id);
         engineTrace('approverAccounts:toggleAccount', { id, address, connected, hasHandler: typeof approver?.setAccountConnected === 'function' });
         void Promise.resolve(approver?.setAccountConnected?.(address, connected))
-          .catch((error: unknown) => setNotice(error instanceof Error && error.message ? error.message : 'That account could not be changed.'))
+          .catch((error: unknown) => setNotice(error instanceof Error && error.message ? error.message : 'That account could not be changed.', id))
           .then(load);
       },
       onAddAccounts: (id) => {
@@ -157,5 +161,5 @@ export function useApproverAccounts(wallet: Wallet | undefined, host: ApproverHo
     return result;
   }, [wallet, host, entries, statuses, activeAddress, controller, load, platform, known]);
 
-  return { groups, notice, clearNotice: () => setNotice(''), controller };
+  return { groups, notice, noticeWalletId, clearNotice: () => setNotice(''), controller };
 }

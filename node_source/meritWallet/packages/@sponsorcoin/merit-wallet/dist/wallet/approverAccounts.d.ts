@@ -82,4 +82,4 @@ export interface ApproverController {
     disconnect(approverId?: AuthenticatorId): Promise<void>;
 }
 /** The connect / disconnect operations of one wallet, wired to the host, with failures reported as text. */
-export declare function createApproverController(wallet: Wallet, host: ApproverHost, onNotice: (text: string) => void, getActiveAddress: () => string | undefined): ApproverController;
+export declare function createApproverController(wallet: Wallet, host: ApproverHost, onNotice: (text: string, approverId?: AuthenticatorId) => void, getActiveAddress: () => string | undefined): ApproverController;

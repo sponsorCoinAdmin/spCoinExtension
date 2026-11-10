@@ -5,6 +5,8 @@
 // (resolved through the host app's own node_modules so there is exactly one instance of it and of the exchange engine's panelStore).
 export { default as MeritWallet } from './MeritWallet';
 export { createWalletRefresh, useWalletRefresh } from './walletRefresh';
+export { createRefreshTree } from './refresh/refreshTree';
+export { RefreshBranch, useRefreshNode, useCachedImage } from './refresh/refreshReact';
 export { default as ConnectedAgentSelectDropDown } from './AgentSelectDropDown';
 export { DEFAULT_WALLET_CONFIG, sanitizeWalletConfig, parseMeritWalletStored, clampPersistedPasswordTimeoutHours, persistedTimeoutMs, isIdleLockDue, passwordDescriptionFor, syncDescriptionFor, extensionDownloadPathFor, createWalletConfig, useWalletConfig, } from './walletConfig';
 export { RADIO_PANEL_GROUPS_WITH_FALLBACKS, EMPTY_RADIO_PANEL_GROUPS } from './radioPanelGroups';

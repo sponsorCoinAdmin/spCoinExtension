@@ -1,7 +1,7 @@
 // File: src/auth/meritConnection.ts
 //
 // 2026-11-06 (owner: both directions, any Merit wallet can be the caller or the remote): a Merit wallet's view of ANOTHER Merit wallet's accounts, as an Authenticator, on top of the @sponsorcoin/merit-connect client. The same code serves the web app
-// (its Merit (Extension) wallet) and the extension (its Merit (Web App) wallet): the host supplies the client, the side it talks to, and where changes to the kept lists are heard.
+// (its Merit (Ext) wallet) and the extension (its Merit (Web App) wallet): the host supplies the client, the side it talks to, and where changes to the kept lists are heard.
 //   - accounts() is the HANDSHAKE (the first one after a start, a disconnect or a lost link re-sends this wallet's connected list; later ones pull what the other wallet changed);
 //   - knownAccounts() lists every account of the other wallet, connected or disconnected (a disconnected one stays listed);
 //   - setAccountConnected() changes ONE account's state from here (connect asks the other wallet; disconnect keeps the account listed);
@@ -16,6 +16,8 @@ export interface MeritConnectionClient {
   handshake(side: never, options?: { force?: boolean }): Promise<{ shared: string[] }>;
   listAccounts(side: never): Promise<Array<{ address: string; connected: boolean }>>;
   setAccountConnected(side: never, address: string, connected: boolean): Promise<void>;
+  /** 2026-11-08: remove one account from this wallet's list (the other wallet is told to disconnect it). Absent: the wallet's accounts cannot be removed from here. */
+  forgetAccount?(side: never, address: string): Promise<void>;
   requestAccounts(side: never): Promise<string[]>;
   /** The other wallet's Connect page (Cancel / Connect), no accounts. Absent: connect() opens the account selector, as before. */
   requestConnection?(side: never): Promise<void>;
@@ -74,6 +76,8 @@ export function withMeritConnection<T extends Authenticator>(base: T, options: M
     },
   };
   if (options.onNotice) overrides.onNotice = options.onNotice;
+  const forget = client.forgetAccount;
+  if (forget) overrides.removeAccount = async (address) => forget.call(client, side, address);
   overrides.meritRemote = true;
   return {
     ...base,

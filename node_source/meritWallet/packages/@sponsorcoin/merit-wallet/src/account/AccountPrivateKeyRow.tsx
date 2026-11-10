@@ -5,7 +5,7 @@
 // The row itself never talks to a server: how a key is revealed (the web app's keystore route, the extension's vault) is the host's function.
 'use client';
 
-import { accountFormClass, privateKeyRowClass } from '@sponsorcoin/spcoin-common/styles';
+import { accountFormClass, privateKeyRowClass, removeAccountStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useState } from 'react';
 import PasswordPromptDialog from '../PasswordPromptDialog';
 import { useCopyFeedback } from '../platform/useCopyFeedback';
@@ -19,6 +19,18 @@ export class PasswordRequiredError extends Error {
 }
 
 export const isPasswordRequired = (error: unknown): boolean => error instanceof PasswordRequiredError || (error as { name?: unknown } | undefined)?.name === 'PasswordRequiredError';
+
+/** 2026-11-08 (owner, removeAccountPlan.txt X7): an account another wallet holds has no key here; the row says who holds it instead of offering a reveal. */
+export function HeldPrivateKeyRow({ heldBy, zebra, cell }: { heldBy: string; zebra: string; cell: string }) {
+  return (
+    <div className={accountFormClass.contents}>
+      <div className={accountFormClass.labelCell(zebra, cell)}>Private Key</div>
+      <div className={accountFormClass.valueCell(zebra, cell)}>
+        <span style={removeAccountStyle.heldBy}>Held by {heldBy}</span>
+      </div>
+    </div>
+  );
+}
 
 type Mode = 'masked' | 'confirming' | 'revealed';
 

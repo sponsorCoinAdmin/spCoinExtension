@@ -5,6 +5,7 @@
 // list, so locked reads as not connected. No MetaMask installed: false.
 import { useCallback, useEffect, useState } from 'react';
 import { discoverWallets, type DiscoveryWindow, type Eip1193Provider } from './injectedWallet';
+import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
 import { onInjectedWalletChanged } from '../auth/injectedAuthenticator';
 
 export const METAMASK_RDNS = 'io.metamask';
@@ -19,8 +20,11 @@ export interface UseMetaMask {
 async function readConnected(provider: Eip1193Provider): Promise<boolean> {
   try {
     const accounts = await provider.request({ method: 'eth_accounts' });
+    // 2026-11-08 (owner: Merit said connected while MetaMask offered Connect): MetaMask connects PER ACCOUNT, and eth_accounts lists exactly the accounts this site may use
+    engineTrace('useMetaMask:eth_accounts', { accounts });
     return Array.isArray(accounts) && accounts.length > 0;
-  } catch {
+  } catch (error) {
+    engineTrace('useMetaMask:eth_accounts:failed', { message: error instanceof Error ? error.message : String(error) });
     return false;
   }
 }
@@ -56,7 +60,7 @@ export function useMetaMask(win?: MetaMaskWindow): UseMetaMask {
     let cancelled = false;
     const read = () => void readConnected(provider).then((connected) => { if (!cancelled) setConnected(connected); });
     // accountsChanged carries the new list; it is trusted over a second request
-    const onAccounts = (accounts: unknown) => { if (!cancelled) setConnected(Array.isArray(accounts) && accounts.length > 0); };
+    const onAccounts = (accounts: unknown) => { engineTrace('useMetaMask:accountsChanged', { accounts }); if (!cancelled) setConnected(Array.isArray(accounts) && accounts.length > 0); };
     read();
     provider.on?.('accountsChanged', onAccounts);
     // this page's own Disconnect (MetaMask may not emit accountsChanged for a revoke) and the person coming back from MetaMask's window

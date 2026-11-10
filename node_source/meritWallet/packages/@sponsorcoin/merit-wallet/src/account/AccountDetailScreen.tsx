@@ -6,15 +6,17 @@
 // shows the avatar and the table.
 'use client';
 
-import { accountDetailClass, accountDetailStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { useEffect, useRef, useState } from 'react';
+import { accountDetailStyle } from '@sponsorcoin/spcoin-common/styles';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
-import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { RoleTableComponent, SponsoredAmountLine, StakedAmountReceivedLine } from '@sponsorcoin/spcoin-panels';
 import { useAccountForm, type AccountFormHost } from './form/useAccountForm';
 import AccountFormPanel from './form/AccountFormPanel';
-import AccountAvatarPanel from './form/AccountAvatarPanel';
-import AccountPrivateKeyRow from './AccountPrivateKeyRow';
+import DetailScreenLayout from './DetailScreenLayout';
+import AccountPrivateKeyRow, { HeldPrivateKeyRow } from './AccountPrivateKeyRow';
+import RemoveAccountPanel from './RemoveAccountPanel';
+import type { AccountSource } from './accountSource';
 
 export interface AccountDetailHost {
   /** How a save is signed, who may edit whom, and how the picked avatar is processed. */
@@ -34,6 +36,10 @@ export interface AccountDetailHost {
   canReveal?(address: string): boolean;
   /** Connect a wallet (the connect button shown while nothing is connected); omitted = no button. */
   connectWallet?(): void;
+  /** 2026-11-08 (docs/design/removeAccountPlan.txt rows 5 to 7): who holds this account and whether it can be removed. An account another wallet holds: the Private Key row says "Held by <wallet>" and, when that wallet can remove accounts, a Remove button is shown. Omitted: nothing changes. */
+  accountSource?(address: string, symbol?: string): Promise<AccountSource | undefined>;
+  /** Called after an account was removed from here: the host leaves the screen (the account is gone from the list). */
+  onAccountRemoved?(address: string): void;
 }
 
 export type AccountDetailRole = SP_COIN_DISPLAY.ACTIVE_ACCOUNT | SP_COIN_DISPLAY.SPONSOR_ACCOUNT | SP_COIN_DISPLAY.RECIPIENT_ACCOUNT | SP_COIN_DISPLAY.AGENT_ACCOUNT;
@@ -48,12 +54,25 @@ export function flagsForRole(role: AccountDetailRole | undefined): [SP_COIN_DISP
 
 
 export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.ACTIVE_ACCOUNT, host }: { account: spCoinAccount | undefined; role?: AccountDetailRole; host: AccountDetailHost }) {
-  const menuTabHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
-  const activeAccountHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
   const [logoFlag, metaDataFlag] = flagsForRole(role);
-  const logoVisible = usePanelVisible(logoFlag);
-  const metaDataVisible = usePanelVisible(metaDataFlag);
   const address = String(account?.address ?? '').trim();
+  const symbol = account?.symbol;
+  // the host's source question is asked again for each account shown (the host object is rebuilt every render, so only the address starts a new ask)
+  const hostRef = useRef(host);
+  hostRef.current = host;
+  const [source, setSource] = useState<{ address: string; value: AccountSource | undefined } | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    const ask = hostRef.current.accountSource;
+    if (!ask || !address) return undefined;
+    void ask(address, symbol)
+      .then((value) => { if (!cancelled) setSource({ address, value }); })
+      .catch(() => { if (!cancelled) setSource({ address, value: undefined }); });
+    return () => {
+      cancelled = true;
+    };
+  }, [address, symbol, host.accountSource ? host.activeAddress : undefined]);
+  const accountSource = source && source.address.toLowerCase() === address.toLowerCase() ? source.value : undefined;
   const editable = host.canEdit ? host.canEdit(address) : host.connected;
   const signer = host.canEdit ? address : host.activeAddress;
   const form = useAccountForm({
@@ -69,91 +88,73 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
   const loadingInputMessage = 'Loading or updating account data. Input is temporarily disabled.';
   const reveal = host.revealPrivateKey;
   const showKeyRow = !!reveal && (host.canReveal ? host.canReveal(address) : true);
-  const avatarResizeSignal = [menuTabHeaderOpen, activeAccountHeaderOpen, role].join(':');
+  // 2026-11-09 (owner): the layout (body, the two blocks, the scalable image, the button box with the toggle) is DetailScreenLayout's, shared with the Token and Network screens; this screen supplies the editable form
   return (
-    <div id="ACCOUNT_INFO" className={accountDetailClass.screen}>
-      <form onSubmit={form.handleSubmit} className={accountDetailClass.form}>
-        <div
-          id="ACTIVE_ACCOUNT_BODY"
-          className={walletPartClass.accountBody(role === SP_COIN_DISPLAY.ACTIVE_ACCOUNT)}
-        >
-          {logoVisible ? (
-            <div id="ACCOUNT_LOGO" className={accountDetailClass.block}>
-              <AccountAvatarPanel
-                panelMarginClass="mb-0 min-h-0"
-                avatarPanelBorderClass=""
-                avatarHeading=""
-                logoPreviewSrc={form.logoPreviewSrc}
-                connected={editable}
-                isEditMode={form.isEditMode}
-                inputLocked={!form.isEditMode}
-                previewButtonLabel="Select Preview Image"
-                loadingInputMessage={loadingInputMessage}
-                isLoading={form.isLoading}
-                acceptedInput="image/*"
-                logoFileInputRef={form.logoFileInputRef}
-                onFileChange={form.handleLogoFileChange}
-                showImage
-                showButton
-                minPreviewSize={180}
-                overflowMinPreviewSize={96}
-                maxPreviewSize={420}
-                minControlWidth={220}
-                uploadControlTextClassName={walletPartClass.uploadControlText}
-                previewSizeBuffer={0}
-                previewHeightBuffer={8}
-                sectionBottomBuffer={0}
-                lockSectionHeight={false}
-                fillParentHeight={false}
-                sizingBoundarySelector="#ACTIVE_ACCOUNT_BODY"
-                resizeSignal={avatarResizeSignal}
-              />
-            </div>
-          ) : null}
-          {metaDataVisible ? (
-            <div id="ACCOUNT_META_DATA" className={accountDetailClass.block}>
-              <AccountFormPanel
-                panelMarginClass="mb-0 !h-auto"
-                accountPanelBorderClass=""
-                contentWidthClass="max-w-[56rem]"
-                idPrefix="account-component-"
-                formHeading=""
-                connected={editable}
-                publicKey={form.publicKey}
-                publicKeyLocked
-                formData={form.formData}
-                errors={form.errors}
-                descriptionTextareaRef={form.descriptionTextareaRef}
-                inputLocked={!form.isEditMode}
-                isLoading={form.isLoading}
-                loadingInputMessage={loadingInputMessage}
-                isSaving={form.isSaving}
-                isEditMode={form.isEditMode}
-                submitLabel={form.submitLabel}
-                hasUnsavedChanges={form.hasUnsavedChanges}
-                canCreateMissingAccount={form.canCreateMissingAccount}
-                disableSubmit={form.disableSubmit}
-                disableRevert={form.disableRevert}
-                isRevertNoop={form.isRevertNoop}
-                onPublicKeyChange={form.handlePublicKeyChange}
-                onPublicKeyBlur={form.handlePublicKeyBlur}
-                onChange={form.handleChange}
-                onFieldBlur={form.handleFieldBlur}
-                onRevert={form.handleRevertChanges}
-                roleTable={<RoleTableComponent account={account} accountAddress={address} />}
-                privateKeyRow={showKeyRow ? (style) => <AccountPrivateKeyRow address={address} reveal={reveal} idPrefix="account-component-" {...style} /> : undefined}
-                connectButton={
-                  host.connectWallet ? (
-                    <button type="button" onClick={host.connectWallet} style={accountDetailStyle.connect}>Connect Wallet</button>
-                  ) : undefined
-                }
-              />
-              <SponsoredAmountLine account={account} />
-              <StakedAmountReceivedLine account={account} />
-            </div>
-          ) : null}
-        </div>
-      </form>
-    </div>
+    <DetailScreenLayout
+      screenId="ACCOUNT_INFO"
+      onSubmit={form.handleSubmit}
+      activeBody={role === SP_COIN_DISPLAY.ACTIVE_ACCOUNT}
+      resizeKey={String(role)}
+      logoFlag={logoFlag}
+      metaFlag={metaDataFlag}
+      logoId="ACCOUNT_LOGO"
+      metaId="ACCOUNT_META_DATA"
+      toggleTrace="AccountDetailScreen:toggleAccountMeta"
+      avatar={{
+        logoPreviewSrc: form.logoPreviewSrc,
+        connected: editable,
+        isEditMode: form.isEditMode,
+        inputLocked: !form.isEditMode,
+        previewButtonLabel: 'Select Preview Image',
+        loadingInputMessage,
+        isLoading: form.isLoading,
+        logoFileInputRef: form.logoFileInputRef,
+        onFileChange: form.handleLogoFileChange,
+        toggleLabel: 'Account Meta', imageKind: 'account',
+      }}
+      meta={({ logoVisible }) => (
+        <>
+          <AccountFormPanel
+            panelMarginClass={logoVisible ? 'mb-0 !h-auto !pt-0' : 'mb-0 !h-auto'}
+            accountPanelBorderClass=""
+            contentWidthClass="max-w-[56rem]"
+            idPrefix="account-component-"
+            formHeading=""
+            connected={editable}
+            publicKey={form.publicKey}
+            publicKeyLocked
+            formData={form.formData}
+            errors={form.errors}
+            descriptionTextareaRef={form.descriptionTextareaRef}
+            inputLocked={!form.isEditMode}
+            isLoading={form.isLoading}
+            loadingInputMessage={loadingInputMessage}
+            isSaving={form.isSaving}
+            isEditMode={form.isEditMode}
+            submitLabel={form.submitLabel}
+            hasUnsavedChanges={form.hasUnsavedChanges}
+            canCreateMissingAccount={form.canCreateMissingAccount}
+            disableSubmit={form.disableSubmit}
+            disableRevert={form.disableRevert}
+            isRevertNoop={form.isRevertNoop}
+            onPublicKeyChange={form.handlePublicKeyChange}
+            onPublicKeyBlur={form.handlePublicKeyBlur}
+            onChange={form.handleChange}
+            onFieldBlur={form.handleFieldBlur}
+            onRevert={form.handleRevertChanges}
+            roleTable={<RoleTableComponent account={account} accountAddress={address} />}
+            privateKeyRow={accountSource?.heldBy ? (style) => <HeldPrivateKeyRow heldBy={accountSource.heldBy!} {...style} /> : showKeyRow ? (style) => <AccountPrivateKeyRow address={address} reveal={reveal} idPrefix="account-component-" {...style} /> : undefined}
+            connectButton={
+              host.connectWallet ? (
+                <button type="button" onClick={host.connectWallet} style={accountDetailStyle.connect}>Connect Wallet</button>
+              ) : undefined
+            }
+            footer={accountSource?.removal ? <RemoveAccountPanel removal={accountSource.removal} account={{ address, name: account.name, symbol: account.symbol, logoURL: account.logoURL }} onRemoved={() => host.onAccountRemoved?.(address)} /> : undefined}
+          />
+          <SponsoredAmountLine account={account} />
+          <StakedAmountReceivedLine account={account} />
+        </>
+      )}
+    />
   );
 }

@@ -42,6 +42,9 @@ export function withMeritConnection(base, options) {
     };
     if (options.onNotice)
         overrides.onNotice = options.onNotice;
+    const forget = client.forgetAccount;
+    if (forget)
+        overrides.removeAccount = async (address) => forget.call(client, side, address);
     overrides.meritRemote = true;
     return {
         ...base,

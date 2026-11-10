@@ -11,6 +11,8 @@ export interface MeritConnectionClient {
         connected: boolean;
     }>>;
     setAccountConnected(side: never, address: string, connected: boolean): Promise<void>;
+    /** 2026-11-08: remove one account from this wallet's list (the other wallet is told to disconnect it). Absent: the wallet's accounts cannot be removed from here. */
+    forgetAccount?(side: never, address: string): Promise<void>;
     requestAccounts(side: never): Promise<string[]>;
     /** The other wallet's Connect page (Cancel / Connect), no accounts. Absent: connect() opens the account selector, as before. */
     requestConnection?(side: never): Promise<void>;

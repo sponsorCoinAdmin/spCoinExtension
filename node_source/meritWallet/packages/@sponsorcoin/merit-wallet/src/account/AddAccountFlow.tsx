@@ -88,7 +88,7 @@ const KEY_FORMAT = /^0x[0-9a-fA-F]{64}$/;
 /** The wallets the wallet list offers (WALLET_LIST_SELECT_PANEL), by asset folder, and the authenticator each one is. */
 /** The list row of the wallet THIS host is: always connected, nothing to connect or disconnect from it. */
 /** The wallet's name for the warning (the wallet list's own names). */
-const WALLET_NAMES: Record<string, string> = { merit: 'Merit (Web App)', meritExtension: 'Merit (Extension)', metamask: 'MetaMask', ledger: 'Ledger', trezor: 'Trezor' };
+const WALLET_NAMES: Record<string, string> = { merit: 'Merit (Web App)', meritExtension: 'Merit (Ext)', metamask: 'MetaMask', ledger: 'Ledger', trezor: 'Trezor' };
 const walletAssetName = (slug: string): string => WALLET_NAMES[slug] ?? slug;
 const nativeSlugOf = (nativeWalletId: string | undefined): string | undefined => (nativeWalletId === 'serverKeystore' ? 'merit' : nativeWalletId === 'localVault' ? 'meritExtension' : undefined);
 
@@ -302,7 +302,8 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
       )}
       {flow.walletListVisible && (
         <div style={addAccountStyle.listBleed}>
-          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs} listed={listed} fixed={nativeSlug} onToggleListed={toggleListed} />
+          {/* 2026-11-07 (owner): this wallet is not imported into itself, so its row is not listed */}
+          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs.filter((slug) => slug !== nativeSlug)} listed={listed} onToggleListed={toggleListed} headerLabel="Remote Wallet" />
           {error && <p style={addAccountStyle.error}>{error}</p>}
         </div>
       )}

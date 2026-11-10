@@ -12,7 +12,7 @@
 // A host that passes nothing gets the registry defaults, which is what the extension uses.
 'use client';
 
-import { tokenRowClass, tokenRowStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CopyBtn } from './TokenSlotPanels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -26,7 +26,7 @@ import {
 } from '@sponsorcoin/spcoin-exchange-engine';
 import { getNetworkConfiguration } from '@sponsorcoin/spcoin-feeds/networks';
 import { getNetworkMetaData } from '@sponsorcoin/spcoin-panels';
-import { ReadOnlyMetaDataTable } from './panels';
+import MetaDetailScreen from './account/MetaDetailScreen';
 import { useWalletData } from './walletData';
 
 // The extra fields a NetworkElement does not carry but each network's own info.json does (website, description).
@@ -81,8 +81,6 @@ export interface ConnectedNetworkPanelProps {
 
 export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkFromContext }: ConnectedNetworkPanelProps) {
   const vNetworkPanel = usePanelVisible(SP_COIN_DISPLAY.NETWORK_PANEL);
-  const vNetworkMetaData = usePanelVisible(SP_COIN_DISPLAY.NETWORK_META_DATA);
-  const vNetworkLogo = usePanelVisible(SP_COIN_DISPLAY.NETWORK_LOGO);
   const { resolveNetwork, loadNetworkInfo } = useWalletData();
 
   const { network: liveNetwork, chainId: liveChainId } = useLiveNetwork();
@@ -170,18 +168,20 @@ export default function ConnectedNetworkPanel({ useLiveNetwork = useLiveNetworkF
 
   return (
     <div id="NETWORK_PANEL">
-      {vNetworkMetaData && (
-        <ReadOnlyMetaDataTable
-          rows={rows}
-          logoURL={logoURL || defaultStaticImage}
-          logoAlt={name}
-          logoVisible={vNetworkLogo}
-          // Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind
-          // them and no card frame around them (unlike token and account logos).
-          logoBackgroundClassName={walletPartClass.networkLogo.background}
-          logoContainerClassName={walletPartClass.networkLogo.container}
-        />
-      )}
+      {/* 2026-11-09 (owner): drawn by the shared read-only screen, the twin of the Account Details screen. Network logos are already complete, self-contained circular brand marks with real transparent padding, so no navy fill behind them. */}
+      <MetaDetailScreen
+        logoFlag={SP_COIN_DISPLAY.NETWORK_LOGO}
+        metaFlag={SP_COIN_DISPLAY.NETWORK_META_DATA}
+        logoId="NETWORK_LOGO"
+        metaId="NETWORK_META_DATA"
+        logoSrc={logoURL || defaultStaticImage}
+        logoAlt={name}
+        toggleLabel="Network Meta"
+        imageKind="network"
+        rows={rows}
+        plainLogo
+        fitImageShape
+      />
     </div>
   );
 }

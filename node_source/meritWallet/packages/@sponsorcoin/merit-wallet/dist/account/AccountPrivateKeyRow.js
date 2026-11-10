@@ -5,7 +5,7 @@
 // The row itself never talks to a server: how a key is revealed (the web app's keystore route, the extension's vault) is the host's function.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { accountFormClass, privateKeyRowClass } from '@sponsorcoin/spcoin-common/styles';
+import { accountFormClass, privateKeyRowClass, removeAccountStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useState } from 'react';
 import PasswordPromptDialog from '../PasswordPromptDialog';
 import { useCopyFeedback } from '../platform/useCopyFeedback';
@@ -17,6 +17,10 @@ export class PasswordRequiredError extends Error {
     }
 }
 export const isPasswordRequired = (error) => error instanceof PasswordRequiredError || error?.name === 'PasswordRequiredError';
+/** 2026-11-08 (owner, removeAccountPlan.txt X7): an account another wallet holds has no key here; the row says who holds it instead of offering a reveal. */
+export function HeldPrivateKeyRow({ heldBy, zebra, cell }) {
+    return (_jsxs("div", { className: accountFormClass.contents, children: [_jsx("div", { className: accountFormClass.labelCell(zebra, cell), children: "Private Key" }), _jsx("div", { className: accountFormClass.valueCell(zebra, cell), children: _jsxs("span", { style: removeAccountStyle.heldBy, children: ["Held by ", heldBy] }) })] }));
+}
 export default function AccountPrivateKeyRow({ address, reveal, idPrefix = '', zebra, cell, }) {
     const [mode, setMode] = useState('masked');
     const [key, setKey] = useState('');

@@ -5,15 +5,16 @@
 // MetaMask, the extension's vault), whether the wallet may edit right now, how a key is revealed, and how to connect a wallet. The role (the active account, a sponsor, a recipient, an agent) picks which pair of panel-tree flags
 // shows the avatar and the table.
 'use client';
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { accountDetailClass, accountDetailStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
+import { useEffect, useRef, useState } from 'react';
+import { accountDetailStyle } from '@sponsorcoin/spcoin-common/styles';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { RoleTableComponent, SponsoredAmountLine, StakedAmountReceivedLine } from '@sponsorcoin/spcoin-panels';
 import { useAccountForm } from './form/useAccountForm';
 import AccountFormPanel from './form/AccountFormPanel';
-import AccountAvatarPanel from './form/AccountAvatarPanel';
-import AccountPrivateKeyRow from './AccountPrivateKeyRow';
+import DetailScreenLayout from './DetailScreenLayout';
+import AccountPrivateKeyRow, { HeldPrivateKeyRow } from './AccountPrivateKeyRow';
+import RemoveAccountPanel from './RemoveAccountPanel';
 /** The avatar and table flags of a role: each role has its own pair, so toggling one in the panel tree does not affect the others. */
 export function flagsForRole(role) {
     if (role === SP_COIN_DISPLAY.AGENT_ACCOUNT)
@@ -25,12 +26,28 @@ export function flagsForRole(role) {
     return [SP_COIN_DISPLAY.ACCOUNT_LOGO, SP_COIN_DISPLAY.ACCOUNT_META_DATA];
 }
 export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.ACTIVE_ACCOUNT, host }) {
-    const menuTabHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
-    const activeAccountHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
     const [logoFlag, metaDataFlag] = flagsForRole(role);
-    const logoVisible = usePanelVisible(logoFlag);
-    const metaDataVisible = usePanelVisible(metaDataFlag);
     const address = String(account?.address ?? '').trim();
+    const symbol = account?.symbol;
+    // the host's source question is asked again for each account shown (the host object is rebuilt every render, so only the address starts a new ask)
+    const hostRef = useRef(host);
+    hostRef.current = host;
+    const [source, setSource] = useState(undefined);
+    useEffect(() => {
+        let cancelled = false;
+        const ask = hostRef.current.accountSource;
+        if (!ask || !address)
+            return undefined;
+        void ask(address, symbol)
+            .then((value) => { if (!cancelled)
+            setSource({ address, value }); })
+            .catch(() => { if (!cancelled)
+            setSource({ address, value: undefined }); });
+        return () => {
+            cancelled = true;
+        };
+    }, [address, symbol, host.accountSource ? host.activeAddress : undefined]);
+    const accountSource = source && source.address.toLowerCase() === address.toLowerCase() ? source.value : undefined;
     const editable = host.canEdit ? host.canEdit(address) : host.connected;
     const signer = host.canEdit ? address : host.activeAddress;
     const form = useAccountForm({
@@ -46,6 +63,17 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
     const loadingInputMessage = 'Loading or updating account data. Input is temporarily disabled.';
     const reveal = host.revealPrivateKey;
     const showKeyRow = !!reveal && (host.canReveal ? host.canReveal(address) : true);
-    const avatarResizeSignal = [menuTabHeaderOpen, activeAccountHeaderOpen, role].join(':');
-    return (_jsx("div", { id: "ACCOUNT_INFO", className: accountDetailClass.screen, children: _jsx("form", { onSubmit: form.handleSubmit, className: accountDetailClass.form, children: _jsxs("div", { id: "ACTIVE_ACCOUNT_BODY", className: walletPartClass.accountBody(role === SP_COIN_DISPLAY.ACTIVE_ACCOUNT), children: [logoVisible ? (_jsx("div", { id: "ACCOUNT_LOGO", className: accountDetailClass.block, children: _jsx(AccountAvatarPanel, { panelMarginClass: "mb-0 min-h-0", avatarPanelBorderClass: "", avatarHeading: "", logoPreviewSrc: form.logoPreviewSrc, connected: editable, isEditMode: form.isEditMode, inputLocked: !form.isEditMode, previewButtonLabel: "Select Preview Image", loadingInputMessage: loadingInputMessage, isLoading: form.isLoading, acceptedInput: "image/*", logoFileInputRef: form.logoFileInputRef, onFileChange: form.handleLogoFileChange, showImage: true, showButton: true, minPreviewSize: 180, overflowMinPreviewSize: 96, maxPreviewSize: 420, minControlWidth: 220, uploadControlTextClassName: walletPartClass.uploadControlText, previewSizeBuffer: 0, previewHeightBuffer: 8, sectionBottomBuffer: 0, lockSectionHeight: false, fillParentHeight: false, sizingBoundarySelector: "#ACTIVE_ACCOUNT_BODY", resizeSignal: avatarResizeSignal }) })) : null, metaDataVisible ? (_jsxs("div", { id: "ACCOUNT_META_DATA", className: accountDetailClass.block, children: [_jsx(AccountFormPanel, { panelMarginClass: "mb-0 !h-auto", accountPanelBorderClass: "", contentWidthClass: "max-w-[56rem]", idPrefix: "account-component-", formHeading: "", connected: editable, publicKey: form.publicKey, publicKeyLocked: true, formData: form.formData, errors: form.errors, descriptionTextareaRef: form.descriptionTextareaRef, inputLocked: !form.isEditMode, isLoading: form.isLoading, loadingInputMessage: loadingInputMessage, isSaving: form.isSaving, isEditMode: form.isEditMode, submitLabel: form.submitLabel, hasUnsavedChanges: form.hasUnsavedChanges, canCreateMissingAccount: form.canCreateMissingAccount, disableSubmit: form.disableSubmit, disableRevert: form.disableRevert, isRevertNoop: form.isRevertNoop, onPublicKeyChange: form.handlePublicKeyChange, onPublicKeyBlur: form.handlePublicKeyBlur, onChange: form.handleChange, onFieldBlur: form.handleFieldBlur, onRevert: form.handleRevertChanges, roleTable: _jsx(RoleTableComponent, { account: account, accountAddress: address }), privateKeyRow: showKeyRow ? (style) => _jsx(AccountPrivateKeyRow, { address: address, reveal: reveal, idPrefix: "account-component-", ...style }) : undefined, connectButton: host.connectWallet ? (_jsx("button", { type: "button", onClick: host.connectWallet, style: accountDetailStyle.connect, children: "Connect Wallet" })) : undefined }), _jsx(SponsoredAmountLine, { account: account }), _jsx(StakedAmountReceivedLine, { account: account })] })) : null] }) }) }));
+    // 2026-11-09 (owner): the layout (body, the two blocks, the scalable image, the button box with the toggle) is DetailScreenLayout's, shared with the Token and Network screens; this screen supplies the editable form
+    return (_jsx(DetailScreenLayout, { screenId: "ACCOUNT_INFO", onSubmit: form.handleSubmit, activeBody: role === SP_COIN_DISPLAY.ACTIVE_ACCOUNT, resizeKey: String(role), logoFlag: logoFlag, metaFlag: metaDataFlag, logoId: "ACCOUNT_LOGO", metaId: "ACCOUNT_META_DATA", toggleTrace: "AccountDetailScreen:toggleAccountMeta", avatar: {
+            logoPreviewSrc: form.logoPreviewSrc,
+            connected: editable,
+            isEditMode: form.isEditMode,
+            inputLocked: !form.isEditMode,
+            previewButtonLabel: 'Select Preview Image',
+            loadingInputMessage,
+            isLoading: form.isLoading,
+            logoFileInputRef: form.logoFileInputRef,
+            onFileChange: form.handleLogoFileChange,
+            toggleLabel: 'Account Meta', imageKind: 'account',
+        }, meta: ({ logoVisible }) => (_jsxs(_Fragment, { children: [_jsx(AccountFormPanel, { panelMarginClass: logoVisible ? 'mb-0 !h-auto !pt-0' : 'mb-0 !h-auto', accountPanelBorderClass: "", contentWidthClass: "max-w-[56rem]", idPrefix: "account-component-", formHeading: "", connected: editable, publicKey: form.publicKey, publicKeyLocked: true, formData: form.formData, errors: form.errors, descriptionTextareaRef: form.descriptionTextareaRef, inputLocked: !form.isEditMode, isLoading: form.isLoading, loadingInputMessage: loadingInputMessage, isSaving: form.isSaving, isEditMode: form.isEditMode, submitLabel: form.submitLabel, hasUnsavedChanges: form.hasUnsavedChanges, canCreateMissingAccount: form.canCreateMissingAccount, disableSubmit: form.disableSubmit, disableRevert: form.disableRevert, isRevertNoop: form.isRevertNoop, onPublicKeyChange: form.handlePublicKeyChange, onPublicKeyBlur: form.handlePublicKeyBlur, onChange: form.handleChange, onFieldBlur: form.handleFieldBlur, onRevert: form.handleRevertChanges, roleTable: _jsx(RoleTableComponent, { account: account, accountAddress: address }), privateKeyRow: accountSource?.heldBy ? (style) => _jsx(HeldPrivateKeyRow, { heldBy: accountSource.heldBy, ...style }) : showKeyRow ? (style) => _jsx(AccountPrivateKeyRow, { address: address, reveal: reveal, idPrefix: "account-component-", ...style }) : undefined, connectButton: host.connectWallet ? (_jsx("button", { type: "button", onClick: host.connectWallet, style: accountDetailStyle.connect, children: "Connect Wallet" })) : undefined, footer: accountSource?.removal ? _jsx(RemoveAccountPanel, { removal: accountSource.removal, account: { address, name: account.name, symbol: account.symbol, logoURL: account.logoURL }, onRemoved: () => host.onAccountRemoved?.(address) }) : undefined }), _jsx(SponsoredAmountLine, { account: account }), _jsx(StakedAmountReceivedLine, { account: account })] })) }));
 }

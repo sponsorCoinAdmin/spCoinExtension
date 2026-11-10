@@ -102,6 +102,8 @@ export interface Authenticator {
   knownAccounts?(): Promise<Array<{ address: string; name?: string; connected: boolean }>>;
   /** Connect or disconnect ONE account of the other wallet from this wallet. A disconnected account stays listed; the other wallet is the one that removes accounts. */
   setAccountConnected?(address: string, connected: boolean): Promise<void>;
+  /** 2026-11-08 (owner, docs/design/removeAccountPlan.txt X3): REMOVE one account of ANOTHER wallet from this wallet: it is disconnected if needed and forgotten here, and the wallet that owns it is not changed (the other Merit wallet is told to disconnect it). Absent: the wallet's accounts cannot be removed from here (a local account is removed through its vault). */
+  removeAccount?(address: string): Promise<void>;
   /** Optional: give up whatever permission connect() was granted (MetaMask: revoke the page's access). Never touches keys or the wallet's account list. */
   disconnect?(): Promise<void>;
   /** Always behind this authenticator's own approval. */
@@ -132,17 +134,17 @@ export type WalletPlatform = 'web' | 'extension' | 'android' | 'iphone';
 const PLATFORM_WORDS: Record<WalletPlatform, string> = { web: 'Web', extension: 'Extension', android: 'Android', iphone: 'I-Phone' };
 
 /**
- * 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit (Extension)" the extension's vault (the
+ * 2026-10-12 (docs/design/accountAuthDesign.txt section 18 section 3): the ONE name of a wallet, the same everywhere it is seen: the product and, in brackets, where it runs. "Merit Wallet (Web)" is the browser vault, "Merit (Ext)" the extension's vault (the
  * web page that connects to the extension sees the same wallet, so it has the same name), "Merit Wallet (Android)" / "(I-Phone)" the phone apps, "Merit Wallet (Web Dev Server)" the development keystore of the developer pages, "MetaMask", and a hardware
  * wallet by its own name. A vault's own platform (when it reports one) decides the bracket for the Merit wallets that run in more than one place. Group headers show it in capitals (the header style does that), sentences show it as written here.
- * 2026-10-26 (owner request) — the extension's own name dropped "Wallet" ("Merit Wallet (Extension)" -> "Merit (Extension)"), matching serverKeystore's existing "Merit (Web App)" shape — both now read "Merit (<where>)" the same way.
+ * 2026-10-26 (owner request) — the extension's own name dropped "Wallet" ("Merit Wallet (Extension)" -> "Merit (Ext)"), matching serverKeystore's existing "Merit (Web App)" shape — both now read "Merit (<where>)" the same way.
  */
 export function walletName(id: string, platform?: WalletPlatform): string {
   // FALLBACK ONLY: a table of the built-in ids, for an authenticator that supplies no displayName. A new wallet supplies its own name (authenticatorName); nothing is added here.
 
   if (id === 'serverKeystore') return 'Merit (Web App)';
   if (id === 'browserVault') return 'Merit Wallet (Web)';
-  if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit') return 'Merit (Extension)';
+  if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit') return 'Merit (Ext)';
   if (id === 'deviceVault') return platform ? `Merit Wallet (${PLATFORM_WORDS[platform]})` : 'Merit Wallet (Phone)';
   if (id === 'injected:io.metamask') return 'MetaMask';
   if (id.startsWith('hardware:')) {

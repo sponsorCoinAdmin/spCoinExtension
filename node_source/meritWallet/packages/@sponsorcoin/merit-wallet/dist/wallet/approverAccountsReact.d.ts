@@ -1,4 +1,5 @@
 import type { AccountListGroup } from '@sponsorcoin/spcoin-panels';
+import type { AuthenticatorId } from '../auth/authenticator';
 import type { Wallet } from './wallet';
 import type { MeritPlatform } from '../platform/platform';
 import { type ApproverController, type ApproverHost } from './approverAccounts';
@@ -6,6 +7,8 @@ export interface ApproverAccounts {
     groups: AccountListGroup[] | undefined;
     /** A failed connect, in words; empty when there is none. */
     notice: string;
+    /** The wallet the notice is about, when known. */
+    noticeWalletId: AuthenticatorId | undefined;
     clearNotice: () => void;
     controller: ApproverController | undefined;
 }

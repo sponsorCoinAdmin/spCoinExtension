@@ -25,3 +25,4 @@ export { default as TradingStationPanel } from './TradingStationPanel';
 export { default as SendTabPanel } from './SendTabPanel';
 export { default as TokenDetailPanel } from './TokenDetailPanel';
 export { default as NetworkDetailPanel } from './NetworkDetailPanel';
+export { default as AccountDisplayDropDown } from './AccountDisplayDropDown';

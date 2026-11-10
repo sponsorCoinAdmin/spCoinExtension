@@ -81,7 +81,7 @@ export async function resolveAccountSource(wallet: Wallet, address: string, acti
       label: `Remove Remote ${what} from ${app}`,
       destructive: false,
       ...(same(address, activeAddress) ? { disabledReason: 'Make another account active first.' } : {}),
-      title: 'Remove account from Merit?',
+      title: `Remove remote ${name} Account\nFrom ${app}?`,
       message: `This only removes the account from Merit. It still exists in ${name}; connect it again to add it back.`,
       confirmLabel: 'Remove',
       remove: async () => remover.removeAccount!(address),

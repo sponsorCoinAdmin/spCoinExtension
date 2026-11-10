@@ -52,3 +52,4 @@ export { default as TokenDetailPanel } from './TokenDetailPanel';
 export type { TokenDetailPanelProps } from './TokenDetailPanel';
 export { default as NetworkDetailPanel } from './NetworkDetailPanel';
 export type { NetworkDetailPanelProps } from './NetworkDetailPanel';
+export { default as AccountDisplayDropDown } from './AccountDisplayDropDown';

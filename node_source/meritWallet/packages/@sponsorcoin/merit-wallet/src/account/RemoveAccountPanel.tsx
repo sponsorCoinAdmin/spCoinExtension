@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { dialogStyle, removeAccountStyle } from '@sponsorcoin/spcoin-common/styles';
 import DialogPortal from '../DialogPortal';
+import AccountDisplayDropDown from '../panels/AccountDisplayDropDown';
 import type { AccountRemoval } from './accountSource';
 
 export interface RemoveAccountAccount {
@@ -39,7 +40,6 @@ export default function RemoveAccountPanel({ removal, account, onRemoved }: { re
     setConfirming(false);
     setError('');
   };
-  const title = [account.name, account.symbol].filter((part) => part && part !== 'N/A').join(' | ');
   return (
     <div id="REMOVE_ACCOUNT" style={removeAccountStyle.wrap}>
       <button type="button" disabled={disabled} title={removal.disabledReason} onClick={() => setConfirming(true)} style={removeAccountStyle.button(disabled, removal.destructive)}>
@@ -50,17 +50,8 @@ export default function RemoveAccountPanel({ removal, account, onRemoved }: { re
         <DialogPortal>
           <div role="dialog" aria-modal="true" style={dialogStyle.backdrop}>
             <div style={removal.destructive ? dialogStyle.formCardDanger : dialogStyle.formCard}>
-              <p style={dialogStyle.title}>{removal.title}</p>
-              <p style={removeAccountStyle.account}>
-                {account.logoURL ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={account.logoURL} alt="" style={removeAccountStyle.accountImage} />
-                ) : null}
-                <span style={removeAccountStyle.accountText}>
-                  <span>{title || 'Account'}</span>
-                  <span style={removeAccountStyle.accountAddress}>{account.address}</span>
-                </span>
-              </p>
+              <p style={removeAccountStyle.title}>{removal.title}</p>
+              <AccountDisplayDropDown address={account.address} name={account.name} symbol={account.symbol} logoURL={account.logoURL} />
               <p style={dialogStyle.message}>{removal.message}</p>
               {error ? <p style={dialogStyle.error}>{error}</p> : null}
               <button type="button" onClick={confirm} disabled={busy} style={dialogStyle.dangerButton(busy, removal.destructive)}>

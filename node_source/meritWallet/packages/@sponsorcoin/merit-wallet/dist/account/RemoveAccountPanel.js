@@ -48,6 +48,7 @@ export default function RemoveAccountPanel({ removal, account, onRemoved, balanc
         closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'RemoveAccount:done');
     };
     const open = async () => {
+        // 2026-11-11 (owner: the account's avatar, name and symbol were missing in the confirmation): the confirmation is a snapshot, taken now, and the detail form may not have finished reading the profile. Ask the registry (cached, or the feed) here, so the row never shows less than is known.
         const known = (await loadAccountRecord(account.address).catch(() => undefined));
         const profile = { name: account.name || (typeof known?.name === 'string' ? known.name : undefined), symbol: account.symbol || (typeof known?.symbol === 'string' ? known.symbol : undefined), logoURL: typeof known?.logoURL === 'string' && known.logoURL ? ensureAbsoluteAssetURL(known.logoURL) : account.logoURL };
         // 2026-11-11 (owner): the Account Assets popup shows the account's native balance above its radio button

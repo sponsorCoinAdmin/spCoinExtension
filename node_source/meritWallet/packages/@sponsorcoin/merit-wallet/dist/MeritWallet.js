@@ -308,7 +308,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // own doc comment).
     const [sellTokenContract, setSellTokenContract] = useSellTokenContract();
     const [buyTokenContract, setBuyTokenContract] = useBuyTokenContract();
-    const { data: slippage, setBps: setSlippageBps } = useSlippage();
+    const { data: slippage, setBps: setSlippageBps } = useSlippage('zeroX');
     // 2026-10-05, ZERO_X_SELECT_PANEL parity (live report: the web
     // app's buy row reads "You Receive ± 2.00% [cog]", the
     // extension's read plain "You Receive" with no cog) — the web
@@ -1850,7 +1850,9 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 if (message)
                     accountNoticeStore.publish(message, [address]);
                 setAccountDetailAddress(null);
-                closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved'); closePanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved');
+                // 2026-11-11 (owner): by name, never a pop of whatever is on top: the stack held MESSAGE_PANEL and ACCOUNT_PANEL, and a single pop left ACCOUNT_PANEL listed under the list we landed on
+                closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved');
+                closePanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved');
             },
         }
         : accountDetailHost;

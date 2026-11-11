@@ -986,7 +986,7 @@ function MeritWalletInner({
   // own doc comment).
   const [sellTokenContract, setSellTokenContract] = useSellTokenContract();
   const [buyTokenContract, setBuyTokenContract] = useBuyTokenContract();
-  const { data: slippage, setBps: setSlippageBps } = useSlippage();
+  const { data: slippage, setBps: setSlippageBps } = useSlippage('zeroX');
   // 2026-10-05, ZERO_X_SELECT_PANEL parity (live report: the web
   // app's buy row reads "You Receive ± 2.00% [cog]", the
   // extension's read plain "You Receive" with no cog) — the web

@@ -38,8 +38,10 @@ export interface AccountDetailHost {
   connectWallet?(): void;
   /** 2026-11-08 (docs/design/removeAccountPlan.txt rows 5 to 7): who holds this account and whether it can be removed. An account another wallet holds: the Private Key row says "Held by <wallet>" and, when that wallet can remove accounts, a Remove button is shown. Omitted: nothing changes. */
   accountSource?(address: string, symbol?: string): Promise<AccountSource | undefined>;
-  /** Called after an account was removed from here: the host leaves the screen (the account is gone from the list). */
-  onAccountRemoved?(address: string): void;
+  /** The account's balance as a line of words ("Balance: 1.5"), or undefined when it is zero or cannot be read: shown in the local delete dialog (rule X5). */
+  accountBalance?(address: string): Promise<string | undefined>;
+  /** Called after an account was removed from here: the host leaves the screen (the account is gone from the list) and may show `message` ("Removed X from Merit"). */
+  onAccountRemoved?(address: string, message?: string): void;
 }
 
 export type AccountDetailRole = SP_COIN_DISPLAY.ACTIVE_ACCOUNT | SP_COIN_DISPLAY.SPONSOR_ACCOUNT | SP_COIN_DISPLAY.RECIPIENT_ACCOUNT | SP_COIN_DISPLAY.AGENT_ACCOUNT;
@@ -73,6 +75,17 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
     };
   }, [address, symbol, host.accountSource ? host.activeAddress : undefined]);
   const accountSource = source && source.address.toLowerCase() === address.toLowerCase() ? source.value : undefined;
+  // 2026-11-10 (row 7, X5): the balance of a LOCAL account, read when the screen shows it, for the delete dialog
+  const [balance, setBalance] = useState<{ address: string; text: string | undefined } | undefined>(undefined);
+  const wantsBalance = !!accountSource?.removal?.local;
+  useEffect(() => {
+    let cancelled = false;
+    const read = hostRef.current.accountBalance;
+    if (!wantsBalance || !read || !address) return undefined;
+    void read(address).then((text) => { if (!cancelled) setBalance({ address, text }); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [address, wantsBalance]);
+  const balanceText = balance && balance.address.toLowerCase() === address.toLowerCase() ? balance.text : undefined;
   const editable = host.canEdit ? host.canEdit(address) : host.connected;
   const signer = host.canEdit ? address : host.activeAddress;
   const form = useAccountForm({
@@ -150,7 +163,7 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
                 <button type="button" onClick={host.connectWallet} style={accountDetailStyle.connect}>Connect Wallet</button>
               ) : undefined
             }
-            footer={accountSource?.removal ? <RemoveAccountPanel removal={accountSource.removal} account={{ address, name: account.name, symbol: account.symbol, logoURL: account.logoURL }} onRemoved={() => host.onAccountRemoved?.(address)} /> : undefined}
+            footer={accountSource?.removal ? <RemoveAccountPanel removal={accountSource.removal} balanceText={balanceText} account={{ address, name: account.name ?? form.formData.name, symbol: account.symbol ?? form.formData.symbol, logoURL: form.serverLogoURL || account.logoURL }} onRemoved={(message) => host.onAccountRemoved?.(address, message)} /> : undefined}
           />
           <SponsoredAmountLine account={account} />
           <StakedAmountReceivedLine account={account} />

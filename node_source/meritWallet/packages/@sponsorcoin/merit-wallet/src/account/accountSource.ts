@@ -6,6 +6,14 @@
 // The ACTIVE account is never removable (X2). Pure over the wallet: the screen asks, nothing here draws.
 import type { Wallet } from '../wallet/wallet';
 import { authenticatorName } from '../auth/authenticator';
+import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
+import { unlockErrorText } from '../wallet/walletLock';
+import { holdersOf, removalTarget } from '../wallet/accountHolders';
+import { encryptKeyExport } from '../vault/keyExport';
+import type { MessagePanelAcknowledgement } from '../panels/MessagePanelReal';
+
+/** Plan row 13 is ON HOLD (owner, 2026-11-10): a key file can be guessed at offline. The code stays; this switch keeps the Save Encrypted Key File button off. */
+const ENABLE_KEY_FILE_EXPORT = false;
 
 /** What removing an account says and does (the confirm dialog's words, and the call). */
 export interface AccountRemoval {
@@ -16,10 +24,16 @@ export interface AccountRemoval {
   /** Set when the button is shown but cannot be used; says why. */
   disabledReason?: string;
   title: string;
+  /** 2026-11-11 (owner): the one-line heading the wallet's title bar shows over the confirmation ("Remove Merit (Web App) Local Account"). */
+  panelTitle: string;
   message: string;
   confirmLabel: string;
-  /** Remove the account; rejects with a readable message when the wallet cannot. */
-  remove(): Promise<void>;
+  /** 2026-11-10 (row 9): the notice shown in MESSAGE_PANEL once the account is removed ("Removed HH_BASE_9 from Merit (Web App)"). */
+  doneMessage: string;
+  /** A LOCAL account (its key is kept by this app): the dialog asks for the wallet password, passes it to remove(), and can show the key first (revealKey, which asks the vault again). Absent for another wallet's account. */
+  local?: { /** Check boxes (with popups) to tick before Remove Account works. */ acknowledgements?: MessagePanelAcknowledgement[]; revealKey?(password: string): Promise<string>; /** Plan row 13: the key as an encrypted file (locked with the wallet password) to save before removing. */ exportKey?(password: string): Promise<{ name: string; content: string }> };
+  /** Remove the account; rejects with a readable message when the wallet cannot. A local account gets the wallet password. */
+  remove(password?: string): Promise<void>;
 }
 
 export interface AccountSource {
@@ -37,36 +51,62 @@ const same = (a: string | undefined, b: string | undefined) => !!a && !!b && a.t
  * decides which of the wallets holding the address the screen is about. Omitted (the header icon): the local account wins, as before.
  */
 export async function resolveAccountSource(wallet: Wallet, address: string, activeAddress: string | undefined, groupId?: string, symbol?: string): Promise<AccountSource | undefined> {
-  const holders = [];
-  for (const authenticator of wallet.registry.list()) {
-    try {
-      const known = authenticator.knownAccounts ? await authenticator.knownAccounts() : undefined;
-      const listed = known ? known.map((a) => a.address) : (await authenticator.accounts()).map((a) => a.address);
-      if (listed.some((a) => same(a, address))) holders.push(authenticator);
-    } catch {
-      /* a wallet that cannot be asked now holds nothing for this purpose */
-    }
-  }
+  const holders = await holdersOf(wallet.registry, address);
   if (holders.length === 0) return undefined;
-  const opened = groupId ? holders.find((a) => a.id === groupId) : undefined;
+  const { opened, isLocal } = removalTarget(holders, groupId);
   // 2026-11-09 (owner): the button names what it removes and from where: "Remove Remote Doggie from Merit (Web App)"
   const app = authenticatorName(wallet.registry.list().find((a) => !!a.vault) ?? holders[0]);
   const what = symbol && symbol !== 'N/A' ? symbol : 'Account';
-  const isLocal = opened ? !!opened.vault : holders.some((a) => !!a.vault);
   if (isLocal) {
-    // The local delete is a later row (docs/design/removeAccountPlan.txt rows 7 and 8): the button is drawn so it is not missed, and cannot be used yet.
-    const active = same(address, activeAddress);
+    // 2026-11-10 (docs/design/removeAccountPlan.txt rows 7 and 8, rules X2, X5, X6): the LOCAL delete. The wallet password is asked in the dialog, the vault checks it and deletes (an imported key is erased, a phrase-derived account is hidden).
+    const vault = (opened ?? holders.find((a) => !!a.vault))?.vault;
+    const canDelete = !!vault?.removeAccount && vault.capabilities.removeAccount === true;
+    // 2026-11-10 (owner: the button was disabled and the reason was unclear): why the Remove button is or is not usable
+    engineTrace('accountSource:local', { address, activeAddress, isActive: same(address, activeAddress), groupId: groupId ?? null, holders: holders.map((a) => a.id), canDelete, hasRemoveAccount: !!vault?.removeAccount, flag: vault?.capabilities.removeAccount ?? null });
+    const imported = (vault?.accounts().find((a) => same(a.address, address))?.source ?? 'imported') === 'imported';
+    const warning = imported
+      ? 'This account was imported from a private key. Removing it erases the key from this wallet. Without that key the account cannot be recovered, and all assets associated with it will be lost.'
+      : 'This account is made from your Recovery Phrase. Removing it hides it here; only your Recovery Phrase can bring it back. Without the phrase, anything it holds is lost.';
     return {
       title: 'Merit Local Account Details',
       removal: {
         label: `Remove Local ${what} from ${app}`,
         destructive: true,
-        disabledReason: active ? 'Make another account active first.' : 'To do: deleting a local account is not built yet.',
-        title: 'Delete account?',
-        message: '',
-        confirmLabel: 'Delete',
-        remove: async () => {
-          throw new Error('Deleting a local account is not built yet.');
+        ...(same(address, activeAddress) ? { disabledReason: 'Make another account active first.' } : !canDelete ? { disabledReason: 'This wallet cannot remove accounts.' } : {}),
+        title: `Remove Local ${what}\nFrom ${app}?`,
+        panelTitle: `Remove ${app} Local ${what}`,
+        message: warning,
+        confirmLabel: 'Remove Account',
+        doneMessage: `Removed ${what} from ${app}`,
+        local: {
+          // 2026-11-10 (owner): two check boxes, each opening its own popup, that must both be ticked
+          acknowledgements: [
+            { id: 'balances', label: 'Lost Account Balances', title: 'Account Assets', message: 'Removing this account can result in total loss of associated assets or Sponsor Rewards involved in a Sponsorship Staking Contract, unless you possess the private key for account recovery.', choiceLabel: 'I understand and accept the risk.', acceptLabel: 'I accept the risk, Delete Anyway', rejectLabel: 'Reject' },
+            { id: 'privateKey', label: 'Private Key Required for Recovery', title: 'Private Key Required for Recovery', message: 'If you do not save your private key, this account and all associated assets will not be recoverable.', choiceLabel: 'I understand.', acceptLabel: 'Confirm', rejectLabel: 'Cancel' },
+          ],
+          revealKey: vault?.capabilities.revealKey ? async (password: string) => {
+            try {
+              return await vault.revealPrivateKey({ kind: 'password', value: password }, address);
+            } catch (error) {
+              throw new Error(unlockErrorText(error));
+            }
+          } : undefined,
+          // 2026-11-10 (plan row 13): the key as a file locked with the wallet password (the vault checks the password first)
+          // ON HOLD 2026-11-10 (owner: the file can be attacked offline with password guessing): switched off, so the button does not appear. Set ENABLE_KEY_FILE_EXPORT to true to bring it back.
+          exportKey: ENABLE_KEY_FILE_EXPORT && vault?.capabilities.revealKey ? async (password: string) => {
+            try {
+              return await encryptKeyExport(await vault.revealPrivateKey({ kind: 'password', value: password }, address), address, password);
+            } catch (error) {
+              throw new Error(unlockErrorText(error));
+            }
+          } : undefined,
+        },
+        remove: async (password?: string) => {
+          try {
+            await wallet.removeAccount(address, { groupId, credential: { kind: 'password', value: password ?? '' } });
+          } catch (error) {
+            throw new Error(unlockErrorText(error));
+          }
         },
       },
     };
@@ -81,10 +121,12 @@ export async function resolveAccountSource(wallet: Wallet, address: string, acti
       label: `Remove Remote ${what} from ${app}`,
       destructive: false,
       ...(same(address, activeAddress) ? { disabledReason: 'Make another account active first.' } : {}),
-      title: `Remove remote ${name} Account\nFrom ${app}?`,
+      title: `Remove Remote ${name} Account\nFrom ${app}?`,
+      panelTitle: `Remove ${app} Remote ${name} Account`,
       message: `This only removes the account from Merit. It still exists in ${name}; connect it again to add it back.`,
       confirmLabel: 'Remove',
-      remove: async () => remover.removeAccount!(address),
+      doneMessage: `Removed ${what} from ${app}`,
+      remove: async () => wallet.removeAccount(address, { groupId }),
     };
   }
   return source;

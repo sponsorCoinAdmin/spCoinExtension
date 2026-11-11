@@ -40,9 +40,9 @@ import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
-import { registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
+import { registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { StakeConfirmPopup, useWalletListed } from '@sponsorcoin/spcoin-panels';
-import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useSelectedAccount, buildSpCoinAccount, hydrateAccountFromAddress, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, usePlatform } from './platform/platform';
@@ -51,6 +51,7 @@ import { createRefreshTree } from './refresh/refreshTree';
 import { ALL_WALLET_DERIVATIONS, mergeWalletProps, useWalletDerivedProps } from './wallet/walletProps';
 import { useApproverAccounts } from './wallet/approverAccountsReact';
 import { useApprovalMessagePanel } from './auth/useApprovalMessagePanel';
+import { accountNoticeStore } from './auth/accountNoticeStore';
 import { useAccountNoticeMessagePanel } from './auth/useAccountNoticeMessagePanel';
 import { useChainInfo } from './panels/useChainInfo';
 import { walletName } from './auth/authenticator';
@@ -65,6 +66,7 @@ import ConnectedNetworkPanel from './ConnectedNetworkPanel';
 // second store let a tree toggle silently do nothing.
 import ConnectedMessagePanel from './ConnectedMessagePanel';
 import { useMeritApprovalMessagePanel } from './approval/useMeritApprovalMessagePanel';
+import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageStore';
 import ConnectedRewardsPanel from './rewards/ConnectedRewardsPanel';
 import AddAccountFlow from './account/AddAccountFlow';
 import TestAccountsSection from './TestAccountsSection';
@@ -378,6 +380,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const messageVisible = usePanelVisible(SP_COIN_DISPLAY.MESSAGE_PANEL);
     // The header pills' chevrons follow the real visibility of their list (2026-10-30, on request), so a list opened by any other means flips them too.
     // A step-through popup (Swap / Send / Sponsor) is drawn in MESSAGE_PANEL: its stage heading is the PANEL_TITLE, and the tab body stays mounted.
+    // 2026-11-11 (owner): a confirmation that names its own heading (the Remove Account one) shows it in PANEL_TITLE while its message is up
+    const confirmTitle = React.useSyncExternalStore(pendingApprovalMessageStore.subscribe, () => pendingApprovalMessageStore.getSnapshot()?.panelTitle, () => undefined);
     const stepContentUp = React.useSyncExternalStore(stepPanelContentStore.subscribe, () => stepPanelContentStore.getSnapshot() != null, () => false) && messageVisible;
     const stepTitle = React.useSyncExternalStore(stepPanelTitleStore.subscribe, stepPanelTitleStore.getSnapshot, stepPanelTitleStore.getServerSnapshot);
     React.useEffect(() => {
@@ -938,7 +942,23 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // read-only), not a list to pick from, and can be reached from a
     // different trigger (the avatar icon, not the row/chevron). Null when
     // closed; a real address string while showing that account's details.
-    const [accountDetailAddress, setAccountDetailAddress] = useState(null);
+    // 2026-11-11 (owner): the account whose details show is the SELECTED account of ExchangeContext (persisted, cleared when the account is removed or the details are left), no longer a local state that was forgotten whenever the details panel hid.
+    const [selectedAccount, setSelectedAccount] = useSelectedAccount();
+    const accountDetailAddress = selectedAccount?.address ? String(selectedAccount.address) : null;
+    const latestSelectedRef = useRef(null);
+    const setAccountDetailAddress = (address) => {
+        latestSelectedRef.current = address ? address.toLowerCase() : null;
+        if (!address) {
+            setSelectedAccount(undefined);
+            return;
+        }
+        setSelectedAccount(buildSpCoinAccount({ address }));
+        // the full record (name, symbol, logo) a moment later, unless another account was selected meanwhile
+        void hydrateAccountFromAddress(address, { fallbackStatus: STATUS.INFO }).then((hydrated) => {
+            if (latestSelectedRef.current === address.toLowerCase())
+                setSelectedAccount(hydrated);
+        }).catch(() => undefined);
+    };
     // 2026-11-08 (owner): the group of the row the details were opened from (the same address can be in two groups), and what the wallet said about it (the screen's title)
     const [accountDetailGroup, setAccountDetailGroup] = useState(null);
     const [accountDetailTitle, setAccountDetailTitle] = useState(null);
@@ -995,6 +1015,10 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // that fed the old flat TokenDetailPanel overlay, were removed 2026-10-26
     // alongside tokenDetailOverlay's own switch to TokenPanel.tsx (see that
     // variable's own doc comment) — TokenPanel hydrates itself.
+    // 2026-11-11 (owner): the account dropdowns anywhere in the wallet (a right click on an avatar) open ACCOUNT_PANEL for their account through this, without making it the active one
+    const openAccountDetailRef = useRef(openAccountDetail);
+    openAccountDetailRef.current = openAccountDetail;
+    React.useEffect(() => registerAccountDetailOpener((address) => openAccountDetailRef.current(address)), []);
     const openNetworkDetail = (id) => {
         setNetworkDetailId(id);
         openPanel(SP_COIN_DISPLAY.NETWORK_PANEL, 'MeritWallet:openNetworkDetail');
@@ -1040,11 +1064,22 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         // This used to call closeActiveListPanel(..., { keepContainer: true }) here, which wiped them.
     };
     // The selected detail record is data tied to its panel: it goes when the panel closes, not when the tab changes.
-    useEffect(() => { if (!accountDetailVisible) {
-        setAccountDetailAddress(null);
-        setAccountDetailGroup(null);
-        setAccountDetailTitle(null);
-    } }, [accountDetailVisible]);
+    // 2026-11-11 (owner report: Remove opened its confirmation in MESSAGE_PANEL, backing out showed the ACTIVE account's details instead of the account that was open): the confirmation hides the details panel while it is up, and this used to forget
+    // which account was open at that moment. While the message is up the record is kept; it goes only when neither the details nor a message are showing, and a beat later, so that going back (the message closes and the details open in the same breath)
+    // finds it still there.
+    const accountDetailVisibleRef = useRef(accountDetailVisible);
+    accountDetailVisibleRef.current = accountDetailVisible;
+    useEffect(() => {
+        if (accountDetailVisible || messageVisible)
+            return undefined;
+        const timer = setTimeout(() => {
+            if (accountDetailVisibleRef.current)
+                return;
+            setAccountDetailGroup(null);
+            setAccountDetailTitle(null);
+        }, 60);
+        return () => clearTimeout(timer);
+    }, [accountDetailVisible, messageVisible]);
     // 2026-10-26 (owner report, trace-confirmed: right-clicking a token row
     // still showed a blank body even after tokenDetailOverlay was switched to
     // read previewToken) -- a plain `!tokenDetailVisible` check (this
@@ -1802,7 +1837,18 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 setAccountDetailTitle(value?.title ?? null);
                 return value;
             }),
-            onAccountRemoved: () => {
+            accountBalance: accountDetailHost.accountBalance ?? (fetchBalance
+                ? async (address) => {
+                    const value = await fetchBalance({ accountAddress: address }).catch(() => undefined);
+                    // 2026-11-11: the amount only; the confirmation words it where it shows it (RemoveAccountPanel)
+                    return value && value > 0n ? formatUnits(value, 18) : undefined;
+                }
+                : undefined),
+            onAccountRemoved: (address, message) => {
+                // 2026-11-10 (docs/design/removeAccountPlan.txt row 9): the removal is traced and confirmed in MESSAGE_PANEL; the lists re-read when the wallet announces the change
+                engineTrace('account:removed', { address, message });
+                if (message)
+                    accountNoticeStore.publish(message, [address]);
                 setAccountDetailAddress(null);
                 closePanel('NAV_POP:MeritWallet:accountRemoved');
             },
@@ -1972,51 +2018,53 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // component already shows the state in PanelTitle; passwordMode drives both.
     // 2026-10-15 (owner request): "Select Software Wallet" / "Select Hardware Wallet" / "Select Wallet", by the list's two footer boxes
     const walletListScreenTitle = useWalletListTitle(nativeWalletId === 'localVault' ? 'Extension' : nativeWalletId === 'serverKeystore' ? 'Web App' : undefined);
-    const panelTitle = stepContentUp && stepTitle
-        ? stepTitle
-        : passwordOverlay
-            ? passwordMode === 'setup' ? 'Create Account' : 'Account Login'
-            : approvalOverlay
-                ? approvalPage.title
-                : remoteSelection
-                    // 2026-11-07 (owner): "Add Merit <app> Account(s)", the app whose accounts the person is choosing from (this one: the extension's vault, or the web app)
-                    ? `Add Merit ${nativeWalletId === 'localVault' ? 'Extension' : 'Web App'} Account(s)`
-                    : walletListLeafVisible
-                        ? walletListScreenTitle
-                        : createAccountLeafVisible && addMenuVisible && panelTreeListOpen
-                            // 2026-11-07 (owner): Create a Merit Account is the Account Details screen in add mode
-                            ? 'Add New Account'
-                            : addMenuVisible && panelTreeListOpen
-                                ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
-                                : panelTreeVisible
-                                    ? 'Panel Tree'
-                                    : meritInfoVisible
-                                        ? 'About Merit Wallet'
-                                        : accountDetailVisible
-                                            ? accountDetailTitle ?? 'Account Details'
-                                            : tokenDetailVisible
-                                                ? 'Token Details'
-                                                : networkDetailVisible
-                                                    ? 'Network Details'
-                                                    : activeListMode === 'sellToken' ||
-                                                        activeListMode === 'buyToken' ||
-                                                        activeListMode === 'sendToken'
-                                                        ? 'Select a Token'
-                                                        : activeListMode === 'sendRecipient'
-                                                            ? 'Select Recipient'
-                                                            : activeListMode === 'account'
-                                                                ? 'Active Account Selection'
-                                                                : activeListMode === 'network'
-                                                                    ? 'Select Network'
-                                                                    : activeTab === 'SWAP'
-                                                                        ? 'Trading Station'
-                                                                        : activeTab === 'SEND'
-                                                                            ? 'Send Token'
-                                                                            : activeTab === 'SPONSOR'
-                                                                                ? 'Add Sponsorship'
-                                                                                : activeTab === 'REWARDS'
-                                                                                    ? 'Rewards Management'
-                                                                                    : 'Wallet Config';
+    const panelTitle = messageVisible && confirmTitle
+        ? confirmTitle
+        : stepContentUp && stepTitle
+            ? stepTitle
+            : passwordOverlay
+                ? passwordMode === 'setup' ? 'Create Account' : 'Account Login'
+                : approvalOverlay
+                    ? approvalPage.title
+                    : remoteSelection
+                        // 2026-11-07 (owner): "Add Merit <app> Account(s)", the app whose accounts the person is choosing from (this one: the extension's vault, or the web app)
+                        ? `Add Merit ${nativeWalletId === 'localVault' ? 'Extension' : 'Web App'} Account(s)`
+                        : walletListLeafVisible
+                            ? walletListScreenTitle
+                            : createAccountLeafVisible && addMenuVisible && panelTreeListOpen
+                                // 2026-11-07 (owner): Create a Merit Account is the Account Details screen in add mode
+                                ? 'Add New Account'
+                                : addMenuVisible && panelTreeListOpen
+                                    ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
+                                    : panelTreeVisible
+                                        ? 'Panel Tree'
+                                        : meritInfoVisible
+                                            ? 'About Merit Wallet'
+                                            : accountDetailVisible
+                                                ? accountDetailTitle ?? 'Account Details'
+                                                : tokenDetailVisible
+                                                    ? 'Token Details'
+                                                    : networkDetailVisible
+                                                        ? 'Network Details'
+                                                        : activeListMode === 'sellToken' ||
+                                                            activeListMode === 'buyToken' ||
+                                                            activeListMode === 'sendToken'
+                                                            ? 'Select a Token'
+                                                            : activeListMode === 'sendRecipient'
+                                                                ? 'Select Recipient'
+                                                                : activeListMode === 'account'
+                                                                    ? 'Active Account Selection'
+                                                                    : activeListMode === 'network'
+                                                                        ? 'Select Network'
+                                                                        : activeTab === 'SWAP'
+                                                                            ? 'Trading Station'
+                                                                            : activeTab === 'SEND'
+                                                                                ? 'Send Token'
+                                                                                : activeTab === 'SPONSOR'
+                                                                                    ? 'Add Sponsorship'
+                                                                                    : activeTab === 'REWARDS'
+                                                                                        ? 'Rewards Management'
+                                                                                        : 'Wallet Config';
     // 2026-11-09 (owner design): the refresh tree of this wallet (refresh/refreshTree.ts); every screen's loaded data is a node in it
     const refreshTreeRef = useRef(undefined);
     if (!refreshTreeRef.current)
@@ -2050,7 +2098,10 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                 return;
                                             openAccountDetail(address);
                                             onAccountIconClick?.(address);
-                                        }, walletName: activeWalletName }) })), !passwordPanelShowing && (_jsx(AgentHeaderPanel, { agentName: agentAccount?.name, children: _jsx(ConnectedAgentSelectDropDown, {}) })), _jsxs("div", { style: walletFrameStyle.body, children: [!passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.PANEL_TITLE, lazyLoad: false, children: _jsx(PanelTitle, { title: panelTitle, onMenuClick: handleMenuClick, menuOpen: menuTabHeaderVisible, 
+                                        }, 
+                                        // 2026-11-11 (owner): a right click on the avatar opens ACCOUNT_PANEL too, through AccountSelectDropDown
+                                        onIconContextMenu: (address) => { if (address)
+                                            openAccountDetail(address); }, walletName: activeWalletName }) })), !passwordPanelShowing && (_jsx(AgentHeaderPanel, { agentName: agentAccount?.name, children: _jsx(ConnectedAgentSelectDropDown, {}) })), _jsxs("div", { style: walletFrameStyle.body, children: [!passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.PANEL_TITLE, lazyLoad: false, children: _jsx(PanelTitle, { title: panelTitle, onMenuClick: handleMenuClick, menuOpen: menuTabHeaderVisible, 
                                                 // 2026-10-03, on request — on the Account Login / Create Account
                                                 // screen the title bar shows only its title: no back button (nothing
                                                 // to go back to while locked) and no hamburger menu.

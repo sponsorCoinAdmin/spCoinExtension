@@ -1,37 +1,93 @@
 // File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/account/RemoveAccountPanel.tsx
 //
-// 2026-11-08 (owner, docs/design/removeAccountPlan.txt rows 5 and 6): the red "Remove Account" button under the account details, and the plain confirmation it opens (no password: the account still exists in the wallet that holds it).
-// The button's words, the dialog's words and the call all come from the AccountRemoval the screen was given (accountSource.ts); this file only draws them. Disabled (with the reason under it) for the active account.
+// 2026-11-08 (owner, docs/design/removeAccountPlan.txt rows 5 and 6): the red "Remove Account" button under the account details, and the confirmation it opens (no password for another wallet's account: it still exists in the wallet that holds it).
+// 2026-11-10 (rows 7 and 8, rules X5 and X6): a LOCAL account (removal.local) is confirmed with the wallet password, the loss warning and the private key (hidden, behind a Show / Hide toggle).
+// 2026-11-10 (owner: "a better way is a message panel instead of a popup, so the address might fit"): the confirmation is shown in MESSAGE_PANEL, the wallet's one message panel, not in a popup: the words and the account row (icon, name, the whole
+// address) are an ordinary message, and the password field, the Show / Hide Private Key toggle and the two buttons are the panel's pending-decision controls (approval/pendingApprovalMessageStore, the same ones the Add Account warning uses).
+// The button's words, the confirmation's words and the call all come from the AccountRemoval the screen was given (accountSource.ts); this file only opens them. Disabled (with the reason under it) for the active account.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState } from 'react';
-import { dialogStyle, removeAccountStyle } from '@sponsorcoin/spcoin-common/styles';
-import DialogPortal from '../DialogPortal';
-import AccountDisplayDropDown from '../panels/AccountDisplayDropDown';
-export default function RemoveAccountPanel({ removal, account, onRemoved }) {
-    const [confirming, setConfirming] = useState(false);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState('');
+import { removeAccountStyle } from '@sponsorcoin/spcoin-common/styles';
+import { STATUS, MESSAGE_ACCOUNTS_MARKER } from '@sponsorcoin/spcoin-common/context';
+import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
+import { useExchangeContext, usePanelTree, panelStore } from '@sponsorcoin/spcoin-exchange-engine';
+import { pendingApprovalMessageStore } from '../approval/pendingApprovalMessageStore';
+import { noticeAccountRows } from '../auth/useAccountNoticeMessagePanel';
+const SOURCE = 'RemoveAccount';
+/**
+ * While the confirmation is up this screen is replaced by the message panel, so a hook of this component cannot see the panel close (the screen is gone, then new). Watched here, at module level: once the panel has been seen open and then closes, the
+ * decision controls are cleared (closing the message, the X or back, is the same as Cancel: nothing is removed).
+ */
+let stopWatching;
+function clearWhenMessageCloses() {
+    stopWatching?.();
+    let seenOpen = panelStore.getPanelSnapshot(SP_COIN_DISPLAY.MESSAGE_PANEL);
+    const off = panelStore.subscribePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, () => {
+        if (panelStore.getPanelSnapshot(SP_COIN_DISPLAY.MESSAGE_PANEL)) {
+            seenOpen = true;
+            return;
+        }
+        if (!seenOpen)
+            return;
+        off();
+        stopWatching = undefined;
+        pendingApprovalMessageStore.set(null);
+    });
+    stopWatching = off;
+}
+export default function RemoveAccountPanel({ removal, account, onRemoved, balanceText }) {
+    const { setErrorMessage } = useExchangeContext();
+    const { openPanel, closePanel } = usePanelTree();
     const disabled = !!removal.disabledReason;
-    const confirm = () => {
-        if (busy)
-            return;
-        setBusy(true);
-        setError('');
-        removal
-            .remove()
-            .then(() => {
-            setConfirming(false);
-            onRemoved?.();
-        })
-            .catch((err) => setError(err instanceof Error && err.message ? err.message : 'The account could not be removed.'))
-            .finally(() => setBusy(false));
+    const local = removal.local;
+    const done = () => {
+        stopWatching?.();
+        stopWatching = undefined;
+        pendingApprovalMessageStore.set(null);
+        closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'RemoveAccount:done');
     };
-    const close = () => {
-        if (busy)
-            return;
-        setConfirming(false);
-        setError('');
+    const open = () => {
+        // 2026-11-11 (owner): the Account Assets popup shows the account's native balance above its radio button
+        const acknowledgements = local?.acknowledgements?.map((a) => (a.id === 'balances' && balanceText ? { ...a, detail: `Balance ${balanceText} native balance.` } : a));
+        const keyTools = { acknowledgements, revealKey: local?.revealKey ? (pw) => local.revealKey(pw) : undefined, exportKey: local?.exportKey ? (pw) => local.exportKey(pw) : undefined };
+        const controls = (busy, passwordError) => ({
+            requirePassword: !!local,
+            passwordError,
+            busy,
+            panelTitle: removal.panelTitle,
+            approveLabel: removal.confirmLabel,
+            rejectLabel: 'Cancel',
+            onReject: () => { if (!busy)
+                done(); },
+            onApprove: (password) => {
+                if (busy || (local && !password))
+                    return;
+                pendingApprovalMessageStore.set({ ...controls(true, ''), ...keyTools });
+                removal
+                    .remove(local ? password : undefined)
+                    .then(() => {
+                    done();
+                    onRemoved?.(removal.doneMessage);
+                })
+                    .catch((err) => {
+                    pendingApprovalMessageStore.set({ ...controls(false, err instanceof Error && err.message ? err.message : 'The account could not be removed.'), ...keyTools });
+                });
+            },
+        });
+        pendingApprovalMessageStore.set({ ...controls(false, ''), ...keyTools });
+        const lines = [removal.message];
+        if (local && balanceText)
+            lines.push('', `Balance: ${balanceText} (native coin)`);
+        const rows = noticeAccountRows([account.address], () => ({ name: account.name, symbol: account.symbol, iconSrc: account.logoURL }));
+        setErrorMessage({
+            errCode: 0,
+            msg: rows.length ? `${MESSAGE_ACCOUNTS_MARKER}\n${lines.join('\n')}` : lines.join('\n'),
+            source: SOURCE,
+            status: STATUS.WARNING,
+            accounts: rows,
+        });
+        openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'RemoveAccount:confirm');
+        clearWhenMessageCloses();
     };
-    return (_jsxs("div", { id: "REMOVE_ACCOUNT", style: removeAccountStyle.wrap, children: [_jsx("button", { type: "button", disabled: disabled, title: removal.disabledReason, onClick: () => setConfirming(true), style: removeAccountStyle.button(disabled, removal.destructive), children: removal.label }), removal.disabledReason ? _jsx("p", { style: removeAccountStyle.note, children: removal.disabledReason }) : null, confirming ? (_jsx(DialogPortal, { children: _jsx("div", { role: "dialog", "aria-modal": "true", style: dialogStyle.backdrop, children: _jsxs("div", { style: removal.destructive ? dialogStyle.formCardDanger : dialogStyle.formCard, children: [_jsx("p", { style: removeAccountStyle.title, children: removal.title }), _jsx(AccountDisplayDropDown, { address: account.address, name: account.name, symbol: account.symbol, logoURL: account.logoURL }), _jsx("p", { style: dialogStyle.message, children: removal.message }), error ? _jsx("p", { style: dialogStyle.error, children: error }) : null, _jsx("button", { type: "button", onClick: confirm, disabled: busy, style: dialogStyle.dangerButton(busy, removal.destructive), children: busy ? 'Working…' : removal.confirmLabel }), _jsx("button", { type: "button", autoFocus: true, onClick: close, style: dialogStyle.cancelButton, children: "Cancel" })] }) }) })) : null] }));
+    return (_jsxs("div", { id: "REMOVE_ACCOUNT", style: removeAccountStyle.wrap, children: [_jsx("button", { type: "button", disabled: disabled, title: removal.disabledReason, onClick: open, style: removeAccountStyle.button(disabled, removal.destructive), children: removal.label }), removal.disabledReason ? _jsx("p", { style: removeAccountStyle.note, children: removal.disabledReason }) : null] }));
 }

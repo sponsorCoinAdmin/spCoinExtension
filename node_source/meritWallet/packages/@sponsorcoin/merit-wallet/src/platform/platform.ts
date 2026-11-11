@@ -19,6 +19,8 @@ export interface MeritPlatform {
   copyText(text: string): Promise<void>;
   /** Open an address: in a new window by default, in the current one with `sameTab` (a mailto: link). */
   openUrl(url: string, options?: { sameTab?: boolean }): void;
+  /** 2026-11-11: take `text` off the clipboard again (a copied private key), putting `replacement` (default empty) in its place. Clears it when it still holds `text`; when the device will not say what it holds, it is cleared anyway (a key left behind is worse than a lost copy). Rejects when the device refuses. */
+  clearClipboard?(text: string, replacement?: string): Promise<void>;
   /** Hand the person a file to keep (the wallet backup): a download in a browser, a share sheet on a phone. */
   saveFile(name: string, content: string, mimeType: string): void;
   /** Small UI preferences that survive a restart. */

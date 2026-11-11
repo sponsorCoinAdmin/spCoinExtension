@@ -92,7 +92,7 @@ export function createWorkerVault(transport, options = {}) {
     const vault = {
         label: options.label ?? 'this device',
         platform: options.platform ?? 'extension',
-        capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
+        capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false, removeAccount: true },
         ready,
         refresh,
         async hasWallet() {
@@ -171,6 +171,12 @@ export function createWorkerVault(transport, options = {}) {
             await call({ type: 'merit/accounts/list' });
             notify();
             return accountList;
+        },
+        async removeAccount(credential, address) {
+            await call({ type: 'merit/vault/verifyPassword', password: password(credential) });
+            await call({ type: 'merit/accounts/remove', address });
+            await call({ type: 'merit/accounts/list' });
+            notify();
         },
         async revealPrivateKey(credential, address) {
             const reply = await call({ type: 'merit/accounts/exportPrivateKey', password: password(credential), address });

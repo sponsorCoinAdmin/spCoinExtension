@@ -14,8 +14,8 @@ export {
 } from './meritWalletDataFetch';
 export { default as AddressPanel, type AddressPanelProps } from './AddressPanel';
 export { default as WalletAccountHeader } from './WalletAccountHeader';
-export { default as WalletAccountSelectDropDown, useWalletAccountListVisible } from './WalletAccountSelectDropDown';
-export type { WalletAccountSelectDropDownProps } from './WalletAccountSelectDropDown';
+export { default as ActiveAccountSelectDropDown, useWalletAccountListVisible } from './ActiveAccountSelectDropDown';
+export type { ActiveAccountSelectDropDownProps } from './ActiveAccountSelectDropDown';
 export type { WalletAccountHeaderProps, WalletAccountHeaderRoles } from './WalletAccountHeader';
 export { default as NetworkSelectDropDown } from './NetworkSelectDropDown';
 export type { NetworkSelectDropDownProps } from './NetworkSelectDropDown';
@@ -52,4 +52,3 @@ export { default as TokenDetailPanel } from './TokenDetailPanel';
 export type { TokenDetailPanelProps } from './TokenDetailPanel';
 export { default as NetworkDetailPanel } from './NetworkDetailPanel';
 export type { NetworkDetailPanelProps } from './NetworkDetailPanel';
-export { default as AccountDisplayDropDown } from './AccountDisplayDropDown';

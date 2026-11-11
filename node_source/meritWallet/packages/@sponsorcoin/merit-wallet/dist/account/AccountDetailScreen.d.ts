@@ -22,8 +22,10 @@ export interface AccountDetailHost {
     connectWallet?(): void;
     /** 2026-11-08 (docs/design/removeAccountPlan.txt rows 5 to 7): who holds this account and whether it can be removed. An account another wallet holds: the Private Key row says "Held by <wallet>" and, when that wallet can remove accounts, a Remove button is shown. Omitted: nothing changes. */
     accountSource?(address: string, symbol?: string): Promise<AccountSource | undefined>;
-    /** Called after an account was removed from here: the host leaves the screen (the account is gone from the list). */
-    onAccountRemoved?(address: string): void;
+    /** The account's balance as a line of words ("Balance: 1.5"), or undefined when it is zero or cannot be read: shown in the local delete dialog (rule X5). */
+    accountBalance?(address: string): Promise<string | undefined>;
+    /** Called after an account was removed from here: the host leaves the screen (the account is gone from the list) and may show `message` ("Removed X from Merit"). */
+    onAccountRemoved?(address: string, message?: string): void;
 }
 export type AccountDetailRole = SP_COIN_DISPLAY.ACTIVE_ACCOUNT | SP_COIN_DISPLAY.SPONSOR_ACCOUNT | SP_COIN_DISPLAY.RECIPIENT_ACCOUNT | SP_COIN_DISPLAY.AGENT_ACCOUNT;
 /** The avatar and table flags of a role: each role has its own pair, so toggling one in the panel tree does not affect the others. */

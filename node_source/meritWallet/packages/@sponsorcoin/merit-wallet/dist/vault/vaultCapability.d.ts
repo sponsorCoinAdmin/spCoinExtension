@@ -24,6 +24,8 @@ export interface VaultCapabilities {
     revealKey: boolean;
     revealPhrase: boolean;
     biometric: boolean;
+    /** 2026-11-10: this vault can delete one account (removeAccount below). Absent = no. */
+    removeAccount?: boolean;
 }
 export interface VaultAccount {
     address: string;
@@ -64,6 +66,8 @@ export interface VaultCapability {
     exportBackup(credential: VaultCredential): Promise<string>;
     /** Restore a backup into an empty store. */
     importBackup(file: string, credential: VaultCredential): Promise<VaultAccount[]>;
+    /** 2026-11-10 (docs/design/removeAccountPlan.txt rows 7 and 8): delete ONE account from this vault, after the credential is checked. An imported key is erased; a phrase-derived account is hidden (the phrase still derives it). The active account is refused. */
+    removeAccount?(credential: VaultCredential, address: string): Promise<void>;
     revealPrivateKey(credential: VaultCredential, address: string): Promise<string>;
     revealRecoveryPhrase(credential: VaultCredential): Promise<string>;
     /** Lock / unlock announcements; returns the unsubscribe function. */

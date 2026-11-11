@@ -23,7 +23,37 @@ export interface MessagePanelPendingApproval {
     /** 2026-11-07: the words of the two buttons when a message is a question that is not a write ("Continue" / "Cancel"). Default Approve / Reject. */
     approveLabel?: string;
     rejectLabel?: string;
+    /**
+     * 2026-11-10 (docs/design/removeAccountPlan.txt X6): a private key the person may look at before deciding (the local Remove Account confirmation). The key is hidden (stars) behind a Show / Hide Private Key toggle; showing it calls this with the
+     * typed password (the vault checks it again); it hides after KEY_SHOW_MS, and Copy warns about the clipboard.
+     */
+    revealKey?: (password: string) => Promise<string>;
+    /** 2026-11-10 (plan row 13): the key as an ENCRYPTED file (locked with the typed password) to keep before removing; the file is handed to the platform's saveFile. */
+    exportKey?: (password: string) => Promise<{
+        name: string;
+        content: string;
+    }>;
+    /** 2026-11-10 (owner): check boxes the person must tick before the approve button works; ticking one opens its popup (AcknowledgeDialog), which checks the box on acceptance and leaves it unchecked on Reject, Cancel or the X. */
+    acknowledgements?: MessagePanelAcknowledgement[];
+    /** 2026-11-11 (owner): the heading shown in the wallet's PANEL_TITLE (one line) while this message is up, instead of the screen's own title. */
+    panelTitle?: string;
 }
+export interface MessagePanelAcknowledgement {
+    id: string;
+    /** The check box's words. */
+    label: string;
+    /** The popup's heading and body. */
+    title: string;
+    message: string;
+    /** A line shown above the radio button (the account's native balance). */
+    detail?: string;
+    /** The toggle radio button's words ("I understand"); the accepting button stays dimmed until it is on. */
+    choiceLabel: string;
+    acceptLabel: string;
+    rejectLabel: string;
+}
+/** How long a shown private key stays on screen (docs/design/removeAccountPlan.txt P1). */
+export declare const KEY_SHOW_MS = 30000;
 export interface MessagePanelRealProps {
     panelId?: SP_COIN_DISPLAY;
     errorMessage: ErrorMessage | undefined;

@@ -211,7 +211,7 @@ async function handle(request: VaultRequest): Promise<VaultResponse> {
       case 'merit/accounts/importPrivateKey':
         return snapshot({ account: await accounts.importPrivateKey(request.privateKey, request.name) });
       case 'merit/accounts/remove':
-        await accounts.remove(request.address);
+        await accounts.removeAccount(request.address);
         return snapshot({ accounts: accounts.list() });
       case 'merit/accounts/rename':
         await accounts.rename(request.address, request.name);

@@ -37,7 +37,7 @@ import { accountHeaderStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
-import WalletAccountSelectDropDown from './WalletAccountSelectDropDown';
+import ActiveAccountSelectDropDown from './ActiveAccountSelectDropDown';
 const DEFAULT_ROLES = { isSponsor: false, isRecipient: false, isAgent: false };
 function RoleCell({ label, active, title, onClick, borderRight, }) {
     const [hovered, setHovered] = useState(false);
@@ -47,16 +47,16 @@ function RoleCell({ label, active, title, onClick, borderRight, }) {
  *  doesn't pass pillSlot (e.g. the extension, via MeritWallet.tsx, which
  *  still calls this with the old icon/address/symbol/... props). */
 function DefaultAccountPill(props) {
-    // 2026-11-01: WalletAccountSelectDropDown replaces AccountSelectDropDown here and decides its own chevron from the panel tree.
-    return _jsx(WalletAccountSelectDropDown, { ...props });
+    // 2026-11-01: ActiveAccountSelectDropDown replaces AccountSelectDropDown here and decides its own chevron from the panel tree.
+    return _jsx(ActiveAccountSelectDropDown, { ...props });
 }
 /** This package's own inert default role table — same "used only when the
  *  caller doesn't pass roleSlot" reasoning as DefaultAccountPill above. */
 function DefaultRoleTable({ roles = DEFAULT_ROLES, onRoleClick, }) {
     return (_jsx("div", { style: accountHeaderStyle.roleBox, children: _jsx("table", { style: accountHeaderStyle.roleTable, children: _jsx("tbody", { children: _jsxs("tr", { children: [_jsx(RoleCell, { label: "S", active: roles.isSponsor, title: roles.isSponsor ? 'Sponsor Account — click to open Rewards' : 'Not a Sponsor Account', onClick: roles.isSponsor && onRoleClick ? () => onRoleClick('sponsor') : undefined, borderRight: true }), _jsx(RoleCell, { label: "R", active: roles.isRecipient, title: roles.isRecipient ? 'Recipient Account — click to open Rewards' : 'Not a Recipient Account', onClick: roles.isRecipient && onRoleClick ? () => onRoleClick('recipient') : undefined, borderRight: true }), _jsx(RoleCell, { label: "A", active: roles.isAgent, title: roles.isAgent ? 'Agent Account — click to open Rewards' : 'Not an Agent Account', onClick: roles.isAgent && onRoleClick ? () => onRoleClick('agent') : undefined, borderRight: false })] }) }) }) }));
 }
-export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onRoleClick, walletName, }) {
-    const resolvedPill = pillSlot ?? (_jsx(DefaultAccountPill, { icon: icon, address: address, symbol: symbol, name: name, placeholderLabel: placeholderLabel, onSelectClick: onSelectClick, onIconClick: onIconClick }));
+export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onActivate, onIconContextMenu, onRoleClick, walletName, }) {
+    const resolvedPill = pillSlot ?? (_jsx(DefaultAccountPill, { icon: icon, address: address, symbol: symbol, name: name, placeholderLabel: placeholderLabel, onSelectClick: onSelectClick, onIconClick: onIconClick, onActivate: onActivate, onIconContextMenu: onIconContextMenu }));
     // roleSlot === null is an explicit "render nothing" — distinct from
     // undefined ("caller didn't pass one, use the default").
     const resolvedRole = roleSlot === null ? null : roleSlot ?? _jsx(DefaultRoleTable, { roles: roles, onRoleClick: onRoleClick });

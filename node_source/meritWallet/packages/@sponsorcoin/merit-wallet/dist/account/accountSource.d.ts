@@ -1,4 +1,5 @@
 import type { Wallet } from '../wallet/wallet';
+import type { MessagePanelAcknowledgement } from '../panels/MessagePanelReal';
 /** What removing an account says and does (the confirm dialog's words, and the call). */
 export interface AccountRemoval {
     /** The button's words ("Remove from Merit"). */
@@ -8,10 +9,23 @@ export interface AccountRemoval {
     /** Set when the button is shown but cannot be used; says why. */
     disabledReason?: string;
     title: string;
+    /** 2026-11-11 (owner): the one-line heading the wallet's title bar shows over the confirmation ("Remove Merit (Web App) Local Account"). */
+    panelTitle: string;
     message: string;
     confirmLabel: string;
-    /** Remove the account; rejects with a readable message when the wallet cannot. */
-    remove(): Promise<void>;
+    /** 2026-11-10 (row 9): the notice shown in MESSAGE_PANEL once the account is removed ("Removed HH_BASE_9 from Merit (Web App)"). */
+    doneMessage: string;
+    /** A LOCAL account (its key is kept by this app): the dialog asks for the wallet password, passes it to remove(), and can show the key first (revealKey, which asks the vault again). Absent for another wallet's account. */
+    local?: {
+        acknowledgements?: MessagePanelAcknowledgement[];
+        revealKey?(password: string): Promise<string>; /** Plan row 13: the key as an encrypted file (locked with the wallet password) to save before removing. */
+        exportKey?(password: string): Promise<{
+            name: string;
+            content: string;
+        }>;
+    };
+    /** Remove the account; rejects with a readable message when the wallet cannot. A local account gets the wallet password. */
+    remove(password?: string): Promise<void>;
 }
 export interface AccountSource {
     /** The wallet that holds the account when it is not this app's own ("MetaMask", "Merit (Ext)"): the Private Key row says so. */

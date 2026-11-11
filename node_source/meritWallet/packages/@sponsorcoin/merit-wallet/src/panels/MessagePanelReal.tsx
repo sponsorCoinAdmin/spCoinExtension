@@ -24,7 +24,10 @@ import { usePanelVisible, usePanelTree, getPanelOpenLog, describePanelOpen, useA
 import { errorPanelDisplayStore } from './errorPanelDisplayStore';
 import { MESSAGE_STATUS_STYLES, classifyMessageStatus, SmallYellowButton, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import MessageDetailsSection from './MessageDetailsSection';
-import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle, messageContractLogoStyle } from '@sponsorcoin/spcoin-common/styles';
+import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle, messageContractLogoStyle, removeAccountStyle, dialogStyle, acknowledgeStyle } from '@sponsorcoin/spcoin-common/styles';
+import AcknowledgeDialog from './AcknowledgeDialog';
+import { scheduleClipboardClear } from './clipboardClear';
+import { Eye, EyeOff } from 'lucide-react';
 
 /** The text of a message, with the small image of the contract after every "Contract: 0x…" line (the Uniswap router's logo on a swap receipt); every other line is plain text. */
 function MessageText({ text, chainId }: { text: string; chainId: number }) {
@@ -71,7 +74,38 @@ export interface MessagePanelPendingApproval {
   /** 2026-11-07: the words of the two buttons when a message is a question that is not a write ("Continue" / "Cancel"). Default Approve / Reject. */
   approveLabel?: string;
   rejectLabel?: string;
+  /**
+   * 2026-11-10 (docs/design/removeAccountPlan.txt X6): a private key the person may look at before deciding (the local Remove Account confirmation). The key is hidden (stars) behind a Show / Hide Private Key toggle; showing it calls this with the
+   * typed password (the vault checks it again); it hides after KEY_SHOW_MS, and Copy warns about the clipboard.
+   */
+  revealKey?: (password: string) => Promise<string>;
+  /** 2026-11-10 (plan row 13): the key as an ENCRYPTED file (locked with the typed password) to keep before removing; the file is handed to the platform's saveFile. */
+  exportKey?: (password: string) => Promise<{ name: string; content: string }>;
+  /** 2026-11-10 (owner): check boxes the person must tick before the approve button works; ticking one opens its popup (AcknowledgeDialog), which checks the box on acceptance and leaves it unchecked on Reject, Cancel or the X. */
+  acknowledgements?: MessagePanelAcknowledgement[];
+  /** 2026-11-11 (owner): the heading shown in the wallet's PANEL_TITLE (one line) while this message is up, instead of the screen's own title. */
+  panelTitle?: string;
 }
+
+export interface MessagePanelAcknowledgement {
+  id: string;
+  /** The check box's words. */
+  label: string;
+  /** The popup's heading and body. */
+  title: string;
+  message: string;
+  /** A line shown above the radio button (the account's native balance). */
+  detail?: string;
+  /** The toggle radio button's words ("I understand"); the accepting button stays dimmed until it is on. */
+  choiceLabel: string;
+  acceptLabel: string;
+  rejectLabel: string;
+}
+
+/** How long a shown private key stays on screen (docs/design/removeAccountPlan.txt P1). */
+export const KEY_SHOW_MS = 30_000;
+/** What the key box shows while the key is hidden (the same stars as the Private Key row of the details table). */
+const KEY_MASK = '***...***';
 
 export interface MessagePanelRealProps {
   panelId?: SP_COIN_DISPLAY;
@@ -82,43 +116,173 @@ export interface MessagePanelRealProps {
   pendingApproval?: MessagePanelPendingApproval | null;
 }
 
+/**
+ * 2026-11-11 (owner): the buttons of the Remove Account confirmation: blue at rest; under the mouse green while usable and red while not (a button that cannot be used right now says why in its place: "Password Required").
+ * It is not a disabled button (a disabled button gets no mouse events), a press on an unusable one does nothing. Other messages keep their own button look (`light` false).
+ */
+function ActionButton({ light, usable, onClick, title, whyNot, children }: { light: boolean; usable: boolean; onClick: () => void; title?: string; /** What the button says under the mouse while it cannot be used. */ whyNot?: string; children: ReactNode }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-disabled={!usable}
+      onClick={() => { if (usable) onClick(); }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={light ? transactionConfirmPanelStyle.actionButton(usable, hover) : transactionConfirmPanelStyle.button(!usable)}
+    >
+      {light && hover && !usable && whyNot ? whyNot : children}
+    </button>
+  );
+}
+
 /** The password field + Reject/Approve row — same shape/styling TransactionConfirmPanel.tsx's own password section uses (shared transactionConfirmPanelStyle tokens), kept local here rather than rendering that whole component a second time: this panel already shows the title/accounts/tokens/amount itself via MessageDetailsSection above, so only the decision controls are needed. */
-function ApprovalDecisionRow({ pendingApproval }: { pendingApproval: MessagePanelPendingApproval }) {
+function ApprovalDecisionRow({ pendingApproval, light = false }: { pendingApproval: MessagePanelPendingApproval; /** The message box is the light (yellow) warning: dark text on the field and the buttons. */ light?: boolean }) {
   const { requirePassword, passwordError, busy, onApprove, onReject } = pendingApproval;
   const [password, setPassword] = useState('');
-  const canApprove = !busy && (!requirePassword || password.length > 0);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [shownKey, setShownKey] = useState('');
+  const [keyError, setKeyError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const acknowledgements = pendingApproval.acknowledgements ?? [];
+  const [acked, setAcked] = useState<Record<string, boolean>>({});
+  const [askedId, setAskedId] = useState<string | null>(null);
+  const allAcked = acknowledgements.every((a) => acked[a.id]);
+  const asking = acknowledgements.find((a) => a.id === askedId);
+  const platform = usePlatform();
+  const canApprove = !busy && (!requirePassword || password.length > 0) && allAcked;
+  useEffect(() => {
+    if (!shownKey) return undefined;
+    const timer = setTimeout(() => { setShownKey(''); setCopied(false); }, KEY_SHOW_MS);
+    return () => clearTimeout(timer);
+  }, [shownKey]);
+  // 2026-11-11 (owner): while the key is being fetched every other button is unusable (red under the mouse) until the fetch is over
+  const [keyBusy, setKeyBusy] = useState(false);
+  const havePassword = password.length > 0;
+  const keyUsable = !busy && !keyBusy && havePassword;
+  const whyKey = busy || keyBusy ? 'Please wait' : 'Password Required';
+  const failText = (err: unknown, fallback: string) => (err instanceof Error && err.message ? err.message : fallback);
+  const toggleKey = () => {
+    if (shownKey) {
+      setShownKey('');
+      setCopied(false);
+      return;
+    }
+    setKeyError('');
+    setKeyBusy(true);
+    void pendingApproval.revealKey?.(password).then(setShownKey).catch((err: unknown) => setKeyError(failText(err, 'The key could not be shown.'))).finally(() => setKeyBusy(false));
+  };
+  // Copy Private Key: fetches the key for the typed password and puts THE KEY on the clipboard (shown or not)
+  const copyKey = () => {
+    setKeyError('');
+    setCopied(false);
+    setKeyBusy(true);
+    const ask = shownKey ? Promise.resolve(shownKey) : (pendingApproval.revealKey?.(password) ?? Promise.reject(new Error('This wallet cannot show its private key.')));
+    void ask
+      .then((key) => {
+        if (!key) throw new Error('The vault returned no key.');
+        return platform.copyText(key).then(() => key);
+      })
+      .then((key) => {
+        setCopied(true);
+        scheduleClipboardClear(platform, key);
+      })
+      .catch((err: unknown) => setKeyError(failText(err, 'The key could not be copied.')))
+      .finally(() => setKeyBusy(false));
+  };
+  const exportKey = () => {
+    setKeyError('');
+    setSaved(false);
+    setKeyBusy(true);
+    void pendingApproval.exportKey?.(password).then((file) => { platform.saveFile(file.name, file.content, 'application/json'); setSaved(true); }).catch((err: unknown) => setKeyError(failText(err, 'The key file could not be made.'))).finally(() => setKeyBusy(false));
+  };
   return (
     <div className={messagePanelClass.block}>
+      {asking && (
+        <AcknowledgeDialog
+          ack={asking}
+          onAccept={() => { setAcked((c) => ({ ...c, [asking.id]: true })); setAskedId(null); }}
+          onClose={() => { setAcked((c) => ({ ...c, [asking.id]: false })); setAskedId(null); }}
+        />
+      )}
       {requirePassword && (
         <div style={transactionConfirmPanelStyle.div12}>
-          <input
-            type="password"
-            autoComplete="current-password"
-            aria-label="Wallet password"
-            placeholder="Merit Wallet password"
-            value={password}
-            disabled={busy}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && canApprove) onApprove(password);
-            }}
-            style={transactionConfirmPanelStyle.input}
-          />
+          <div style={dialogStyle.inputWrap}>
+            <input
+              type={passwordVisible ? 'text' : 'password'}
+              autoComplete="current-password"
+              aria-label="Wallet password"
+              placeholder="Merit Wallet password"
+              value={password}
+              disabled={busy}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && canApprove) onApprove(password);
+              }}
+              style={light ? transactionConfirmPanelStyle.inputWithEyeLight : transactionConfirmPanelStyle.inputWithEye}
+            />
+            <button
+              type="button"
+              onClick={() => setPasswordVisible((v) => !v)}
+              aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+              title={passwordVisible ? 'Hide password' : 'Show password'}
+              style={dialogStyle.eyeButton}
+            >
+              {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          {pendingApproval.revealKey && (
+            <>
+              <p style={removeAccountStyle.keyBox}>{shownKey || KEY_MASK}</p>
+              <div style={transactionConfirmPanelStyle.div14}>
+                <ActionButton light={light} usable={shownKey ? !busy && !keyBusy : keyUsable} whyNot={whyKey} onClick={toggleKey}>{shownKey ? 'Hide Private Key' : 'Show Private Key'}</ActionButton>
+                <ActionButton light={light} usable={keyUsable} whyNot={whyKey} onClick={copyKey} title="Copy the private key to the clipboard">{copied ? 'Copied' : 'Copy Private Key'}</ActionButton>
+              </div>
+              {pendingApproval.exportKey ? (
+                <div style={transactionConfirmPanelStyle.div14}>
+                  <ActionButton light={light} usable={keyUsable} whyNot={whyKey} onClick={exportKey} title="Save the private key as a file locked with your wallet password">{saved ? 'Key File Saved' : 'Save Encrypted Key File'}</ActionButton>
+                </div>
+              ) : null}
+              {saved ? <div style={transactionConfirmPanelStyle.div13}>Saved. The file opens only with your wallet password: keep both safe.</div> : null}
+              {copied ? <div style={transactionConfirmPanelStyle.div13}>Copied. The key leaves the clipboard again in 60 seconds, but until then other programs can read it: paste it somewhere safe now.</div> : null}
+              {keyError ? <div style={transactionConfirmPanelStyle.div13}>{keyError}</div> : null}
+            </>
+          )}
+          {acknowledgements.map((a) => (
+            <label key={a.id} style={acknowledgeStyle.checkRow}>
+              <input
+                type="checkbox"
+                checked={!!acked[a.id]}
+                disabled={busy}
+                onChange={() => (acked[a.id] ? setAcked((c) => ({ ...c, [a.id]: false })) : setAskedId(a.id))}
+                style={acknowledgeStyle.input}
+              />
+              {a.label}
+            </label>
+          ))}
           {passwordError && <div style={transactionConfirmPanelStyle.div13}>{passwordError}</div>}
         </div>
       )}
-      <div style={transactionConfirmPanelStyle.div14}>
-        <button type="button" onClick={onReject} disabled={busy} style={transactionConfirmPanelStyle.button(busy)}>
+      <div style={requirePassword ? transactionConfirmPanelStyle.decisionRowAfterControls : transactionConfirmPanelStyle.div14}>
+        <ActionButton light={light} usable={!busy && !keyBusy} whyNot="Please wait" onClick={onReject}>
           {pendingApproval.rejectLabel ?? 'Reject'}
-        </button>
-        <button
-          type="button"
-          onClick={() => onApprove(requirePassword ? password : undefined)}
-          disabled={!canApprove}
-          style={transactionConfirmPanelStyle.button2(canApprove)}
-        >
-          {busy ? (pendingApproval.approveLabel ? 'Working…' : 'Signing…') : pendingApproval.approveLabel ?? 'Approve'}
-        </button>
+        </ActionButton>
+        {light ? (
+          <ActionButton light usable={canApprove && !keyBusy} whyNot={keyBusy || busy ? 'Please wait' : !havePassword ? 'Password Required' : 'Tick both boxes'} onClick={() => onApprove(requirePassword ? password : undefined)}>
+            {busy ? 'Working…' : pendingApproval.approveLabel ?? 'Approve'}
+          </ActionButton>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onApprove(requirePassword ? password : undefined)}
+            disabled={!canApprove}
+            style={transactionConfirmPanelStyle.button2(canApprove)}
+          >
+            {busy ? (pendingApproval.approveLabel ? 'Working…' : 'Signing…') : pendingApproval.approveLabel ?? 'Approve'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -243,8 +407,7 @@ export default function MessagePanelReal({
 
         <MessageDetailsSection errorMessage={errorMessage} renderAccountRow={renderAccountRow} renderTokenRow={renderTokenRow} />
 
-        {pendingApproval && <ApprovalDecisionRow pendingApproval={pendingApproval} />}
-
+        {/* 2026-11-11 (owner: the account comes first, then the words): text after the account rows is shown before the decision controls, which close the message */}
         {bodyTail && (
           <div className={messagePanelClass.block}>
             <p className={messagePanelClass.text(wrap)}>
@@ -252,6 +415,8 @@ export default function MessagePanelReal({
             </p>
           </div>
         )}
+
+        {pendingApproval && <ApprovalDecisionRow pendingApproval={pendingApproval} light={kind === 'warning'} />}
 
         {hasSource && (
           <div className={messagePanelClass.source}>

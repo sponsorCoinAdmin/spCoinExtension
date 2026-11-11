@@ -6,7 +6,38 @@ import { IMAGE_CACHE_UPDATED_EVENT } from '@sponsorcoin/spcoin-feeds/shared';
 import { ACCOUNT_REGISTRY_UPDATED_EVENT } from '@sponsorcoin/spcoin-exchange-engine';
 export const domPlatform = {
     async copyText(text) {
-        await navigator.clipboard.writeText(text);
+        try {
+            await navigator.clipboard.writeText(text);
+        }
+        catch (error) {
+            // 2026-11-11: the clipboard API refuses when the page is not focused or the press is too old (a copy that waited for the vault): the old way, a hidden field and a copy command, still works from a press
+            const field = document.createElement('textarea');
+            field.value = text;
+            field.setAttribute('readonly', '');
+            field.style.position = 'fixed';
+            field.style.opacity = '0';
+            document.body.appendChild(field);
+            field.select();
+            const ok = document.execCommand('copy');
+            field.remove();
+            if (!ok)
+                throw error;
+        }
+    },
+    async clearClipboard(text, replacement = '') {
+        let holdsOther = false;
+        try {
+            const state = await navigator.permissions.query({ name: 'clipboard-read' });
+            // only read it when that needs no question to the person; otherwise clear without looking
+            if (state.state === 'granted')
+                holdsOther = (await navigator.clipboard.readText()) !== text;
+        }
+        catch {
+            /* not readable: clear anyway */
+        }
+        if (holdsOther)
+            return;
+        await navigator.clipboard.writeText(replacement);
     },
     openUrl(url, options) {
         if (options?.sameTab)

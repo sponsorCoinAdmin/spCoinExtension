@@ -16,6 +16,7 @@
 // its storage in as the `store`.
 import { authenticatorBadgeOf, authenticatorName, } from '../auth/authenticator';
 import { createAuthenticatorRegistry, resolveAuthenticator } from '../auth/resolve';
+import { holdersOf, removalTarget } from './accountHolders';
 export function createMemoryActiveAuthenticatorStore(initial = {}) {
     const map = new Map(Object.entries(initial).map(([k, v]) => [k.toLowerCase(), v]));
     return {
@@ -167,6 +168,25 @@ export function createWallet(options) {
         vaultFor(address) {
             const id = backendIdFor(address);
             return id ? registry.get(id)?.vault : undefined;
+        },
+        async removeAccount(address, options = {}) {
+            const holders = await holdersOf(registry, address);
+            if (holders.length === 0)
+                throw new Error('That account is not in this wallet.');
+            const { opened, isLocal } = removalTarget(holders, options.groupId);
+            if (isLocal) {
+                const vault = (opened ?? holders.find((a) => !!a.vault))?.vault;
+                if (!vault?.removeAccount)
+                    throw new Error('This wallet cannot remove accounts.');
+                if (!options.credential)
+                    throw new Error('The wallet password is required.');
+                await vault.removeAccount(options.credential, address);
+                return;
+            }
+            const remover = (opened ? [opened] : holders).find((a) => typeof a.removeAccount === 'function');
+            if (!remover)
+                throw new Error('That wallet cannot remove accounts from here.');
+            await remover.removeAccount(address);
         },
         async primaryVault() {
             for (const authenticator of registry.list()) {

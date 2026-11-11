@@ -64,7 +64,7 @@ export function withKeptAccounts(base, store) {
         async setAccountConnected(address, connected) {
             const state = await store.read();
             if (!connected) {
-                await save({ known: union(state.known, [address]), off: union(state.off, [address]) });
+                await save({ ...state, known: union(state.known, [address]), off: union(state.off, [address]) });
                 return;
             }
             const live = await reported();

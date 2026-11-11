@@ -114,7 +114,7 @@ export function createLocalVaultParts(options) {
     const vault = {
         label: options.label ?? 'this device',
         platform: options.platform,
-        capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
+        capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false, removeAccount: true },
         hasWallet: () => session.isInitialized(),
         isUnlocked: () => session.isUnlocked(),
         create: (credential) => guard(async () => {
@@ -167,6 +167,10 @@ export function createLocalVaultParts(options) {
             const backupVault = parseBackupFile(file);
             await session.importBackup(backupVault, secretOf(credential, false));
             return list();
+        }),
+        removeAccount: (credential, address) => guard(async () => {
+            await session.verifyPassword(secretOf(credential, false));
+            await wallet.removeAccount(address);
         }),
         revealPrivateKey: (credential, address) => guard(async () => wallet.revealPrivateKey(secretOf(credential, false), address)),
         revealRecoveryPhrase: (credential) => guard(async () => wallet.revealMnemonic(secretOf(credential, false))),

@@ -55,6 +55,8 @@ export interface VaultCapabilities {
   revealKey: boolean;
   revealPhrase: boolean;
   biometric: boolean;
+  /** 2026-11-10: this vault can delete one account (removeAccount below). Absent = no. */
+  removeAccount?: boolean;
 }
 
 export interface VaultAccount {
@@ -94,6 +96,8 @@ export interface VaultCapability {
   exportBackup(credential: VaultCredential): Promise<string>;
   /** Restore a backup into an empty store. */
   importBackup(file: string, credential: VaultCredential): Promise<VaultAccount[]>;
+  /** 2026-11-10 (docs/design/removeAccountPlan.txt rows 7 and 8): delete ONE account from this vault, after the credential is checked. An imported key is erased; a phrase-derived account is hidden (the phrase still derives it). The active account is refused. */
+  removeAccount?(credential: VaultCredential, address: string): Promise<void>;
   revealPrivateKey(credential: VaultCredential, address: string): Promise<string>;
   revealRecoveryPhrase(credential: VaultCredential): Promise<string>;
   /** Lock / unlock announcements; returns the unsubscribe function. */
@@ -196,7 +200,7 @@ export function createLocalVaultParts(options: LocalVaultOptions): LocalVaultPar
   const vault: VaultCapability = {
     label: options.label ?? 'this device',
     platform: options.platform,
-    capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false },
+    capabilities: { create: true, importPhrase: true, importKey: true, backup: true, changeCredential: true, delete: true, revealKey: true, revealPhrase: true, biometric: false, removeAccount: true },
     hasWallet: () => session.isInitialized(),
     isUnlocked: () => session.isUnlocked(),
     create: (credential) =>
@@ -252,6 +256,11 @@ export function createLocalVaultParts(options: LocalVaultOptions): LocalVaultPar
         const backupVault = parseBackupFile(file);
         await session.importBackup(backupVault, secretOf(credential, false));
         return list();
+      }),
+    removeAccount: (credential, address) =>
+      guard(async () => {
+        await session.verifyPassword(secretOf(credential, false));
+        await wallet.removeAccount(address);
       }),
     revealPrivateKey: (credential, address) => guard(async () => wallet.revealPrivateKey(secretOf(credential, false), address)),
     revealRecoveryPhrase: (credential) => guard(async () => wallet.revealMnemonic(secretOf(credential, false))),

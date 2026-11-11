@@ -22,6 +22,8 @@ export interface WalletVaultContents {
     names: Record<string, string>;
     /** Lower-case address of the active account, if one was chosen. */
     active?: string;
+    /** 2026-11-10 (docs/design/removeAccountPlan.txt P2): phrase-derived accounts the person deleted. They are only hidden (the Secret Recovery Phrase still derives them); they are not listed, shown, or signed with. */
+    hidden?: string[];
 }
 export interface WalletAccountRecord {
     address: `0x${string}`;
@@ -74,6 +76,13 @@ export declare class WalletAccounts {
     importWallet(mnemonic: string, name?: string): Promise<WalletAccountRecord>;
     /** Remove an imported account. Derived accounts cannot be removed (they come back from the Secret Recovery Phrase), as in MetaMask. */
     remove(address: string): Promise<void>;
+    /**
+     * 2026-11-10 (docs/design/removeAccountPlan.txt rows 7 and 8, P2): DELETE an account from this wallet. An imported key is erased. A phrase-derived account cannot be erased (the phrase derives it again), so it is hidden: not listed, not shown, not signed with.
+     * The ACTIVE account is refused (X2). The password is checked by the caller (the vault), never here.
+     */
+    removeAccount(address: string): Promise<{
+        erased: boolean;
+    }>;
     rename(address: string, name: string): Promise<void>;
     /** The Secret Recovery Phrase, only after the password is checked again (MetaMask asks for it every time). */
     revealMnemonic(password: string, wallet?: number): Promise<string>;

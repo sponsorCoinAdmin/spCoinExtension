@@ -1,6 +1,6 @@
 import { type AccountAuthenticatorRef, type Authenticator, type AuthenticatorAccount, type AuthenticatorId } from '../auth/authenticator';
 import { type AuthenticatorRegistry } from '../auth/resolve';
-import type { VaultCapability } from '../vault/vaultCapability';
+import type { VaultCapability, VaultCredential } from '../vault/vaultCapability';
 /** Where each account's chosen backend is remembered (the web app: localStorage; the extension: chrome.storage; tests: a Map). Synchronous reads, as the saved choice is small. */
 export interface ActiveAuthenticatorStore {
     get(address: string): AuthenticatorId | undefined;
@@ -55,6 +55,14 @@ export interface Wallet {
     can(feature: WalletFeature, address?: string): boolean;
     /** The vault of the backend for `address`, or undefined (a signing-only backend, or nothing registered). */
     vaultFor(address: string): VaultCapability | undefined;
+    /**
+     * 2026-11-10 (docs/design/removeAccountPlan.txt row 3): REMOVE one account, choosing the path (rules X3, X5). Another wallet's account: that wallet disconnects it if needed and forgets it here (Authenticator.removeAccount). A local account: the vault
+     * checks the credential and deletes it (VaultCapability.removeAccount). `groupId` is the wallet group of the row the person opened (the same address can sit in two groups). Rejects with a readable message when nobody can.
+     */
+    removeAccount(address: string, options?: {
+        groupId?: string;
+        credential?: VaultCredential;
+    }): Promise<void>;
     /** The first key-keeping backend that already has a wallet: what the lock screen and the Config tab drive. */
     primaryVault(): Promise<{
         authenticator: Authenticator;

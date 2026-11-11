@@ -38,7 +38,7 @@ import { accountHeaderStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { PanelGate } from '@sponsorcoin/spcoin-panels';
-import WalletAccountSelectDropDown from './WalletAccountSelectDropDown';
+import ActiveAccountSelectDropDown from './ActiveAccountSelectDropDown';
 
 
 export interface WalletAccountHeaderRoles {
@@ -88,6 +88,10 @@ export interface WalletAccountHeaderProps {
   // avatar.png/info.json, render AccountDetailPanel, etc.), same boundary
   // every other real-data callback in this package draws.
   onIconClick?: (address: string) => void;
+  /** 2026-11-11: makes the shown account the active one when the pill or its avatar is clicked, before onSelectClick / onIconClick (see ActiveAccountSelectDropDown). Omitted: the click only does those. */
+  onActivate?: (address: string) => void | Promise<void>;
+  /** 2026-11-11: a right click on the avatar (the host opens the account's details, ACCOUNT_PANEL). */
+  onIconContextMenu?: (address: string) => void;
   /** The wallet that signs for the account (docs/design/accountAuthDesign.txt section 18 4.3), e.g. "Merit Wallet (Extension)": the header's tooltip, so the person can always see which wallet is about to approve. */
   walletName?: string;
 
@@ -135,9 +139,9 @@ function RoleCell({
 /** This package's own inert default pill — used only when the caller
  *  doesn't pass pillSlot (e.g. the extension, via MeritWallet.tsx, which
  *  still calls this with the old icon/address/symbol/... props). */
-function DefaultAccountPill(props: Pick<WalletAccountHeaderProps, 'icon' | 'address' | 'symbol' | 'name' | 'placeholderLabel' | 'onSelectClick' | 'onIconClick'>) {
-  // 2026-11-01: WalletAccountSelectDropDown replaces AccountSelectDropDown here and decides its own chevron from the panel tree.
-  return <WalletAccountSelectDropDown {...props} />;
+function DefaultAccountPill(props: Pick<WalletAccountHeaderProps, 'icon' | 'address' | 'symbol' | 'name' | 'placeholderLabel' | 'onSelectClick' | 'onIconClick' | 'onActivate' | 'onIconContextMenu'>) {
+  // 2026-11-01: ActiveAccountSelectDropDown replaces AccountSelectDropDown here and decides its own chevron from the panel tree.
+  return <ActiveAccountSelectDropDown {...props} />;
 }
 
 /** This package's own inert default role table — same "used only when the
@@ -190,6 +194,8 @@ export default function WalletAccountHeader({
   roles,
   onSelectClick,
   onIconClick,
+  onActivate,
+  onIconContextMenu,
   onRoleClick,
   walletName,
 }: WalletAccountHeaderProps) {
@@ -203,6 +209,8 @@ export default function WalletAccountHeader({
         placeholderLabel={placeholderLabel}
         onSelectClick={onSelectClick}
         onIconClick={onIconClick}
+        onActivate={onActivate}
+        onIconContextMenu={onIconContextMenu}
       />
     );
   // roleSlot === null is an explicit "render nothing" — distinct from

@@ -42,8 +42,8 @@ export async function resolveAccountSource(wallet, address, activeAddress, group
                 local: {
                     // 2026-11-10 (owner): two check boxes, each opening its own popup, that must both be ticked
                     acknowledgements: [
-                        { id: 'balances', label: 'Lost Account Balances', title: 'Account Assets', message: 'Removing this account can result in total loss of associated assets or Sponsor Rewards involved in a Sponsorship Staking Contract, unless you possess the private key for account recovery.', choiceLabel: 'I understand and accept the risk.', acceptLabel: 'I accept the risk, Delete Anyway', rejectLabel: 'Reject' },
-                        { id: 'privateKey', label: 'Private Key Required for Recovery', title: 'Private Key Required for Recovery', message: 'If you do not save your private key, this account and all associated assets will not be recoverable.', choiceLabel: 'I understand.', acceptLabel: 'Confirm', rejectLabel: 'Cancel' },
+                        { id: 'balances', label: 'Lost Account Assets', title: 'Account Assets', message: 'Removing this account can result in total loss of associated assets or Sponsor Rewards involved in a Sponsorship Staking Contract, unless you possess the private key for account recovery.', choiceLabel: 'I understand and accept the risk.', acceptLabel: 'I accept the risk, Delete Anyway', rejectLabel: 'Reject' },
+                        { id: 'privateKey', label: 'Private Key Required for Recovery', title: 'Private Key Required for Recovery', message: 'If you do not save your private key, this account and all associated assets will not be recoverable.', choiceLabel: 'I understand and accept the risk.', acceptLabel: 'Confirm', rejectLabel: 'Cancel' },
                     ],
                     revealKey: vault?.capabilities.revealKey ? async (password) => {
                         try {

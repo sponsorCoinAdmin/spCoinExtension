@@ -10,10 +10,11 @@
 import { removeAccountStyle } from '@sponsorcoin/spcoin-common/styles';
 import { STATUS, MESSAGE_ACCOUNTS_MARKER } from '@sponsorcoin/spcoin-common/context';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { useExchangeContext, usePanelTree, panelStore } from '@sponsorcoin/spcoin-exchange-engine';
+import { useExchangeContext, usePanelTree, panelStore, loadAccountRecord } from '@sponsorcoin/spcoin-exchange-engine';
 import { pendingApprovalMessageStore } from '../approval/pendingApprovalMessageStore';
 import { noticeAccountRows } from '../auth/useAccountNoticeMessagePanel';
 import type { AccountRemoval } from './accountSource';
+import { ensureAbsoluteAssetURL } from './form/formHelpers';
 
 export interface RemoveAccountAccount {
   address: string;
@@ -57,7 +58,10 @@ export default function RemoveAccountPanel({ removal, account, onRemoved, balanc
     pendingApprovalMessageStore.set(null);
     closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'RemoveAccount:done');
   };
-  const open = () => {
+  const open = async () => {
+    // 2026-11-11 (owner: the account's avatar, name and symbol were missing in the confirmation): the confirmation is a snapshot, taken now, and the detail form may not have finished reading the profile. Ask the registry (cached, or the feed) here, so the row never shows less than is known.
+    const known = (await loadAccountRecord(account.address).catch(() => undefined)) as { name?: unknown; symbol?: unknown; logoURL?: unknown } | undefined;
+    const profile = { name: account.name || (typeof known?.name === 'string' ? known.name : undefined), symbol: account.symbol || (typeof known?.symbol === 'string' ? known.symbol : undefined), logoURL: typeof known?.logoURL === 'string' && known.logoURL ? ensureAbsoluteAssetURL(known.logoURL) : account.logoURL };
     // 2026-11-11 (owner): the Account Assets popup shows the account's native balance above its radio button
     const acknowledgements = local?.acknowledgements?.map((a) => (a.id === 'balances' && balanceText ? { ...a, detail: `Balance ${balanceText} native balance.` } : a));
     const keyTools = { acknowledgements, revealKey: local?.revealKey ? (pw: string) => local.revealKey!(pw) : undefined, exportKey: local?.exportKey ? (pw: string) => local.exportKey!(pw) : undefined };
@@ -86,7 +90,7 @@ export default function RemoveAccountPanel({ removal, account, onRemoved, balanc
     pendingApprovalMessageStore.set({ ...controls(false, ''), ...keyTools });
     const lines = [removal.message];
     if (local && balanceText) lines.push('', `Balance: ${balanceText} (native coin)`);
-    const rows = noticeAccountRows([account.address], () => ({ name: account.name, symbol: account.symbol, iconSrc: account.logoURL }));
+    const rows = noticeAccountRows([account.address], () => ({ name: profile.name, symbol: profile.symbol, iconSrc: profile.logoURL }));
     setErrorMessage({
       errCode: 0,
       msg: rows.length ? `${MESSAGE_ACCOUNTS_MARKER}\n${lines.join('\n')}` : lines.join('\n'),
@@ -100,7 +104,7 @@ export default function RemoveAccountPanel({ removal, account, onRemoved, balanc
 
   return (
     <div id="REMOVE_ACCOUNT" style={removeAccountStyle.wrap}>
-      <button type="button" disabled={disabled} title={removal.disabledReason} onClick={open} style={removeAccountStyle.button(disabled, removal.destructive)}>
+      <button type="button" disabled={disabled} title={removal.disabledReason} onClick={() => { void open(); }} style={removeAccountStyle.button(disabled, removal.destructive)}>
         {removal.label}
       </button>
       {removal.disabledReason ? <p style={removeAccountStyle.note}>{removal.disabledReason}</p> : null}

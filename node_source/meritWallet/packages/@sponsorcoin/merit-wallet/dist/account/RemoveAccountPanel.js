@@ -10,9 +10,10 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { removeAccountStyle } from '@sponsorcoin/spcoin-common/styles';
 import { STATUS, MESSAGE_ACCOUNTS_MARKER } from '@sponsorcoin/spcoin-common/context';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { useExchangeContext, usePanelTree, panelStore } from '@sponsorcoin/spcoin-exchange-engine';
+import { useExchangeContext, usePanelTree, panelStore, loadAccountRecord } from '@sponsorcoin/spcoin-exchange-engine';
 import { pendingApprovalMessageStore } from '../approval/pendingApprovalMessageStore';
 import { noticeAccountRows } from '../auth/useAccountNoticeMessagePanel';
+import { ensureAbsoluteAssetURL } from './form/formHelpers';
 const SOURCE = 'RemoveAccount';
 /**
  * While the confirmation is up this screen is replaced by the message panel, so a hook of this component cannot see the panel close (the screen is gone, then new). Watched here, at module level: once the panel has been seen open and then closes, the
@@ -46,7 +47,9 @@ export default function RemoveAccountPanel({ removal, account, onRemoved, balanc
         pendingApprovalMessageStore.set(null);
         closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'RemoveAccount:done');
     };
-    const open = () => {
+    const open = async () => {
+        const known = (await loadAccountRecord(account.address).catch(() => undefined));
+        const profile = { name: account.name || (typeof known?.name === 'string' ? known.name : undefined), symbol: account.symbol || (typeof known?.symbol === 'string' ? known.symbol : undefined), logoURL: typeof known?.logoURL === 'string' && known.logoURL ? ensureAbsoluteAssetURL(known.logoURL) : account.logoURL };
         // 2026-11-11 (owner): the Account Assets popup shows the account's native balance above its radio button
         const acknowledgements = local?.acknowledgements?.map((a) => (a.id === 'balances' && balanceText ? { ...a, detail: `Balance ${balanceText} native balance.` } : a));
         const keyTools = { acknowledgements, revealKey: local?.revealKey ? (pw) => local.revealKey(pw) : undefined, exportKey: local?.exportKey ? (pw) => local.exportKey(pw) : undefined };
@@ -78,7 +81,7 @@ export default function RemoveAccountPanel({ removal, account, onRemoved, balanc
         const lines = [removal.message];
         if (local && balanceText)
             lines.push('', `Balance: ${balanceText} (native coin)`);
-        const rows = noticeAccountRows([account.address], () => ({ name: account.name, symbol: account.symbol, iconSrc: account.logoURL }));
+        const rows = noticeAccountRows([account.address], () => ({ name: profile.name, symbol: profile.symbol, iconSrc: profile.logoURL }));
         setErrorMessage({
             errCode: 0,
             msg: rows.length ? `${MESSAGE_ACCOUNTS_MARKER}\n${lines.join('\n')}` : lines.join('\n'),
@@ -89,5 +92,5 @@ export default function RemoveAccountPanel({ removal, account, onRemoved, balanc
         openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'RemoveAccount:confirm');
         clearWhenMessageCloses();
     };
-    return (_jsxs("div", { id: "REMOVE_ACCOUNT", style: removeAccountStyle.wrap, children: [_jsx("button", { type: "button", disabled: disabled, title: removal.disabledReason, onClick: open, style: removeAccountStyle.button(disabled, removal.destructive), children: removal.label }), removal.disabledReason ? _jsx("p", { style: removeAccountStyle.note, children: removal.disabledReason }) : null] }));
+    return (_jsxs("div", { id: "REMOVE_ACCOUNT", style: removeAccountStyle.wrap, children: [_jsx("button", { type: "button", disabled: disabled, title: removal.disabledReason, onClick: () => { void open(); }, style: removeAccountStyle.button(disabled, removal.destructive), children: removal.label }), removal.disabledReason ? _jsx("p", { style: removeAccountStyle.note, children: removal.disabledReason }) : null] }));
 }

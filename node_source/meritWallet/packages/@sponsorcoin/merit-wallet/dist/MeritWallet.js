@@ -1850,7 +1850,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 if (message)
                     accountNoticeStore.publish(message, [address]);
                 setAccountDetailAddress(null);
-                closePanel('NAV_POP:MeritWallet:accountRemoved');
+                closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved'); closePanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved');
             },
         }
         : accountDetailHost;

@@ -2566,7 +2566,9 @@ function MeritWalletInner({
           engineTrace('account:removed', { address, message });
           if (message) accountNoticeStore.publish(message, [address]);
           setAccountDetailAddress(null);
-          closePanel('NAV_POP:MeritWallet:accountRemoved');
+          // 2026-11-11 (owner): by name, never a pop of whatever is on top: the stack held MESSAGE_PANEL and ACCOUNT_PANEL, and a single pop left ACCOUNT_PANEL listed under the list we landed on
+          closePanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved');
+          closePanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved');
         },
       }
     : accountDetailHost;

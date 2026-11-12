@@ -5,7 +5,7 @@
 // button box, and a read-only table. The data comes in as props. TokenPanel.tsx and ConnectedNetworkPanel.tsx keep their own data logic and use this for what they show.
 'use client';
 
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { avatarPanelClass } from '@sponsorcoin/spcoin-common/styles';
 import type { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import DetailScreenLayout from './DetailScreenLayout';

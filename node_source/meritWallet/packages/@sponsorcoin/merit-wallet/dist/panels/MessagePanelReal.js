@@ -39,6 +39,16 @@ function MessageText({ text, chainId }) {
             return (_jsxs("span", { style: messageContractLogoStyle.row, children: [_jsx("span", { style: messageContractLogoStyle.box, children: _jsx(TokenLogo, { address: match[2], chainId: chainId, className: "", style: messageContractLogoStyle.img }) }), _jsxs("span", { style: messageContractLogoStyle.text, children: [match[1], match[2]] })] }, i));
         }) }));
 }
+/** 2026-11-11 (owner): a heading that is a link; clicking it expands / collapses its explanation (all start collapsed). A section's text is copied by Copy only while it is open (Copy reads the rendered body). */
+function CollapsibleSection({ heading, items, wrap, defaultOpen }) {
+    const [open, setOpen] = useState(!!defaultOpen);
+    return (_jsxs("div", { className: messagePanelClass.block, children: [_jsxs("button", { type: "button", onClick: () => setOpen((o) => !o), "aria-expanded": open, style: collapsibleSectionStyle.heading, children: [_jsx("span", { "aria-hidden": "true", children: open ? '▾' : '▸' }), " ", heading] }), open && (_jsx("ul", { className: messagePanelClass.text(wrap), style: collapsibleSectionStyle.list, children: items.map((item, i) => _jsx("li", { style: collapsibleSectionStyle.item, children: item }, i)) }))] }));
+}
+const collapsibleSectionStyle = {
+    heading: { background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'inherit', font: 'inherit', fontWeight: 700, textDecoration: 'underline', textAlign: 'left' },
+    list: { margin: '6px 0 0 0', paddingLeft: 22, listStyleType: 'disc', whiteSpace: 'normal' },
+    item: { margin: '0 0 4px 0' },
+};
 /** How long a shown private key stays on screen (docs/design/removeAccountPlan.txt P1). */
 export const KEY_SHOW_MS = 30000;
 /** What the key box shows while the key is hidden (the same stars as the Private Key row of the details table). */
@@ -60,7 +70,6 @@ function ApprovalDecisionRow({ pendingApproval, light = false }) {
     const [shownKey, setShownKey] = useState('');
     const [keyError, setKeyError] = useState('');
     const [copied, setCopied] = useState(false);
-    const [saved, setSaved] = useState(false);
     const acknowledgements = pendingApproval.acknowledgements ?? [];
     const [acked, setAcked] = useState({});
     const [askedId, setAskedId] = useState(null);
@@ -109,16 +118,10 @@ function ApprovalDecisionRow({ pendingApproval, light = false }) {
             .catch((err) => setKeyError(failText(err, 'The key could not be copied.')))
             .finally(() => setKeyBusy(false));
     };
-    const exportKey = () => {
-        setKeyError('');
-        setSaved(false);
-        setKeyBusy(true);
-        void pendingApproval.exportKey?.(password).then((file) => { platform.saveFile(file.name, file.content, 'application/json'); setSaved(true); }).catch((err) => setKeyError(failText(err, 'The key file could not be made.'))).finally(() => setKeyBusy(false));
-    };
     return (_jsxs("div", { className: messagePanelClass.block, children: [asking && (_jsx(AcknowledgeDialog, { ack: asking, onAccept: () => { setAcked((c) => ({ ...c, [asking.id]: true })); setAskedId(null); }, onClose: () => { setAcked((c) => ({ ...c, [asking.id]: false })); setAskedId(null); } })), requirePassword && (_jsxs("div", { style: transactionConfirmPanelStyle.div12, children: [_jsxs("div", { style: dialogStyle.inputWrap, children: [_jsx("input", { type: passwordVisible ? 'text' : 'password', autoComplete: "current-password", "aria-label": "Wallet password", placeholder: "Merit Wallet password", value: password, disabled: busy, onChange: (e) => setPassword(e.target.value), onKeyDown: (e) => {
                                     if (e.key === 'Enter' && canApprove)
                                         onApprove(password);
-                                }, style: light ? transactionConfirmPanelStyle.inputWithEyeLight : transactionConfirmPanelStyle.inputWithEye }), _jsx("button", { type: "button", onClick: () => setPasswordVisible((v) => !v), "aria-label": passwordVisible ? 'Hide password' : 'Show password', title: passwordVisible ? 'Hide password' : 'Show password', style: dialogStyle.eyeButton, children: passwordVisible ? _jsx(EyeOff, { size: 16 }) : _jsx(Eye, { size: 16 }) })] }), pendingApproval.revealKey && (_jsxs(_Fragment, { children: [_jsx("p", { style: removeAccountStyle.keyBox, children: shownKey || KEY_MASK }), _jsxs("div", { style: transactionConfirmPanelStyle.div14, children: [_jsx(ActionButton, { light: light, usable: shownKey ? !busy && !keyBusy : keyUsable, whyNot: whyKey, onClick: toggleKey, children: shownKey ? 'Hide Private Key' : 'Show Private Key' }), _jsx(ActionButton, { light: light, usable: keyUsable, whyNot: whyKey, onClick: copyKey, title: "Copy the private key to the clipboard", children: copied ? 'Copied' : 'Copy Private Key' })] }), pendingApproval.exportKey ? (_jsx("div", { style: transactionConfirmPanelStyle.div14, children: _jsx(ActionButton, { light: light, usable: keyUsable, whyNot: whyKey, onClick: exportKey, title: "Save the private key as a file locked with your wallet password", children: saved ? 'Key File Saved' : 'Save Encrypted Key File' }) })) : null, saved ? _jsx("div", { style: transactionConfirmPanelStyle.div13, children: "Saved. The file opens only with your wallet password: keep both safe." }) : null, copied ? _jsx("div", { style: transactionConfirmPanelStyle.div13, children: "Copied. The key leaves the clipboard again in 60 seconds, but until then other programs can read it: paste it somewhere safe now." }) : null, keyError ? _jsx("div", { style: transactionConfirmPanelStyle.div13, children: keyError }) : null] })), acknowledgements.map((a) => (_jsxs("label", { style: acknowledgeStyle.checkRow, children: [_jsx("input", { type: "checkbox", checked: !!acked[a.id], disabled: busy, onChange: () => (acked[a.id] ? setAcked((c) => ({ ...c, [a.id]: false })) : setAskedId(a.id)), style: acknowledgeStyle.input }), a.label] }, a.id))), passwordError && _jsx("div", { style: transactionConfirmPanelStyle.div13, children: passwordError })] })), _jsxs("div", { style: requirePassword ? transactionConfirmPanelStyle.decisionRowAfterControls : transactionConfirmPanelStyle.div14, children: [_jsx(ActionButton, { light: light, usable: !busy && !keyBusy, whyNot: "Please wait", onClick: onReject, children: pendingApproval.rejectLabel ?? 'Reject' }), light ? (_jsx(ActionButton, { light: true, usable: canApprove && !keyBusy, whyNot: keyBusy || busy ? 'Please wait' : !havePassword ? 'Password Required' : 'Tick both boxes', onClick: () => onApprove(requirePassword ? password : undefined), children: busy ? 'Working…' : pendingApproval.approveLabel ?? 'Approve' })) : (_jsx("button", { type: "button", onClick: () => onApprove(requirePassword ? password : undefined), disabled: !canApprove, style: transactionConfirmPanelStyle.button2(canApprove), children: busy ? (pendingApproval.approveLabel ? 'Working…' : 'Signing…') : pendingApproval.approveLabel ?? 'Approve' }))] })] }));
+                                }, style: light ? transactionConfirmPanelStyle.inputWithEyeLight : transactionConfirmPanelStyle.inputWithEye }), _jsx("button", { type: "button", onClick: () => setPasswordVisible((v) => !v), "aria-label": passwordVisible ? 'Hide password' : 'Show password', title: passwordVisible ? 'Hide password' : 'Show password', style: dialogStyle.eyeButton, children: passwordVisible ? _jsx(EyeOff, { size: 16 }) : _jsx(Eye, { size: 16 }) })] }), pendingApproval.revealKey && (_jsxs(_Fragment, { children: [_jsx("p", { style: removeAccountStyle.keyBox, children: shownKey || KEY_MASK }), _jsxs("div", { style: transactionConfirmPanelStyle.div14, children: [_jsx(ActionButton, { light: light, usable: shownKey ? !busy && !keyBusy : keyUsable, whyNot: whyKey, onClick: toggleKey, children: shownKey ? 'Hide Private Key' : 'Show Private Key' }), _jsx(ActionButton, { light: light, usable: keyUsable, whyNot: whyKey, onClick: copyKey, title: "Copy the private key to the clipboard", children: copied ? 'Copied' : 'Copy Private Key' })] }), copied ? _jsx("div", { style: transactionConfirmPanelStyle.div13, children: "Copied. The key leaves the clipboard again in 60 seconds, but until then other programs can read it: paste it somewhere safe now." }) : null, keyError ? _jsx("div", { style: transactionConfirmPanelStyle.div13, children: keyError }) : null] })), acknowledgements.map((a) => (_jsxs("label", { style: acknowledgeStyle.checkRow, children: [_jsx("input", { type: "checkbox", checked: !!acked[a.id], disabled: busy, onChange: () => (acked[a.id] ? setAcked((c) => ({ ...c, [a.id]: false })) : setAskedId(a.id)), style: acknowledgeStyle.input }), a.label] }, a.id))), passwordError && _jsx("div", { style: transactionConfirmPanelStyle.div13, children: passwordError })] })), _jsxs("div", { style: requirePassword ? transactionConfirmPanelStyle.decisionRowAfterControls : transactionConfirmPanelStyle.div14, children: [_jsx(ActionButton, { light: light, usable: !busy && !keyBusy, whyNot: "Please wait", onClick: onReject, children: pendingApproval.rejectLabel ?? 'Reject' }), light ? (_jsx(ActionButton, { light: true, usable: canApprove && !keyBusy, whyNot: keyBusy || busy ? 'Please wait' : !havePassword ? 'Password Required' : 'Tick both boxes', onClick: () => onApprove(requirePassword ? password : undefined), children: busy ? 'Working…' : pendingApproval.approveLabel ?? 'Approve' })) : (_jsx("button", { type: "button", onClick: () => onApprove(requirePassword ? password : undefined), disabled: !canApprove, style: transactionConfirmPanelStyle.button2(canApprove), children: busy ? (pendingApproval.approveLabel ? 'Working…' : 'Signing…') : pendingApproval.approveLabel ?? 'Approve' }))] })] }));
 }
 export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PANEL, errorMessage, renderAccountRow, renderTokenRow, pendingApproval, }) {
     const visible = usePanelVisible(panelId);
@@ -132,7 +135,7 @@ export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PAN
     const wrap = useSyncExternalStore(errorPanelDisplayStore.subscribe, errorPanelDisplayStore.getSnapshot, errorPanelDisplayStore.getServerSnapshot);
     // 2026-10-13 (owner request: catch and log this properly): this panel can become visible with NO message behind it (a stale display-stack entry restored by a pop, an open that never set errorMessage). That used to
     // read as a bare "Something went wrong / An unexpected error occurred." Now the box says there was no message and who made it visible, and the same facts go to the console.
-    const noMessage = !errorMessage?.msg;
+    const noMessage = !errorMessage?.msg && !errorMessage?.sections?.length;
     const openedBy = noMessage && visible ? getPanelOpenLog(panelId, 3).map((record) => describePanelOpen(record)) : [];
     useEffect(() => {
         if (!visible || !noMessage)
@@ -146,23 +149,25 @@ export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PAN
     const isUnsupportedNetworkError = kind === 'error' && errorMessage?.source === 'useNetworkController:onChainChanged';
     const rawMsg = noMessage
         ? ['This panel was opened without a message.', ...(openedBy.length ? openedBy : ['No record of what opened it (see the console for details).'])].join('\n')
-        : errorMessage?.msg;
+        : (errorMessage?.msg ?? '');
     const lines = rawMsg.split('\n');
     const firstLine = lines[0]?.trim() ?? '';
     const body = lines.slice(1).join('\n').replace(/^\n+/, '');
     const title = noMessage
         ? 'No message to show'
-        : isUnsupportedNetworkError
-            ? firstLine || 'Network not supported on "Sponsor Coin"'
-            : kind === 'success'
-                ? 'Success'
-                : kind === 'info'
-                    ? 'Notice'
-                    : kind === 'warning'
-                        ? 'Warning'
-                        : kind === 'trace'
-                            ? 'Trace Debugging'
-                            : 'Something went wrong';
+        : errorMessage?.title
+            ? errorMessage.title
+            : isUnsupportedNetworkError
+                ? firstLine || 'Network not supported on "Sponsor Coin"'
+                : kind === 'success'
+                    ? 'Success'
+                    : kind === 'info'
+                        ? 'Notice'
+                        : kind === 'warning'
+                            ? 'Warning'
+                            : kind === 'trace'
+                                ? 'Trace Debugging'
+                                : 'Something went wrong';
     const bodyText = isUnsupportedNetworkError ? body : rawMsg;
     const hasDetailsBlock = Boolean(errorMessage?.accounts?.length || errorMessage?.tokens?.length || errorMessage?.amount || errorMessage?.reason || errorMessage?.gasFee);
     const markerIndex = hasDetailsBlock ? bodyText.indexOf(MESSAGE_ACCOUNTS_MARKER) : -1;
@@ -170,7 +175,7 @@ export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PAN
     const bodyTail = markerIndex >= 0 ? bodyText.slice(markerIndex + MESSAGE_ACCOUNTS_MARKER.length).replace(/^\n+/, '') : '';
     const hasSource = Boolean(errorMessage?.source);
     const styles = MESSAGE_STATUS_STYLES[kind];
-    return (_jsx("div", { className: messagePanelClass.outer, children: _jsxs("div", { id: "MESSAGE_PANEL", className: messagePanelClass.box(isUnsupportedNetworkError, styles.border, styles.bg, styles.text), role: kind === 'error' ? 'alert' : 'status', "aria-live": kind === 'error' ? 'assertive' : 'polite', children: [_jsxs("div", { className: messagePanelClass.titleRow, children: [_jsx("h3", { className: messagePanelClass.title, children: kind !== 'warning' ? title : '' }), _jsxs("div", { className: messagePanelClass.buttons, children: [_jsx(SmallYellowButton, { title: "Copy message", onClick: async () => {
+    return (_jsx("div", { className: messagePanelClass.outer, children: _jsxs("div", { id: "MESSAGE_PANEL", className: messagePanelClass.box(isUnsupportedNetworkError, styles.border, styles.bg, styles.text), role: kind === 'error' ? 'alert' : 'status', "aria-live": kind === 'error' ? 'assertive' : 'polite', children: [_jsxs("div", { className: messagePanelClass.titleRow, children: [_jsx("h3", { className: messagePanelClass.title, children: kind !== 'warning' && !errorMessage?.title ? title : '' }), _jsxs("div", { className: messagePanelClass.buttons, children: [_jsx(SmallYellowButton, { title: "Copy message", onClick: async () => {
                                         const text = `${kind !== 'warning' ? `${title}
 ` : ''}${bodyRef.current?.innerText ?? rawMsg}`;
                                         try {
@@ -182,5 +187,5 @@ export default function MessagePanelReal({ panelId = SP_COIN_DISPLAY.MESSAGE_PAN
                                             setCopyLabel('Copy Failed');
                                             setTimeout(() => setCopyLabel('Copy'), 1800);
                                         }
-                                    }, children: copyLabel }), _jsx(SmallYellowButton, { title: pendingApproval ? 'Reject' : 'Close message', "aria-label": pendingApproval ? 'Reject' : 'Close message', onClick: () => (pendingApproval ? pendingApproval.onReject() : closePanel(panelId, 'MessagePanel:close')), children: "X" })] })] }), _jsxs("div", { ref: bodyRef, className: messagePanelClass.body, children: [_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : ''), children: _jsx(MessageText, { text: bodyHead, chainId: appChainId }) }) }), _jsx(MessageDetailsSection, { errorMessage: errorMessage, renderAccountRow: renderAccountRow, renderTokenRow: renderTokenRow }), bodyTail && (_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap), children: bodyTail }) })), pendingApproval && _jsx(ApprovalDecisionRow, { pendingApproval: pendingApproval, light: kind === 'warning' }), hasSource && (_jsx("div", { className: messagePanelClass.source, children: errorMessage?.source && (_jsxs("div", { children: [_jsx("span", { className: messagePanelClass.sourceLabel, children: "Source:" }), " ", errorMessage.source] })) }))] })] }) }));
+                                    }, children: copyLabel }), _jsx(SmallYellowButton, { title: pendingApproval ? 'Reject' : 'Close message', "aria-label": pendingApproval ? 'Reject' : 'Close message', onClick: () => (pendingApproval ? pendingApproval.onReject() : closePanel(panelId, 'MessagePanel:close')), children: "X" })] })] }), _jsxs("div", { ref: bodyRef, className: messagePanelClass.body, children: [bodyHead && (_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : ''), children: _jsx(MessageText, { text: bodyHead, chainId: appChainId }) }) })), errorMessage?.sections?.map((section, i) => (_jsx(CollapsibleSection, { heading: section.heading, items: section.items, wrap: wrap, defaultOpen: section.defaultOpen }, `${section.heading}-${i}`))), _jsx(MessageDetailsSection, { errorMessage: errorMessage, renderAccountRow: renderAccountRow, renderTokenRow: renderTokenRow }), bodyTail && (_jsx("div", { className: messagePanelClass.block, children: _jsx("p", { className: messagePanelClass.text(wrap), children: bodyTail }) })), pendingApproval && _jsx(ApprovalDecisionRow, { pendingApproval: pendingApproval, light: kind === 'warning' }), hasSource && (_jsx("div", { className: messagePanelClass.source, children: errorMessage?.source && (_jsxs("div", { children: [_jsx("span", { className: messagePanelClass.sourceLabel, children: "Source:" }), " ", errorMessage.source] })) }))] })] }) }));
 }

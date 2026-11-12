@@ -16,7 +16,7 @@ import { noticeAccountRows } from '../auth/useAccountNoticeMessagePanel';
 import type { AccountRemoval } from './accountSource';
 import { ensureAbsoluteAssetURL } from './form/formHelpers';
 
-export interface RemoveAccountAccount {
+interface RemoveAccountAccount {
   address: string;
   name?: string;
   symbol?: string;
@@ -64,7 +64,7 @@ export default function RemoveAccountPanel({ removal, account, onRemoved, balanc
     const profile = { name: account.name || (typeof known?.name === 'string' ? known.name : undefined), symbol: account.symbol || (typeof known?.symbol === 'string' ? known.symbol : undefined), logoURL: typeof known?.logoURL === 'string' && known.logoURL ? ensureAbsoluteAssetURL(known.logoURL) : account.logoURL };
     // 2026-11-11 (owner): the Account Assets popup shows the account's native balance above its radio button
     const acknowledgements = local?.acknowledgements?.map((a) => (a.id === 'balances' && balanceText ? { ...a, detail: `Balance ${balanceText} native balance.` } : a));
-    const keyTools = { acknowledgements, revealKey: local?.revealKey ? (pw: string) => local.revealKey!(pw) : undefined, exportKey: local?.exportKey ? (pw: string) => local.exportKey!(pw) : undefined };
+    const keyTools = { acknowledgements, revealKey: local?.revealKey ? (pw: string) => local.revealKey!(pw) : undefined };
     const controls = (busy: boolean, passwordError: string) => ({
       requirePassword: !!local,
       passwordError,

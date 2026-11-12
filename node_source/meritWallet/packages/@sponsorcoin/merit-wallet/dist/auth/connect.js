@@ -9,6 +9,7 @@
 //   - the chosen account must be one the approver really answered with (no connecting an address the approver did not offer);
 //   - an approver that is not registered or not reachable fails with the authenticator error (and the host's notify, i.e. the MESSAGE_PANEL, hears about it) and again changes nothing (Q3);
 //   - disconnect clears the active account, and revokes the approver's permission only when it supports that, best effort: a failed revoke is reported, the account is still cleared (Q1).
+import { sameAddress as same } from '../wallet/sameAddress';
 import { AuthenticatorError, authenticatorName } from './authenticator';
 /** Several accounts were offered and none was chosen: show them and let the user pick. */
 export class ConnectChoiceRequired extends Error {
@@ -21,7 +22,6 @@ export class ConnectChoiceRequired extends Error {
 }
 /** The wallet's one name (docs/design/accountAuthDesign.txt section 18 3): every message about it says the same words as the lists do. */
 const nameOf = (authenticator) => authenticatorName(authenticator);
-const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 async function reach(registry, approverId, host) {
     const authenticator = registry.get(approverId);
     if (!authenticator) {

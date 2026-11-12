@@ -28,11 +28,6 @@ export interface MessagePanelPendingApproval {
      * typed password (the vault checks it again); it hides after KEY_SHOW_MS, and Copy warns about the clipboard.
      */
     revealKey?: (password: string) => Promise<string>;
-    /** 2026-11-10 (plan row 13): the key as an ENCRYPTED file (locked with the typed password) to keep before removing; the file is handed to the platform's saveFile. */
-    exportKey?: (password: string) => Promise<{
-        name: string;
-        content: string;
-    }>;
     /** 2026-11-10 (owner): check boxes the person must tick before the approve button works; ticking one opens its popup (AcknowledgeDialog), which checks the box on acceptance and leaves it unchecked on Reject, Cancel or the X. */
     acknowledgements?: MessagePanelAcknowledgement[];
     /** 2026-11-11 (owner): the heading shown in the wallet's PANEL_TITLE (one line) while this message is up, instead of the screen's own title. */

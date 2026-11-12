@@ -80,32 +80,12 @@ import WalletOnboardingPanel from './WalletOnboardingPanel';
 import ConnectedSponsorStakingList from './sponsor/ConnectedSponsorStakingList';
 import { buildSendReceipt, toMessageAccount } from './receipt/transactionReceipts';
 import { isNativePlaceholder } from './send/sendTransfer';
+import { parseDecimalAmount } from './swap/parseDecimalAmount';
 import { useTransactionReceipt } from './receipt/useTransactionReceipt';
 import { ActiveAccountProfileContext } from './swap/activeAccountProfile';
 import ConnectedAgentSelectDropDown from './AgentSelectDropDown';
 import { useNativeToken } from '@sponsorcoin/spcoin-exchange-engine';
-// 2026-09-30, Stage B (real trade wiring) — a minimal, dependency-free
-// decimal-string -> bigint parser for the SWAP tab's amount inputs. No
-// `ethers`/`viem` import here on purpose: this is a portable package (the
-// extension's Vite bundle included), and a full BigNumber-parsing library
-// is unnecessary weight for one small, well-understood conversion. Returns
-// undefined (never throws) for anything not yet a complete number — a
-// mid-type state like "12." or "" — so the caller can just skip pushing to
-// real ExchangeContext that keystroke and keep the local text as typed.
-function parseDecimalAmount(text, decimals) {
-    const trimmed = text.trim();
-    if (!trimmed || trimmed === '.' || !/^\d*\.?\d*$/.test(trimmed))
-        return undefined;
-    const [wholeRaw, fracRaw = ''] = trimmed.split('.');
-    const whole = wholeRaw || '0';
-    const frac = fracRaw.slice(0, decimals).padEnd(decimals, '0');
-    try {
-        return BigInt(whole) * BigInt(10) ** BigInt(decimals) + BigInt(frac || '0');
-    }
-    catch {
-        return undefined;
-    }
-}
+// parseDecimalAmount (decimal text -> bigint, an empty box is 0) lives in ./swap/parseDecimalAmount.ts.
 // 2026-09-21, Path A ("single source of truth") — the 5-tab strip's own
 // real panel-tree ids, all confirmed members of RADIO_PANEL_GROUPS'
 // MAIN_RADIO_OVERLAY_PANELS group (verified by reading panelGroups.ts
@@ -382,6 +362,9 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // A step-through popup (Swap / Send / Sponsor) is drawn in MESSAGE_PANEL: its stage heading is the PANEL_TITLE, and the tab body stays mounted.
     // 2026-11-11 (owner): a confirmation that names its own heading (the Remove Account one) shows it in PANEL_TITLE while its message is up
     const confirmTitle = React.useSyncExternalStore(pendingApprovalMessageStore.subscribe, () => pendingApprovalMessageStore.getSnapshot()?.panelTitle, () => undefined);
+    // 2026-11-11 (owner): a message that names its own heading (the Sponsor config info, "Sponsorcoin Distribution Reward") shows it in PANEL_TITLE too, in place of the screen's title
+    const { errorMessage: shownMessage } = useExchangeContext();
+    const messageOwnTitle = messageVisible ? shownMessage?.title : undefined;
     const stepContentUp = React.useSyncExternalStore(stepPanelContentStore.subscribe, () => stepPanelContentStore.getSnapshot() != null, () => false) && messageVisible;
     const stepTitle = React.useSyncExternalStore(stepPanelTitleStore.subscribe, stepPanelTitleStore.getSnapshot, stepPanelTitleStore.getServerSnapshot);
     React.useEffect(() => {
@@ -2024,49 +2007,51 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         ? confirmTitle
         : stepContentUp && stepTitle
             ? stepTitle
-            : passwordOverlay
-                ? passwordMode === 'setup' ? 'Create Account' : 'Account Login'
-                : approvalOverlay
-                    ? approvalPage.title
-                    : remoteSelection
-                        // 2026-11-07 (owner): "Add Merit <app> Account(s)", the app whose accounts the person is choosing from (this one: the extension's vault, or the web app)
-                        ? `Add Merit ${nativeWalletId === 'localVault' ? 'Extension' : 'Web App'} Account(s)`
-                        : walletListLeafVisible
-                            ? walletListScreenTitle
-                            : createAccountLeafVisible && addMenuVisible && panelTreeListOpen
-                                // 2026-11-07 (owner): Create a Merit Account is the Account Details screen in add mode
-                                ? 'Add New Account'
-                                : addMenuVisible && panelTreeListOpen
-                                    ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
-                                    : panelTreeVisible
-                                        ? 'Panel Tree'
-                                        : meritInfoVisible
-                                            ? 'About Merit Wallet'
-                                            : accountDetailVisible
-                                                ? accountDetailTitle ?? 'Account Details'
-                                                : tokenDetailVisible
-                                                    ? 'Token Details'
-                                                    : networkDetailVisible
-                                                        ? 'Network Details'
-                                                        : activeListMode === 'sellToken' ||
-                                                            activeListMode === 'buyToken' ||
-                                                            activeListMode === 'sendToken'
-                                                            ? 'Select a Token'
-                                                            : activeListMode === 'sendRecipient'
-                                                                ? 'Select Recipient'
-                                                                : activeListMode === 'account'
-                                                                    ? 'Active Account Selection'
-                                                                    : activeListMode === 'network'
-                                                                        ? 'Select Network'
-                                                                        : activeTab === 'SWAP'
-                                                                            ? 'Trading Station'
-                                                                            : activeTab === 'SEND'
-                                                                                ? 'Send Token'
-                                                                                : activeTab === 'SPONSOR'
-                                                                                    ? 'Add Sponsorship'
-                                                                                    : activeTab === 'REWARDS'
-                                                                                        ? 'Rewards Management'
-                                                                                        : 'Wallet Config';
+            : messageOwnTitle && !stepContentUp
+                ? messageOwnTitle
+                : passwordOverlay
+                    ? passwordMode === 'setup' ? 'Create Account' : 'Account Login'
+                    : approvalOverlay
+                        ? approvalPage.title
+                        : remoteSelection
+                            // 2026-11-07 (owner): "Add Merit <app> Account(s)", the app whose accounts the person is choosing from (this one: the extension's vault, or the web app)
+                            ? `Add Merit ${nativeWalletId === 'localVault' ? 'Extension' : 'Web App'} Account(s)`
+                            : walletListLeafVisible
+                                ? walletListScreenTitle
+                                : createAccountLeafVisible && addMenuVisible && panelTreeListOpen
+                                    // 2026-11-07 (owner): Create a Merit Account is the Account Details screen in add mode
+                                    ? 'Add New Account'
+                                    : addMenuVisible && panelTreeListOpen
+                                        ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
+                                        : panelTreeVisible
+                                            ? 'Panel Tree'
+                                            : meritInfoVisible
+                                                ? 'About Merit Wallet'
+                                                : accountDetailVisible
+                                                    ? accountDetailTitle ?? 'Account Details'
+                                                    : tokenDetailVisible
+                                                        ? 'Token Details'
+                                                        : networkDetailVisible
+                                                            ? 'Network Details'
+                                                            : activeListMode === 'sellToken' ||
+                                                                activeListMode === 'buyToken' ||
+                                                                activeListMode === 'sendToken'
+                                                                ? 'Select a Token'
+                                                                : activeListMode === 'sendRecipient'
+                                                                    ? 'Select Recipient'
+                                                                    : activeListMode === 'account'
+                                                                        ? 'Active Account Selection'
+                                                                        : activeListMode === 'network'
+                                                                            ? 'Select Network'
+                                                                            : activeTab === 'SWAP'
+                                                                                ? 'Trading Station'
+                                                                                : activeTab === 'SEND'
+                                                                                    ? 'Send Token'
+                                                                                    : activeTab === 'SPONSOR'
+                                                                                        ? 'Add Sponsorship'
+                                                                                        : activeTab === 'REWARDS'
+                                                                                            ? 'Rewards Management'
+                                                                                            : 'Wallet Config';
     // 2026-11-09 (owner design): the refresh tree of this wallet (refresh/refreshTree.ts); every screen's loaded data is a node in it
     const refreshTreeRef = useRef(undefined);
     if (!refreshTreeRef.current)

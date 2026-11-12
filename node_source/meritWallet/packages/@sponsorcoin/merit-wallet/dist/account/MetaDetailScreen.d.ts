@@ -1,4 +1,3 @@
-import React from 'react';
 import type { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { CachedImageKind } from '../refresh/refreshReact';
 import { type MetaDataRow } from '../panels/ReadOnlyMetaDataTable';
@@ -28,4 +27,4 @@ export interface MetaDetailScreenProps {
     rBuffer?: number;
     lBuffer?: number;
 }
-export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, logoSrc, logoAlt, toggleLabel, rows, plainLogo, fitImageShape, imageKind, screenId, tBuffer, bBuffer, rBuffer, lBuffer }: MetaDetailScreenProps): React.JSX.Element;
+export default function MetaDetailScreen({ logoFlag, metaFlag, logoId, metaId, logoSrc, logoAlt, toggleLabel, rows, plainLogo, fitImageShape, imageKind, screenId, tBuffer, bBuffer, rBuffer, lBuffer }: MetaDetailScreenProps): import("react").JSX.Element;

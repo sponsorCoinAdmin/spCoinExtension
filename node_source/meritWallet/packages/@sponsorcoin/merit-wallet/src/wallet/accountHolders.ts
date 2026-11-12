@@ -4,8 +4,8 @@
 // so the screen never has to ask which wallet an account belongs to. A wallet that cannot be asked now holds nothing for this purpose.
 import type { Authenticator } from '../auth/authenticator';
 import type { AuthenticatorRegistry } from '../auth/resolve';
+import { sameAddress as same } from './sameAddress';
 
-const same = (a: string | undefined, b: string | undefined) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 
 /** Every backend that lists the address, connected or not (knownAccounts when it has it). */
 export async function holdersOf(registry: AuthenticatorRegistry, address: string): Promise<Authenticator[]> {

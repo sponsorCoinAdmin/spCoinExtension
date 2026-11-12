@@ -10,6 +10,7 @@
 // and an account's details (rename, copy the address, show its private key, remove an imported account), plus "Show Secret Recovery Phrase".
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { sameAddress as same } from './wallet/sameAddress';
 import { detailPanelStyle, formKitStyle, vaultAccountsStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useState } from 'react';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -29,7 +30,6 @@ const input = formKitStyle.input;
 const muted = formKitStyle.muted;
 const errorStyle = formKitStyle.error;
 const short = (a) => `${a.slice(0, 6)}...${a.slice(-4)}`;
-const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 /** Ask for the password again, then run `action` with it. Shows what the action returns (a key or a phrase) until dismissed. */
 function PasswordGate({ label, run, revealTitle }) {
     const [open, setOpen] = useState(false);

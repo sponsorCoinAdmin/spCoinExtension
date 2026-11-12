@@ -1,4 +1,4 @@
-const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+import { sameAddress as same } from './sameAddress';
 /** Every backend that lists the address, connected or not (knownAccounts when it has it). */
 export async function holdersOf(registry, address) {
     const holders = [];

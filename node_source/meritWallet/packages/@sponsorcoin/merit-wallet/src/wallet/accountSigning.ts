@@ -3,6 +3,7 @@
 // 2026-10-12 (docs/design/accountAuthDesign.txt row 15, 5.1 / 5.6): who signs for an account, and switching it. An account has exactly ONE active authenticator; the same key may sit in more than one holder (the user imported it twice, a
 // development account is in the dev server and in a vault), and then switching is instant and loses nothing (5.6: the wallet never copies keys, it only records the choice). This file reads the choices (which holders have the account, which
 // one is active, whether it can be reached) and makes the switch; the section in src/wallet/AccountSigningSection.tsx draws it.
+import { sameAddress as same } from './sameAddress';
 import type { AuthenticatorId, AuthenticatorStatus } from '../auth/authenticator';
 import type { Wallet } from './wallet';
 
@@ -30,7 +31,6 @@ export interface SigningChoices {
   warning: string;
 }
 
-const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
 const stateOf = (status: AuthenticatorStatus | undefined, canLock: boolean): HolderState => {
   if (!status?.available) return 'unreachable';

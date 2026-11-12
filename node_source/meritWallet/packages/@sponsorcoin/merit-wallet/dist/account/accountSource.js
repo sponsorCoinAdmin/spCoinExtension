@@ -2,10 +2,7 @@ import { authenticatorName } from '../auth/authenticator';
 import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
 import { unlockErrorText } from '../wallet/walletLock';
 import { holdersOf, removalTarget } from '../wallet/accountHolders';
-import { encryptKeyExport } from '../vault/keyExport';
-/** Plan row 13 is ON HOLD (owner, 2026-11-10): a key file can be guessed at offline. The code stays; this switch keeps the Save Encrypted Key File button off. */
-const ENABLE_KEY_FILE_EXPORT = false;
-const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+import { sameAddress as same } from '../wallet/sameAddress';
 /**
  * 2026-11-08 (owner): the SAME address can sit in two groups (the local Merit account and MetaMask's copy of it). `groupId` is the group of the row the person opened; it
  * decides which of the wallets holding the address the screen is about. Omitted (the header icon): the local account wins, as before.
@@ -34,7 +31,6 @@ export async function resolveAccountSource(wallet, address, activeAddress, group
                 label: `Remove Local ${what} from ${app}`,
                 destructive: true,
                 ...(same(address, activeAddress) ? { disabledReason: 'Make another account active first.' } : !canDelete ? { disabledReason: 'This wallet cannot remove accounts.' } : {}),
-                title: `Remove Local ${what}\nFrom ${app}?`,
                 panelTitle: `Remove ${app} Local ${what}`,
                 message: warning,
                 confirmLabel: 'Remove Account',
@@ -48,16 +44,6 @@ export async function resolveAccountSource(wallet, address, activeAddress, group
                     revealKey: vault?.capabilities.revealKey ? async (password) => {
                         try {
                             return await vault.revealPrivateKey({ kind: 'password', value: password }, address);
-                        }
-                        catch (error) {
-                            throw new Error(unlockErrorText(error));
-                        }
-                    } : undefined,
-                    // 2026-11-10 (plan row 13): the key as a file locked with the wallet password (the vault checks the password first)
-                    // ON HOLD 2026-11-10 (owner: the file can be attacked offline with password guessing): switched off, so the button does not appear. Set ENABLE_KEY_FILE_EXPORT to true to bring it back.
-                    exportKey: ENABLE_KEY_FILE_EXPORT && vault?.capabilities.revealKey ? async (password) => {
-                        try {
-                            return await encryptKeyExport(await vault.revealPrivateKey({ kind: 'password', value: password }, address), address, password);
                         }
                         catch (error) {
                             throw new Error(unlockErrorText(error));
@@ -85,7 +71,6 @@ export async function resolveAccountSource(wallet, address, activeAddress, group
             label: `Remove Remote ${what} from ${app}`,
             destructive: false,
             ...(same(address, activeAddress) ? { disabledReason: 'Make another account active first.' } : {}),
-            title: `Remove Remote ${name} Account\nFrom ${app}?`,
             panelTitle: `Remove ${app} Remote ${name} Account`,
             message: `This only removes the account from Merit. It still exists in ${name}; connect it again to add it back.`,
             confirmLabel: 'Remove',

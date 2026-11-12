@@ -13,6 +13,7 @@
 // one the host's wallet list screen shows); a host that gives none gets the default below. Inactive ACCOUNTS are fine, a wallet that is not connected is not.
 // (earlier wording, still true for the default:) a wallet that is not connected is NOT on the list at all, so a Ledger nobody connected, or a MetaMask that holds no account here, shows no group; connecting is the Add menu's job.
 // A group stays when it is the active one, when it holds accounts, or when it is locked and offers Unlock. Install / Connect badges appear only when a host asks for the disconnected wallets (`showDisconnected`).
+import { sameAddress as same } from './sameAddress';
 import type { AccountListGroup, AccountListEntry } from '@sponsorcoin/spcoin-panels';
 import type { AuthenticatorId, AuthenticatorStatus } from '../auth/authenticator';
 import { connectAccount, disconnectAccount, ConnectChoiceRequired, type ConnectHost } from '../auth/connect';
@@ -73,7 +74,6 @@ export interface ApproverGroupsInput {
   showDisconnected?: boolean;
 }
 
-const same = (a: string | undefined, b: string | undefined) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 
 /**
  * 2026-11-03 (owner rule): a wallet such as MetaMask keeps ONE label per account, so the name and the symbol travel together as "Name,Symbol". Split at the first comma; a label with no comma is a name only.

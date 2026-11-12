@@ -52,6 +52,34 @@ function MessageText({ text, chainId }: { text: string; chainId: number }) {
   );
 }
 
+/** 2026-11-11 (owner): a heading that is a link; clicking it expands / collapses its explanation (all start collapsed). A section's text is copied by Copy only while it is open (Copy reads the rendered body). */
+function CollapsibleSection({ heading, items, wrap, defaultOpen }: { heading: string; items: string[]; wrap: boolean; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  return (
+    <div className={messagePanelClass.block}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={collapsibleSectionStyle.heading}
+      >
+        <span aria-hidden="true">{open ? '▾' : '▸'}</span> {heading}
+      </button>
+      {open && (
+        <ul className={messagePanelClass.text(wrap)} style={collapsibleSectionStyle.list}>
+          {items.map((item, i) => <li key={i} style={collapsibleSectionStyle.item}>{item}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+const collapsibleSectionStyle = {
+  heading: { background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'inherit', font: 'inherit', fontWeight: 700, textDecoration: 'underline', textAlign: 'left' } as React.CSSProperties,
+  list: { margin: '6px 0 0 0', paddingLeft: 22, listStyleType: 'disc', whiteSpace: 'normal' } as React.CSSProperties,
+  item: { margin: '0 0 4px 0' } as React.CSSProperties,
+};
+
 /**
  * 2026-10-29, on request ("it should be in the Message panel" — the
  * standalone Merit approval backdrop, ApprovalResponder.tsx, read as "out
@@ -79,8 +107,6 @@ export interface MessagePanelPendingApproval {
    * typed password (the vault checks it again); it hides after KEY_SHOW_MS, and Copy warns about the clipboard.
    */
   revealKey?: (password: string) => Promise<string>;
-  /** 2026-11-10 (plan row 13): the key as an ENCRYPTED file (locked with the typed password) to keep before removing; the file is handed to the platform's saveFile. */
-  exportKey?: (password: string) => Promise<{ name: string; content: string }>;
   /** 2026-11-10 (owner): check boxes the person must tick before the approve button works; ticking one opens its popup (AcknowledgeDialog), which checks the box on acceptance and leaves it unchecked on Reject, Cancel or the X. */
   acknowledgements?: MessagePanelAcknowledgement[];
   /** 2026-11-11 (owner): the heading shown in the wallet's PANEL_TITLE (one line) while this message is up, instead of the screen's own title. */
@@ -145,7 +171,6 @@ function ApprovalDecisionRow({ pendingApproval, light = false }: { pendingApprov
   const [shownKey, setShownKey] = useState('');
   const [keyError, setKeyError] = useState('');
   const [copied, setCopied] = useState(false);
-  const [saved, setSaved] = useState(false);
   const acknowledgements = pendingApproval.acknowledgements ?? [];
   const [acked, setAcked] = useState<Record<string, boolean>>({});
   const [askedId, setAskedId] = useState<string | null>(null);
@@ -192,12 +217,6 @@ function ApprovalDecisionRow({ pendingApproval, light = false }: { pendingApprov
       .catch((err: unknown) => setKeyError(failText(err, 'The key could not be copied.')))
       .finally(() => setKeyBusy(false));
   };
-  const exportKey = () => {
-    setKeyError('');
-    setSaved(false);
-    setKeyBusy(true);
-    void pendingApproval.exportKey?.(password).then((file) => { platform.saveFile(file.name, file.content, 'application/json'); setSaved(true); }).catch((err: unknown) => setKeyError(failText(err, 'The key file could not be made.'))).finally(() => setKeyBusy(false));
-  };
   return (
     <div className={messagePanelClass.block}>
       {asking && (
@@ -240,12 +259,6 @@ function ApprovalDecisionRow({ pendingApproval, light = false }: { pendingApprov
                 <ActionButton light={light} usable={shownKey ? !busy && !keyBusy : keyUsable} whyNot={whyKey} onClick={toggleKey}>{shownKey ? 'Hide Private Key' : 'Show Private Key'}</ActionButton>
                 <ActionButton light={light} usable={keyUsable} whyNot={whyKey} onClick={copyKey} title="Copy the private key to the clipboard">{copied ? 'Copied' : 'Copy Private Key'}</ActionButton>
               </div>
-              {pendingApproval.exportKey ? (
-                <div style={transactionConfirmPanelStyle.div14}>
-                  <ActionButton light={light} usable={keyUsable} whyNot={whyKey} onClick={exportKey} title="Save the private key as a file locked with your wallet password">{saved ? 'Key File Saved' : 'Save Encrypted Key File'}</ActionButton>
-                </div>
-              ) : null}
-              {saved ? <div style={transactionConfirmPanelStyle.div13}>Saved. The file opens only with your wallet password: keep both safe.</div> : null}
               {copied ? <div style={transactionConfirmPanelStyle.div13}>Copied. The key leaves the clipboard again in 60 seconds, but until then other programs can read it: paste it somewhere safe now.</div> : null}
               {keyError ? <div style={transactionConfirmPanelStyle.div13}>{keyError}</div> : null}
             </>
@@ -311,7 +324,7 @@ export default function MessagePanelReal({
 
   // 2026-10-13 (owner request: catch and log this properly): this panel can become visible with NO message behind it (a stale display-stack entry restored by a pop, an open that never set errorMessage). That used to
   // read as a bare "Something went wrong / An unexpected error occurred." Now the box says there was no message and who made it visible, and the same facts go to the console.
-  const noMessage = !errorMessage?.msg;
+  const noMessage = !errorMessage?.msg && !errorMessage?.sections?.length;
   const openedBy = noMessage && visible ? getPanelOpenLog(panelId, 3).map((record) => describePanelOpen(record)) : [];
   useEffect(() => {
     if (!visible || !noMessage) return;
@@ -326,12 +339,14 @@ export default function MessagePanelReal({
     kind === 'error' && errorMessage?.source === 'useNetworkController:onChainChanged';
   const rawMsg = noMessage
     ? ['This panel was opened without a message.', ...(openedBy.length ? openedBy : ['No record of what opened it (see the console for details).'])].join('\n')
-    : (errorMessage?.msg as string);
+    : ((errorMessage?.msg ?? '') as string);
   const lines = rawMsg.split('\n');
   const firstLine = lines[0]?.trim() ?? '';
   const body = lines.slice(1).join('\n').replace(/^\n+/, '');
   const title = noMessage
     ? 'No message to show'
+    : errorMessage?.title
+    ? errorMessage.title
     : isUnsupportedNetworkError
     ? firstLine || 'Network not supported on "Sponsor Coin"'
     : kind === 'success'
@@ -365,7 +380,8 @@ export default function MessagePanelReal({
         aria-live={kind === 'error' ? 'assertive' : 'polite'}
       >
         <div className={messagePanelClass.titleRow}>
-          <h3 className={messagePanelClass.title}>{kind !== 'warning' ? title : ''}</h3>
+          {/* a message with its own heading shows it in the wallet's PANEL_TITLE, not here */}
+          <h3 className={messagePanelClass.title}>{kind !== 'warning' && !errorMessage?.title ? title : ''}</h3>
           <div className={messagePanelClass.buttons}>
             <SmallYellowButton
               title="Copy message"
@@ -399,11 +415,17 @@ export default function MessagePanelReal({
         </div>
 
         <div ref={bodyRef} className={messagePanelClass.body}>
+        {bodyHead && (
         <div className={messagePanelClass.block}>
           <p className={messagePanelClass.text(wrap, isUnsupportedNetworkError ? walletPartClass.unsupportedTop : '')}>
             <MessageText text={bodyHead} chainId={appChainId} />
           </p>
         </div>
+        )}
+
+        {errorMessage?.sections?.map((section, i) => (
+          <CollapsibleSection key={`${section.heading}-${i}`} heading={section.heading} items={section.items} wrap={wrap} defaultOpen={section.defaultOpen} />
+        ))}
 
         <MessageDetailsSection errorMessage={errorMessage} renderAccountRow={renderAccountRow} renderTokenRow={renderTokenRow} />
 

@@ -1,5 +1,20 @@
+// File: src/wallet/approverAccounts.ts
+//
+// 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 6 / 7 and docs/design/accountAuthDesign.txt rows 8 / 9): the account list per approver. The list is built from the wallet (its registered backends), one group per approver, in the
+// same words in every host; choosing a row connects that account through the one connect operation (src/auth/connect.ts), and a failure is reported in the list's banner and never changes the active account (docs/design/accountAuthDesign.txt section 17.2.6, Q3).
+//
+// The group's badge says where the approver stands (the model, docs/design/accountAuthDesign.txt section 17.2.1 / 2.8):
+//   ACTIVE      the active account is held by this approver (a click disconnects)
+//   Install     the approver is not installed / reachable and the host can send the user to it
+//   Unlock      the approver is there but locked (the host shows its unlock screen)
+//   Connect     the approver is reachable and is not the active source (2026-10-31: whether or not it holds accounts here) (a click connects: its own account picker)
+//   INACTIVE    anything else (red, no action)
+// 2026-10-15 (owner rule): the list shows only CONNECTED wallets, and the NATIVE wallet (the Merit wallet this app is, `nativeId`) is always first and always connected: it is us. Whether another wallet is connected is the host's one definition (`isConnected`, the same
+// one the host's wallet list screen shows); a host that gives none gets the default below. Inactive ACCOUNTS are fine, a wallet that is not connected is not.
+// (earlier wording, still true for the default:) a wallet that is not connected is NOT on the list at all, so a Ledger nobody connected, or a MetaMask that holds no account here, shows no group; connecting is the Add menu's job.
+// A group stays when it is the active one, when it holds accounts, or when it is locked and offers Unlock. Install / Connect badges appear only when a host asks for the disconnected wallets (`showDisconnected`).
+import { sameAddress as same } from './sameAddress';
 import { connectAccount, disconnectAccount, ConnectChoiceRequired } from '../auth/connect';
-const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 /**
  * 2026-11-03 (owner rule): a wallet such as MetaMask keeps ONE label per account, so the name and the symbol travel together as "Name,Symbol". Split at the first comma; a label with no comma is a name only.
  * Either half missing is filled from the public profile (describeAccount), and what is still missing reads N/A: the name is never copied into the symbol.

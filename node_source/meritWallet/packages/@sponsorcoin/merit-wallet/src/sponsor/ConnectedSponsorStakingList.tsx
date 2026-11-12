@@ -125,8 +125,12 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
       setRecipients(rows);
       const info: Record<string, RecipientStakeInfo[]> = {};
       await Promise.all(
-        tree.map(async (node) => {
-          info[node.recipientKey] = await Promise.all(
+        tree.map(async (node, nodeIndex) => {
+          // 2026-11-12 (owner: "why do we have a lot of Loading"): the table looks a row's stake up by the ROW's own address (the profile's, in the registry's one lower-case form), but this map was keyed by the
+          // chain's checksummed address. They are equal only when the address has no upper-case letters, so every recipient like 0x…000A (upper-case A) never found its stake and stayed "Loading…" for ever.
+          // The map is keyed by the row's address, in the same order as `rows` (Promise.all keeps it).
+          const rowKey = String(rows[nodeIndex]?.address ?? '').trim() || node.recipientKey;
+          info[rowKey] = await Promise.all(
             node.rates.map(async (rate): Promise<RecipientStakeInfo> => {
               const agentAccounts: AgentStakeInfo[] = await Promise.all(
                 rate.agents.map(async (agent) => {

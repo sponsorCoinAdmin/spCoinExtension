@@ -2401,7 +2401,11 @@ function MeritWalletInner({
               // 2026-11-06 (owner rule): a row the person has DISCONNECTED (kept in the list) is not an account to use until it is connected again
               if (account.connection && !account.connection.connected) return;
               // 2026-11-02 (owner request, Active Account Selection): picking an account makes it the active account and LEAVES the list open; the person closes it with Back. This reverses 2026-10-29 above (a successful pick closed the list).
-              void onAccountRowSelect?.(account.id, group.id);
+              // 2026-11-12 (owner: "after I select a new activeAccount with leftClick, I should close this panel the same way back would do it by popping the stack"): this reverses 2026-11-02 above.
+              // A pick that WORKED (the host answers true, or nothing) closes the list exactly as Back does (setActiveList(null) pops it); a pick the host refused (false: a failed connect) leaves it open so its banner is seen.
+              void Promise.resolve(onAccountRowSelect?.(account.id, group.id)).then((picked) => {
+                if (picked !== false) setActiveList(null);
+              });
             },
             onInfoClick: account.address
               ? () => {

@@ -41,7 +41,7 @@ import { getAddress, formatUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import { registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
-import { StakeConfirmPopup, useWalletListed } from '@sponsorcoin/spcoin-panels';
+import { StakeConfirmPopup, useWalletListed, amountGate } from '@sponsorcoin/spcoin-panels';
 import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useSelectedAccount, buildSpCoinAccount, hydrateAccountFromAddress, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
@@ -1279,7 +1279,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 },
                 selectOnLogoClick: true,
                 // the field's own token: the picker's address box opens pre-filled with it (2026-10-30, on request)
-                currentTokenAddress: mode === 'sellToken' ? sellTokenContract?.address : mode === 'buyToken' ? buyTokenContract?.address : selections.sendToken?.address,
+                currentTokenAddress: mode === 'sellToken' ? sellTokenContract?.address : mode === 'buyToken' ? buyTokenContract?.address : sendTokenEntry.address, // the Send field shows the native token until one is picked, so that is its token
                 ownerId: mode === 'sellToken' ? 'sell' : mode === 'buyToken' ? 'buy' : 'send',
             };
         }
@@ -1310,18 +1310,13 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         // account | network
         return null;
     };
-    const iconFromSrc = (src) => src
-        ? React.createElement('img', {
-            src,
-            alt: '',
-            style: fitImageStyle,
-        })
-        : undefined;
     // 2026-09-29 — StakingControllerPanel's own opaque-slot inputs
     // (configCog/recipientContent) removed along with its render below
     // (see that render site's own doc comment for why: pure duplicate
     // content, disabled until Phase B.2 gives it something unique to show).
     // Restore both from git history alongside the render if re-enabling.
+    const sellGate = amountGate({ side: 'sell', hasToken: !!sellTokenContract?.address });
+    const buyGate = amountGate({ side: 'buy', hasToken: !!buyTokenContract?.address });
     const tabBody = activeTab === 'SWAP'
         ? React.createElement(TradingStationPanel, {
             onSellTokenClick: () => setActiveList('sellToken'),
@@ -1337,11 +1332,16 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
             // own doc comment above (near sellAmountText's declaration).
             sellAmount: sellAmountText,
             onSellAmountChange: setSellAmount,
+            // 2026-11-13 (owner): no token in the row, no input; the hover says which token (amountGate, the one rule every amount row uses)
+            sellAmountDisabled: sellGate.disabled,
+            sellAmountTitle: sellGate.title,
             sellBalanceText: sellBalanceText ?? fetchedSellBalanceText,
             sellBalanceTitle: fetchedSellBalanceTitle,
             sellBalanceLoading,
             buyAmount: buyAmountText,
             onBuyAmountChange: setBuyAmount,
+            buyAmountDisabled: buyGate.disabled,
+            buyAmountTitle: buyGate.title,
             buyBalanceText: buyBalanceText ?? fetchedBuyBalanceText,
             buyBalanceTitle: fetchedBuyBalanceTitle,
             buyBalanceLoading,
@@ -1390,7 +1390,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 onRecipientClick: () => setActiveList('sendRecipient'),
                 sendTokenSymbol: sendTokenEntry.symbol,
                 sendTokenAddress: sendTokenEntry.address,
-                sendTokenIcon: iconFromSrc(sendTokenEntry.iconSrc),
+                // 2026-11-13 (owner): like the Swap pills, TokenLogo always renders; it looks the logo up by the token and falls back to the missing-token image when there is no token or no logo (no blank square after the token is cleared)
+                sendTokenIcon: React.createElement(TokenLogo, { tokenContract: sendTokenEntry.address ? { address: sendTokenEntry.address, symbol: sendTokenEntry.symbol, name: sendTokenEntry.name, decimals: sendTokenEntry.decimals, logoURL: sendTokenEntry.iconSrc, chainId, balance: BigInt(0) } : undefined, style: fitImageStyle }),
                 recipientSymbol: selections.sendRecipient?.symbol,
                 recipientAddress: selections.sendRecipient?.address,
                 // 2026-10-22 (owner report): iconFromSrc returned undefined with no recipient picked, leaving the pill's icon slot empty — AccountAvatar renders unconditionally and falls back to ANONYMOUS_ACCOUNT_AVATAR_URL on its own, matching every other account-style pill.
@@ -2195,12 +2196,18 @@ function MeritWalletWired(props) {
     const openAddMenu = useCallback(() => {
         openWalletListPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:addAccounts:addMenu');
     }, [openWalletListPanel]);
+    // 2026-11-12 (owner): the drop-down's choices open their screen directly (the Add menu is gone); the Add screens are leaves of ADD_WALLET_ACCOUNT, which stays under them
+    const openAddLeaf = useCallback((leaf) => {
+        openWalletListPanel(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT, 'MeritWallet:addAccounts:leaf');
+        openWalletListPanel(leaf === 'createAccount' ? SP_COIN_DISPLAY.CREATE_ACCOUNT : leaf === 'importAccount' ? SP_COIN_DISPLAY.IMPORT_AN_ACCOUNT : SP_COIN_DISPLAY.IMPORT_A_WALLET, 'MeritWallet:addAccounts:leaf');
+    }, [openWalletListPanel]);
     const approverHost = useMemo(() => {
         if (!props.approverHost)
             return props.approverHost;
         const withList = {
             ...props.approverHost,
             openAddMenu: props.approverHost.openAddMenu ?? openAddMenu,
+            openAddLeaf: props.approverHost.openAddLeaf ?? openAddLeaf,
             walletLink: (id) => (id in walletLinks ? walletLinks[id] : props.approverHost.walletLink?.(id)),
             isListed: (id) => {
                 const slug = Object.keys(WALLET_SLUG_ID).find((s) => WALLET_SLUG_ID[s] === id);
@@ -2251,7 +2258,7 @@ function MeritWalletWired(props) {
             : withList;
     }, 
     // eslint-disable-next-line react-hooks/exhaustive-deps -- walletLinks is rebuilt every render; walletLinksKey is its value
-    [props.approverHost, props.peers, props.wallet, props.nativeWalletId, peerStates, openAddMenu, walletLinksKey, listedKey]);
+    [props.approverHost, props.peers, props.wallet, props.nativeWalletId, peerStates, openAddMenu, openAddLeaf, walletLinksKey, listedKey]);
     const wantsAccounts = !!approverHost && (props.walletDerives ?? ALL_WALLET_DERIVATIONS).includes('accounts');
     const approvers = useApproverAccounts(wantsAccounts ? props.wallet : undefined, approverHost, props.activeAccountAddress, platform);
     approversRef.current = approvers;
@@ -2262,7 +2269,10 @@ function MeritWalletWired(props) {
         if (!approvers.notice)
             return;
         const wallet = approvers.noticeWalletId ? walletName(approvers.noticeWalletId) : undefined;
-        setApproverError({ errCode: 0, msg: approvers.notice + (wallet ? String.fromCharCode(10) + 'Wallet: ' + wallet : ''), source: 'Active Account Selection', status: STATUS.MESSAGE_ERROR });
+        // 2026-11-12 (owner): "<wallet> is not installed in this browser" carries an Install button: the host's install page for that wallet, else the wallet's own download page (MetaMask)
+        const missingId = approvers.noticeWalletId;
+        const installUrl = missingId && /is not installed/i.test(approvers.notice) ? (approverHost?.installUrl?.(missingId) ?? (/metamask/i.test(missingId) ? 'https://metamask.io/download/' : undefined)) : undefined;
+        setApproverError({ errCode: 0, msg: approvers.notice + (wallet ? String.fromCharCode(10) + 'Wallet: ' + wallet : ''), source: 'Active Account Selection', status: STATUS.MESSAGE_ERROR, ...(installUrl ? { installUrl, installLabel: `Install ${wallet ?? 'wallet'}` } : {}) });
         openApproverPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'MeritWallet:approverNotice');
         approvers.clearNotice();
         // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a new notice only

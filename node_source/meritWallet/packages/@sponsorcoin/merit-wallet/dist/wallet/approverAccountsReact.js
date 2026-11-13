@@ -2,7 +2,8 @@
 //
 // 2026-10-12 (docs/design/accountAuthDesign.txt section 17 items 6 / 7): the React side of src/wallet/approverAccounts.ts. Reads the wallet's accounts and each backend's status whenever the wallet announces a change (a lock, an unlock, an
 // installed wallet appearing, an accounts change) and when the page regains focus (an extension installed in another tab), and hands back the groups for the shared account list plus the banner text for a failed connect.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { approvalWaiting } from '../auth/approvalWaiting';
 import { engineTrace } from '@sponsorcoin/spcoin-exchange-engine';
 import { accountNoticeStore } from '../auth/accountNoticeStore';
 import { domPlatform } from '../platform/domPlatform';
@@ -15,6 +16,8 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
     const setNotice = useCallback((text, id) => { setNoticeText(text); setNoticeWalletId(text ? id : undefined); }, []);
     // 2026-11-06 (owner rule): the accounts of a wallet that belongs to another Merit wallet, each connected or disconnected (Authenticator.knownAccounts)
     const [known, setKnown] = useState({});
+    // 2026-11-13 (owner): the wallets with a connect open right now (a request waiting on the other wallet): their row's green connect icon throbs. A string so the snapshot compares by value.
+    const connectingKey = useSyncExternalStore(approvalWaiting.subscribe, () => approvalWaiting.getState().filter((entry) => entry.action === 'connect').map((entry) => entry.authenticatorId).join('|'), () => '');
     const activeRef = useRef(activeAddress);
     activeRef.current = activeAddress;
     const hostRef = useRef(host);
@@ -131,6 +134,16 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
                     .catch((error) => setNotice(error instanceof Error && error.message ? error.message : 'That account could not be changed.', id))
                     .then(load);
             },
+            addMenuOptions: (id) => {
+                const openLeaf = host.openAddLeaf;
+                if (!openLeaf || id !== host.nativeWalletId || (host.platform !== 'web' && host.platform !== 'extension'))
+                    return undefined;
+                return [
+                    { label: 'Add Account', onClick: () => openLeaf('createAccount') },
+                    { label: 'Import Account', onClick: () => openLeaf('importAccount') },
+                    { label: 'Import Wallet', onClick: () => openLeaf('importWallet') },
+                ];
+            },
             onAddAccounts: (id) => {
                 engineTrace('approverAccounts:onAddAccounts', { id, nativeWalletId: host.nativeWalletId, platform: host.platform, hasOpenAddMenu: !!host.openAddMenu });
                 // the running app's own wallet (web or extension): the Add menu. Every other wallet, and a host of any other kind: the wallet's own account selection.
@@ -148,7 +161,11 @@ export function useApproverAccounts(wallet, host, activeAddress, platform = domP
                 }
             },
         });
+        const connecting = connectingKey ? connectingKey.split('|') : [];
+        for (const group of result)
+            if (group.walletLink && !group.walletLink.connected && connecting.includes(group.id))
+                group.walletLink = { ...group.walletLink, connecting: true };
         return result;
-    }, [wallet, host, entries, statuses, activeAddress, controller, load, platform, known]);
+    }, [wallet, host, entries, statuses, activeAddress, controller, load, platform, known, connectingKey]);
     return { groups, notice, noticeWalletId, clearNotice: () => setNotice(''), controller };
 }

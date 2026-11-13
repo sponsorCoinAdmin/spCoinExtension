@@ -18,7 +18,7 @@
 
 import React from 'react';
 import { PANEL_GAP, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { TradeAmountRow, PanelGate, SendButton } from '@sponsorcoin/spcoin-panels';
+import { TradeAmountRow, PanelGate, SendButton, amountGate } from '@sponsorcoin/spcoin-panels';
 
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 
@@ -103,6 +103,8 @@ export default function SendTabPanel({
   onSendTokenClick,
   onRecipientClick,
 }: SendTabPanelProps) {
+  const sendGate = amountGate({ side: 'sell', hasToken: !!sendTokenAddress });
+
   return (
     // 2026-09-14, on request ("spacing between SEND_SELECT_PANEL,
     // SEND_ADDRESS_HEADER_BAR and SEND_BUTTON... not the case in the swap
@@ -142,10 +144,11 @@ export default function SendTabPanel({
         onTokenPillClick={onSendTokenClick}
         amount={sendAmount}
         onAmountChange={onSendAmountChange}
-        amountDisabled={submitBusy}
+        amountDisabled={sendGate.disabled || submitBusy}
+        amountTitle={sendGate.title}
       />
       </PanelGate>
-      <TradeAmountRow label="Recipient" listOwnerId="sendRecipient" emptyPillLabel="Select Recipient" balanceText={recipientBalanceText} balanceTitle={recipientBalanceTitle} balanceLoading={recipientBalanceLoading} tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
+      <TradeAmountRow label="Recipient" amountTitle={amountGate({ side: 'recipient', hasRecipient: !!recipientAddress }).title} listOwnerId="sendRecipient" emptyPillLabel="Select Recipient" balanceText={recipientBalanceText} balanceTitle={recipientBalanceTitle} balanceLoading={recipientBalanceLoading} tokenIcon={recipientIcon} tokenSymbol={recipientSymbol} tokenAddress={recipientAddress} onTokenPillClick={onRecipientClick} />
       <PanelGate panel={SP_COIN_DISPLAY.SEND_BUTTON}>
       {/* The shared SendButton (it turns into the Connect button while no account is active). */}
       <SendButton id="SEND_BUTTON_ACTION" amount={sendAmount ?? ''} decimals={sendDecimals} balanceRaw={sendBalanceRaw} hasRecipient={sendHasRecipient} symbol={sendSymbol} isPending={submitBusy} onSend={() => onSubmit?.()} />

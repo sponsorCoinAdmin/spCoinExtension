@@ -5,14 +5,14 @@
 // the reason (shown disabled, docs/design/accountAuthDesign.txt section 17.2.7). Whatever is added is made the active account by the host's callback, never by this component (docs/design/accountAuthDesign.txt section 17.2.6: the app does not choose the active account).
 'use client';
 
-import { addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
+import { accountFormClass, addAccountStyle } from '@sponsorcoin/spcoin-common/styles';
 import DetailScreenLayout from './DetailScreenLayout';
 import AccountFormPanel from './form/AccountFormPanel';
 import { useEffect, useRef, useState } from 'react';
-import { privateKeyToAddress } from 'viem/accounts';
-import { AddWalletMenu, ImportAccountForm, ImportWalletForm, WalletListPanel, useAddWalletFlow, useWalletListed, walletListedStore } from '@sponsorcoin/spcoin-panels';
+import { generatePrivateKey, privateKeyToAddress } from 'viem/accounts';
+import { ImportWalletForm, PrivateKeyField, WalletListPanel, useAddWalletFlow, useWalletListed, walletListedStore } from '@sponsorcoin/spcoin-panels';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
-import { useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { panelStore, useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { pendingApprovalMessageStore } from '../approval/pendingApprovalMessageStore';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
 import { firstAddressOfMnemonic, isValidMnemonic, normalizeMnemonic } from '../vault/walletAccounts';
@@ -20,7 +20,6 @@ import type { AuthenticatorId } from '../auth/authenticator';
 import type { Wallet } from '../wallet/wallet';
 import { WALLET_SLUG_ID } from '../wallet/walletSlugs';
 import { addEntryReasons, readAddTargets, type AddTarget } from '../wallet/addTarget';
-import { WalletSelectDropDown, WALLET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 
 export type AddAccountEntry = 'importWallet' | 'importAccount' | 'createAccount' | 'connectMetaMask' | 'connectMeritExtension' | 'connectMeritWeb' | 'connectHardware';
 
@@ -44,8 +43,13 @@ export interface AddAccountHost {
   createAccount(targetId?: AuthenticatorId, profile?: NewAccountProfile): Promise<void>;
   /** Show the name / symbol / description / avatar form on the Create Account screen and pass what was typed to createAccount. Omitted: the screen is a single Create Account button. */
   createProfile?: boolean;
-  /** Import one account from a private key into this host's approver. Throw a readable message on failure (wrong format is checked here first). */
-  importAccount(privateKey: string, targetId?: AuthenticatorId): Promise<void>;
+  /** Import one account from a private key into this host's approver. Throw a readable message on failure (wrong format is checked here first). `profile` is what was typed on the Add New Account screen (a host that keeps a profile uses it; others ignore it). */
+  importAccount(privateKey: string, targetId?: AuthenticatorId, profile?: NewAccountProfile): Promise<void>;
+  /**
+   * 2026-11-12 (owner): the host adds a generated key exactly as it adds an imported one (the web app: a random key), so the Add New Account screen can make the key first, show its address and add it on Update. A host that omits it derives the key itself
+   * when the account is added (the extension: the next account of its recovery phrase), so Add Account adds at once.
+   */
+  previewsNewKey?: boolean;
   /** Import a whole wallet (another Secret Recovery Phrase) into this host's approver; its first account is added. Throw a readable message on failure. A host that omits it shows the entry disabled. */
   importWallet?(mnemonic: string, targetId?: AuthenticatorId): Promise<void>;
   /**
@@ -111,16 +115,35 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     setLogoUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [profile.logo]);
-  const resetForm = () => { setKey(''); setPhrase(''); setPhraseValid(false); setBusy(false); setError(''); setProfile(EMPTY_PROFILE); };
+  // 2026-11-12 (owner): Add New Account and Import an account are ONE screen (the Account Details table). `pendingKey` is the key waiting to be added (generated or imported); `keyEntryOpen` shows the box a key is pasted into.
+  const [pendingKey, setPendingKey] = useState('');
+  const [keyEntryOpen, setKeyEntryOpen] = useState(false);
+  const resetForm = () => { setKey(''); setPhrase(''); setPhraseValid(false); setBusy(false); setError(''); setProfile(EMPTY_PROFILE); setPendingKey(''); setKeyEntryOpen(false); };
   const flow = useAddWalletFlow({ resetState: resetForm, resetOnMount: false });
   const menuVisible = flow.addWalletVisible && !flow.isLeafVisible;
+  // 2026-11-12 (owner): the Add menu is gone (the Add Account(s) drop-down opens the screens directly). Back from a screen would land on the bare menu page: the flow closes instead (checked a moment later, as opening a screen is two steps)
+  useEffect(() => {
+    if (!menuVisible) return undefined;
+    const timer = setTimeout(() => {
+      if (panelStore.isVisible(SP.ADD_WALLET_ACCOUNT) && !panelStore.isVisible(SP.IMPORT_A_WALLET) && !panelStore.isVisible(SP.IMPORT_AN_ACCOUNT) && !panelStore.isVisible(SP.CREATE_ACCOUNT) && !panelStore.isVisible(SP.WALLET_LIST_SELECT_PANEL)) flow.clearAddWalletFlow('AddAccountFlow:noMenu');
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [menuVisible]);
+  const accountScreenVisible = flow.createAccountVisible || flow.importAccountVisible;
+  // arriving through "Import an account" asks for the key at once
+  useEffect(() => {
+    if (flow.importAccountVisible) setKeyEntryOpen(true);
+  }, [flow.importAccountVisible]);
+  // 2026-11-12 (owner: "I should not have to add an account twice"): arriving through "Add Account" makes the new key at once (a host that previews its keys), so the screen shows the new account, ready to Update
+  useEffect(() => {
+    if (flow.createAccountVisible && host.previewsNewKey) setPendingKey((current) => current || generatePrivateKey());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flow.createAccountVisible]);
   // docs/design/accountAuthDesign.txt section 18 section 5: the wallet this screen adds to: the active wallet by default; the person may point it at another wallet that keeps keys (this visit only)
   // a host that builds its `targets` array on every render must not restart the read each time: the list is keyed by its content
   const hostTargets = host.targets?.join(',');
   const [targets, setTargets] = useState<AddTarget[]>([]);
   const [defaultTarget, setDefaultTarget] = useState<AuthenticatorId | undefined>(undefined);
-  const [pickedTarget, setPickedTarget] = useState<AuthenticatorId | undefined>(undefined);
-  const [targetPickerOpen, setTargetPickerOpen] = useState(false);
   useEffect(() => {
     if (!wallet) return undefined;
     let cancelled = false;
@@ -138,7 +161,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     });
     return () => { cancelled = true; };
   }, [wallet, activeAddress, hostTargets, nativeWalletId]);
-  const target = targets.find((t) => t.id === (pickedTarget ?? defaultTarget));
+  const target = targets.find((t) => t.id === (defaultTarget));
   // Import a wallet: the phrase typed, whether it is a real BIP-39 phrase, and the first account it would give (checked here, nothing is imported yet)
   useEffect(() => {
     let alive = true;
@@ -159,14 +182,52 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   const phrasePreview = phraseValid ? firstAddressOfMnemonic(phrase) : '';
   const trimmed = key.trim();
   const formatInvalid = trimmed.length > 0 && !KEY_FORMAT.test(trimmed);
-  let previewAddress = '';
-  if (KEY_FORMAT.test(trimmed)) {
+  const addressOf = (privateKey: string): string => {
+    if (!KEY_FORMAT.test(privateKey)) return '';
     try {
-      previewAddress = privateKeyToAddress(trimmed as `0x${string}`);
+      return privateKeyToAddress(privateKey as `0x${string}`);
     } catch {
-      previewAddress = '';
+      return '';
     }
-  }
+  };
+  // a valid key typed into the box is taken at once: the box closes and the Address row shows what it derives
+  useEffect(() => {
+    if (!keyEntryOpen || !addressOf(trimmed)) return;
+    setPendingKey(trimmed);
+    setKey('');
+    setKeyEntryOpen(false);
+    setError('');
+  }, [keyEntryOpen, trimmed]);
+  const pendingAddress = addressOf(pendingKey);
+  const profileTyped = !!(profile.name || profile.symbol || profile.description || profile.email || profile.website || profile.logo);
+  // no changes on the page: the two buttons offer the two ways to begin (Add Account, Import Account); with changes they are Update and Revert
+  const pristine = !pendingKey && !profileTyped;
+  const addToCache = () => void run(() => (pendingKey ? host.importAccount(pendingKey, target?.id, profile) : host.createAccount(target?.id, profile)));
+  const onMainButton = () => {
+    if (busy) return;
+    if (!pristine) return addToCache();
+    if (unavailable.createAccount) {
+      setError(unavailable.createAccount);
+      return;
+    }
+    if (host.previewsNewKey) {
+      setPendingKey(generatePrivateKey());
+      setError('');
+      return;
+    }
+    addToCache();
+  };
+  const onSecondButton = () => {
+    if (!pristine) {
+      resetForm();
+      return;
+    }
+    if (unavailable.importAccount) {
+      setError(unavailable.importAccount);
+      return;
+    }
+    setKeyEntryOpen(true);
+  };
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -191,17 +252,6 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
       unavailable[entry] ??= DEFAULT_CONNECT_UNAVAILABLE[entry];
     }
   }
-  // a connect entry: ask the approver, then the flow is done (the account is the active one now)
-  const connect = (entry: ConnectApproverEntry) => () => {
-    if (unavailable[entry] || !host.connectApprover) return;
-    void run(() => host.connectApprover!(entry));
-  };
-  const open = (entry: AddAccountEntry, panel: SP) => () => {
-    if (unavailable[entry]) return;
-    setError('');
-    flow.goToLeaf(panel);
-  };
-
   // The wallet list (WALLET_LIST_SELECT_PANEL, opened from the wallet pill): one row per wallet with Connect / Disconnect, written once here for every host. The web app's Merit wallet row is not offered by a host that is not the web app.
   const nativeSlug = nativeSlugOf(nativeWalletId);
   // 2026-10-31 (owner question): every wallet is listed in every host, Merit (Web App) in the extension too (it used to be hidden there, which made the two lists differ)
@@ -257,66 +307,12 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
 
   return (
     <div style={addAccountStyle.screen}>
-      {menuVisible && target && targets.length > 1 && (
-        <div style={addAccountStyle.targetLine}>
-          <span>Adding to</span>
-          {targets.length > 1 ? (
-            <div style={addAccountStyle.targetPickerAnchor}>
-              <WalletSelectDropDown
-                walletId={target.id}
-                displayName={target.name}
-                showDisplay={WALLET_SELECT_DISPLAY.ICON | WALLET_SELECT_DISPLAY.ADDRESS | WALLET_SELECT_DISPLAY.COPY | (targetPickerOpen ? WALLET_SELECT_DISPLAY.CHEVRON_UP : WALLET_SELECT_DISPLAY.CHEVRON_DN)}
-                restrictRowClickToChevron
-                onSelectClick={() => setTargetPickerOpen((open) => !open)}
-                label="Change wallet"
-                collapseKey={target.id}
-              />
-              {targetPickerOpen && (
-                <div role="listbox" aria-label="Wallets that can add accounts" style={addAccountStyle.targetPickerList}>
-                  {targets.map((option) => (
-                    <button key={option.id} type="button" role="option" aria-selected={option.id === target.id} onClick={() => { setPickedTarget(option.id); setTargetPickerOpen(false); }} style={addAccountStyle.targetOption(option.id === target.id)}>
-                      {option.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : <strong style={addAccountStyle.targetName}>{target.name}</strong>}
-        </div>
-      )}
-      {menuVisible && (
-        <div style={addAccountStyle.listBleed}>
-        <AddWalletMenu
-          onImportWallet={open('importWallet', SP.IMPORT_A_WALLET)}
-          onImportAccount={open('importAccount', SP.IMPORT_AN_ACCOUNT)}
-          onCreateAccount={open('createAccount', SP.CREATE_ACCOUNT)}
-          onConnectMetaMask={connect('connectMetaMask')}
-          onConnectMeritExtension={host.connectApprover ? connect('connectMeritExtension') : undefined}
-          onConnectHardware={connect('connectHardware')}
-          // like the web app: connecting MetaMask, the Merit extension and a hardware wallet is done from the wallet list (the pill's chevron), not from this menu
-          hide={{ connectMetaMask: true, connectMeritExtension: true, connectHardware: true }}
-          unavailable={unavailable}
-          error={error}
-        />
-        </div>
-      )}
       {flow.walletListVisible && (
         <div style={addAccountStyle.listBleed}>
           {/* 2026-11-07 (owner): this wallet is not imported into itself, so its row is not listed */}
           <WalletListPanel onSelect={() => undefined} wallets={walletSlugs.filter((slug) => slug !== nativeSlug)} listed={listed} onToggleListed={toggleListed} headerLabel="Remote Wallet" />
           {error && <p style={addAccountStyle.error}>{error}</p>}
         </div>
-      )}
-      {flow.importAccountVisible && (
-        <ImportAccountForm
-          value={key}
-          onChange={setKey}
-          formatInvalid={formatInvalid}
-          previewAddress={previewAddress}
-          error={error}
-          isImporting={busy}
-          onImport={() => void run(() => host.importAccount(trimmed, target?.id))}
-        />
       )}
       {flow.importWalletVisible && (
         <ImportWalletForm
@@ -329,13 +325,13 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
           onImport={() => void run(() => host.importWallet!(normalizeMnemonic(phrase), target?.id))}
         />
       )}
-      {flow.createAccountVisible && (
+      {accountScreenVisible && (
         // 2026-11-07 (owner: "we are removing redundancy here"): Create a Merit Account is the ACCOUNT DETAILS screen in add mode. 2026-11-09 (owner: one base): it is drawn by the same base layout (DetailScreenLayout) as Account Details, with its picture and its table passed in; its own small form is gone. The title is Add New Account and the button Add Account.
         <DetailScreenLayout
           screenId="ACCOUNT_INFO"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!busy) void run(() => host.createAccount(target?.id, profile));
+            onMainButton();
           }}
           logoFlag={SP.ACCOUNT_LOGO}
           metaFlag={SP.ACCOUNT_META_DATA}
@@ -357,6 +353,12 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
           }}
           table={(
             <>
+              {keyEntryOpen && (
+                <div style={addAccountStyle.keyEntry}>
+                  <PrivateKeyField value={key} onChange={setKey} autoFocus />
+                  {formatInvalid && <p style={addAccountStyle.error}>Expected 0x followed by 64 hex characters.</p>}
+                </div>
+              )}
               <AccountFormPanel
                 bare
                 panelMarginClass=""
@@ -365,9 +367,15 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
                 idPrefix="account-component-"
                 formHeading=""
                 connected
-                // the address and the private key do not exist until the account is added
-                publicKey="Made when the account is added"
+                // the address and the private key of a host that makes the key itself do not exist until the account is added
+                publicKey={pendingAddress || 'Made when the account is added'}
                 publicKeyLocked
+                privateKeyRow={pendingKey ? (style) => (
+                  <div className={accountFormClass.contents}>
+                    <div className={accountFormClass.labelCell(style.zebra, style.cell)}>Private Key</div>
+                    <div className={accountFormClass.valueCell(style.zebra, style.cell)}>Hidden, kept encrypted once added</div>
+                  </div>
+                ) : undefined}
                 formData={{ name: profile.name, symbol: profile.symbol, email: profile.email ?? '', website: profile.website ?? '', description: profile.description, recipientNetwork: [] }}
                 errors={{}}
                 descriptionTextareaRef={descriptionRef}
@@ -376,7 +384,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
                 loadingInputMessage=""
                 isSaving={busy}
                 isEditMode
-                submitLabel="Add Account"
+                submitLabel={pristine ? 'Add Account' : 'Update'}
                 hasUnsavedChanges
                 canCreateMissingAccount
                 disableSubmit={busy}
@@ -389,9 +397,9 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
                   if (name === 'name' || name === 'symbol' || name === 'email' || name === 'website' || name === 'description') setProfile((p) => ({ ...p, [name]: value }));
                 }}
                 onFieldBlur={() => undefined}
-                // 2026-11-07 (owner): the second button reads Cancel: nothing is added, the form is cleared and the Add menu is back
-                revertLabel="Cancel"
-                onRevert={() => { setProfile(EMPTY_PROFILE); flow.goToAddMenu(); }}
+                // 2026-11-12 (owner): with no changes the second button is Import Account (it opens the key box); with changes it is Revert (the form is cleared; the back arrow leaves the screen)
+                revertLabel={pristine ? 'Import Account' : 'Revert'}
+                onRevert={onSecondButton}
               />
               {error && <p style={addAccountStyle.error}>{error}</p>}
             </>

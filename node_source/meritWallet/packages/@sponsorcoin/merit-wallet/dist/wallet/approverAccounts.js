@@ -145,7 +145,7 @@ export function buildApproverGroups(input) {
                 group.walletLink = { connected: true, onConnect: () => input.onConnect(group.id), onDisconnect: () => input.onDisconnect(group.id), ...(/metamask/i.test(group.id) ? {} : { onAddAccounts: () => input.onAddAccounts(group.id) }) /* 2026-11-07 (owner): MetaMask has no Add Account(s) at all, its accounts are chosen in MetaMask */ };
                 continue;
             }
-            group.addAccounts = { onClick: () => input.onAddAccounts(group.id) };
+            group.addAccounts = { onClick: () => input.onAddAccounts(group.id), options: input.addMenuOptions?.(group.id) };
         }
     }
     const native = host.nativeWalletId;

@@ -34,6 +34,8 @@ export interface ApproverHost extends Pick<ConnectHost, 'setActiveAccount' | 'cl
   platform?: ApproverHostPlatform;
   /** Show the Add menu (Add Wallet Authenticator or Account). The component supplies it for web and extension hosts. */
   openAddMenu?: () => void;
+  /** 2026-11-12 (owner): go straight to one of the Add screens (Add Account, Import Account, Import Wallet); the running app's own "Add Account(s)" is a drop-down of these instead of the Add menu. */
+  openAddLeaf?: (leaf: 'createAccount' | 'importAccount' | 'importWallet') => void;
   /** 2026-10-15: is this wallet CONNECTED to the app? The host's one definition (the same its wallet list screen shows). undefined: no opinion, the default applies (it holds accounts here, or it is locked and offers Unlock). */
   isConnected?: (approverId: AuthenticatorId) => boolean | undefined;
   /** 2026-11-07 (owner request): the connection state of a REMOTE wallet (MetaMask, the other Merit wallet) from the host's connection hooks (MeritWalletProps.walletLinkHooks). Defined: the group's badge reads Disconnected (red, Connect on hover) while false and Add Account(s) while true, and the group stays on the list either way. undefined: no hook for this wallet, Add Account(s) as before. */
@@ -64,6 +66,8 @@ export interface ApproverGroupsInput {
   canConnect: (approverId: AuthenticatorId) => boolean;
   /** 2026-11-03 (owner request): every group's badge reads "Add Account(s)"; a click calls this with the wallet's id (open its account selection). The native wallet may have no action: return nothing. Omitted: the badges keep their Connected / Connect words. */
   onAddAccounts?: (approverId: AuthenticatorId) => void;
+  /** The drop-down choices of the native wallet's "Add Account(s)" (2026-11-12). undefined: the badge is a single button (onAddAccounts). */
+  addMenuOptions?: (approverId: AuthenticatorId) => { label: string; onClick: () => void }[] | undefined;
   /** The accounts of a wallet whose accounts belong to another Merit wallet, each connected or disconnected (Authenticator.knownAccounts). That wallet's rows come from here and show a Connect / Disconnect button. */
   known?: Partial<Record<AuthenticatorId, Array<{ address: string; name?: string; connected: boolean }>>>;
   /** A row's Connect / Disconnect button: set that account's state in the wallet. */
@@ -198,7 +202,7 @@ export function buildApproverGroups(input: ApproverGroupsInput): AccountListGrou
         group.walletLink = { connected: true, onConnect: () => input.onConnect(group.id as AuthenticatorId), onDisconnect: () => input.onDisconnect(group.id as AuthenticatorId), ...(/metamask/i.test(group.id) ? {} : { onAddAccounts: () => input.onAddAccounts!(group.id as AuthenticatorId) }) /* 2026-11-07 (owner): MetaMask has no Add Account(s) at all, its accounts are chosen in MetaMask */ };
         continue;
       }
-      group.addAccounts = { onClick: () => input.onAddAccounts!(group.id as AuthenticatorId) };
+      group.addAccounts = { onClick: () => input.onAddAccounts!(group.id as AuthenticatorId), options: input.addMenuOptions?.(group.id as AuthenticatorId) };
     }
   }
   const native = host.nativeWalletId;

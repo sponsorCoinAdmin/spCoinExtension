@@ -16,7 +16,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { PANEL_GAP, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { TradeAmountRow, PanelGate, SendButton } from '@sponsorcoin/spcoin-panels';
+import { TradeAmountRow, PanelGate, SendButton, amountGate } from '@sponsorcoin/spcoin-panels';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy = false, 
 // 2026-10-27 (owner report) — "Balance: 0" as the default read live as a
@@ -30,6 +30,7 @@ export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTo
 // first, out of scope for tonight's web-app sweep. Static "—" instead of
 // "…" at least stops claiming motion this prop can't actually show yet.
 balanceText = 'Balance: —', balanceTitle, recipientBalanceText, recipientBalanceTitle, balanceLoading, recipientBalanceLoading, sendDecimals = 18, sendBalanceRaw, sendHasRecipient = false, sendSymbol = '', onSendTokenClick, onRecipientClick, }) {
+    const sendGate = amountGate({ side: 'sell', hasToken: !!sendTokenAddress });
     return (
     // 2026-09-14, on request ("spacing between SEND_SELECT_PANEL,
     // SEND_ADDRESS_HEADER_BAR and SEND_BUTTON... not the case in the swap
@@ -52,5 +53,5 @@ balanceText = 'Balance: —', balanceTitle, recipientBalanceText, recipientBalan
     // that file's own header comment; one shared source instead of a
     // separately hardcoded `4` in this file/TradingStationPanel.tsx/
     // SponsorshipPanel.tsx.
-    _jsxs("div", { style: panelBoxStyle.stack(PANEL_GAP), children: [_jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_SELECT_PANEL, children: _jsx(TradeAmountRow, { label: "You Send", tokenIcon: sendTokenIcon, tokenSymbol: sendTokenSymbol, tokenAddress: sendTokenAddress, balanceText: balanceText, balanceTitle: balanceTitle, balanceLoading: balanceLoading, listOwnerId: "send", onTokenPillClick: onSendTokenClick, amount: sendAmount, onAmountChange: onSendAmountChange, amountDisabled: submitBusy }) }), _jsx(TradeAmountRow, { label: "Recipient", listOwnerId: "sendRecipient", emptyPillLabel: "Select Recipient", balanceText: recipientBalanceText, balanceTitle: recipientBalanceTitle, balanceLoading: recipientBalanceLoading, tokenIcon: recipientIcon, tokenSymbol: recipientSymbol, tokenAddress: recipientAddress, onTokenPillClick: onRecipientClick }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_BUTTON, children: _jsx(SendButton, { id: "SEND_BUTTON_ACTION", amount: sendAmount ?? '', decimals: sendDecimals, balanceRaw: sendBalanceRaw, hasRecipient: sendHasRecipient, symbol: sendSymbol, isPending: submitBusy, onSend: () => onSubmit?.() }) })] }));
+    _jsxs("div", { style: panelBoxStyle.stack(PANEL_GAP), children: [_jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_SELECT_PANEL, children: _jsx(TradeAmountRow, { label: "You Send", tokenIcon: sendTokenIcon, tokenSymbol: sendTokenSymbol, tokenAddress: sendTokenAddress, balanceText: balanceText, balanceTitle: balanceTitle, balanceLoading: balanceLoading, listOwnerId: "send", onTokenPillClick: onSendTokenClick, amount: sendAmount, onAmountChange: onSendAmountChange, amountDisabled: sendGate.disabled || submitBusy, amountTitle: sendGate.title }) }), _jsx(TradeAmountRow, { label: "Recipient", amountTitle: amountGate({ side: 'recipient', hasRecipient: !!recipientAddress }).title, listOwnerId: "sendRecipient", emptyPillLabel: "Select Recipient", balanceText: recipientBalanceText, balanceTitle: recipientBalanceTitle, balanceLoading: recipientBalanceLoading, tokenIcon: recipientIcon, tokenSymbol: recipientSymbol, tokenAddress: recipientAddress, onTokenPillClick: onRecipientClick }), _jsx(PanelGate, { panel: SP_COIN_DISPLAY.SEND_BUTTON, children: _jsx(SendButton, { id: "SEND_BUTTON_ACTION", amount: sendAmount ?? '', decimals: sendDecimals, balanceRaw: sendBalanceRaw, hasRecipient: sendHasRecipient, symbol: sendSymbol, isPending: submitBusy, onSend: () => onSubmit?.() }) })] }));
 }

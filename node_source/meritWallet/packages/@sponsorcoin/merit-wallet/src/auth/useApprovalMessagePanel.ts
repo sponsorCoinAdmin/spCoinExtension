@@ -18,7 +18,8 @@ export function useApprovalMessagePanel(store: ApprovalWaitingStore = approvalWa
   const outcome = useSyncExternalStore(store.subscribe, store.getOutcome, store.getOutcome);
   const { exchangeContext, setErrorMessage } = useExchangeContext();
   const { openPanel, closePanel } = usePanelTree();
-  const waitingText = approvalWaitingText(pending);
+  // 2026-11-13 (owner: "remove totally that message"): a connect that is waiting is shown on the wallet's own row (its green connect icon throbs), never as a MESSAGE_PANEL page. Signing and sending still say who is deciding; a refusal still shows.
+  const waitingText = approvalWaitingText(pending.filter((entry) => entry.action !== 'connect'));
   // 2026-11-03 (owner request): while the wallet list is on screen the wait is shown on the wallet's own row (it throbs), not by covering the list with this page. A refusal or failure still shows here.
   const walletListShowing = usePanelVisible(SP_COIN_DISPLAY.WALLET_LIST_SELECT_PANEL);
   const text = (walletListShowing ? '' : waitingText) || outcome?.text || '';

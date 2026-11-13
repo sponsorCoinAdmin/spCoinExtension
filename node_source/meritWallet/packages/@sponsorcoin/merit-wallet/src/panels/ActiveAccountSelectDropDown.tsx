@@ -92,6 +92,8 @@ export default function ActiveAccountSelectDropDown({ icon, address, symbol, nam
       onIconClick={onIconClick || onActivate ? () => { activate(); onIconClick?.(address ?? ''); } : undefined}
       onIconContextMenu={onIconContextMenu ? () => onIconContextMenu(address ?? '') : undefined}
       addrPrePostSize={4}
+      // 2026-11-13 (owner): the header's expanded address shows as much of itself as fits, not a clip at the end
+      fitAddress
       iconSizeClassName={walletPartClass.compactPill.iconSize}
       pillHeightClassName={walletPartClass.compactPill.pillHeight}
       pillFontClassName={walletPartClass.compactPill.pillFont}

@@ -19,8 +19,13 @@ export interface AddAccountHost {
     createAccount(targetId?: AuthenticatorId, profile?: NewAccountProfile): Promise<void>;
     /** Show the name / symbol / description / avatar form on the Create Account screen and pass what was typed to createAccount. Omitted: the screen is a single Create Account button. */
     createProfile?: boolean;
-    /** Import one account from a private key into this host's approver. Throw a readable message on failure (wrong format is checked here first). */
-    importAccount(privateKey: string, targetId?: AuthenticatorId): Promise<void>;
+    /** Import one account from a private key into this host's approver. Throw a readable message on failure (wrong format is checked here first). `profile` is what was typed on the Add New Account screen (a host that keeps a profile uses it; others ignore it). */
+    importAccount(privateKey: string, targetId?: AuthenticatorId, profile?: NewAccountProfile): Promise<void>;
+    /**
+     * 2026-11-12 (owner): the host adds a generated key exactly as it adds an imported one (the web app: a random key), so the Add New Account screen can make the key first, show its address and add it on Update. A host that omits it derives the key itself
+     * when the account is added (the extension: the next account of its recovery phrase), so Add Account adds at once.
+     */
+    previewsNewKey?: boolean;
     /** Import a whole wallet (another Secret Recovery Phrase) into this host's approver; its first account is added. Throw a readable message on failure. A host that omits it shows the entry disabled. */
     importWallet?(mnemonic: string, targetId?: AuthenticatorId): Promise<void>;
     /**

@@ -111,6 +111,8 @@ export { signInForToken, signInWithWallet, type SignInParams } from './account/s
 export { readSigningChoices, chooseSigner, signingWarning, type SigningChoices, type SigningHolder, type HolderState } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { createPeerConnection, usePeerStates, type PeerConnection, type PeerState, type PeerTransport } from './peer/peerConnection';
+export { createWalletConnections, authenticatorProbe, type ConnectionState, type ConnectionProbe, type WalletConnections, type WalletConnectionsOptions } from './auth/walletAuthenticators';
+export { useWalletConnections, type UseWalletConnections } from './auth/walletAuthenticatorsReact';
 export { registerApprovingWalletHook } from './auth/registerApprovingWallet';
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, outcomeText, withApprovalNotice, type ApprovalWaiting, type ApprovalOutcome, type ApprovalWaitingStore, type ApprovalAction } from './auth/approvalWaiting';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';

@@ -91,6 +91,8 @@ export { signInForToken, signInWithWallet } from './account/signIn';
 export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accountSigning';
 export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { createPeerConnection, usePeerStates } from './peer/peerConnection';
+export { createWalletConnections, authenticatorProbe } from './auth/walletAuthenticators';
+export { useWalletConnections } from './auth/walletAuthenticatorsReact';
 export { registerApprovingWalletHook } from './auth/registerApprovingWallet';
 export { approvalWaiting, createApprovalWaitingStore, approvalWaitingText, outcomeText, withApprovalNotice } from './auth/approvalWaiting';
 export { default as WalletBackupSection, BACKUP_FILE_NAME } from './wallet/WalletBackupSection';

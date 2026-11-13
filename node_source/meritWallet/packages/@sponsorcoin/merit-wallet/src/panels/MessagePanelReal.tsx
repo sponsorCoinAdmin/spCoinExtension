@@ -423,6 +423,14 @@ export default function MessagePanelReal({
         </div>
         )}
 
+        {errorMessage?.installUrl && (
+          <div className={messagePanelClass.block}>
+            <SmallYellowButton title={errorMessage.installLabel ?? 'Install'} onClick={() => platform.openUrl(errorMessage.installUrl!)}>
+              {errorMessage.installLabel ?? 'Install'}
+            </SmallYellowButton>
+          </div>
+        )}
+
         {errorMessage?.sections?.map((section, i) => (
           <CollapsibleSection key={`${section.heading}-${i}`} heading={section.heading} items={section.items} wrap={wrap} defaultOpen={section.defaultOpen} />
         ))}

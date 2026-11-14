@@ -52,6 +52,8 @@ export function throttleRead(read: ChainRead, options: { concurrency?: number; r
 export interface TreeAgentRate {
   agentRateKey: string;
   stakedSPCoins: string;
+  /** Claim lists only (addPendingToTree): the reward this leaf has earned so far for the role being claimed, raw base units. */
+  pending?: string;
 }
 export interface TreeAgent {
   agentKey: string;
@@ -62,6 +64,8 @@ export interface TreeRate {
   /** Raw base units, decimal string. */
   stakedSPCoins: string;
   agents: TreeAgent[];
+  /** Claim lists only (addPendingToTree): the reward the bucket's own stake (not its agents') has earned so far for the role being claimed, raw base units. */
+  pendingDirect?: string;
 }
 export interface TreeRecipient {
   recipientKey: string;

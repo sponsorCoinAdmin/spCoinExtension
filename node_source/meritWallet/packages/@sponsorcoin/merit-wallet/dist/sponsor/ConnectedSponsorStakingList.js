@@ -7,7 +7,7 @@
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
 import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { parseUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
@@ -17,7 +17,8 @@ import { AccountAvatarWithOpen, AccountSelectDropDownHosted, ACCOUNT_SELECT_DISP
 import { buildClaimReceipt, buildUnstakeReceipt, toMessageAccount } from '../receipt/transactionReceipts';
 import { useTransactionReceipt } from '../receipt/useTransactionReceipt';
 import { useActiveAccountProfile } from '../swap/activeAccountProfile';
-import { loadRoleSponsorTree, loadSponsorTree } from './sponsorReads';
+import { loadRoleSponsorTree, loadSponsorTree, throttleRead } from './sponsorReads';
+import { addPendingToTree } from '../rewards/estimateRewards';
 import { assetListRowClass, listStyle } from '@sponsorcoin/spcoin-common/styles';
 import { unstakeSpCoin } from './unstakeWalk';
 import { useStakingListMode } from './stakingListMode';
@@ -33,6 +34,7 @@ function account(profile) {
     return toMessageAccount(profile);
 }
 const noopRegisterRefresh = () => undefined;
+const noopSubscribe = () => () => undefined;
 export default function ConnectedSponsorStakingList({ host }) {
     const useRegisterRefresh = host.useRegisterRefresh ?? noopRegisterRefresh;
     const { exchangeContext, setErrorMessage } = useExchangeContext();
@@ -49,6 +51,19 @@ export default function ConnectedSponsorStakingList({ host }) {
     const [error, setError] = useState(undefined);
     const [activeUnstakeKey, setActiveUnstakeKey] = useState(null);
     const generation = useRef(0);
+    // Auto Refresh (Claim lists): the same switch as the Rewards page when the host shares its store
+    const store = host.autoRefreshStore;
+    const [localAutoRefresh, setLocalAutoRefresh] = useState(false);
+    const sharedAutoRefresh = useSyncExternalStore(store?.subscribe ?? noopSubscribe, store?.getSnapshot ?? (() => false), store?.getServerSnapshot ?? (() => false));
+    const autoRefresh = store ? sharedAutoRefresh : localAutoRefresh;
+    const changeAutoRefresh = useCallback((next) => {
+        if (store)
+            store.setUserPreference(next);
+        else
+            setLocalAutoRefresh(next);
+    }, [store]);
+    // Recomputes the rewards for "now" from what the last read found and redraws (no new reads); set by fetchList in Claim lists
+    const tickRef = useRef(undefined);
     const fetchList = useCallback(async () => {
         if (!sponsor)
             return;
@@ -72,37 +87,68 @@ export default function ConnectedSponsorStakingList({ host }) {
                     profiles.set(key, host.loadProfile(address).catch(() => ({ address })));
                 return profiles.get(key);
             };
+            // Claim lists show the reward each row has earned beside its stake. A failed read just leaves the rows without it (the staked amounts still show).
+            let recompute;
+            if (listMode.kind === 'claim' && listMode.role !== 'Agent') {
+                try {
+                    recompute = await addPendingToTree(listMode.role, sponsor, tree, throttleRead(host.readDirect ?? host.read));
+                }
+                catch {
+                    // staked amounts only
+                }
+            }
             const rows = await Promise.all(tree.map(async (node) => account(await profileOf(node.recipientKey))));
             if (mine !== generation.current)
                 return;
             setRecipients(rows);
-            const info = {};
-            await Promise.all(tree.map(async (node, nodeIndex) => {
-                // 2026-11-12 (owner: "why do we have a lot of Loading"): the table looks a row's stake up by the ROW's own address (the profile's, in the registry's one lower-case form), but this map was keyed by the
-                // chain's checksummed address. They are equal only when the address has no upper-case letters, so every recipient like 0x…000A (upper-case A) never found its stake and stayed "Loading…" for ever.
-                // The map is keyed by the row's address, in the same order as `rows` (Promise.all keeps it).
-                const rowKey = String(rows[nodeIndex]?.address ?? '').trim() || node.recipientKey;
-                info[rowKey] = await Promise.all(node.rates.map(async (rate) => {
-                    const agentAccounts = await Promise.all(rate.agents.map(async (agent) => {
-                        const total = agent.rates.reduce((sum, r) => {
-                            try {
-                                return sum + BigInt(r.stakedSPCoins || '0');
-                            }
-                            catch {
-                                return sum;
-                            }
-                        }, 0n);
-                        return {
-                            account: account(await profileOf(agent.agentKey)),
-                            stakedSPCoins: total.toString(),
-                            agentRates: agent.rates.map((r) => ({ agentRateKey: r.agentRateKey, stakedSPCoins: r.stakedSPCoins })),
-                        };
-                    }));
-                    return { rateKey: rate.recipientRateKey, stakedSPCoins: rate.stakedSPCoins, agentAccounts };
-                }));
+            // Every agent's profile first, so the panel's data can be rebuilt synchronously (Auto Refresh redraws it every second).
+            const agentProfiles = new Map();
+            await Promise.all(Array.from(new Set(tree.flatMap((node) => node.rates.flatMap((rate) => rate.agents.map((agent) => agent.agentKey))))).map(async (agentKey) => {
+                agentProfiles.set(agentKey.toLowerCase(), await profileOf(agentKey));
             }));
+            const buildInfo = () => {
+                const out = {};
+                tree.forEach((node, nodeIndex) => {
+                    // 2026-11-12 (owner: "why do we have a lot of Loading"): the table looks a row's stake up by the ROW's own address (the profile's, in the registry's one lower-case form), but this map was keyed by the
+                    // chain's checksummed address. They are equal only when the address has no upper-case letters, so every recipient like 0x…000A (upper-case A) never found its stake and stayed "Loading…" for ever.
+                    // The map is keyed by the row's address, in the same order as `rows`.
+                    const rowKey = String(rows[nodeIndex]?.address ?? '').trim() || node.recipientKey;
+                    out[rowKey] = node.rates.map((rate) => {
+                        const agentAccounts = rate.agents.map((agent) => {
+                            const total = agent.rates.reduce((sum, r) => {
+                                try {
+                                    return sum + BigInt(r.stakedSPCoins || '0');
+                                }
+                                catch {
+                                    return sum;
+                                }
+                            }, 0n);
+                            const leafPending = agent.rates.map((r) => r.pending);
+                            const agentPending = leafPending.every((v) => v !== undefined) ? leafPending.reduce((sum, v) => sum + BigInt(v), 0n).toString() : undefined;
+                            return {
+                                account: account(agentProfiles.get(agent.agentKey.toLowerCase()) ?? { address: agent.agentKey }),
+                                stakedSPCoins: total.toString(),
+                                pendingSPCoins: agentPending,
+                                agentRates: agent.rates.map((r) => ({ agentRateKey: r.agentRateKey, stakedSPCoins: r.stakedSPCoins, pendingSPCoins: r.pending })),
+                            };
+                        });
+                        const pendingTotal = rate.pendingDirect !== undefined && agentAccounts.every((a) => a.pendingSPCoins !== undefined)
+                            ? agentAccounts.reduce((sum, a) => sum + BigInt(a.pendingSPCoins), BigInt(rate.pendingDirect)).toString()
+                            : undefined;
+                        return { rateKey: rate.recipientRateKey, stakedSPCoins: rate.stakedSPCoins, agentAccounts, pendingDirect: rate.pendingDirect, pendingTotal };
+                    });
+                });
+                return out;
+            };
+            const info = buildInfo();
             if (mine !== generation.current)
                 return;
+            tickRef.current = recompute
+                ? () => {
+                    recompute?.();
+                    setStakeInfoByAddress(buildInfo());
+                }
+                : undefined;
             setStakeInfoByAddress(info);
             snapshots.set(cacheKey, { recipients: rows, stakeInfoByAddress: info });
         }
@@ -130,6 +176,17 @@ export default function ConnectedSponsorStakingList({ host }) {
         void fetchList();
     }, [isVisible, sponsor, fetchList]);
     useRegisterRefresh(fetchList, isVisible);
+    // Auto Refresh (Claim lists): the rewards tick every second from the clocks already read, and the list itself is read again every 20 s (stakes and clocks can change)
+    useEffect(() => {
+        if (!autoRefresh || listMode.kind !== 'claim' || !isVisible)
+            return undefined;
+        const tick = setInterval(() => tickRef.current?.(), 1000);
+        const resync = setInterval(() => void fetchList(), 20000);
+        return () => {
+            clearInterval(tick);
+            clearInterval(resync);
+        };
+    }, [autoRefresh, listMode.kind, isVisible, fetchList]);
     const handleConfirmUnstake = useCallback(async (target, amount) => {
         const { recipient, rateKey, agent, agentRateKey, amount: targetAmount } = target;
         setActiveUnstakeKey([String(recipient?.address ?? '').trim(), rateKey ?? '', agent ? String(agent.address ?? '').trim() : '', agentRateKey ?? ''].join('|').toLowerCase());
@@ -166,7 +223,7 @@ export default function ConnectedSponsorStakingList({ host }) {
     }, [host, sponsor, decimals, exchangeContext, activeProfile, showReceipt, fetchList]);
     // Claim mode: any button claims everything the account has earned (the contract has no claim for one row); the Total row's button shows the busy state.
     // The completion card lists who received what: every involved account's spCoin balance is read before and after, and the difference is shown.
-    const handleClaim = useCallback(async () => {
+    const handleClaim = useCallback(async (target) => {
         if (listMode.kind !== 'claim')
             return;
         setActiveUnstakeKey('|||');
@@ -195,7 +252,30 @@ export default function ConnectedSponsorStakingList({ host }) {
             const entries = [...involved.values()];
             const readAll = () => Promise.all(entries.map((entry) => (host.readBalance ? host.readBalance(String(entry.profile?.address)).catch(() => undefined) : Promise.resolve(undefined))));
             const before = await readAll();
-            const sent = await host.claim('claimOnChain' + listMode.role + 'Rewards', sponsor);
+            // Which contract claim: the Total row (no target) claims the whole account for this role. A row claims just that row: the contract settles one recipient, one rate bucket or one agent of a sponsor (and pays every party the bucket touches).
+            // Sponsor list: the rows are the account's recipients. Recipient list: the rows are the sponsors of the account. (Agent list rows still claim the whole account: one agent row spans several recipients.)
+            const rowAddress = String(target?.recipient?.address ?? '').trim();
+            const agentAddress = String(target?.agent?.address ?? '').trim();
+            let method = 'claimOnChain' + listMode.role + 'Rewards';
+            let args = [];
+            let who = sponsor;
+            if (target && rowAddress && listMode.role !== 'Agent') {
+                who = listMode.role === 'Recipient' ? rowAddress : sponsor;
+                const recipientKey = listMode.role === 'Recipient' ? sponsor : rowAddress;
+                if (target.rateKey && agentAddress) {
+                    method = 'claimOnChainSponsorRewardsForAgent';
+                    args = [recipientKey, target.rateKey, agentAddress];
+                }
+                else if (target.rateKey) {
+                    method = 'claimOnChainSponsorRewardsForRecipientRate';
+                    args = [recipientKey, target.rateKey];
+                }
+                else {
+                    method = 'claimOnChainSponsorRewardsForRecipient';
+                    args = [recipientKey];
+                }
+            }
+            const sent = await host.claim(method, who, ...args);
             const after = await readAll();
             const rows = [];
             let total = 0n;
@@ -224,5 +304,5 @@ export default function ConnectedSponsorStakingList({ host }) {
         }
     }, [listMode, host, sponsor, fetchList, setErrorMessage, openPanel, recipients, stakeInfoByAddress, exchangeContext, activeProfile, decimals, showReceipt]);
     const activeAccount = exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount;
-    return (_jsx(SponsorStakingListPanel, { recipients: recipients, stakeInfoByAddress: stakeInfoByAddress, decimals: decimals, loading: loading, error: error, activeUnstakeKey: activeUnstakeKey, accountCellSlot: ROW_ACCOUNT_CELL, avatarSlot: ROW_AVATAR, loadingContent: _jsx(LoadingText, {}), confirmPopupContent: ({ isOpen, target, totalAmount, onConfirm, onCancel }) => (_jsx(StakeConfirmPopup, { isOpen: isOpen, mode: "REVOKE", isSpCoin: true, spCoinContract: host.spCoinContract, activeAccount: activeAccount, recipientAccount: target?.recipient, agentAccount: target?.agent, hasAgent: Boolean(target?.agent), totalAmount: totalAmount, onCancel: onCancel, onConfirm: onConfirm })), onConfirmUnstake: handleConfirmUnstake, mode: listMode.kind, firstColumnLabel: listMode.kind === 'claim' && listMode.role !== 'Sponsor' ? 'Sponsor' : undefined, onClaimRewards: handleClaim }));
+    return (_jsx(SponsorStakingListPanel, { recipients: recipients, stakeInfoByAddress: stakeInfoByAddress, decimals: decimals, loading: loading, error: error, activeUnstakeKey: activeUnstakeKey, accountCellSlot: ROW_ACCOUNT_CELL, avatarSlot: ROW_AVATAR, loadingContent: _jsx(LoadingText, {}), confirmPopupContent: ({ isOpen, target, totalAmount, onConfirm, onCancel }) => (_jsx(StakeConfirmPopup, { isOpen: isOpen, mode: "REVOKE", isSpCoin: true, spCoinContract: host.spCoinContract, activeAccount: activeAccount, recipientAccount: target?.recipient, agentAccount: target?.agent, hasAgent: Boolean(target?.agent), totalAmount: totalAmount, onCancel: onCancel, onConfirm: onConfirm })), onConfirmUnstake: handleConfirmUnstake, mode: listMode.kind, autoRefresh: listMode.kind === 'claim' ? autoRefresh : undefined, onAutoRefreshChange: changeAutoRefresh, firstColumnLabel: listMode.kind === 'claim' && listMode.role !== 'Sponsor' ? 'Sponsor' : undefined, onClaimRewards: handleClaim }));
 }

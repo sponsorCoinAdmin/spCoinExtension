@@ -148,3 +148,66 @@ export async function estimateRewardsByMethod(method, params) {
         throw new Error(`${method} is not an estimate method.`);
     return estimatePendingRewards(params);
 }
+/**
+ * 2026-11-14 (owner: the Claim list shows each row's pending reward beside its staked amount): fills in, for every bucket of a staking tree, the reward it has earned so far for the role being claimed, with the same formulas as
+ * estimatePendingRewards (so the rows add up to the Pending amount on the Rewards page). In the tree, recipientKey is the row's account: the recipient when role is Sponsor (the account sponsors them), the sponsor when
+ * role is Recipient (the account is the recipient). The bucket's own stake gets pendingDirect; each agent-rate leaf gets pending. Sponsor claims count the sponsor's share of every bucket; Recipient claims count the
+ * recipient's share (the whole Recipient+Agent pool of a direct bucket, the pool less the agent's cut for an agent bucket). Agent trees merge buckets across recipients, so they are not supported here.
+ * It returns a function that recomputes every figure for a later time from what was read (the stakes and reward clocks do not change between claims), so Auto Refresh can tick the amounts without reading the chain again.
+ */
+export async function addPendingToTree(role, account, tree, read, now) {
+    let annualInflation = 10n;
+    try {
+        annualInflation = big(await read('getInflationRate', []));
+    }
+    catch {
+        // Same fallback as the estimate: 10 % when the rate cannot be read.
+    }
+    // What each figure needs to be recomputed: its stake, its last-settled time, and how it is split.
+    const slots = [];
+    await Promise.all(tree.map(async (node) => {
+        const sponsor = role === 'Sponsor' ? account : node.recipientKey;
+        const recipient = role === 'Sponsor' ? node.recipientKey : account;
+        await Promise.all(node.rates.map(async (rate) => {
+            const rateKey = rate.recipientRateKey;
+            const setKey = await read('getRecipientRateTransactionSetKey', [{ key: 'Sponsor Key', value: sponsor }, { key: 'Recipient Key', value: recipient }, { key: 'Recipient Rate Key', value: rateKey }]);
+            const direct = await readSet(read, setKey);
+            slots.push((at) => {
+                let pending = 0n;
+                if (direct.inserted) {
+                    const { recipientAgentPool, sponsorReward } = splitRewardPool(accrue(direct.totalStaked, direct.lastUpdate, at, annualInflation), rateKey);
+                    pending = role === 'Sponsor' ? sponsorReward : recipientAgentPool;
+                }
+                rate.pendingDirect = pending.toString();
+            });
+            for (const agent of rate.agents) {
+                for (const leaf of agent.rates) {
+                    const agentSetKey = await read('getAgentRateTransactionSetKey', [
+                        { key: 'Sponsor Key', value: sponsor },
+                        { key: 'Recipient Key', value: recipient },
+                        { key: 'Recipient Rate Key', value: rateKey },
+                        { key: 'Agent Key', value: agent.agentKey },
+                        { key: 'Agent Rate Key', value: leaf.agentRateKey },
+                    ]);
+                    const set = await readSet(read, agentSetKey);
+                    slots.push((at) => {
+                        if (!set.inserted) {
+                            leaf.pending = '0';
+                            return;
+                        }
+                        const { recipientAgentPool, sponsorReward } = splitRewardPool(accrue(set.totalStaked, set.lastUpdate, at, annualInflation), rateKey);
+                        const { recipientReward } = splitAgentPool(recipientAgentPool, leaf.agentRateKey);
+                        leaf.pending = (role === 'Sponsor' ? sponsorReward : recipientReward).toString();
+                    });
+                }
+            }
+        }));
+    }));
+    const apply = (at) => {
+        const when = big(at ?? Math.floor(Date.now() / 1000));
+        for (const slot of slots)
+            slot(when);
+    };
+    apply(now);
+    return apply;
+}

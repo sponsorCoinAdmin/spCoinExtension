@@ -55,6 +55,8 @@ export { AuthenticationType, authenticationTypeLabel } from './auth/authenticati
 export { default as TestAccountsSection } from './TestAccountsSection';
 export { default as PasswordPromptDialog } from './PasswordPromptDialog';
 export { default as ConnectedRewardsPanel } from './rewards/ConnectedRewardsPanel';
+export { createChainClock } from './rewards/chainClock';
+export { withRoleFlags } from './rewards/accountRoleFlags';
 export { estimatePendingRewards, estimateRewardsByMethod, accrue, splitRewardPool, splitAgentPool } from './rewards/estimateRewards';
 export { default as WalletSecuritySection } from './WalletSecuritySection';
 export { default as ConnectedSponsorStakingList } from './sponsor/ConnectedSponsorStakingList';

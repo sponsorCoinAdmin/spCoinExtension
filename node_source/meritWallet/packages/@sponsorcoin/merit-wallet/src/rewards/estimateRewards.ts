@@ -77,12 +77,12 @@ const readSet = async (read: ChainRead, setKey: unknown): Promise<SetRecord> => 
 export interface EstimateRewardsParams {
   read: ChainRead;
   accountKey: string;
-  /** Seconds since the epoch to estimate at (default: now). The access module's timestampOverride. */
-  now?: number | bigint;
+  /** Seconds since the epoch to estimate at, in CHAIN time (see chainClock.ts). Required: there is no default, so no figure can silently use the computer's own clock. The access module's timestampOverride. */
+  now: number | bigint;
 }
 
 export async function estimatePendingRewards({ read, accountKey, now }: EstimateRewardsParams): Promise<PendingRewards> {
-  const currentTimeStamp = big(now ?? Math.floor(Date.now() / 1000));
+  const currentTimeStamp = big(now);
   let annualInflation = 10n;
   try {
     annualInflation = big(await read('getInflationRate', []));
@@ -202,7 +202,7 @@ export async function estimateRewardsByMethod(method: string, params: EstimateRe
  * recipient's share (the whole Recipient+Agent pool of a direct bucket, the pool less the agent's cut for an agent bucket). Agent trees merge buckets across recipients, so they are not supported here.
  * It returns a function that recomputes every figure for a later time from what was read (the stakes and reward clocks do not change between claims), so Auto Refresh can tick the amounts without reading the chain again.
  */
-export async function addPendingToTree(role: 'Sponsor' | 'Recipient', account: string, tree: TreeRecipient[], read: ChainRead, now?: number | bigint): Promise<(at?: number | bigint) => void> {
+export async function addPendingToTree(role: 'Sponsor' | 'Recipient', account: string, tree: TreeRecipient[], read: ChainRead, now: number | bigint): Promise<(at: number | bigint) => void> {
   let annualInflation = 10n;
   try {
     annualInflation = big(await read('getInflationRate', []));
@@ -253,8 +253,8 @@ export async function addPendingToTree(role: 'Sponsor' | 'Recipient', account: s
       );
     }),
   );
-  const apply = (at?: number | bigint) => {
-    const when = big(at ?? Math.floor(Date.now() / 1000));
+  const apply = (at: number | bigint) => {
+    const when = big(at);
     for (const slot of slots) slot(when);
   };
   apply(now);

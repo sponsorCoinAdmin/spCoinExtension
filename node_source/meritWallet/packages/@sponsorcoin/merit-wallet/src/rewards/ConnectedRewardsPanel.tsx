@@ -10,6 +10,8 @@ import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { setStakingListMode } from '../sponsor/stakingListMode';
+import { createChainClock } from './chainClock';
+import { withRoleFlags } from './accountRoleFlags';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import {
@@ -47,7 +49,12 @@ export interface RewardsHost {
    * Compute a pending-reward ESTIMATE (estimateOffChainTotal / Sponsor / Recipient / AgentRewards) in the client from direct contract reads (rewards/estimateRewards.ts), so the Pending row needs no hosted app.
    * Resolves with the result object (pendingSponsorRewards, ..., pendingTotalRewards). Omit and estimates go to the run-script endpoint, as in the web app.
    */
-  estimate?(method: string, accountKey: string): Promise<unknown>;
+  estimate?(method: string, accountKey: string, now: bigint): Promise<unknown>;
+  /**
+   * The newest block's timestamp in seconds, read from the chain. The panel turns it into the chain's "now" (rewards/chainClock.ts) and hands that to `estimate`; no host uses its own computer's clock for a reward figure.
+   * Required when `estimate` is given.
+   */
+  blockTimestamp?(): Promise<bigint | number | string>;
   /** Called after a claim confirmed, so the host can refresh balances. */
   onClaimed?(): void;
 }
@@ -99,6 +106,9 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
 
   const options = useMemo(() => (host.endpoint ? { endpoint: host.endpoint } : {}), [host.endpoint]);
 
+  // one chain clock per host (its ticks and re-reads share the same anchor)
+  const chainClock = useMemo(() => (host.blockTimestamp ? createChainClock(() => host.blockTimestamp!()) : undefined), [host]);
+
   const runRewardScript = useCallback(
     async (method: string, action: RewardAction): Promise<unknown> => {
       if (action === 'claim' && host.claim) {
@@ -106,17 +116,20 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
         host.onClaimed?.();
         return result ?? {};
       }
-      if (action === 'estimate' && host.estimate) return host.estimate(method, activeAccountAddr);
+      if (action === 'estimate' && host.estimate) {
+        if (!chainClock) throw new Error('This host estimates rewards but gives no blockTimestamp, so the estimate has no chain time to count from.');
+        return host.estimate(method, activeAccountAddr, await chainClock.now());
+      }
       return runRewardScriptCall({ contractAddress: activeContractAddr, rpcUrl: host.rpcUrl, accessSource, readMode: host.readMode, accountKey: activeAccountAddr, method, action }, options);
     },
-    [host, activeAccountAddr, activeContractAddr, accessSource, options],
+    [host, activeAccountAddr, activeContractAddr, accessSource, options, chainClock],
   );
 
   const accountRecordSource = useMemo<AccountRecordSource>(() => {
     const base = createAccountRecordSource({ rpcUrl: host.rpcUrl, accessSource, readMode: host.readMode }, options);
     const read = host.readAccountRecord;
     if (!read) return base;
-    return { ...base, fetch: async ({ accountKey }) => ({ accountRecord: await read(accountKey), updatedAt: Date.now() }) };
+    return { ...base, fetch: async ({ accountKey }) => ({ accountRecord: withRoleFlags(await read(accountKey)), updatedAt: Date.now() }) };
   }, [host, accessSource, options]);
 
   const {

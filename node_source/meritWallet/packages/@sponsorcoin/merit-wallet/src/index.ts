@@ -110,6 +110,8 @@ export { default as PasswordPromptDialog } from './PasswordPromptDialog';
 
 export { default as ConnectedRewardsPanel } from './rewards/ConnectedRewardsPanel';
 export type { RewardsHost, RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
+export { createChainClock, type ChainClock } from './rewards/chainClock';
+export { withRoleFlags } from './rewards/accountRoleFlags';
 export { estimatePendingRewards, estimateRewardsByMethod, accrue, splitRewardPool, splitAgentPool, type PendingRewards, type EstimateRewardsParams } from './rewards/estimateRewards';
 export { default as WalletSecuritySection } from './WalletSecuritySection';
 export type { WalletSecurityApi } from './WalletSecuritySection';

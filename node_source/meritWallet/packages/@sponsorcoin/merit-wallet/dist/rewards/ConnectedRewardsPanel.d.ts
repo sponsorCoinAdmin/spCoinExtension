@@ -22,7 +22,12 @@ export interface RewardsHost {
      * Compute a pending-reward ESTIMATE (estimateOffChainTotal / Sponsor / Recipient / AgentRewards) in the client from direct contract reads (rewards/estimateRewards.ts), so the Pending row needs no hosted app.
      * Resolves with the result object (pendingSponsorRewards, ..., pendingTotalRewards). Omit and estimates go to the run-script endpoint, as in the web app.
      */
-    estimate?(method: string, accountKey: string): Promise<unknown>;
+    estimate?(method: string, accountKey: string, now: bigint): Promise<unknown>;
+    /**
+     * The newest block's timestamp in seconds, read from the chain. The panel turns it into the chain's "now" (rewards/chainClock.ts) and hands that to `estimate`; no host uses its own computer's clock for a reward figure.
+     * Required when `estimate` is given.
+     */
+    blockTimestamp?(): Promise<bigint | number | string>;
     /** Called after a claim confirmed, so the host can refresh balances. */
     onClaimed?(): void;
 }

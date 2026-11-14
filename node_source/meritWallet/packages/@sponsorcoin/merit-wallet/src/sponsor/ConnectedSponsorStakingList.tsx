@@ -27,6 +27,7 @@ import { useTransactionReceipt } from '../receipt/useTransactionReceipt';
 import { useActiveAccountProfile } from '../swap/activeAccountProfile';
 import { loadRoleSponsorTree, loadSponsorTree, throttleRead, type ChainRead, type TreeRecipient } from './sponsorReads';
 import { addPendingToTree } from '../rewards/estimateRewards';
+import { createChainClock, type ChainClock } from '../rewards/chainClock';
 import { assetListRowClass, listStyle } from '@sponsorcoin/spcoin-common/styles';
 import { unstakeSpCoin, type UnstakeSend } from './unstakeWalk';
 import { useStakingListMode } from './stakingListMode';
@@ -77,6 +78,8 @@ export interface SponsorStakingHost {
   autoRefreshStore?: { subscribe(listener: () => void): () => void; getSnapshot(): boolean; getServerSnapshot(): boolean; setUserPreference(next: boolean): void };
   /** Direct contract views (named key / value arguments) for the Claim list's per-row rewards, which need the reward clocks (getRateTransactionSet and the set-key builders) that the web's run-script reads do not offer. Default: `read`. */
   readDirect?: ChainRead;
+  /** The newest block's timestamp in seconds, read from the chain (the ONLY clock input the reward figures take; see rewards/chainClock.ts). Required for the Claim lists' per-row rewards: without it they show staked amounts only. */
+  blockTimestamp?(): Promise<bigint | number | string>;
   /** The spCoin balance of an account, raw base units (undefined when it cannot be read). Claim mode reads every involved account before and after the claim to show who received what. */
   readBalance?(accountAddress: string): Promise<bigint | undefined>;
   /** A hook that registers the list's reload function with the host's refresh bus (the web's useCacheRefreshHandler); must be a stable function. */
@@ -126,6 +129,14 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
   );
   // Recomputes the rewards for "now" from what the last read found and redraws (no new reads); set by fetchList in Claim lists
   const tickRef = useRef<(() => void) | undefined>(undefined);
+  // one chain clock per host, kept for the life of the list: Auto Refresh ticks count forward from the last block read
+  const chainClockRef = useRef<{ source: unknown; clock: ChainClock } | undefined>(undefined);
+  const chainClockOf = (): ChainClock | undefined => {
+    const read = host.blockTimestamp;
+    if (!read) return undefined;
+    if (chainClockRef.current?.source !== read) chainClockRef.current = { source: read, clock: createChainClock(() => read.call(host)) };
+    return chainClockRef.current.clock;
+  };
 
   const fetchList = useCallback(async () => {
     if (!sponsor) return;
@@ -149,10 +160,11 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
         return profiles.get(key)!;
       };
       // Claim lists show the reward each row has earned beside its stake. A failed read just leaves the rows without it (the staked amounts still show).
-      let recompute: ((at?: number | bigint) => void) | undefined;
-      if (listMode.kind === 'claim' && listMode.role !== 'Agent') {
+      let recompute: ((at: number | bigint) => void) | undefined;
+      const chainClock = chainClockOf();
+      if (listMode.kind === 'claim' && listMode.role !== 'Agent' && chainClock) {
         try {
-          recompute = await addPendingToTree(listMode.role, sponsor, tree, throttleRead(host.readDirect ?? host.read));
+          recompute = await addPendingToTree(listMode.role, sponsor, tree, throttleRead(host.readDirect ?? host.read), await chainClock.now());
         } catch {
           // staked amounts only
         }
@@ -205,7 +217,7 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
       if (mine !== generation.current) return;
       tickRef.current = recompute
         ? () => {
-            recompute?.();
+            recompute?.(chainClockOf()!.current());
             setStakeInfoByAddress(buildInfo());
           }
         : undefined;

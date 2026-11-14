@@ -19,6 +19,7 @@ import { useTransactionReceipt } from '../receipt/useTransactionReceipt';
 import { useActiveAccountProfile } from '../swap/activeAccountProfile';
 import { loadRoleSponsorTree, loadSponsorTree, throttleRead } from './sponsorReads';
 import { addPendingToTree } from '../rewards/estimateRewards';
+import { createChainClock } from '../rewards/chainClock';
 import { assetListRowClass, listStyle } from '@sponsorcoin/spcoin-common/styles';
 import { unstakeSpCoin } from './unstakeWalk';
 import { useStakingListMode } from './stakingListMode';
@@ -64,6 +65,16 @@ export default function ConnectedSponsorStakingList({ host }) {
     }, [store]);
     // Recomputes the rewards for "now" from what the last read found and redraws (no new reads); set by fetchList in Claim lists
     const tickRef = useRef(undefined);
+    // one chain clock per host, kept for the life of the list: Auto Refresh ticks count forward from the last block read
+    const chainClockRef = useRef(undefined);
+    const chainClockOf = () => {
+        const read = host.blockTimestamp;
+        if (!read)
+            return undefined;
+        if (chainClockRef.current?.source !== read)
+            chainClockRef.current = { source: read, clock: createChainClock(() => read.call(host)) };
+        return chainClockRef.current.clock;
+    };
     const fetchList = useCallback(async () => {
         if (!sponsor)
             return;
@@ -89,9 +100,10 @@ export default function ConnectedSponsorStakingList({ host }) {
             };
             // Claim lists show the reward each row has earned beside its stake. A failed read just leaves the rows without it (the staked amounts still show).
             let recompute;
-            if (listMode.kind === 'claim' && listMode.role !== 'Agent') {
+            const chainClock = chainClockOf();
+            if (listMode.kind === 'claim' && listMode.role !== 'Agent' && chainClock) {
                 try {
-                    recompute = await addPendingToTree(listMode.role, sponsor, tree, throttleRead(host.readDirect ?? host.read));
+                    recompute = await addPendingToTree(listMode.role, sponsor, tree, throttleRead(host.readDirect ?? host.read), await chainClock.now());
                 }
                 catch {
                     // staked amounts only
@@ -145,7 +157,7 @@ export default function ConnectedSponsorStakingList({ host }) {
                 return;
             tickRef.current = recompute
                 ? () => {
-                    recompute?.();
+                    recompute?.(chainClockOf().current());
                     setStakeInfoByAddress(buildInfo());
                 }
                 : undefined;

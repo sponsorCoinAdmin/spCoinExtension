@@ -29,6 +29,8 @@ export interface SponsorStakingHost {
     };
     /** Direct contract views (named key / value arguments) for the Claim list's per-row rewards, which need the reward clocks (getRateTransactionSet and the set-key builders) that the web's run-script reads do not offer. Default: `read`. */
     readDirect?: ChainRead;
+    /** The newest block's timestamp in seconds, read from the chain (the ONLY clock input the reward figures take; see rewards/chainClock.ts). Required for the Claim lists' per-row rewards: without it they show staked amounts only. */
+    blockTimestamp?(): Promise<bigint | number | string>;
     /** The spCoin balance of an account, raw base units (undefined when it cannot be read). Claim mode reads every involved account before and after the claim to show who received what. */
     readBalance?(accountAddress: string): Promise<bigint | undefined>;
     /** A hook that registers the list's reload function with the host's refresh bus (the web's useCacheRefreshHandler); must be a stable function. */

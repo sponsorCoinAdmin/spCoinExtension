@@ -10,6 +10,8 @@ import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { setStakingListMode } from '../sponsor/stakingListMode';
+import { createChainClock } from './chainClock';
+import { withRoleFlags } from './accountRoleFlags';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { AddressSelect, ManageSponsorshipsPanel, createAccountRecordSource, runRewardScript as runRewardScriptCall, useManageSponsorshipsData, useManageSponsorshipsNavigation, } from '@sponsorcoin/spcoin-panels';
@@ -39,22 +41,27 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
         platform.storage.set(AUTO_REFRESH_KEY, String(next));
     }, [externalStore]);
     const options = useMemo(() => (host.endpoint ? { endpoint: host.endpoint } : {}), [host.endpoint]);
+    // one chain clock per host (its ticks and re-reads share the same anchor)
+    const chainClock = useMemo(() => (host.blockTimestamp ? createChainClock(() => host.blockTimestamp()) : undefined), [host]);
     const runRewardScript = useCallback(async (method, action) => {
         if (action === 'claim' && host.claim) {
             const result = await host.claim(method, activeAccountAddr);
             host.onClaimed?.();
             return result ?? {};
         }
-        if (action === 'estimate' && host.estimate)
-            return host.estimate(method, activeAccountAddr);
+        if (action === 'estimate' && host.estimate) {
+            if (!chainClock)
+                throw new Error('This host estimates rewards but gives no blockTimestamp, so the estimate has no chain time to count from.');
+            return host.estimate(method, activeAccountAddr, await chainClock.now());
+        }
         return runRewardScriptCall({ contractAddress: activeContractAddr, rpcUrl: host.rpcUrl, accessSource, readMode: host.readMode, accountKey: activeAccountAddr, method, action }, options);
-    }, [host, activeAccountAddr, activeContractAddr, accessSource, options]);
+    }, [host, activeAccountAddr, activeContractAddr, accessSource, options, chainClock]);
     const accountRecordSource = useMemo(() => {
         const base = createAccountRecordSource({ rpcUrl: host.rpcUrl, accessSource, readMode: host.readMode }, options);
         const read = host.readAccountRecord;
         if (!read)
             return base;
-        return { ...base, fetch: async ({ accountKey }) => ({ accountRecord: await read(accountKey), updatedAt: Date.now() }) };
+        return { ...base, fetch: async ({ accountKey }) => ({ accountRecord: withRoleFlags(await read(accountKey)), updatedAt: Date.now() }) };
     }, [host, accessSource, options]);
     const { tradingAmountDisplay, stakedAmountDisplay, pendingTotalAmountDisplay, totalCoinsDisplay, tradingOrStakedLoading, tradingIsZero, stakedIsZero, pendingIsZero, pendingInitialLoading, pendingRoleUnavailable, totalReward, rewardRows, runTotalRewardAction, runRewardAction, runAvailableRoleRewardEstimates, refreshAccountRecord, } = useManageSponsorshipsData({
         isActive,

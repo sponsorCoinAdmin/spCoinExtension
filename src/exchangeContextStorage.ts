@@ -45,6 +45,15 @@ async function readExchangeContext(): Promise<unknown | undefined> {
     const raw = stored[STORAGE_KEY];
     if (typeof raw !== 'string') return undefined;
     const parsed = parseWithBigInt(raw);
+    // 2026-11-14 (owner: the side panel stayed blank, "Cannot read properties of undefined (reading 'buyTokenContract')"): a saved context whose trade data has no 0x / Uniswap part makes the Swap panel throw on every draw, and it
+    // was saved again on every boot. Such a context is unusable, so it is dropped and the wallet starts from a fresh default context (the vault, accounts and sign-in options are stored elsewhere and are not touched).
+    const trade = (parsed as { apiCoreSyncedMembers?: { tradeData?: { zeroX?: unknown; uniswap?: unknown } } } | undefined)?.apiCoreSyncedMembers?.tradeData;
+    if (!trade || typeof trade.zeroX !== 'object' || trade.zeroX === null || typeof trade.uniswap !== 'object' || trade.uniswap === null) {
+      // eslint-disable-next-line no-console
+      console.error('[exchangeContextStorage] the saved ExchangeContext has no trade data (zeroX / uniswap), starting fresh');
+      await chrome.storage.local.remove(STORAGE_KEY);
+      return undefined;
+    }
     // 2026-10-05 — a panel whose default became ON (ZERO_X_TRADE_BUTTON) must also flip in this saved tree, which
     // wins over the panel-visibility snapshot at boot. Written back so the change survives the next boot.
     const list = (parsed as { apiCoreSyncedMembers?: { displayPanels?: unknown } } | undefined)?.apiCoreSyncedMembers?.displayPanels;

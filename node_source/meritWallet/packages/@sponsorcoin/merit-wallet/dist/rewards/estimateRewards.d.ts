@@ -29,8 +29,8 @@ export declare function splitAgentPool(pool: bigint, agentRate: unknown): {
 export interface EstimateRewardsParams {
     read: ChainRead;
     accountKey: string;
-    /** Seconds since the epoch to estimate at (default: now). The access module's timestampOverride. */
-    now?: number | bigint;
+    /** Seconds since the epoch to estimate at, in CHAIN time (see chainClock.ts). Required: there is no default, so no figure can silently use the computer's own clock. The access module's timestampOverride. */
+    now: number | bigint;
 }
 export declare function estimatePendingRewards({ read, accountKey, now }: EstimateRewardsParams): Promise<PendingRewards>;
 /** The result of one estimate method, in the shape the run-script route returned (the Rewards panel's parsers read pending<Role>Rewards / pendingTotalRewards). */
@@ -42,4 +42,4 @@ export declare function estimateRewardsByMethod(method: string, params: Estimate
  * recipient's share (the whole Recipient+Agent pool of a direct bucket, the pool less the agent's cut for an agent bucket). Agent trees merge buckets across recipients, so they are not supported here.
  * It returns a function that recomputes every figure for a later time from what was read (the stakes and reward clocks do not change between claims), so Auto Refresh can tick the amounts without reading the chain again.
  */
-export declare function addPendingToTree(role: 'Sponsor' | 'Recipient', account: string, tree: TreeRecipient[], read: ChainRead, now?: number | bigint): Promise<(at?: number | bigint) => void>;
+export declare function addPendingToTree(role: 'Sponsor' | 'Recipient', account: string, tree: TreeRecipient[], read: ChainRead, now: number | bigint): Promise<(at: number | bigint) => void>;

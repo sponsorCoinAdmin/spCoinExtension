@@ -9,7 +9,7 @@ import { extensionWalletLinkHooks } from './src/walletLinkHooks';
 import { isExternalAccount } from './src/externalAccounts';
 import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger';
 import { startDappApprovals } from './src/dappApprovals';
-import { mountDebugOverlay } from './src/debugOverlay';
+import { captureErrors, mountDebugOverlay } from './src/debugOverlay';
 import { remoteSelectionStore } from './src/remoteSelectionStore';
 import { extensionPeers, meritWebConnection } from './src/extensionPeers';
 import { traceFrom } from './src/debugTrace';
@@ -83,7 +83,7 @@ import { buildApprovalPage } from './src/TransactionConfirmOrchestrator';
 import { subscribePendingSignRequest } from './src/pendingSignRequestStore';
 import { TransferApprovalHost } from './src/TransferApprovalHost';
 import { sendNativeMerit } from './src/sendNative';
-import { encodeFunctionData } from 'viem';
+import { createPublicClient, encodeFunctionData, http } from 'viem';
 import { runSpCoinReadStep } from './src/runSpCoinReadStep';
 import { buildMeritTradeExecutorContext } from './src/tradeExecutorMerit';
 import { makeFetchBalance } from './src/fetchBalance';
@@ -94,6 +94,7 @@ import { executeClaimTransaction, SPOIN_CLAIM_ABI } from './src/executeClaimTran
 
 // 2026-10-13 (docs/connectionDesign.txt item 12): bring a Ledger the person granted earlier back after a reload (no prompt).
 restoreLedger();
+captureErrors(traceFrom);
 mountDebugOverlay();
 traceFrom('panel', 'side panel loaded');
 // the engine's own trace lines (the account record reads) go to the same log
@@ -596,8 +597,17 @@ async function renderWallet() {
     // Trading and Staked come straight from the contract's getAccountRecord view.
     // 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 25): the reward ESTIMATES are computed here too, from direct reads of the contract's views (estimateRewards.ts, a port of the access module's calculation,
     // checked against the run-script result for 18 live accounts), so the Rewards tab needs no hosted app.
-    estimate: (method, accountKey) =>
-      estimateRewardsByMethod(method, { accountKey, read: chainRead }),
+    // 2026-11-14: merit-wallet's Rewards panel owns the chain clock and the role flags (the same code in every app); this host only supplies raw reads: the newest block's time, the estimate's contract reads and the account record.
+    blockTimestamp: async () => (await createPublicClient({ transport: http(chainRpcUrl()) }).getBlock({ blockTag: 'latest' })).timestamp,
+    // a failed estimate also goes to the bug screen's trace
+    estimate: async (method, accountKey, now) => {
+      try {
+        return await estimateRewardsByMethod(method, { accountKey, read: chainRead, now });
+      } catch (error) {
+        traceFrom('estimate', `${method} for ${accountKey} failed on ${spCoinAddress()} via ${chainRpcUrl() || '(no RPC)'}: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
+      }
+    },
     readAccountRecord: (accountKey) => runSpCoinReadStep({ contractAddress: spCoinAddress(), rpcUrl: chainRpcUrl(), accessSource: 'local', readMode: 'hardhat' }, 'getAccountRecord', [{ key: 'Account Key', value: accountKey }], baseUrl),
     claim: async (method, accountKey) => {
       const result = await executeClaimTransaction({

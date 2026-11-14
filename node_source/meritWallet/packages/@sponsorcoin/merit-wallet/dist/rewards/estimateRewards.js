@@ -39,7 +39,7 @@ const readSet = async (read, setKey) => {
     };
 };
 export async function estimatePendingRewards({ read, accountKey, now }) {
-    const currentTimeStamp = big(now ?? Math.floor(Date.now() / 1000));
+    const currentTimeStamp = big(now);
     let annualInflation = 10n;
     try {
         annualInflation = big(await read('getInflationRate', []));
@@ -204,7 +204,7 @@ export async function addPendingToTree(role, account, tree, read, now) {
         }));
     }));
     const apply = (at) => {
-        const when = big(at ?? Math.floor(Date.now() / 1000));
+        const when = big(at);
         for (const slot of slots)
             slot(when);
     };

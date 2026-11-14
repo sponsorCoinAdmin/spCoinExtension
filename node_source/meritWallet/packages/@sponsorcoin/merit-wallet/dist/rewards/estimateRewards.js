@@ -146,7 +146,18 @@ export async function estimatePendingRewards({ read, accountKey, now }) {
 export async function estimateRewardsByMethod(method, params) {
     if (!/^estimateOffChain(Total|Sponsor|Recipient|Agent)Rewards$/.test(method))
         throw new Error(`${method} is not an estimate method.`);
-    return estimatePendingRewards(params);
+    const result = await estimatePendingRewards(params);
+    if (!/Total/.test(method))
+        return result;
+    // 2026-11-14 (owner: the extension showed "0" and a yellow Pending button for roles the account does not have, the web app showed N/A): the TOTAL estimate lists only the roles that have something pending. The web server's
+    // display step (normalizePendingRewardsDisplayResult, getVisiblePendingRewardComponents) drops the zero ones, and the Rewards panel treats a role that is absent from the result and from the account record as "not a role of this
+    // account" (N/A). The same rule is applied here so both hosts hand the panel the same shape.
+    const visible = { ...result };
+    for (const key of ['pendingSponsorRewards', 'pendingRecipientRewards', 'pendingAgentRewards']) {
+        if (BigInt(visible[key] || '0') === 0n)
+            delete visible[key];
+    }
+    return visible;
 }
 /**
  * 2026-11-14 (owner: the Claim list shows each row's pending reward beside its staked amount): fills in, for every bucket of a staking tree, the reward it has earned so far for the role being claimed, with the same formulas as

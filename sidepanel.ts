@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './src/tailwind.css';
 import { bundledFeedData } from './src/bundledFeeds';
 import { extensionAuthenticatorRegistry, extensionWallet, localVaultAuthenticator } from './src/localVaultAuthenticator';
+import { meritSecuritySetup } from './src/mfaFactors';
 import { METAMASK_ID } from './src/metamaskAuthenticator';
 import { extensionWalletLinkHooks } from './src/walletLinkHooks';
 import { isExternalAccount } from './src/externalAccounts';
@@ -979,6 +980,8 @@ async function renderWallet() {
               lock: {
                 // 2026-10-08 (table row 23): the lock gate is the component's own: while the vault is locked it shows the password screen in place of everything.
                 onResetWallet: resetWallet,
+                // 2026-11-14: sign-in options (authenticator app / passkey), kept in the side panel's localStorage
+                securitySetup: meritSecuritySetup,
                 // 2026-10-14: a site asked to connect (or sign) while the wallet is locked: say so on the login page, like MetaMask's "unlock to continue"; the connect page follows the login.
                 passwordNoticeText: lockedRequestNotice || undefined,
                 passwordIconSrc: brandLogoUrl,

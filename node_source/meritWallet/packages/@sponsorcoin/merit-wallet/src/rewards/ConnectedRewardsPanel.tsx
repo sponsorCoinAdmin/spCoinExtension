@@ -9,6 +9,7 @@
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
+import { setStakingListMode } from '../sponsor/stakingListMode';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import {
@@ -164,10 +165,8 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
         tradingOrStalledLoading={tradingOrStakedLoading}
         tradingIsZero={tradingIsZero}
         onStake={goToSponsorStakeTab}
-        onUnstake={unstakeAllSponsorships}
-        // The web opens a role-account list here (ACTIVE_SPONSORSHIPS); without the web's list host that mode has nothing to draw and left the body blank. The accounts you
-        // sponsor are the Un-Stake list's rows, so the label opens that list.
-        onStakedLabelClick={unstakeAllSponsorships}
+        onUnstake={() => { setStakingListMode({ kind: 'unstake' }); unstakeAllSponsorships(); }}
+        // The Staked label does nothing on a click (owner request 2026-11-13); the Unstake button is the way to the Un-Stake list.
         stakedIsZero={stakedIsZero}
         autoRefresh={autoRefresh}
         onAutoRefreshChange={changeAutoRefresh}
@@ -187,7 +186,11 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
         onClosePendingGroup={onCloseRewardsByAccountType}
         rewardRows={rewardRows}
         onRoleEstimate={(role) => void runRewardAction(role, 'estimate')}
-        onRoleClaim={(role) => void runRewardAction(role, 'claim')}
+        // 2026-11-13 (owner): every role's Claim opens the sponsorships list in Claim mode (Sponsor: what you sponsor; Recipient / Agent: who sponsors you); its buttons claim
+        onRoleClaim={(role) => {
+          setStakingListMode({ kind: 'claim', role });
+          unstakeAllSponsorships();
+        }}
         addressSelectContent={
           <AssetSelectDisplayProvider>
             <AssetSelectProvider containerType={SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL} closePanelCallback={() => extras.onClose?.()} setSelectedAssetCallback={() => undefined}>

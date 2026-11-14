@@ -198,3 +198,26 @@ export function sendOutcomeToHostResult(
 export function sendFailureToHostResult(error: unknown): HostTransactionResult {
   return { ok: false, message: error instanceof Error ? error.message : 'The send failed.' };
 }
+
+export interface ClaimReceiptRow {
+  role: 'SPONSOR' | 'RECIPIENT' | 'AGENT';
+  profile?: ReceiptProfile;
+  /** What this account received, in the token's own decimal text (e.g. "13.947249"). */
+  amount: string;
+}
+
+/**
+ * 2026-11-13 (owner): the completion card after a reward claim: "<Role> Rewards distributed.", one account line per Sponsor / Recipient / Agent that received something with its amount, and the total. The amounts are each
+ * account's balance after the claim minus before (the contract returns only the claiming role's total and emits no event), so they are what was really deposited, the side-effect shares of the other roles included.
+ */
+export function buildClaimReceipt(input: { roleLabel: string; rows: ClaimReceiptRow[]; total: string; txHash?: string }): ErrorMessage {
+  const accounts = accountRows(input.rows.map((row) => ({ role: row.role, profile: row.profile, detail: `Amount: ${row.amount}` })));
+  return {
+    errCode: 0,
+    msg: [`${input.roleLabel} Rewards distributed.`, ...(input.txHash ? ['', 'Transaction Hash', input.txHash] : []), '', '--------------------------------', '', 'Transaction Details', 'Status: Success', MESSAGE_ACCOUNTS_MARKER].join('\n'),
+    source: 'SponsorStakingList:claim',
+    status: STATUS.SUCCESS,
+    accounts,
+    amount: { label: 'Total Distributed spCoins', value: input.total },
+  };
+}

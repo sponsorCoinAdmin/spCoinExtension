@@ -72,3 +72,19 @@ export declare function sendOutcomeToHostResult(sent: {
 } | null | undefined): HostTransactionResult;
 /** A send that threw, as the result the wallet shows (the error's own message, else a plain one). */
 export declare function sendFailureToHostResult(error: unknown): HostTransactionResult;
+export interface ClaimReceiptRow {
+    role: 'SPONSOR' | 'RECIPIENT' | 'AGENT';
+    profile?: ReceiptProfile;
+    /** What this account received, in the token's own decimal text (e.g. "13.947249"). */
+    amount: string;
+}
+/**
+ * 2026-11-13 (owner): the completion card after a reward claim: "<Role> Rewards distributed.", one account line per Sponsor / Recipient / Agent that received something with its amount, and the total. The amounts are each
+ * account's balance after the claim minus before (the contract returns only the claiming role's total and emits no event), so they are what was really deposited, the side-effect shares of the other roles included.
+ */
+export declare function buildClaimReceipt(input: {
+    roleLabel: string;
+    rows: ClaimReceiptRow[];
+    total: string;
+    txHash?: string;
+}): ErrorMessage;

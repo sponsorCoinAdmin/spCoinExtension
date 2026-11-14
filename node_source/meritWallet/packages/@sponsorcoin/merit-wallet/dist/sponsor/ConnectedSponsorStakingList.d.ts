@@ -18,6 +18,10 @@ export interface SponsorStakingHost {
     loadTree?(sponsor: string): Promise<TreeRecipient[]>;
     /** Called once before an unstake walk starts, so the host can obtain its signer once for all the legs (one approval prompt for the whole walk, as the web app's unstake always did). Throw to stop. */
     prepare?(): Promise<void> | void;
+    /** Claim mode: send the contract's claim for the sponsor (method e.g. claimOnChainSponsorRewards) signed by the active account, and resolve when mined; throw a readable message on failure. Omit: the list cannot claim. */
+    claim?(method: string, accountKey: string): Promise<unknown>;
+    /** The spCoin balance of an account, raw base units (undefined when it cannot be read). Claim mode reads every involved account before and after the claim to show who received what. */
+    readBalance?(accountAddress: string): Promise<bigint | undefined>;
     /** A hook that registers the list's reload function with the host's refresh bus (the web's useCacheRefreshHandler); must be a stable function. */
     useRegisterRefresh?: (refresh: () => void | Promise<void>, active: boolean) => void;
     /** Called after an unstake finished (any outcome) with the recipients it touched, so the host can reload balances and drop its caches. */

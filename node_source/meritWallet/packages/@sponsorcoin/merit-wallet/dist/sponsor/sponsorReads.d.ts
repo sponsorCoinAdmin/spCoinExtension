@@ -41,3 +41,12 @@ export declare function getAgentTransactionList(sponsor: string, recipient: stri
 export declare function loadSponsorTree(sponsorKey: string, rawRead: ChainRead): Promise<TreeRecipient[]>;
 /** What `sponsor` has staked with `recipient` across the pair's rate buckets (the web app's getStakedAmountForRecipient, without its cache). */
 export declare function getStakedRawForPair(sponsor: string, recipient: string, rawRead: ChainRead): Promise<bigint>;
+/** The sponsors of `account` (the contract's account links). */
+export declare function getSponsorsOfAccount(account: string, read: ChainRead): Promise<string[]>;
+/**
+ * 2026-11-13 (owner: Claim lists for Recipient and Agent): the list the Recipient / Agent Claim buttons open. Its rows are the SPONSORS of `account`, in the same tree shape as loadSponsorTree so the one list draws it
+ * (here `recipientKey` holds the sponsor).
+ *  - Recipient: each sponsor's rate buckets for this recipient, with the agents under them.
+ *  - Agent: each sponsor's buckets (across every recipient it sponsors) where this agent appears; a bucket holds only this agent's stake, buckets of the same rate are added together.
+ */
+export declare function loadRoleSponsorTree(role: 'Recipient' | 'Agent', account: string, rawRead: ChainRead): Promise<TreeRecipient[]>;

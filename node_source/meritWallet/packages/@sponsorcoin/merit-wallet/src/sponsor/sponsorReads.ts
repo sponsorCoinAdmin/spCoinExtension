@@ -162,3 +162,68 @@ export async function getStakedRawForPair(sponsor: string, recipient: string, ra
     }
   }, 0n);
 }
+
+function sum(values: string[]): bigint {
+  return values.reduce<bigint>((total, value) => {
+    try {
+      return total + BigInt(value || '0');
+    } catch {
+      return total;
+    }
+  }, 0n);
+}
+
+/** The sponsors of `account` (the contract's account links). */
+export async function getSponsorsOfAccount(account: string, read: ChainRead): Promise<string[]> {
+  const links = record(await read('getAccountLinks', [{ key: 'Account Key', value: account }]));
+  return strings(links.sponsorKeys);
+}
+
+/**
+ * 2026-11-13 (owner: Claim lists for Recipient and Agent): the list the Recipient / Agent Claim buttons open. Its rows are the SPONSORS of `account`, in the same tree shape as loadSponsorTree so the one list draws it
+ * (here `recipientKey` holds the sponsor).
+ *  - Recipient: each sponsor's rate buckets for this recipient, with the agents under them.
+ *  - Agent: each sponsor's buckets (across every recipient it sponsors) where this agent appears; a bucket holds only this agent's stake, buckets of the same rate are added together.
+ */
+export async function loadRoleSponsorTree(role: 'Recipient' | 'Agent', account: string, rawRead: ChainRead): Promise<TreeRecipient[]> {
+  const read = throttleRead(rawRead);
+  const sponsors = role === 'Recipient' ? await getSponsorsOfAccount(account, read) : strings(await read('getAgentSponsorKeys', [{ key: 'Agent Key', value: account }]));
+  return Promise.all(
+    sponsors.map(async (sponsorKey): Promise<TreeRecipient> => {
+      if (role === 'Recipient') {
+        const rateKeys = await getSponsorRecipientRateKeys(sponsorKey, account, read);
+        const rates = await Promise.all(
+          rateKeys.map(async (recipientRateKey): Promise<TreeRate> => {
+            const [stakedSPCoins, agentKeys] = await Promise.all([
+              getRecipientStaked(sponsorKey, account, recipientRateKey, read),
+              getRecipientRateAgentKeys(sponsorKey, account, recipientRateKey, read),
+            ]);
+            const agents = await Promise.all(
+              agentKeys.map(async (agentKey): Promise<TreeAgent> => ({ agentKey, rates: await getAgentTransactionList(sponsorKey, account, recipientRateKey, agentKey, read) })),
+            );
+            return { recipientRateKey, stakedSPCoins, agents };
+          }),
+        );
+        return { recipientKey: sponsorKey, rates };
+      }
+      const byRate = new Map<string, Map<string, bigint>>();
+      const recipients = await getSponsorRecipientKeys(sponsorKey, read);
+      for (const recipientKey of recipients) {
+        const rateKeys = await getSponsorRecipientRateKeys(sponsorKey, recipientKey, read);
+        for (const recipientRateKey of rateKeys) {
+          const agentKeys = await getRecipientRateAgentKeys(sponsorKey, recipientKey, recipientRateKey, read);
+          if (!agentKeys.some((key) => key.toLowerCase() === account.toLowerCase())) continue;
+          const leaves = await getAgentTransactionList(sponsorKey, recipientKey, recipientRateKey, account, read);
+          const bucket = byRate.get(recipientRateKey) ?? new Map<string, bigint>();
+          for (const leaf of leaves) bucket.set(leaf.agentRateKey, (bucket.get(leaf.agentRateKey) ?? 0n) + sum([leaf.stakedSPCoins]));
+          byRate.set(recipientRateKey, bucket);
+        }
+      }
+      const rates: TreeRate[] = [...byRate.entries()].map(([recipientRateKey, leaves]) => {
+        const agentRates = [...leaves.entries()].map(([agentRateKey, amount]) => ({ agentRateKey, stakedSPCoins: amount.toString() }));
+        return { recipientRateKey, stakedSPCoins: sum(agentRates.map((leaf) => leaf.stakedSPCoins)).toString(), agents: [{ agentKey: account, rates: agentRates }] };
+      });
+      return { recipientKey: sponsorKey, rates };
+    }),
+  );
+}

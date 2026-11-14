@@ -76,6 +76,11 @@ import WalletSessionDialogs, { sessionConfigHandlers } from './config/WalletSess
 import AccountDetailScreen from './account/AccountDetailScreen';
 import { resolveAccountSource } from './account/accountSource';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';
+import SecuritySetupScreen from './SecuritySetupScreen';
+import SecurityWarningScreen from './SecurityWarningScreen';
+import UnlockSecondStep from './UnlockSecondStep';
+import { setStakingListMode, useStakingListMode } from './sponsor/stakingListMode';
+import { anySignInStep, requiredSignInSteps } from './security/signInOptions';
 import WalletOnboardingPanel from './WalletOnboardingPanel';
 import ConnectedSponsorStakingList from './sponsor/ConnectedSponsorStakingList';
 import { buildSendReceipt, toMessageAccount } from './receipt/transactionReceipts';
@@ -226,7 +231,7 @@ const SAMPLE_NETWORK_ROWS = [
 // the header account list now renders AccountListCard directly, which takes
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
-function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, showWalletSelect = true, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccounts, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
+function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, showWalletSelect = true, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, securitySetup, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccounts, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
     // reads), not owned local state. useEnforceRadioPanelGroups/
@@ -357,6 +362,9 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // full-body overlay it hosted (panelTreeOverlay among them) was ported
     // into this component's own body at the same time; this one was missed.
     const meritInfoVisible = usePanelVisible(SP_COIN_DISPLAY.MERIT_INFO_PANEL);
+    // 2026-11-13 (owner): the list opened by Rewards > Unstake has its own page title
+    const stakingListVisible = usePanelVisible(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST);
+    const stakingListMode = useStakingListMode();
     const messageVisible = usePanelVisible(SP_COIN_DISPLAY.MESSAGE_PANEL);
     // The header pills' chevrons follow the real visibility of their list (2026-10-30, on request), so a list opened by any other means flips them too.
     // A step-through popup (Swap / Send / Sponsor) is drawn in MESSAGE_PANEL: its stage heading is the PANEL_TITLE, and the tab body stays mounted.
@@ -438,6 +446,10 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const hasFetchedOnceRef = useRef(false);
     // 2026-11-04: an image put in (or dropped from) the cache changes this, so the rows are read again from the cache, not refetched
     const [imageVersion, setImageVersion] = useState(0);
+    // 2026-11-13: first-run pages after the password: the phrase, then the optional second step, then the warning page (the phrase itself is already dropped by its screen)
+    const [setupStage, setSetupStage] = useState('phrase');
+    // 2026-11-13: the password typed on the unlock screen, held in memory only while the extra sign-in steps are asked for
+    const [pendingUnlock, setPendingUnlock] = useState(undefined);
     const imageVersionSeenRef = useRef(0);
     const imagePlatform = usePlatform();
     useEffect(() => imagePlatform.onImageCacheUpdated?.(() => setImageVersion((n) => n + 1)), [imagePlatform]);
@@ -1447,7 +1459,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                             // SponsorStakingListPanel itself self-gates on that same id
                             // (see its own `panelId` default) and is mounted unconditionally
                             // below, so no separate usePanelVisible check is needed here.
-                            onUnstake: () => openPanel(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST, 'MeritWallet:unstakeAllSponsorships'),
+                            onUnstake: () => { setStakingListMode({ kind: 'unstake' }); openPanel(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST, 'MeritWallet:unstakeAllSponsorships'); },
                         })
                         : React.createElement(WalletConfigPanel, {
                             onOpenPanelTree: () => openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'),
@@ -1475,7 +1487,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                             onShowBackgroundPageChange: onConfigShowBackgroundPageChange,
                             modalMode: configModalMode,
                             onModalModeChange: onConfigModalModeChange,
-                            securityPanelContent: configSecurityPanelContent,
+                            // 2026-11-13 (owner): the second-step rows (authenticator app / passkey) sit under the wallet's own security rows, from the host's securitySetup
+                            securityPanelContent: securitySetup ? (parts) => React.createElement(React.Fragment, null, React.createElement(SecuritySetupScreen, { ...securitySetup, passwordContent: parts.passwordSettings, accountButtons: parts.accountButtons }), configSecurityPanelContent) : configSecurityPanelContent,
                             signingPanelContent: configSigningPanelContent,
                             backupPanelContent: configBackupPanelContent,
                             testAccountsContent: configTestAccounts ? React.createElement(TestAccountsSection, { api: configTestAccounts.api, authenticationType: configTestAccounts.authenticationType, onChanged: configTestAccounts.onChanged }) : undefined,
@@ -1893,20 +1906,42 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // display AGENT_HEADER_PANEL") — shared by the password overlay below and the
     // agent header's render site, so both follow the one condition.
     const passwordPanelShowing = !!walletLocked || activeMainOverlay === SP_COIN_DISPLAY.PASSWORD_PANEL;
-    const passwordOverlay = passwordPanelShowing && recoveryPhrase
-        ? React.createElement(RecoveryPhraseScreen, { recoveryPhrase, onContinue: () => onRecoveryPhraseSaved?.(), autoHide: false })
-        : passwordPanelShowing
-            ? React.createElement(PasswordPanel, {
-                mode: passwordMode,
-                showTitle: false,
-                icon: passwordIconSrc ? React.createElement('img', { src: passwordIconSrc, alt: 'Merit Wallet', style: lockLogoStyle }) : undefined,
-                errorText: passwordErrorText,
-                noticeText: passwordNoticeText,
-                onSubmit: onPasswordSubmit,
-                submitting: passwordSubmitting,
-                clearOnSubmit: true,
-            })
-            : null;
+    const passwordOverlay = passwordPanelShowing && recoveryPhrase && securitySetup && setupStage === 'warning'
+        ? React.createElement(SecurityWarningScreen, { onContinue: () => { setSetupStage('phrase'); onRecoveryPhraseSaved?.(); } })
+        : passwordPanelShowing && recoveryPhrase && securitySetup && setupStage === 'security'
+            ? React.createElement(SecuritySetupScreen, { ...securitySetup, onDone: () => setSetupStage('warning') })
+            : passwordPanelShowing && recoveryPhrase
+                ? React.createElement(RecoveryPhraseScreen, { recoveryPhrase, onContinue: () => { if (securitySetup)
+                        setSetupStage('security');
+                    else
+                        onRecoveryPhraseSaved?.(); }, autoHide: false })
+                : passwordPanelShowing && pendingUnlock && securitySetup?.signIn
+                    ? React.createElement(UnlockSecondStep, {
+                        steps: pendingUnlock.steps,
+                        signIn: securitySetup.signIn,
+                        onPassed: () => { const held = pendingUnlock; setPendingUnlock(undefined); onPasswordSubmit?.(held.password, held.confirm); },
+                        onCancel: () => setPendingUnlock(undefined),
+                    })
+                    : passwordPanelShowing
+                        ? React.createElement(PasswordPanel, {
+                            mode: passwordMode,
+                            showTitle: false,
+                            icon: passwordIconSrc ? React.createElement('img', { src: passwordIconSrc, alt: 'Merit Wallet', style: lockLogoStyle }) : undefined,
+                            errorText: passwordErrorText,
+                            noticeText: passwordNoticeText,
+                            // 2026-11-13 (owner: sign-in options): on the unlock screen the steps switched on in Config -> Security (passkey, authenticator app) are asked for after the password and before the unlock goes ahead
+                            onSubmit: (password, confirm) => {
+                                const signIn = securitySetup?.signIn;
+                                const steps = signIn && passwordMode === 'unlock' ? requiredSignInSteps(signIn.options(), signIn.enrolled()) : undefined;
+                                if (steps && anySignInStep(steps))
+                                    setPendingUnlock({ password, confirm, steps });
+                                else
+                                    onPasswordSubmit?.(password, confirm);
+                            },
+                            submitting: passwordSubmitting,
+                            clearOnSubmit: true,
+                        })
+                        : null;
     const passwordOverlayWithReset = passwordOverlay && walletLocked && onResetWallet
         ? React.createElement(React.Fragment, null, passwordOverlay, React.createElement('div', { style: walletFrameStyle.forgotRow }, React.createElement('button', { type: 'button', onClick: onResetWallet, style: walletFrameStyle.forgotLink }, 'Forgot password? Reset wallet')))
         : passwordOverlay;
@@ -2056,7 +2091,9 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                                                     : activeTab === 'SPONSOR'
                                                                                         ? 'Add Sponsorship'
                                                                                         : activeTab === 'REWARDS'
-                                                                                            ? 'Rewards Management'
+                                                                                            ? stakingListVisible
+                                                                                                ? stakingListMode.kind === 'claim' ? `Claim ${stakingListMode.role} Rewards` : 'Unstake Sponsor Rewards'
+                                                                                                : 'Rewards Management'
                                                                                             : 'Wallet Config';
     // 2026-11-09 (owner design): the refresh tree of this wallet (refresh/refreshTree.ts); every screen's loaded data is a node in it
     const refreshTreeRef = useRef(undefined);

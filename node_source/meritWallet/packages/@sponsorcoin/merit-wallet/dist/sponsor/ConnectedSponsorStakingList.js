@@ -14,12 +14,13 @@ import { STATUS } from '@sponsorcoin/spcoin-common/context';
 import { useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { SponsorStakingListPanel, StakeConfirmPopup, formatTokenAmount, } from '@sponsorcoin/spcoin-panels';
 import { AccountAvatarWithOpen, AccountSelectDropDownHosted, ACCOUNT_SELECT_DISPLAY, LoadingText } from '@sponsorcoin/spcoin-panels';
-import { buildUnstakeReceipt, toMessageAccount } from '../receipt/transactionReceipts';
+import { buildClaimReceipt, buildUnstakeReceipt, toMessageAccount } from '../receipt/transactionReceipts';
 import { useTransactionReceipt } from '../receipt/useTransactionReceipt';
 import { useActiveAccountProfile } from '../swap/activeAccountProfile';
-import { loadSponsorTree } from './sponsorReads';
+import { loadRoleSponsorTree, loadSponsorTree } from './sponsorReads';
 import { assetListRowClass, listStyle } from '@sponsorcoin/spcoin-common/styles';
 import { unstakeSpCoin } from './unstakeWalk';
+import { useStakingListMode } from './stakingListMode';
 // The row's account pill and avatar are the same in every app (they were the web app's slots).
 const ROW_ACCOUNT_SELECT_DISPLAY = ACCOUNT_SELECT_DISPLAY.ICON | ACCOUNT_SELECT_DISPLAY.NAME | ACCOUNT_SELECT_DISPLAY.ADDRESS | ACCOUNT_SELECT_DISPLAY.COPY;
 const ROW_ACCOUNT_CELL = ({ account, mode, label, addrPrePostSize, addressSizeClassName, onAddressClick }) => (_jsx(AccountSelectDropDownHosted, { recipientAccount: account, mode: mode, label: label, showDisplay: ROW_ACCOUNT_SELECT_DISPLAY, onSelectClick: (e) => e.preventDefault(), onAddressClick: onAddressClick, addrPrePostSize: addrPrePostSize, addressSizeClassName: addressSizeClassName, panelGateId: null, 
@@ -41,6 +42,7 @@ export default function ConnectedSponsorStakingList({ host }) {
     const activeProfile = useActiveAccountProfile();
     const sponsor = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim();
     const decimals = host.decimals ?? 18;
+    const listMode = useStakingListMode();
     const [recipients, setRecipients] = useState([]);
     const [stakeInfoByAddress, setStakeInfoByAddress] = useState({});
     const [loading, setLoading] = useState(false);
@@ -51,7 +53,8 @@ export default function ConnectedSponsorStakingList({ host }) {
         if (!sponsor)
             return;
         const mine = ++generation.current;
-        const cacheKey = `${host.contractAddress().toLowerCase()}:${sponsor.toLowerCase()}`;
+        const claimRole = listMode.kind === 'claim' && listMode.role !== 'Sponsor' ? listMode.role : undefined;
+        const cacheKey = `${host.contractAddress().toLowerCase()}:${sponsor.toLowerCase()}:${claimRole ?? 'sponsor'}`;
         const cached = snapshots.get(cacheKey);
         if (cached) {
             setRecipients(cached.recipients);
@@ -60,7 +63,8 @@ export default function ConnectedSponsorStakingList({ host }) {
         setLoading(!cached);
         setError(undefined);
         try {
-            const tree = (await (host.loadTree ? host.loadTree(sponsor) : loadSponsorTree(sponsor, host.read))).filter((node) => node.recipientKey);
+            // Sponsor / Unstake: the account's own sponsorships. Recipient / Agent Claim: the sponsors of the account, in the same shape.
+            const tree = (await (claimRole ? loadRoleSponsorTree(claimRole, sponsor, host.read) : host.loadTree ? host.loadTree(sponsor) : loadSponsorTree(sponsor, host.read))).filter((node) => node.recipientKey);
             const profiles = new Map();
             const profileOf = (address) => {
                 const key = address.toLowerCase();
@@ -115,7 +119,7 @@ export default function ConnectedSponsorStakingList({ host }) {
             if (mine === generation.current)
                 setLoading(false);
         }
-    }, [sponsor, host]);
+    }, [sponsor, host, listMode]);
     useEffect(() => {
         if (!isVisible || !sponsor) {
             setRecipients([]);
@@ -128,11 +132,11 @@ export default function ConnectedSponsorStakingList({ host }) {
     useRegisterRefresh(fetchList, isVisible);
     const handleConfirmUnstake = useCallback(async (target, amount) => {
         const { recipient, rateKey, agent, agentRateKey, amount: targetAmount } = target;
-        setActiveUnstakeKey([String(recipient.address ?? '').trim(), rateKey ?? '', agent ? String(agent.address ?? '').trim() : '', agentRateKey ?? ''].join('|').toLowerCase());
+        setActiveUnstakeKey([String(recipient?.address ?? '').trim(), rateKey ?? '', agent ? String(agent.address ?? '').trim() : '', agentRateKey ?? ''].join('|').toLowerCase());
         try {
             await host.prepare?.();
             const qty = amount !== undefined && amount !== targetAmount ? parseUnits(amount, decimals) : undefined;
-            const result = await unstakeSpCoin({ read: host.read, send: host.send }, sponsor, String(recipient.address ?? '').trim(), rateKey, agent ? String(agent.address ?? '').trim() : undefined, agentRateKey, qty);
+            const result = await unstakeSpCoin({ read: host.read, send: host.send }, sponsor, recipient ? String(recipient.address ?? '').trim() : undefined, rateKey, agent ? String(agent.address ?? '').trim() : undefined, agentRateKey, qty);
             const profile = (a) => (a ? { address: a.address, name: a.name, symbol: a.symbol, logoURL: a.logoURL } : undefined);
             const sponsorAccount = exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount;
             showReceipt(buildUnstakeReceipt({
@@ -160,6 +164,65 @@ export default function ConnectedSponsorStakingList({ host }) {
             setActiveUnstakeKey(null);
         }
     }, [host, sponsor, decimals, exchangeContext, activeProfile, showReceipt, fetchList]);
+    // Claim mode: any button claims everything the account has earned (the contract has no claim for one row); the Total row's button shows the busy state.
+    // The completion card lists who received what: every involved account's spCoin balance is read before and after, and the difference is shown.
+    const handleClaim = useCallback(async () => {
+        if (listMode.kind !== 'claim')
+            return;
+        setActiveUnstakeKey('|||');
+        try {
+            if (!host.claim)
+                throw new Error('This wallet cannot send the claim from here yet.');
+            const profileOf = (a) => (a ? { address: a.address, name: a.name, symbol: a.symbol, logoURL: a.logoURL } : undefined);
+            const sponsorAccount = exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount;
+            const mine = activeProfile?.address && activeProfile.address.toLowerCase() === sponsor.toLowerCase() ? activeProfile : sponsorAccount ? { address: sponsorAccount.address, name: sponsorAccount.name, symbol: sponsorAccount.symbol, logoURL: sponsorAccount.logoURL } : { address: sponsor };
+            // The accounts a claim can pay: this account in its own role, the list's rows in the opposite role, and the agents under the rows.
+            const involved = new Map();
+            const add = (role, profile) => {
+                const address = String(profile?.address ?? '').trim();
+                if (address && !involved.has(role + address.toLowerCase()))
+                    involved.set(role + address.toLowerCase(), { role, profile });
+            };
+            const own = listMode.role === 'Sponsor' ? 'SPONSOR' : listMode.role === 'Recipient' ? 'RECIPIENT' : 'AGENT';
+            const rowRole = listMode.role === 'Sponsor' ? 'RECIPIENT' : 'SPONSOR';
+            add(own, mine);
+            for (const row of recipients) {
+                add(rowRole, profileOf(row));
+                for (const bucket of stakeInfoByAddress[String(row.address ?? '').trim()] ?? [])
+                    for (const agent of bucket.agentAccounts)
+                        add('AGENT', profileOf(agent.account));
+            }
+            const entries = [...involved.values()];
+            const readAll = () => Promise.all(entries.map((entry) => (host.readBalance ? host.readBalance(String(entry.profile?.address)).catch(() => undefined) : Promise.resolve(undefined))));
+            const before = await readAll();
+            const sent = await host.claim('claimOnChain' + listMode.role + 'Rewards', sponsor);
+            const after = await readAll();
+            const rows = [];
+            let total = 0n;
+            entries.forEach((entry, index) => {
+                const was = before[index];
+                const now = after[index];
+                if (was === undefined || now === undefined || now <= was)
+                    return;
+                total += now - was;
+                rows.push({ role: entry.role, profile: entry.profile, amount: formatTokenAmount((now - was).toString(), decimals) });
+            });
+            const order = { SPONSOR: 0, RECIPIENT: 1, AGENT: 2 };
+            rows.sort((x, y) => order[x.role] - order[y.role]);
+            const txHash = sent && typeof sent === 'object' && 'txHash' in sent ? String(sent.txHash) : undefined;
+            showReceipt(buildClaimReceipt({ roleLabel: listMode.role, rows, total: formatTokenAmount(total.toString(), decimals), txHash }), 'ConnectedSponsorStakingList:claim');
+            host.onChanged?.({ sponsor, recipients: [] });
+            void fetchList();
+        }
+        catch (err) {
+            const text = String(err?.message ?? err);
+            setErrorMessage({ errCode: 0, msg: text, source: 'SponsorStakingList', status: STATUS.MESSAGE_ERROR, reason: 'The claim failed.' });
+            openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'SponsorStakingList:claimFailed');
+        }
+        finally {
+            setActiveUnstakeKey(null);
+        }
+    }, [listMode, host, sponsor, fetchList, setErrorMessage, openPanel, recipients, stakeInfoByAddress, exchangeContext, activeProfile, decimals, showReceipt]);
     const activeAccount = exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount;
-    return (_jsx(SponsorStakingListPanel, { recipients: recipients, stakeInfoByAddress: stakeInfoByAddress, decimals: decimals, loading: loading, error: error, activeUnstakeKey: activeUnstakeKey, accountCellSlot: ROW_ACCOUNT_CELL, avatarSlot: ROW_AVATAR, loadingContent: _jsx(LoadingText, {}), confirmPopupContent: ({ isOpen, target, totalAmount, onConfirm, onCancel }) => (_jsx(StakeConfirmPopup, { isOpen: isOpen, mode: "REVOKE", isSpCoin: true, spCoinContract: host.spCoinContract, activeAccount: activeAccount, recipientAccount: target?.recipient, agentAccount: target?.agent, hasAgent: Boolean(target?.agent), totalAmount: totalAmount, onCancel: onCancel, onConfirm: onConfirm })), onConfirmUnstake: handleConfirmUnstake }));
+    return (_jsx(SponsorStakingListPanel, { recipients: recipients, stakeInfoByAddress: stakeInfoByAddress, decimals: decimals, loading: loading, error: error, activeUnstakeKey: activeUnstakeKey, accountCellSlot: ROW_ACCOUNT_CELL, avatarSlot: ROW_AVATAR, loadingContent: _jsx(LoadingText, {}), confirmPopupContent: ({ isOpen, target, totalAmount, onConfirm, onCancel }) => (_jsx(StakeConfirmPopup, { isOpen: isOpen, mode: "REVOKE", isSpCoin: true, spCoinContract: host.spCoinContract, activeAccount: activeAccount, recipientAccount: target?.recipient, agentAccount: target?.agent, hasAgent: Boolean(target?.agent), totalAmount: totalAmount, onCancel: onCancel, onConfirm: onConfirm })), onConfirmUnstake: handleConfirmUnstake, mode: listMode.kind, firstColumnLabel: listMode.kind === 'claim' && listMode.role !== 'Sponsor' ? 'Sponsor' : undefined, onClaimRewards: handleClaim }));
 }

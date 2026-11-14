@@ -15,6 +15,7 @@ import { type TestAccountsApi } from './TestAccountsSection';
 import { type TradeHost } from './trade/tradeHost';
 import type { WalletSessionHost } from './walletSessionHost';
 import { type AccountDetailHost } from './account/AccountDetailScreen';
+import { type SecuritySetupHost } from './SecuritySetupScreen';
 import { type WalletOnboardingPanelProps } from './WalletOnboardingPanel';
 import { type SponsorStakingHost } from './sponsor/ConnectedSponsorStakingList';
 import { type HostTransactionResult } from './receipt/transactionReceipts';
@@ -212,6 +213,8 @@ export interface MeritWalletProps {
      */
     recoveryPhrase?: string;
     onRecoveryPhraseSaved?: () => void;
+    /** 2026-11-13 (owner: optional MFA after the phrase): when set, the phrase screen's Continue opens the optional "Protect your wallet" screen (authenticator app / passkey) before onRecoveryPhraseSaved fires; Skip is always there. Omitted: no such step. */
+    securitySetup?: SecuritySetupHost;
     /**
      * 2026-10-19 (docs/meritMigration.txt rows 27 / 28: a host passes data and functions, it never draws a wallet screen): first-run setup. While this is set the component draws the
      * "Set up your wallet" screen (create a wallet, import by recovery phrase, restore a backup) INSTEAD of the wallet, and the host only supplies what the screen calls. The host clears it

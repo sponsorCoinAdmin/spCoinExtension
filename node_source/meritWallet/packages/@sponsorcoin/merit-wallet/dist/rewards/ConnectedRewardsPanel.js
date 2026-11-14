@@ -9,6 +9,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
+import { setStakingListMode } from '../sponsor/stakingListMode';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { AddressSelect, ManageSponsorshipsPanel, createAccountRecordSource, runRewardScript as runRewardScriptCall, useManageSponsorshipsData, useManageSponsorshipsNavigation, } from '@sponsorcoin/spcoin-panels';
@@ -72,11 +73,15 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
     const { unstakeAllSponsorships, goToSponsorStakeTab, onOpenRewardsByAccountType, onCloseRewardsByAccountType } = useManageSponsorshipsNavigation({ pendingVisible });
     if (!isActive)
         return null;
-    return (_jsx("div", { style: panelBoxStyle.fill, children: _jsx(ManageSponsorshipsPanel, { tradingAmountText: tradingAmountDisplay, stakedAmountText: stakedAmountDisplay, pendingAmountText: pendingTotalAmountDisplay, totalCoinsText: totalCoinsDisplay, tradingOrStalledLoading: tradingOrStakedLoading, tradingIsZero: tradingIsZero, onStake: goToSponsorStakeTab, onUnstake: unstakeAllSponsorships, 
-            // The web opens a role-account list here (ACTIVE_SPONSORSHIPS); without the web's list host that mode has nothing to draw and left the body blank. The accounts you
-            // sponsor are the Un-Stake list's rows, so the label opens that list.
-            onStakedLabelClick: unstakeAllSponsorships, stakedIsZero: stakedIsZero, autoRefresh: autoRefresh, onAutoRefreshChange: changeAutoRefresh, pendingVisible: pendingVisible, pendingInitialLoading: pendingInitialLoading, pendingRoleUnavailable: pendingRoleUnavailable, pendingIsZero: pendingIsZero, pendingClaimInProgress: totalReward.loading && totalReward.action === 'claim', pendingClaimDisabled: !pendingInitialLoading && ((totalReward.loading && totalReward.action === 'claim') || !activeContractAddr || !activeAccountAddr), pendingErrorText: totalReward.error, onPendingEstimate: () => {
+    return (_jsx("div", { style: panelBoxStyle.fill, children: _jsx(ManageSponsorshipsPanel, { tradingAmountText: tradingAmountDisplay, stakedAmountText: stakedAmountDisplay, pendingAmountText: pendingTotalAmountDisplay, totalCoinsText: totalCoinsDisplay, tradingOrStalledLoading: tradingOrStakedLoading, tradingIsZero: tradingIsZero, onStake: goToSponsorStakeTab, onUnstake: () => { setStakingListMode({ kind: 'unstake' }); unstakeAllSponsorships(); }, 
+            // The Staked label does nothing on a click (owner request 2026-11-13); the Unstake button is the way to the Un-Stake list.
+            stakedIsZero: stakedIsZero, autoRefresh: autoRefresh, onAutoRefreshChange: changeAutoRefresh, pendingVisible: pendingVisible, pendingInitialLoading: pendingInitialLoading, pendingRoleUnavailable: pendingRoleUnavailable, pendingIsZero: pendingIsZero, pendingClaimInProgress: totalReward.loading && totalReward.action === 'claim', pendingClaimDisabled: !pendingInitialLoading && ((totalReward.loading && totalReward.action === 'claim') || !activeContractAddr || !activeAccountAddr), pendingErrorText: totalReward.error, onPendingEstimate: () => {
                 if (!pendingRoleUnavailable)
                     void runTotalRewardAction('estimate');
-            }, onPendingClaim: () => void runTotalRewardAction('claim'), onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), onRoleClaim: (role) => void runRewardAction(role, 'claim'), addressSelectContent: _jsx(AssetSelectDisplayProvider, { children: _jsx(AssetSelectProvider, { containerType: SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL, closePanelCallback: () => extras.onClose?.(), setSelectedAssetCallback: () => undefined, children: _jsx(AddressSelect, { callingParent: "ManageSponsorshipsPanel", defaultAddress: extras.depositAddress ?? host.contractAddress(), bypassDefaultFsm: true, useActiveAddr: true, shortAddr: true, preText: "Deposit Account:", showAccount: false }) }) }) }) }));
+            }, onPendingClaim: () => void runTotalRewardAction('claim'), onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), 
+            // 2026-11-13 (owner): every role's Claim opens the sponsorships list in Claim mode (Sponsor: what you sponsor; Recipient / Agent: who sponsors you); its buttons claim
+            onRoleClaim: (role) => {
+                setStakingListMode({ kind: 'claim', role });
+                unstakeAllSponsorships();
+            }, addressSelectContent: _jsx(AssetSelectDisplayProvider, { children: _jsx(AssetSelectProvider, { containerType: SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL, closePanelCallback: () => extras.onClose?.(), setSelectedAssetCallback: () => undefined, children: _jsx(AddressSelect, { callingParent: "ManageSponsorshipsPanel", defaultAddress: extras.depositAddress ?? host.contractAddress(), bypassDefaultFsm: true, useActiveAddr: true, shortAddr: true, preText: "Deposit Account:", showAccount: false }) }) }) }) }));
 }

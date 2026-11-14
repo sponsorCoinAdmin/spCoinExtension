@@ -7,10 +7,11 @@
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { setStakingListMode } from '../sponsor/stakingListMode';
 import { createChainClock } from './chainClock';
+import { meritDebug } from '../debug/debugStore';
 import { withRoleFlags } from './accountRoleFlags';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
@@ -77,6 +78,40 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
         warn: () => undefined,
     });
     useRegisterRefresh(refreshAccountRecord, isActive);
+    // 2026-11-14 (debug dump): what this panel shows and the clock it counts from, in the same layout in every app. Read when the dump is built, from the latest values.
+    const dumpState = useRef({ tradingAmountDisplay, stakedAmountDisplay, pendingTotalAmountDisplay, totalCoinsDisplay, pendingRoleUnavailable, totalReward, rewardRows, activeAccountAddr, activeContractAddr });
+    dumpState.current = { tradingAmountDisplay, stakedAmountDisplay, pendingTotalAmountDisplay, totalCoinsDisplay, pendingRoleUnavailable, totalReward, rewardRows, activeAccountAddr, activeContractAddr };
+    useEffect(() => {
+        meritDebug.setSection('clock', async () => {
+            const latest = host.blockTimestamp ? await host.blockTimestamp() : undefined;
+            const chainNow = chainClock ? await chainClock.now() : undefined;
+            return {
+                chainNowSeconds: chainNow?.toString() ?? '(this host gives no blockTimestamp)',
+                latestBlockSeconds: latest === undefined ? '(none)' : String(latest),
+                // the computer's own calendar clock, shown only to explain a difference between two dumps (no reward figure uses it)
+                computerUnixSeconds: String(Math.floor(Date.now() / 1000)),
+                computerMinusChainSeconds: chainNow === undefined ? '(unknown)' : String(BigInt(Math.floor(Date.now() / 1000)) - chainNow),
+            };
+        });
+        meritDebug.setSection('rewards', () => {
+            const d = dumpState.current;
+            return {
+                contract: d.activeContractAddr,
+                trading: d.tradingAmountDisplay,
+                staked: d.stakedAmountDisplay,
+                pendingTotal: d.pendingTotalAmountDisplay,
+                totalCoins: d.totalCoinsDisplay,
+                noRoleAtAll: d.pendingRoleUnavailable,
+                roles: Object.fromEntries(d.rewardRows.map((row) => [row.role, row.available ? `${row.amount}${row.loading ? ' (loading)' : ''}${row.error ? ` ERROR ${String(row.error)}` : ''}` : 'N/A'])),
+                totalReward: d.totalReward,
+            };
+        });
+        meritDebug.setSection('account', () => ({ activeAccount: dumpState.current.activeAccountAddr }));
+        return () => {
+            meritDebug.setSection('clock', undefined);
+            meritDebug.setSection('rewards', undefined);
+        };
+    }, [host, chainClock]);
     const { unstakeAllSponsorships, goToSponsorStakeTab, onOpenRewardsByAccountType, onCloseRewardsByAccountType } = useManageSponsorshipsNavigation({ pendingVisible });
     if (!isActive)
         return null;

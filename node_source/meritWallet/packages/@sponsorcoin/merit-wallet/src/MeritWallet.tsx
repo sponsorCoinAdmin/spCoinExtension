@@ -151,6 +151,7 @@ const TAB_KEY_BY_PANEL_ID: Partial<Record<SP_COIN_DISPLAY, MenuTabKey>> = Object
 import type { AuthenticationType } from './auth/authenticationType';
 import { RADIO_PANEL_GROUPS_WITH_FALLBACKS, EMPTY_RADIO_PANEL_GROUPS } from './radioPanelGroups';
 import { PersistedTimeoutPicker } from './walletConfigPanelProps';
+import { DebugBugButton, DebugConfigSection, useDebugRuntime } from './debug/DebugBug';
 
 // 2026-09-15, on request ("the Token/Account/NetworkSelectListDropdown
 // chevrons [need] to be linked to the required panels") — which
@@ -908,6 +909,8 @@ function MeritWalletInner({
   onConfigDeleteWallet,
   walletSession,
 }: MeritWalletProps) {
+  // 2026-11-14: the ladybug's hotkey, saved switch and error capture (debug/DebugBug.tsx)
+  useDebugRuntime();
   // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
   // activeMainOverlay (the same computed value PanelBootstrap itself
   // reads), not owned local state. useEnforceRadioPanelGroups/
@@ -2211,7 +2214,7 @@ function MeritWalletInner({
                 zeroXEngineVisible: configZeroXEngineVisible,
                 on0xEngineChange: onConfig0xEngineChange,
                 resetPanelsContent: configResetPanelsContent,
-                devToolsContent: configDevToolsContent,
+                devToolsContent: React.createElement(React.Fragment, null, configDevToolsContent, React.createElement(DebugConfigSection)),
                 extensionChannel: configExtensionChannel,
                 onExtensionChannelChange: onConfigExtensionChannelChange,
                 extensionDownloadPath: configExtensionDownloadPath,
@@ -2901,6 +2904,7 @@ function MeritWalletInner({
             />
           }
           titleBadgeSrc={titleBadgeSrc}
+          extraActions={<DebugBugButton />}
           onRefresh={onRefresh}
           refreshing={refreshBusy}
           onClose={onClose}

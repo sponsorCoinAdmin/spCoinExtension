@@ -89,4 +89,56 @@ export const domPlatform: MeritPlatform = {
     window.addEventListener(ACCOUNT_REGISTRY_UPDATED_EVENT, handler);
     return () => window.removeEventListener(ACCOUNT_REGISTRY_UPDATED_EVENT, handler);
   },
+  onHotkey(chord, listener) {
+    if (typeof window === 'undefined') return () => undefined;
+    const parts = chord.toLowerCase().split('+');
+    const key = parts[parts.length - 1];
+    const wants = { ctrl: parts.includes('ctrl'), alt: parts.includes('alt'), shift: parts.includes('shift') };
+    const handler = (event: KeyboardEvent) => {
+      // event.code, not event.key: with Ctrl+Alt (AltGr on some layouts) the character typed is not the letter
+      const pressed = event.code === `Key${key.toUpperCase()}` || event.key.toLowerCase() === key;
+      if (pressed && event.ctrlKey === wants.ctrl && event.altKey === wants.alt && event.shiftKey === wants.shift) {
+        event.preventDefault();
+        listener();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  },
+  onDeviceError(listener) {
+    if (typeof window === 'undefined') return () => undefined;
+    const text = (value: unknown): string => {
+      if (value instanceof Error) return `${value.name}: ${value.message} ${(value.stack ?? '').split(String.fromCharCode(10)).slice(1, 7).join(' | ')}`;
+      if (typeof value === 'string') return value;
+      try {
+        return JSON.stringify(value) ?? String(value);
+      } catch {
+        return String(value);
+      }
+    };
+    const onError = (event: ErrorEvent) => listener('error', event.error ? text(event.error) : `${event.message} (${event.filename}:${event.lineno})`);
+    const onRejection = (event: PromiseRejectionEvent) => listener('rejection', text(event.reason));
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection);
+    const original = console.error;
+    console.error = (...args: unknown[]) => {
+      listener('console.error', args.map(text).join(' ').slice(0, 1500));
+      original.apply(console, args as never);
+    };
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+      if (console.error !== original) console.error = original;
+    };
+  },
+  deviceInfo(): Record<string, string> {
+    if (typeof window === 'undefined') return {};
+    return {
+      // the offset only EXPLAINS a difference between two dumps; no reward figure reads it
+      utcOffsetMinutes: String(-new Date().getTimezoneOffset()),
+      userAgent: navigator.userAgent,
+      window: `${window.innerWidth}x${window.innerHeight}`,
+      page: window.location.origin + window.location.pathname,
+    };
+  },
 };

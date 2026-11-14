@@ -1,3 +1,9 @@
+/**
+ * The chain's time right now, from the node, in seconds. A node that has a pending block (Hardhat, most full nodes) reports the time the NEXT block would carry; that is the moment a claim sent now would settle at, and on an idle
+ * local fork (no block for hours) it is the only value that keeps up with the fork's own clock. Without a pending block it falls back to the newest block's time.
+ * @param rpc one JSON-RPC call on the host's node: (method, params) => result (ethers: provider.send, viem: client.request).
+ */
+export declare function readChainTimestamp(rpc: (method: string, params: unknown[]) => Promise<unknown>): Promise<bigint>;
 export interface ChainClock {
     /** Asks the chain for its newest block time (re-anchors when it moved) and returns the chain's "now" in seconds. Falls back to the last anchor when the chain cannot be asked. Throws only before any anchor exists. */
     now(): Promise<bigint>;

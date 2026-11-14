@@ -9,12 +9,11 @@ import { extensionWalletLinkHooks } from './src/walletLinkHooks';
 import { isExternalAccount } from './src/externalAccounts';
 import { LEDGER_ID, ledgerTransport, restoreLedger } from './src/hardwareLedger';
 import { startDappApprovals } from './src/dappApprovals';
-import { captureErrors, mountDebugOverlay } from './src/debugOverlay';
 import { remoteSelectionStore } from './src/remoteSelectionStore';
 import { extensionPeers, meritWebConnection } from './src/extensionPeers';
 import { traceFrom } from './src/debugTrace';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost } from '@sponsorcoin/merit-wallet';
+import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost, meritDebug, registerHostDebug, readChainTimestamp } from '@sponsorcoin/merit-wallet';
 import { persistedTimeoutMs } from '@sponsorcoin/merit-wallet';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
@@ -94,11 +93,20 @@ import { executeClaimTransaction, SPOIN_CLAIM_ABI } from './src/executeClaimTran
 
 // 2026-10-13 (docs/connectionDesign.txt item 12): bring a Ledger the person granted earlier back after a reload (no prompt).
 restoreLedger();
-captureErrors(traceFrom);
-mountDebugOverlay();
 traceFrom('panel', 'side panel loaded');
+meritDebug.log('panel', 'side panel loaded');
 // the engine's own trace lines (the account record reads) go to the same log
-setEngineTrace((message, data) => traceFrom('engine', data ? `${message} ${JSON.stringify(data)}` : message));
+setEngineTrace((message, data) => {
+  const line = data ? `${message} ${JSON.stringify(data)}` : message;
+  traceFrom('engine', line);
+  meritDebug.log('engine', line);
+});
+// 2026-11-14: the wallet's ladybug dump (merit-wallet, the same in every app): what this host is and the worker's own trace (the connect path runs there)
+registerHostDebug(meritDebug, () => ({ app: 'extension', build: chrome.runtime.getManifest().version, server: 'none (the extension does not use a hosted app)', chainId: activeChainId, rpcUrl: chainRpcUrl(), contract: spCoinAddress() }));
+meritDebug.setSection('worker', async () => {
+  const reply = (await chrome.runtime.sendMessage({ type: 'merit/debug/get' }).catch(() => undefined)) as { lines?: string[] } | undefined;
+  return { lastLines: (reply?.lines ?? []).filter((l) => !/useStepPanel:|engine:/.test(l)).slice(-40) };
+});
 
 // docs/meritMigration.txt row 27: the Hardhat RPC is the wallet's network registry's (src/chainRpc.ts), the one place it is written; this file had its own copy of the URL and of the V0 spCoin address.
 
@@ -598,7 +606,10 @@ async function renderWallet() {
     // 2026-10-09 (docs/nodeSourceMigrationPlan.txt row 25): the reward ESTIMATES are computed here too, from direct reads of the contract's views (estimateRewards.ts, a port of the access module's calculation,
     // checked against the run-script result for 18 live accounts), so the Rewards tab needs no hosted app.
     // 2026-11-14: merit-wallet's Rewards panel owns the chain clock and the role flags (the same code in every app); this host only supplies raw reads: the newest block's time, the estimate's contract reads and the account record.
-    blockTimestamp: async () => (await createPublicClient({ transport: http(chainRpcUrl()) }).getBlock({ blockTag: 'latest' })).timestamp,
+    blockTimestamp: () => {
+      const client = createPublicClient({ transport: http(chainRpcUrl()) });
+      return readChainTimestamp((method, params) => client.request({ method, params } as never));
+    },
     // a failed estimate also goes to the bug screen's trace
     estimate: async (method, accountKey, now) => {
       try {

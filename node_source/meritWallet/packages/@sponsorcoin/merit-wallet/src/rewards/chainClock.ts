@@ -10,6 +10,27 @@
 //   - when a newer block shows up it replaces the anchor, so drift never builds up.
 // There is no use of the computer's calendar time or time zone anywhere in this file; only elapsed time (differences of its clock) is used.
 
+/**
+ * The chain's time right now, from the node, in seconds. A node that has a pending block (Hardhat, most full nodes) reports the time the NEXT block would carry; that is the moment a claim sent now would settle at, and on an idle
+ * local fork (no block for hours) it is the only value that keeps up with the fork's own clock. Without a pending block it falls back to the newest block's time.
+ * @param rpc one JSON-RPC call on the host's node: (method, params) => result (ethers: provider.send, viem: client.request).
+ */
+export async function readChainTimestamp(rpc: (method: string, params: unknown[]) => Promise<unknown>): Promise<bigint> {
+  const stamp = (block: unknown): bigint | undefined => {
+    const t = (block as { timestamp?: string | number | bigint } | null | undefined)?.timestamp;
+    return t === undefined || t === null ? undefined : BigInt(t);
+  };
+  try {
+    const pending = stamp(await rpc('eth_getBlockByNumber', ['pending', false]));
+    if (pending !== undefined) return pending;
+  } catch {
+    /* no pending block on this node: use the newest */
+  }
+  const latest = stamp(await rpc('eth_getBlockByNumber', ['latest', false]));
+  if (latest === undefined) throw new Error('The chain returned no block.');
+  return latest;
+}
+
 export interface ChainClock {
   /** Asks the chain for its newest block time (re-anchors when it moved) and returns the chain's "now" in seconds. Falls back to the last anchor when the chain cannot be asked. Throws only before any anchor exists. */
   now(): Promise<bigint>;

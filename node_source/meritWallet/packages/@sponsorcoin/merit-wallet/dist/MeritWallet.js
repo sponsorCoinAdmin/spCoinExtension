@@ -107,6 +107,7 @@ const TAB_PANEL_IDS = {
 const TAB_KEY_BY_PANEL_ID = Object.fromEntries(Object.entries(TAB_PANEL_IDS).map(([tab, id]) => [id, tab]));
 import { RADIO_PANEL_GROUPS_WITH_FALLBACKS, EMPTY_RADIO_PANEL_GROUPS } from './radioPanelGroups';
 import { PersistedTimeoutPicker } from './walletConfigPanelProps';
+import { DebugBugButton, DebugConfigSection, useDebugRuntime } from './debug/DebugBug';
 // 2026-09-21, Path A — which real id each ActiveListMode value opens.
 // Several modes share one list TYPE (sellToken/buyToken/sendToken/
 // sponsorPayToken all open the same token list) — distinguishing WHICH
@@ -232,6 +233,8 @@ const SAMPLE_NETWORK_ROWS = [
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
 function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBadgeSrc, onRefresh, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, showWalletSelect = true, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, securitySetup, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccounts, configUniSelectVisible, onConfigUniswapEngineChange, configZeroXEngineVisible, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
+    // 2026-11-14: the ladybug's hotkey, saved switch and error capture (debug/DebugBug.tsx)
+    useDebugRuntime();
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
     // reads), not owned local state. useEnforceRadioPanelGroups/
@@ -1497,7 +1500,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                             zeroXEngineVisible: configZeroXEngineVisible,
                             on0xEngineChange: onConfig0xEngineChange,
                             resetPanelsContent: configResetPanelsContent,
-                            devToolsContent: configDevToolsContent,
+                            devToolsContent: React.createElement(React.Fragment, null, configDevToolsContent, React.createElement(DebugConfigSection)),
                             extensionChannel: configExtensionChannel,
                             onExtensionChannelChange: onConfigExtensionChannelChange,
                             extensionDownloadPath: configExtensionDownloadPath,
@@ -2123,7 +2126,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                     openNetworkDetail(activeNetworkRow.id);
                                                     onNetworkIconClick?.(activeNetworkRow.id);
                                                 }
-                                                : undefined, chevronUp: activeListMode === 'network' || activeChild === SP_COIN_DISPLAY.NETWORK_LIST }), titleBadgeSrc: titleBadgeSrc, onRefresh: onRefresh, refreshing: refreshBusy, onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_ACCOUNT_HEADER, lazyLoad: false, children: _jsx(WalletAccountHeader, { icon: activeAccountEntry?.icon, address: activeAccountEntry?.address, symbol: activeAccountEntry?.symbol, name: activeAccountEntry?.name, placeholderLabel: "Select Account", onSelectClick: () => toggleList('account'), onIconClick: (address) => {
+                                                : undefined, chevronUp: activeListMode === 'network' || activeChild === SP_COIN_DISPLAY.NETWORK_LIST }), titleBadgeSrc: titleBadgeSrc, extraActions: _jsx(DebugBugButton, {}), onRefresh: onRefresh, refreshing: refreshBusy, onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_ACCOUNT_HEADER, lazyLoad: false, children: _jsx(WalletAccountHeader, { icon: activeAccountEntry?.icon, address: activeAccountEntry?.address, symbol: activeAccountEntry?.symbol, name: activeAccountEntry?.name, placeholderLabel: "Select Account", onSelectClick: () => toggleList('account'), onIconClick: (address) => {
                                             if (!address)
                                                 return;
                                             openAccountDetail(address);

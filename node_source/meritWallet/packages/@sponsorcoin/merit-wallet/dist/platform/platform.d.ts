@@ -33,6 +33,12 @@ export interface MeritPlatform {
     onImageCacheUpdated?(listener: () => void): () => void;
     /** 2026-11-04: an account's record (name, symbol, website, ...) in the shared record cache changed: whatever shows it reads it again. Called with the account's address. Returns the unsubscribe function. */
     onAccountRecordUpdated?(listener: (address: string) => void): () => void;
+    /** 2026-11-14 (debug dump): a keyboard chord such as 'ctrl+alt+b' was pressed anywhere in the wallet's page. Returns the unsubscribe function. A platform without a keyboard omits it. */
+    onHotkey?(chord: string, listener: () => void): () => void;
+    /** 2026-11-14 (debug dump): an uncaught error, an unhandled promise rejection or a console.error happened in the wallet's page, as text. Returns the unsubscribe function. */
+    onDeviceError?(listener: (kind: 'error' | 'rejection' | 'console.error', text: string) => void): () => void;
+    /** 2026-11-14 (debug dump): facts about the device the wallet runs on (time zone offset, window size, page), as plain text values. */
+    deviceInfo?(): Record<string, string>;
 }
 /** What a component reads: the host's platform, or the DOM one when the host gave none (the web app and the extension give none). */
 export declare const MeritPlatformContext: import("react").Context<MeritPlatform>;

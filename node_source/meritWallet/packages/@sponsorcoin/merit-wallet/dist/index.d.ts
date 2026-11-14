@@ -75,7 +75,9 @@ export type { TestAccountsApi, TestAccountsSectionProps } from './TestAccountsSe
 export { default as PasswordPromptDialog } from './PasswordPromptDialog';
 export { default as ConnectedRewardsPanel } from './rewards/ConnectedRewardsPanel';
 export type { RewardsHost, RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
-export { createChainClock, type ChainClock } from './rewards/chainClock';
+export { createChainClock, readChainTimestamp, type ChainClock } from './rewards/chainClock';
+export { meritDebug, createDebugStore, redact, registerHostDebug, hideAddressSecrets, DEBUG_SECTIONS, type DebugStore, type HostDebugInfo } from './debug/debugStore';
+export { DebugBugButton, DebugConfigSection, useDebugRuntime, useDebugEnabled, DEBUG_HOTKEY } from './debug/DebugBug';
 export { withRoleFlags } from './rewards/accountRoleFlags';
 export { estimatePendingRewards, estimateRewardsByMethod, accrue, splitRewardPool, splitAgentPool, type PendingRewards, type EstimateRewardsParams } from './rewards/estimateRewards';
 export { default as WalletSecuritySection } from './WalletSecuritySection';

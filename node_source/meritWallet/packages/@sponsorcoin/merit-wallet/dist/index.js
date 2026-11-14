@@ -55,6 +55,7 @@ export { AuthenticationType, authenticationTypeLabel } from './auth/authenticati
 export { default as TestAccountsSection } from './TestAccountsSection';
 export { default as PasswordPromptDialog } from './PasswordPromptDialog';
 export { default as ConnectedRewardsPanel } from './rewards/ConnectedRewardsPanel';
+export { createSecuritySetup } from './security/mfaFactorsStore';
 export { createChainClock, readChainTimestamp } from './rewards/chainClock';
 export { meritDebug, createDebugStore, redact, registerHostDebug, hideAddressSecrets, DEBUG_SECTIONS } from './debug/debugStore';
 export { DebugBugButton, DebugConfigSection, useDebugRuntime, useDebugEnabled, DEBUG_HOTKEY } from './debug/DebugBug';

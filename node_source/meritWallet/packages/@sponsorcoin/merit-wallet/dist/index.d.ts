@@ -75,6 +75,7 @@ export type { TestAccountsApi, TestAccountsSectionProps } from './TestAccountsSe
 export { default as PasswordPromptDialog } from './PasswordPromptDialog';
 export { default as ConnectedRewardsPanel } from './rewards/ConnectedRewardsPanel';
 export type { RewardsHost, RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
+export { createSecuritySetup, type MfaFactors, type MfaFactorsHostParts } from './security/mfaFactorsStore';
 export { createChainClock, readChainTimestamp, type ChainClock } from './rewards/chainClock';
 export { meritDebug, createDebugStore, redact, registerHostDebug, hideAddressSecrets, DEBUG_SECTIONS, type DebugStore, type HostDebugInfo } from './debug/debugStore';
 export { DebugBugButton, DebugConfigSection, useDebugRuntime, useDebugEnabled, DEBUG_HOTKEY } from './debug/DebugBug';

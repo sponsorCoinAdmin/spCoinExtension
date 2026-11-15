@@ -1305,8 +1305,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 // the sell token must differ from the buy token of each engine that has one (named in the message)
                 peerAddresses: mode === 'sellToken'
                     ? [
-                        uniBuyTokenContract?.address ? { address: String(uniBuyTokenContract.address), source: 'Uniswap' } : undefined,
-                        buyTokenContract?.address ? { address: String(buyTokenContract.address), source: 'Zero X' } : undefined,
+                        uniPanelVisible && uniBuyTokenContract?.address ? { address: String(uniBuyTokenContract.address), source: 'Uniswap' } : undefined,
+                        zeroXVisible && buyTokenContract?.address ? { address: String(buyTokenContract.address), source: 'Zero X' } : undefined,
                     ].filter(Boolean)
                     : undefined,
                 // buyToken is the 0X engine's buy token (onCommit above sets setBuyTokenContract); the sell token is checked against the Uniswap buy token (peer above)

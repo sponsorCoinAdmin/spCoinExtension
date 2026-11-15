@@ -18,4 +18,4 @@ export interface NetworkSelectDropDownProps {
     name?: string;
     id?: string | number;
 }
-export default function NetworkSelectDropDown({ icon, label, onSelectClick, onIconClick, chevronUp, symbol, name, id, }: NetworkSelectDropDownProps): React.JSX.Element;
+export default function NetworkSelectDropDown({ icon, label, onSelectClick, onIconClick, chevronUp, symbol, name, id, }: NetworkSelectDropDownProps): import("react/jsx-runtime").JSX.Element;

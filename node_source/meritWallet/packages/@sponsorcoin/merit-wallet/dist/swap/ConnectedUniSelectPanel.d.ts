@@ -4,4 +4,4 @@ export default function ConnectedUniSelectPanel({ host, onBuyTokenClick, balance
     host: SwapTradeButtonHost;
     onBuyTokenClick?: (e: React.SyntheticEvent) => void;
     balanceText?: string;
-}): React.JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;

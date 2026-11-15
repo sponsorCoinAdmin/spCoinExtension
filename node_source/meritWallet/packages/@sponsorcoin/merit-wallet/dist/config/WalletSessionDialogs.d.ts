@@ -14,4 +14,4 @@ export default function WalletSessionDialogs({ dialog, onClose, session }: {
     dialog: WalletSessionDialog;
     onClose(): void;
     session: WalletSessionHost | undefined;
-}): import("react").JSX.Element | null;
+}): import("react/jsx-runtime").JSX.Element | null;

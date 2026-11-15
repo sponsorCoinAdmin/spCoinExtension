@@ -137,7 +137,7 @@ export function hideAddressSecrets(address) {
 export function registerHostDebug(store, info) {
     store.setSection('app', () => {
         const i = info();
-        return { app: i.app, build: i.build ?? '(unknown)', server: hideAddressSecrets(i.server) === '(none)' ? (i.server ?? '(none)') : hideAddressSecrets(i.server) };
+        return { app: i.app, build: i.build ?? '(unknown)', server: /^https?:\/\//i.test(i.server ?? '') ? hideAddressSecrets(i.server) : (i.server ?? '(none)') };
     });
     store.setSection('chain', () => {
         const i = info();

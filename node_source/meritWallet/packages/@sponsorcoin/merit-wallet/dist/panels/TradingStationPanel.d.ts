@@ -6,4 +6,4 @@ export interface TradingStationPanelProps extends ExchangeTradingPairProps {
     /** AFFILIATE_FEE's content (live, quote-derived — host supplied). Omit for none. */
     affiliateFeeContent?: React.ReactNode;
 }
-export default function TradingStationPanel({ onSubmit, submitLabel, affiliateFeeContent, ...exchangeTradingPairProps }: TradingStationPanelProps): React.JSX.Element;
+export default function TradingStationPanel({ onSubmit, submitLabel, affiliateFeeContent, ...exchangeTradingPairProps }: TradingStationPanelProps): import("react/jsx-runtime").JSX.Element;

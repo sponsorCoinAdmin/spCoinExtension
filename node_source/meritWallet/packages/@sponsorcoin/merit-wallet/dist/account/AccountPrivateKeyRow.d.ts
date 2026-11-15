@@ -8,7 +8,7 @@ export declare function HeldPrivateKeyRow({ heldBy, zebra, cell }: {
     heldBy: string;
     zebra: string;
     cell: string;
-}): import("react").JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;
 export default function AccountPrivateKeyRow({ address, reveal, idPrefix, zebra, cell, }: {
     address: string;
     /** The host's reveal: with no password it may succeed from an approved cached one, else it throws PasswordRequiredError; a wrong password throws a readable Error. */
@@ -16,4 +16,4 @@ export default function AccountPrivateKeyRow({ address, reveal, idPrefix, zebra,
     idPrefix?: string;
     zebra: string;
     cell: string;
-}): import("react").JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;

@@ -6,4 +6,4 @@ export interface WalletSecurityApi {
 }
 export default function WalletSecuritySection({ api }: {
     api: WalletSecurityApi;
-}): import("react").JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;

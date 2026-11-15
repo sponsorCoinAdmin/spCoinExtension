@@ -6,4 +6,4 @@ export interface RecoveryPhraseScreenProps {
     /** Hide the words when the page is hidden or after a time limit (default true: the extension). The web wallet's first run passes false: its phrase cannot be shown again, so it must not vanish before it is saved. */
     autoHide?: boolean;
 }
-export default function RecoveryPhraseScreen({ recoveryPhrase, onContinue, autoHide }: RecoveryPhraseScreenProps): import("react").JSX.Element;
+export default function RecoveryPhraseScreen({ recoveryPhrase, onContinue, autoHide }: RecoveryPhraseScreenProps): import("react/jsx-runtime").JSX.Element;

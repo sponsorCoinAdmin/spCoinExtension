@@ -41,4 +41,4 @@ export interface DetailImageBlockProps extends DetailAvatarProps {
     /** Anything that changes the room for the picture (it is measured again when this changes). */
     resizeSignal: unknown;
 }
-export default function DetailImageBlock({ id, last, logoPreviewSrc, previewAlt, previewBoxClass, connected, isEditMode, inputLocked, previewButtonLabel, loadingInputMessage, isLoading, logoFileInputRef, onFileChange, hideUpload, toggleLabel, imageKind, fitImageShape, imageBuffer, toggleOn, onToggle, sectionBottomBuffer, resizeSignal, }: DetailImageBlockProps): React.JSX.Element;
+export default function DetailImageBlock({ id, last, logoPreviewSrc, previewAlt, previewBoxClass, connected, isEditMode, inputLocked, previewButtonLabel, loadingInputMessage, isLoading, logoFileInputRef, onFileChange, hideUpload, toggleLabel, imageKind, fitImageShape, imageBuffer, toggleOn, onToggle, sectionBottomBuffer, resizeSignal, }: DetailImageBlockProps): import("react/jsx-runtime").JSX.Element;

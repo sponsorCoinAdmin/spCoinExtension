@@ -10,4 +10,4 @@ export interface WalletRadioPanelsProps {
      *  the body is never blank. */
     activeRadioPanel?: SP_COIN_DISPLAY;
 }
-export default function WalletRadioPanels({ children, activeRadioPanel }: WalletRadioPanelsProps): React.JSX.Element;
+export default function WalletRadioPanels({ children, activeRadioPanel }: WalletRadioPanelsProps): import("react/jsx-runtime").JSX.Element;

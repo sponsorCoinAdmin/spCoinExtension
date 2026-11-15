@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "npm run build && node test/protocol.test.mjs && node test/relay.test.mjs && node test/responder.test.mjs && node test/client.test.mjs && node test/transports.test.mjs && node test/mutants.mjs"
+    "test": "npm run build && node test/protocol.test.mjs && node test/relay.test.mjs && node test/responder.test.mjs && node test/client.test.mjs && node test/transports.test.mjs && node test/connection.test.mjs && node test/accountStates.test.mjs && node test/mutants.mjs"
   },
   "devDependencies": {
     "typescript": "5.8.3"

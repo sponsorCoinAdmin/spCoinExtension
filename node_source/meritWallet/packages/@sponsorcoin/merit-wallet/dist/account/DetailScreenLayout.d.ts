@@ -35,4 +35,4 @@ export interface DetailScreenLayoutProps {
     rBuffer?: number;
     lBuffer?: number;
 }
-export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, table, screenId, onSubmit, activeBody, resizeKey, toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }: DetailScreenLayoutProps): React.JSX.Element;
+export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, table, screenId, onSubmit, activeBody, resizeKey, toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }: DetailScreenLayoutProps): import("react/jsx-runtime").JSX.Element;

@@ -19,4 +19,4 @@ export interface ActiveAccountSelectDropDownProps {
     /** A right click on the avatar: handed to AccountSelectDropDown (which opens ACCOUNT_PANEL for the account). The host's own way of opening it (the wallet's account details) is passed here. */
     onIconContextMenu?: (address: string) => void;
 }
-export default function ActiveAccountSelectDropDown({ icon, address, symbol, name, placeholderLabel, onSelectClick, onIconClick, onActivate, onIconContextMenu }: ActiveAccountSelectDropDownProps): React.JSX.Element;
+export default function ActiveAccountSelectDropDown({ icon, address, symbol, name, placeholderLabel, onSelectClick, onIconClick, onActivate, onIconContextMenu }: ActiveAccountSelectDropDownProps): import("react/jsx-runtime").JSX.Element;

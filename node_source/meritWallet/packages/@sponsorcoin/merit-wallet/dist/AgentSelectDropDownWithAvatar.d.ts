@@ -6,5 +6,5 @@ interface Props {
     /** Accepted and ignored, so existing callers do not change. */
     collapseKey?: unknown;
 }
-export default function AgentSelectDropDownWithAvatar({ panelGateId, label, addrPrePostSize }: Props): import("react").JSX.Element;
+export default function AgentSelectDropDownWithAvatar({ panelGateId, label, addrPrePostSize }: Props): import("react/jsx-runtime").JSX.Element;
 export {};

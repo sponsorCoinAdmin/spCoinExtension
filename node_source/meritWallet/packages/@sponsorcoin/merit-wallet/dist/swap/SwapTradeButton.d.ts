@@ -1,4 +1,3 @@
-import React from 'react';
 import type { UniswapSwapExecution, UniswapSwapSingleParams } from '@sponsorcoin/spcoin-exchange-engine';
 import type { SwapPrice, SwapPriceRequest } from './swapPrice';
 export interface SwapExecuteRequest extends SwapPriceRequest {
@@ -39,4 +38,4 @@ export interface SwapTradeButtonHost {
 }
 export default function SwapTradeButton({ host }: {
     host: SwapTradeButtonHost;
-}): React.JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;

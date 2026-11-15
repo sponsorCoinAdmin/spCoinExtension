@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Account states: the caller keeps the remote accounts as CONNECTED or DISCONNECTED (`getDisconnected` / `setDisconnected`, `setAccountConnected`, `listAccounts`). A disconnect made by the caller keeps the account listed; only the remote removes an account (the handshake removes what the remote disconnected, adds what it connected, and lets the caller's own disconnect win). New call `merit_syncAccounts`: the caller sends its connected list and the remote connects exactly those that exist on it. The wallet-level `revoke` now turns every connected account into a kept, disconnected one. 17 tests, 7 mutants.
 - Opening a selection is a SYNC: `eth_requestAccounts` carries the list of accounts the caller wants connected; the remote sets exactly those that exist on it to connected before the selector opens and leaves every other account disconnected. A caller that sends no list changes nothing. 3 tests, 1 more mutant, 1 live check.
 - Connection monitor (`createConnectionMonitor`, `describeConnection`): one subscribable store for the link, with the reason it is not connected (`detached`, `page-silent`, `no-page`, `unknown`) and `waitForConnected`. 15 tests, 6 more mutants.
 

@@ -1,0 +1,805 @@
+{
+  "sync disabled: asking fails and nothing is minted": [
+    [
+      "ensure",
+      "error",
+      "ensureSyncToken: sync is disabled (Disable Sync checkbox, Config tab)."
+    ]
+  ],
+  "first call mints, the second is served from the cache": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure 1",
+      "ok",
+      "v1.300000."
+    ],
+    [
+      "ensure 2",
+      "ok",
+      "v1.300000."
+    ]
+  ],
+  "authorization required and user initiated change the signer request": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": true,
+        "interactive": true,
+        "background": false
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure",
+      "ok",
+      "v1.300000."
+    ],
+    [
+      "timer cleared"
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": true,
+        "background": false
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure b",
+      "ok",
+      "v1.300000."
+    ],
+    [
+      "timer cleared"
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure c",
+      "ok",
+      "v1.300000."
+    ]
+  ],
+  "two concurrent callers share one mint (even with a different address case)": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "a",
+      "ok",
+      "v1.300000."
+    ],
+    [
+      "b",
+      "ok",
+      "v1.300000."
+    ]
+  ],
+  "another account mints its own token": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "first",
+      "ok",
+      "v1.300000."
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xDef0000000000000000000000000000000000002",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xDef0000000000000000000000000000000000002"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer cleared"
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "other",
+      "ok",
+      "v1.300000."
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer cleared"
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "first again",
+      "ok",
+      "v1.300000."
+    ]
+  ],
+  "a token with less than 90 s left is replaced": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.120000."
+    ],
+    [
+      "timer set",
+      30000
+    ],
+    [
+      "ensure 1",
+      "ok",
+      "v1.120000."
+    ],
+    [
+      "ensure 2 (100 s left)",
+      "ok",
+      "v1.100000."
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure 3",
+      "ok",
+      "v1.290000."
+    ]
+  ],
+  "the scheduled refresh mints again, schedules again, and a failed refresh forgets the token": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure",
+      "ok",
+      "v1.300000."
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure after failed refresh",
+      "ok",
+      "v1.300000."
+    ]
+  ],
+  "a token that is not a token is refused and not kept": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "garbage.86464842759093."
+    ],
+    [
+      "ensure bad",
+      "error",
+      "ensureSyncToken: minted token has an unrecognized shape"
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "a.-999989."
+    ],
+    [
+      "ensure three parts",
+      "error",
+      "ensureSyncToken: minted token has an unrecognized shape"
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.-1000000."
+    ],
+    [
+      "ensure zero expiry",
+      "error",
+      "ensureSyncToken: minted token has an unrecognized shape"
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure good",
+      "ok",
+      "v1.300000."
+    ]
+  ],
+  "a token that is already inside the 90 s window is never served from the cache": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.60000."
+    ],
+    [
+      "timer set",
+      0
+    ],
+    [
+      "ensure 1",
+      "ok",
+      "v1.60000."
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.60000."
+    ],
+    [
+      "timer cleared"
+    ],
+    [
+      "timer set",
+      0
+    ],
+    [
+      "ensure 2 (nothing has elapsed, 60 s left)",
+      "ok",
+      "v1.60000."
+    ]
+  ],
+  "turning sync off drops the token and cancels its refresh": [
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure",
+      "ok",
+      "v1.300000."
+    ],
+    [
+      "timer cleared"
+    ],
+    [
+      "ensure disabled",
+      "error",
+      "ensureSyncToken: sync is disabled (Disable Sync checkbox, Config tab)."
+    ],
+    [
+      "signer request",
+      {
+        "chainId": 31337,
+        "activeAccountAddress": "0xAbC0000000000000000000000000000000000001",
+        "rpcUrl": "http://rpc",
+        "label": "Sync authorization",
+        "title": "Authorize Sync",
+        "skipMandatoryApprovalGate": true,
+        "forceRequirePassword": false,
+        "interactive": false,
+        "background": true
+      }
+    ],
+    [
+      "signIn",
+      "0xAbC0000000000000000000000000000000000001"
+    ],
+    [
+      "sign",
+      "challenge"
+    ],
+    [
+      "token minted",
+      "v1.300000."
+    ],
+    [
+      "timer set",
+      210000
+    ],
+    [
+      "ensure re-enabled",
+      "ok",
+      "v1.300000."
+    ]
+  ]
+}

@@ -1,4 +1,3 @@
-import React from 'react';
 import type { ProfileFormData } from './profileForm';
 export interface AccountProfileHost {
     /** The hosted app's origin ('' for the same origin). */
@@ -21,4 +20,4 @@ export default function AccountProfileEditor({ address, initial, host, onDone, }
     exists?: boolean;
     host: AccountProfileHost;
     onDone(): void;
-}): React.JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;

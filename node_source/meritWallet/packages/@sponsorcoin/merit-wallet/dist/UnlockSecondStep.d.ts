@@ -4,4 +4,4 @@ export default function UnlockSecondStep({ steps, signIn, onPassed, onCancel }: 
     signIn: SignInHost;
     onPassed(): void;
     onCancel(): void;
-}): import("react").JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;

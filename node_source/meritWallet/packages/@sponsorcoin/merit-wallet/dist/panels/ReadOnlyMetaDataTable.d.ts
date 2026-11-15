@@ -16,4 +16,4 @@ export interface ReadOnlyMetaDataTableProps {
     logoContainerSizeClassName?: string;
     logoSizeClassName?: string;
 }
-export default function ReadOnlyMetaDataTable({ rows, logoURL, logoAlt, logoVisible, id, className, logoBackgroundClassName, logoContainerClassName, logoRoundedClassName, logoContainerSizeClassName, logoSizeClassName, }: ReadOnlyMetaDataTableProps): React.JSX.Element;
+export default function ReadOnlyMetaDataTable({ rows, logoURL, logoAlt, logoVisible, id, className, logoBackgroundClassName, logoContainerClassName, logoRoundedClassName, logoContainerSizeClassName, logoSizeClassName, }: ReadOnlyMetaDataTableProps): import("react/jsx-runtime").JSX.Element;

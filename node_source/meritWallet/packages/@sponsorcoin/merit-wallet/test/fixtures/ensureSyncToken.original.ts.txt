@@ -1,0 +1,194 @@
+// File: lib/structure/exchangeContextCore/client/ensureSyncToken.ts
+//
+// Phase 3 (2026-09-04, first real implementation piece — design captured
+// 2026-09-03, see docs/design/extensionPlan.txt section 7's "Live
+// cross-tab/cross-process sync auth" section for the full reasoning this
+// implements). The auth-friction problem: calling signInForSync on every
+// single sync write would mean a signature/password prompt on every
+// account switch — this caches the resulting bearer token client-side and
+// refreshes it proactively, ahead of its own expiry, so a real write only
+// ever pays the sign-in cost once per ~10 minutes, not once per write.
+//
+// Deliberately reuses getConnectedSigner() as the approval gate — the
+// SAME chokepoint every other Merit-authorized write already passes
+// through (see that file's own doc comment). No new security decision:
+// minting a sync token is just "another Merit-gated write" as far as the
+// approval/password-mode matrix is concerned.
+//
+// Token expiry is read directly out of the token itself (the
+// `v1.<exp36>.<addressHex>.<sig>` format lib/server/spCoinAuth.ts's
+// buildSessionToken produces) rather than assuming a client-side copy of
+// the server's SESSION_TTL_MS constant — avoids the two ever silently
+// drifting apart if that constant changes server-side.
+//
+// Proactive refresh, not reactive-401-retry (design decision already
+// made, not re-litigated here): a timer re-mints the token
+// REFRESH_LEAD_MS before it actually expires, so an in-flight write never
+// races a token that's about to die mid-request. The refresh is
+// deliberately fail-soft — if it can't get a signer right now (wallet
+// locked, user navigated away, approval rejected), it just clears the
+// cache silently and lets the next real ensureSyncToken() call retry
+// through the normal path, which is already gated exactly the way any
+// other real write is. A background timer must never surface an alarming
+// error for something the user didn't directly ask for.
+'use client';
+
+import { getConnectedSigner } from '@/lib/spCoin/getConnectedSigner';
+import { isSyncAuthorizationRequired, isSyncDisabled } from '@/components/wallet/lib/meritConnect';
+import { signInForSync } from './exchangeContextClient';
+
+/** How long before actual expiry to proactively re-mint — matches the design doc's "~8-9 minutes" against a 10-minute token (10min - 90s = 8.5min). */
+const REFRESH_LEAD_MS = 90_000;
+
+interface CachedToken {
+  address: string;
+  token: string;
+  expiresAt: number;
+}
+
+let cached: CachedToken | null = null;
+let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+let inFlight: { address: string; promise: Promise<string> } | null = null;
+
+function clearScheduledRefresh() {
+  if (refreshTimer !== null) {
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
+  }
+}
+
+/** Parses the expiry embedded in a token minted by lib/server/spCoinAuth.ts's buildSessionToken — returns null if the shape doesn't match (fails safe: caller treats it as already-expired rather than trusting an unparseable token's freshness). */
+function parseTokenExpiresAt(token: string): number | null {
+  const parts = token.split('.');
+  if (parts.length !== 4) return null;
+  const expiresAt = Number.parseInt(parts[1], 36);
+  return Number.isFinite(expiresAt) && expiresAt > 0 ? expiresAt : null;
+}
+
+export interface EnsureSyncTokenParams {
+  chainId: number;
+  activeAccountAddress: string;
+  rpcUrl: string;
+  /** 2026-10-11: a person clicked something that needs this token (saving the active spCoin): the mint may show its own password / approval screen instead of failing silently, and it is not a background request. */
+  userInitiated?: boolean;
+}
+
+async function mintToken(params: EnsureSyncTokenParams): Promise<CachedToken> {
+  // Read once, used for both flags below — they're deliberately the same
+  // question: "Sync Authorization Required" is the one thing that opts this
+  // background mint INTO forcing its own password prompt. Off (the
+  // default) means the opposite, not just "don't force" — this mint must
+  // never pop its own interactive UI at all (2026-09-07, on request: "if
+  // sync is turned off then we should use the stored password"). It should
+  // silently ride on whatever password is already cached from a real user
+  // action elsewhere (securityApproved() inside getConnectedSigner still
+  // checks that first, unaffected by this flag) and fail soft — same as any
+  // other background sync failure — when nothing is cached yet, rather than
+  // forcing the Merit Wallet open and demanding one of its own. That's what
+  // was actually happening before this fix: a cold-boot background push
+  // popped "Authorize Sync" directly on top of the real "Unlock Merit
+  // Wallet" sign-on screen, before the user had unlocked anything.
+  const syncAuthRequired = isSyncAuthorizationRequired();
+  const signer = await getConnectedSigner({
+    chainId: params.chainId,
+    activeAccountAddress: params.activeAccountAddress,
+    rpcUrl: params.rpcUrl,
+    label: 'Sync authorization',
+    title: 'Authorize Sync',
+    // This mints a token, it doesn't move funds or change on-chain state —
+    // same category of low-stakes signature as any other read/auth flow
+    // already in this app (see useCreateAccountForm.ts's identical
+    // nonce/verify usage), not a transaction needing its own confirm UI.
+    // Deliberately exempt from "All Transaction Approval Required" (see
+    // that param's own doc comment) — this mint still gets its OWN,
+    // independent password requirement right below, via the "Sync
+    // Authorization Required" checkbox.
+    skipMandatoryApprovalGate: true,
+    forceRequirePassword: syncAuthRequired,
+    interactive: syncAuthRequired || params.userInitiated === true,
+    // 2026-09-07, found live: a real Uniswap swap retry hit "Another Merit
+    // Wallet approval is already pending" because this exact background
+    // mint had grabbed the shared approval slot moments earlier. See
+    // approval.ts's MeritApprovalRequest.background doc comment — this is
+    // the one real background caller of getConnectedSigner, so it's the
+    // one place this flag is ever set true.
+    background: params.userInitiated !== true,
+  });
+  const token = await signInForSync(params.activeAccountAddress, (message) => signer.signMessage(message));
+  const expiresAt = parseTokenExpiresAt(token);
+  if (expiresAt === null) {
+    // Server returned a token this client can't parse the expiry from —
+    // fail loudly here rather than caching something we can't safely
+    // schedule a refresh for.
+    throw new Error('ensureSyncToken: minted token has an unrecognized shape');
+  }
+  return { address: params.activeAccountAddress.toLowerCase(), token, expiresAt };
+}
+
+function scheduleRefresh(params: EnsureSyncTokenParams, expiresAt: number) {
+  clearScheduledRefresh();
+  const delay = Math.max(0, expiresAt - Date.now() - REFRESH_LEAD_MS);
+  refreshTimer = setTimeout(() => {
+    mintToken(params)
+      .then((next) => {
+        cached = next;
+        scheduleRefresh(params, next.expiresAt);
+      })
+      .catch(() => {
+        // Fail-soft — see this file's own header comment. Clear the stale
+        // entry so the next real ensureSyncToken() call mints fresh
+        // rather than serving a token that's about to expire.
+        cached = null;
+      });
+  }, delay);
+}
+
+/**
+ * Returns a bearer token valid for pushExchangeContextPatch, minting (and
+ * gating through the normal Merit-approval chokepoint) only when there
+ * isn't already a fresh one cached for this exact address.
+ */
+export async function ensureSyncToken(params: EnsureSyncTokenParams): Promise<string> {
+  // "Application Synchronization" set to Disable (2026-09-07, see
+  // MeritWalletConfig.syncMode's own doc comment) — the single outbound
+  // chokepoint every sync pusher (the three
+  // useCrossProcess*Sync hooks, walletState.tsx's own account/network sync,
+  // tradeExecutionLockClient.ts) mints through before pushing anything.
+  // Checked ahead of the cache hit on purpose: a token minted before the
+  // checkbox was flipped must not keep letting pushes through afterward.
+  // Clears any already-scheduled proactive refresh too, so nothing keeps
+  // quietly re-minting in the background once this is on. Every caller is
+  // already fail-soft on a thrown/rejected ensureSyncToken (this looks
+  // identical to "the mint failed"), so no new error path for any of them.
+  if (isSyncDisabled()) {
+    clearScheduledRefresh();
+    cached = null;
+    throw new Error('ensureSyncToken: sync is disabled (Disable Sync checkbox, Config tab).');
+  }
+  const normalized = params.activeAccountAddress.toLowerCase();
+  const now = Date.now();
+  if (cached?.address === normalized && cached.expiresAt - now > REFRESH_LEAD_MS) {
+    return cached.token;
+  }
+  // 2026-10-12: ONE mint at a time per account. Several callers asking at once (the account / network / token syncs all start when an account becomes active) used to each start their own mint, and with MetaMask each mint is a
+  // signature request: the person saw the same "Account Write Authorization" prompt three or four times. Callers that arrive while a mint is running now share its result.
+  if (inFlight?.address === normalized) return inFlight.promise;
+  const promise = mintToken(params)
+    .then((minted) => {
+      cached = minted;
+      scheduleRefresh(params, minted.expiresAt);
+      return minted.token;
+    })
+    .finally(() => {
+      if (inFlight?.promise === promise) inFlight = null;
+    });
+  inFlight = { address: normalized, promise };
+  return promise;
+}
+
+/** Test-only escape hatch — clears the cache and any pending refresh timer so a fresh mint is forced next call. Not used by real app code. */
+export function _resetSyncTokenCacheForTests() {
+  cached = null;
+  inFlight = null;
+  clearScheduledRefresh();
+}

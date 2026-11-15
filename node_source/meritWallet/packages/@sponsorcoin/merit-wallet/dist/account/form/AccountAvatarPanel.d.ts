@@ -38,5 +38,5 @@ interface Props {
         append(label: string, payload: unknown): void;
     };
 }
-export default function AccountAvatarPanel({ trace, panelMarginClass, avatarPanelBorderClass, avatarHeading, logoPreviewSrc, connected, isEditMode, inputLocked, previewButtonLabel, loadingInputMessage, isLoading, acceptedInput, logoFileInputRef, onFileChange, showImage, showButton, headingContent, selectedRowContent, minPreviewSize, maxPreviewSize, uploadControlTextClassName, previewSizeBuffer, previewHeightBuffer, previewControlGapBuffer, sectionBottomBuffer, lockSectionHeight, overflowMinPreviewSize, traceSizingLabel, fillParentHeight, sizingBoundarySelector, resizeSignal, }: Props): React.JSX.Element;
+export default function AccountAvatarPanel({ trace, panelMarginClass, avatarPanelBorderClass, avatarHeading, logoPreviewSrc, connected, isEditMode, inputLocked, previewButtonLabel, loadingInputMessage, isLoading, acceptedInput, logoFileInputRef, onFileChange, showImage, showButton, headingContent, selectedRowContent, minPreviewSize, maxPreviewSize, uploadControlTextClassName, previewSizeBuffer, previewHeightBuffer, previewControlGapBuffer, sectionBottomBuffer, lockSectionHeight, overflowMinPreviewSize, traceSizingLabel, fillParentHeight, sizingBoundarySelector, resizeSignal, }: Props): import("react/jsx-runtime").JSX.Element;
 export {};

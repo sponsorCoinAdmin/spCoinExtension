@@ -1,0 +1,219 @@
+    const walletChainIsValid =
+      typeof walletChainId === 'number' && walletChainId > 0;
+
+    // TEMP TRACE (2026-09-07, "network keeps switching back to Ethereum") —
+    // these phases are the ones that actually change appChainId/chainId or
+    // attempt a wallet-side switchChainAsync; "noop"/"skip:*"/inert phases
+    // are deliberately left off this list to avoid flooding the on-screen
+    // Trace Log on every render once state is stable.
+    const TRACE_WORTHY_PHASES = new Set([
+      'wallet-disconnected',
+      'adopt-wallet-over-stale-ls-on-first-connect',
+      'switch-wallet-on-connect',
+      'adopt-wallet-on-first-connect',
+      'adopt-wallet',
+      'switch-wallet-on-app-change',
+      'adopt-wallet-on-mismatch',
+    ]);
+
+    const logState = (phase: string, extra?: Record<string, unknown>) => {
+      const payload = {
+        wagmiReady,
+        walletConnected,
+        walletStatus: status,
+        walletChainId,
+        walletChainIsValid,
+        appChainId,
+        appConnected,
+        hydratedFromLocalStorage,
+        adoptedOnFirstConnect: adoptedOnFirstConnectRef.current,
+        trustedWalletOverStoredChainOnConnect: trustedWalletOverStoredChainOnConnectRef.current,
+        ...(extra ?? {}),
+      };
+      debugLog.log?.(`[${phase}]`, payload);
+      if (TRACE_WORTHY_PHASES.has(phase)) {
+        appendDebugTrace(`useNetworkController:${phase}`, payload);
+      }
+    };
+
+    // 0) Wait for wagmi handshake – until wagmiReady, we don't trust isConnected/chainId.
+    if (!wagmiReady) {
+      logState('skip:wagmi-not-ready');
+      return;
+    }
+
+    // 1) Wallet disconnected → just mark app as disconnected.
+    //    Case A/C network choice has already been made by initExchangeContext.
+    if (!walletConnected) {
+      const logKey = [
+        status,
+        walletChainId,
+        appChainId,
+        appConnected,
+        appNetworkChainId,
+        appNetworkConnected,
+      ].join(':');
+      if (lastWalletDisconnectedLogKeyRef.current !== logKey) {
+        lastWalletDisconnectedLogKeyRef.current = logKey;
+        logState('wallet-disconnected', {
+          msg: 'Wallet disconnected → mark appConnected=false (keep appChainId)',
+        });
+      }
+      if (appConnected) setAppConnected(false);
+      // Rule: when disconnected, chainId should be 0.
+      if (appNetworkChainId !== 0 || appNetworkConnected) {
+        syncNetworkChainId(0, false);
+      }
+      prevWalletConnectedRef.current = false;
+      return;
+    }
+
+    lastWalletDisconnectedLogKeyRef.current = undefined;
+
+    const justConnected = !prevWalletConnectedRef.current && walletConnected;
+
+    // Wallet is connected from this point onwards.
+    if (!appConnected) {
+      logState('set-app-connected-true', {
+        msg: 'Wallet connected → mark appConnected=true',
+      });
+      setAppConnected(true);
+    }
+    // If wagmi still hasn't surfaced a valid chain id, there's nothing we can
+    // reconcile yet. Wait for a real number.
+    if (!walletChainIsValid) {
+      logState('wallet-chain-invalid', {
+        msg: 'Wallet connected but walletChainId is 0/undefined → wait',
+      });
+      return;
+    }
+
+    // We only mark "connected seen" once wagmi exposes a valid wallet chain.
+    prevWalletConnectedRef.current = true;
+
+    // Rule: chainId reflects wallet-active network while connected.
+    syncNetworkChainId(walletChainId, true);
+
+    if (justConnected && appChainId > 0 && walletChainId !== appChainId) {
+      const isFirstConnectThisSession = !trustedWalletOverStoredChainOnConnectRef.current;
+      trustedWalletOverStoredChainOnConnectRef.current = true;
+
+      // First connect since this page loaded, and the current appChainId came
+      // from a restored localStorage session rather than a choice the user
+      // just made in this session: trust the wallet instead of forcing it
+      // onto a possibly-stale remembered chain. Every later mismatch this
+      // session (an explicit in-app network pick, a wallet network change, a
+      // second connect after a disconnect) still falls through to the
+      // switch-the-wallet behavior below — this only relaxes the very first
+      // reconciliation of a fresh page load.
+      if (hydratedFromLocalStorage && isFirstConnectThisSession) {
+        logState('adopt-wallet-over-stale-ls-on-first-connect', {
+          msg: 'First connect this session; stored appChainId came from localStorage and disagrees with the connecting wallet -> trust the wallet, adopt its chain instead of forcing a switch',
+        });
+        setAppChainId(walletChainId);
+        return;
+      }
+
+      logState('switch-wallet-on-connect', {
+        msg: 'Just connected and wallet chain mismatched appChainId -> switch wallet to appChainId',
+      });
+      switchChainAsync({ chainId: appChainId }).catch((err: unknown) => {
+        const code = getErrorCode(err);
+        appendDebugTrace('useNetworkController:switch-wallet-on-connect:failed', {
+          appChainId,
+          errorCode: code,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        if (code === 4902) {
+          alert(
+            `MetaMask network ${chainLabel(appChainId)} is not installed. Please add it to MetaMask.`,
+          );
+          return;
+        }
+        debugLog.error?.('[switch-wallet-on-connect] switchChainAsync failed', err);
+      });
+      return;
+    }
+
+    // 2) SPECIAL CASE: Fresh boot with *no* LocalStorage (LS empty)
+    //    and app network is still the default 1, but wallet is already on a different chain.
+    if (
+      !hydratedFromLocalStorage &&
+      !adoptedOnFirstConnectRef.current &&
+      appChainId === 1 &&
+      walletChainId !== 1
+    ) {
+      adoptedOnFirstConnectRef.current = true;
+      logState('adopt-wallet-on-first-connect', {
+        msg: 'Fresh boot (no LS) + default appChainId=1 + wallet on non-1 → adopt walletChainId',
+      });
+
+      // ALWAYS persist via provider-level setter (writes through to LS)
+      setAppChainId(walletChainId);
+      return;
+    }
+
+    // 3) No app network chosen yet → adopt wallet (Case B).
+    if (!appChainId || appChainId === 0) {
+      logState('adopt-wallet', {
+        msg: 'appChainId is 0 → adopt walletChainId as appChainId (Case B)',
+      });
+      setAppChainId(walletChainId);
+      return;
+    }
+
+    // 4) App has a network and wallet disagrees:
+    //    - if app changed and wallet didn't -> app-driven change, switch wallet
+    //    - otherwise -> wallet-driven change, adopt wallet in app
+    if (walletChainId !== appChainId) {
+      const prevWallet = prevWalletChainIdRef.current;
+      const prevApp = prevAppChainIdRef.current;
+      const walletChanged = typeof prevWallet === 'number' && prevWallet !== walletChainId;
+      const appChanged = typeof prevApp === 'number' && prevApp !== appChainId;
+
+      if (appChanged && !walletChanged) {
+        logState('switch-wallet-on-app-change', {
+          msg: 'App chain changed while wallet stayed same -> switch wallet',
+          prevWallet,
+          prevApp,
+        });
+        switchChainAsync({ chainId: appChainId }).catch((err: unknown) => {
+          const code = getErrorCode(err);
+          appendDebugTrace('useNetworkController:switch-wallet-on-app-change:failed', {
+            appChainId,
+            walletChainId,
+            prevWallet,
+            prevApp,
+            errorCode: code,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          if (code === 4902) {
+            alert(
+              `MetaMask network ${chainLabel(appChainId)} is not installed. Please add it to MetaMask.`,
+            );
+            return;
+          }
+          debugLog.error?.(
+            '[switch-wallet-on-app-change] switchChainAsync failed',
+            err,
+          );
+        });
+      } else {
+        logState('adopt-wallet-on-mismatch', {
+          msg: 'Wallet chain changed or both changed -> adopt walletChainId in app',
+          prevWallet,
+          prevApp,
+        });
+        setAppChainId(walletChainId);
+      }
+      return;
+    }
+
+    // 5) Everything already aligned → noop.
+    logState('noop', {
+      msg: 'Wallet and app chain already aligned → no action',
+    });
+
+    prevWalletChainIdRef.current = walletChainId;
+    prevAppChainIdRef.current = appChainId;
+    prevWalletConnectedRef.current = walletConnected;

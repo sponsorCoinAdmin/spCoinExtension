@@ -47,4 +47,4 @@ export interface WalletAccountHeaderProps {
      *  of `roles`. */
     onRoleClick?: (role: 'sponsor' | 'recipient' | 'agent') => void;
 }
-export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onActivate, onIconContextMenu, onRoleClick, walletName, }: WalletAccountHeaderProps): React.JSX.Element;
+export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address, symbol, name, placeholderLabel, roles, onSelectClick, onIconClick, onActivate, onIconContextMenu, onRoleClick, walletName, }: WalletAccountHeaderProps): import("react/jsx-runtime").JSX.Element;

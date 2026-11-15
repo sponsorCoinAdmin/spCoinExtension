@@ -1,4 +1,3 @@
-import React from 'react';
 export interface NetworkDetailPanelProps {
     id: string;
     logoSrc?: string;
@@ -6,4 +5,4 @@ export interface NetworkDetailPanelProps {
     symbol?: string;
     isTestnet?: boolean;
 }
-export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }: NetworkDetailPanelProps): React.JSX.Element;
+export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }: NetworkDetailPanelProps): import("react/jsx-runtime").JSX.Element;

@@ -43,4 +43,4 @@ export interface SponsorStakingHost {
 }
 export default function ConnectedSponsorStakingList({ host }: {
     host: SponsorStakingHost;
-}): import("react").JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;

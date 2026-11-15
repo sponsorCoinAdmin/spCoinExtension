@@ -4,4 +4,4 @@ export interface MeritInfoPanelRealProps {
     /** Origin to fetch meritInfo.json/meritWallet.png from — '' (default) means same-origin relative, correct for the web app. A consumer served from a different origin (e.g. a browser extension) supplies its own real origin. */
     baseUrl?: string;
 }
-export default function MeritInfoPanelReal({ panelId, baseUrl, }: MeritInfoPanelRealProps): import("react").JSX.Element | null;
+export default function MeritInfoPanelReal({ panelId, baseUrl, }: MeritInfoPanelRealProps): import("react/jsx-runtime").JSX.Element | null;

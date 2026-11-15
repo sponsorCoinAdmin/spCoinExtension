@@ -54,4 +54,4 @@ export interface RewardsPanelExtras {
 export default function ConnectedRewardsPanel({ host, extras }: {
     host: RewardsHost;
     extras?: RewardsPanelExtras;
-}): import("react").JSX.Element | null;
+}): import("react/jsx-runtime").JSX.Element | null;

@@ -12,4 +12,4 @@ export interface WalletAccountSelectDropDownProps {
     /** The avatar was clicked: the host opens the account's detail screen. */
     onIconClick?: (address: string) => void;
 }
-export default function WalletAccountSelectDropDown({ icon, address, symbol, name, placeholderLabel, onSelectClick, onIconClick }: WalletAccountSelectDropDownProps): React.JSX.Element;
+export default function WalletAccountSelectDropDown({ icon, address, symbol, name, placeholderLabel, onSelectClick, onIconClick }: WalletAccountSelectDropDownProps): import("react/jsx-runtime").JSX.Element;

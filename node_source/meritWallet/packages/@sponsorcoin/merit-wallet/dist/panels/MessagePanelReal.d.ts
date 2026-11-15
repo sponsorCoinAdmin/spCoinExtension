@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { ErrorMessage, MessageAccountEntry, MessageTokenEntry } from '@sponsorcoin/spcoin-common/context';
 /**
@@ -57,4 +57,4 @@ export interface MessagePanelRealProps {
     /** Present only while a Merit-authorized write is actually waiting on a person. */
     pendingApproval?: MessagePanelPendingApproval | null;
 }
-export default function MessagePanelReal({ panelId, errorMessage, renderAccountRow, renderTokenRow, pendingApproval, }: MessagePanelRealProps): React.JSX.Element | null;
+export default function MessagePanelReal({ panelId, errorMessage, renderAccountRow, renderTokenRow, pendingApproval, }: MessagePanelRealProps): import("react/jsx-runtime").JSX.Element | null;

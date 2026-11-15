@@ -40,5 +40,5 @@ export declare function OptionTitle({ id, title, info, expanded, onToggle, activ
         disabled?: boolean;
         onChange(next: boolean): void;
     };
-}): import("react").JSX.Element;
-export default function SecuritySetupScreen({ enrollTotp, enrollPasskey, credentials, accountLabel, signIn, onDone, makeSecret, passwordContent, accountButtons }: SecuritySetupScreenProps): import("react").JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;
+export default function SecuritySetupScreen({ enrollTotp, enrollPasskey, credentials, accountLabel, signIn, onDone, makeSecret, passwordContent, accountButtons }: SecuritySetupScreenProps): import("react/jsx-runtime").JSX.Element;

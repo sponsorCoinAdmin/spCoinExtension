@@ -20,4 +20,4 @@ export interface PanelTitleProps {
     /** Same, for the hamburger menu button on the right. */
     hideMenuButton?: boolean;
 }
-export default function PanelTitle({ title, onBackClick, onMenuClick, menuOpen, hideBackButton, hideMenuButton, }: PanelTitleProps): React.JSX.Element;
+export default function PanelTitle({ title, onBackClick, onMenuClick, menuOpen, hideBackButton, hideMenuButton, }: PanelTitleProps): import("react/jsx-runtime").JSX.Element;

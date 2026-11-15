@@ -3,4 +3,4 @@ export default function AcknowledgeDialog({ ack, onAccept, onClose }: {
     ack: MessagePanelAcknowledgement;
     onAccept: () => void;
     onClose: () => void;
-}): import("react").JSX.Element;
+}): import("react/jsx-runtime").JSX.Element;

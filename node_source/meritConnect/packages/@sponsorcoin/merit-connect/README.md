@@ -47,6 +47,15 @@ The cores never touch a browser API. A host supplies the channel and says who th
 
 A message carries `v` (the version, 1) and `rid` (the request id, 1 to 64 letters, digits, `-` and `_`). Methods: `eth_chainId`, `eth_accounts`, `wallet_revokePermissions` (reads, 20 s), `eth_requestAccounts`, `personal_sign`, `eth_signTypedData_v4`, `eth_sendTransaction` (approvals, 5 min). Errors: 4001 rejected, 4100 not authorised, 4200 unsupported, 4900 unavailable, 4901 version not supported, -32602 invalid params, -32005 too many pending. The full contract, the authority and sync rules and the security rules: `docs/design/meritConnectDesign.txt`.
 
+## Account states and the sync call
+
+The caller keeps the remote's accounts as CONNECTED or DISCONNECTED (give `getDisconnected` / `setDisconnected` to keep the disconnected ones). The rules:
+
+- **Connect** (the caller presses it): the caller's connected accounts are sent (`merit_syncAccounts`, or inside `eth_requestAccounts` when a selector is opened); the remote connects exactly those that exist on it and every other account there stays disconnected.
+- **The caller changes an account** (`setAccountConnected`): the account STAYS in the caller's list and only its state changes. `revoke` (the wallet-level Disconnect) turns every connected account into a disconnected one that stays listed.
+- **The remote changes an account**: when it disconnects one, the caller REMOVES it from its list (the remote owns the accounts); when it connects one, the caller ADDS it. Pushes (while a selector is open) and the handshake apply this.
+- The caller's own disconnect wins if the remote was away: the handshake tells the remote.
+
 ## The connection monitor
 
 `createConnectionMonitor` is a plain store (`subscribe`, `getSnapshot`; it drops into `useSyncExternalStore`) that says whether the other wallet is connected and, when it is not, WHY in a sentence a person can act on:

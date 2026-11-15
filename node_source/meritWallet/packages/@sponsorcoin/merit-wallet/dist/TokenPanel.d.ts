@@ -1,3 +1,4 @@
+import React from 'react';
 /**
  * TokenPanel
  * - Single gate: TOKEN_PANEL
@@ -6,4 +7,4 @@
  */
 export default function TokenPanel(_props: {
     onClose?: () => void;
-}): import("react/jsx-runtime").JSX.Element | null;
+}): React.JSX.Element | null;

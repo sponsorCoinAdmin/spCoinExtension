@@ -24,4 +24,4 @@ export interface VaultAccountsPanelProps {
     /** Called after the active account changes, so the host can refresh what depends on it. */
     onActiveChanged?: (address: string) => void;
 }
-export default function VaultAccountsPanel({ api, onActiveChanged }: VaultAccountsPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function VaultAccountsPanel({ api, onActiveChanged }: VaultAccountsPanelProps): import("react").JSX.Element;

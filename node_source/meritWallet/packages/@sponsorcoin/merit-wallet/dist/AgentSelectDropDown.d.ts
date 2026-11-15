@@ -8,4 +8,4 @@ export interface ConnectedAgentSelectDropDownProps {
     /** Host-specific avatar for a selected agent (the web app's opens the account panel on click). Default: the package's plain AccountAvatar. */
     renderAccountAvatar?: (account: spCoinAccount) => React.ReactNode;
 }
-export default function ConnectedAgentSelectDropDown({ panelGateId, label, addrPrePostSize, renderAccountAvatar, }: ConnectedAgentSelectDropDownProps): import("react/jsx-runtime").JSX.Element;
+export default function ConnectedAgentSelectDropDown({ panelGateId, label, addrPrePostSize, renderAccountAvatar, }: ConnectedAgentSelectDropDownProps): React.JSX.Element;

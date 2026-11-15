@@ -2,4 +2,4 @@
 export declare const LOCAL_STORAGE_WARNING: readonly string[];
 export default function SecurityWarningScreen({ onContinue }: {
     onContinue(): void;
-}): import("react/jsx-runtime").JSX.Element;
+}): import("react").JSX.Element;

@@ -62,4 +62,4 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
     nativeWalletId?: string;
     walletConnection?: Record<string, boolean>;
     onDisconnectWallet?(slug: string): void | Promise<unknown>;
-}): import("react/jsx-runtime").JSX.Element;
+}): import("react").JSX.Element;

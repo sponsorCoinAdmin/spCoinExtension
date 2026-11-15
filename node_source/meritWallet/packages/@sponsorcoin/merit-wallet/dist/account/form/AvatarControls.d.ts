@@ -22,4 +22,4 @@ export interface AvatarControlsProps {
     /** Receives the control element (the split box, the single button or the notice). */
     controlRef?: React.MutableRefObject<HTMLElement | null>;
 }
-export default function AvatarControls({ connected, isEditMode, inputLocked, previewButtonLabel, loadingInputMessage, isLoading, logoFileInputRef, onFileChange, acceptedInput, textClass, showButton, hideUpload, toggleLabel, toggleOn, onToggle, controlRef, }: AvatarControlsProps): import("react/jsx-runtime").JSX.Element;
+export default function AvatarControls({ connected, isEditMode, inputLocked, previewButtonLabel, loadingInputMessage, isLoading, logoFileInputRef, onFileChange, acceptedInput, textClass, showButton, hideUpload, toggleLabel, toggleOn, onToggle, controlRef, }: AvatarControlsProps): React.JSX.Element;

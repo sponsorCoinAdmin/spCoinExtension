@@ -9,4 +9,4 @@ export interface TokenAddressComponentProps {
     icon: React.ReactNode;
     onSelectClick: (e: React.SyntheticEvent) => void;
 }
-export default function TokenAddressComponent({ panelId, address, symbol, name, blockchainName, icon, onSelectClick, }: TokenAddressComponentProps): import("react/jsx-runtime").JSX.Element | null;
+export default function TokenAddressComponent({ panelId, address, symbol, name, blockchainName, icon, onSelectClick, }: TokenAddressComponentProps): React.JSX.Element | null;

@@ -8,4 +8,4 @@ export interface AvatarPictureProps {
     alt: string;
     onLoad?: React.ReactEventHandler<HTMLImageElement>;
 }
-export default function AvatarPicture({ boxClass, boxStyle, hasImage, src, alt, onLoad }: AvatarPictureProps): import("react/jsx-runtime").JSX.Element;
+export default function AvatarPicture({ boxClass, boxStyle, hasImage, src, alt, onLoad }: AvatarPictureProps): React.JSX.Element;

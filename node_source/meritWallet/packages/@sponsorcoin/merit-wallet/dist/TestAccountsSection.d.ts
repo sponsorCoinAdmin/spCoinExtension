@@ -23,4 +23,4 @@ export interface TestAccountsSectionProps {
     /** Called after a load or unload so the host can refresh its account list. */
     onChanged?: () => void;
 }
-export default function TestAccountsSection({ api, authenticationType, onChanged }: TestAccountsSectionProps): import("react/jsx-runtime").JSX.Element;
+export default function TestAccountsSection({ api, authenticationType, onChanged }: TestAccountsSectionProps): import("react").JSX.Element;

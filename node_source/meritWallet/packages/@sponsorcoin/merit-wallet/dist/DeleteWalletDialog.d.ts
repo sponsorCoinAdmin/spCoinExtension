@@ -10,4 +10,4 @@ export default function DeleteWalletDialog({ confirmDelete, onClose, warning, ti
     title?: string;
     confirmLabel?: string;
     footnote?: string;
-}): import("react/jsx-runtime").JSX.Element;
+}): React.JSX.Element;

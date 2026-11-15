@@ -16,4 +16,4 @@ export interface MessagePanelProps {
      *  wrapping on). */
     wrap?: boolean;
 }
-export default function MessagePanel({ kind, title, message, source, wrap, }: MessagePanelProps): import("react/jsx-runtime").JSX.Element;
+export default function MessagePanel({ kind, title, message, source, wrap, }: MessagePanelProps): import("react").JSX.Element;

@@ -8,4 +8,4 @@ export interface MeritInfoPanelProps {
     icon?: React.ReactNode;
     rows?: MeritInfoRow[];
 }
-export default function MeritInfoPanel({ icon, rows }: MeritInfoPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function MeritInfoPanel({ icon, rows }: MeritInfoPanelProps): React.JSX.Element;

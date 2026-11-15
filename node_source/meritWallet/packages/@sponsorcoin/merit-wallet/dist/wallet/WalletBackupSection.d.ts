@@ -3,4 +3,4 @@ import type { Wallet } from './wallet';
 export declare const BACKUP_FILE_NAME = "merit-wallet-backup.json";
 export default function WalletBackupSection({ wallet }: {
     wallet: Wallet;
-}): import("react/jsx-runtime").JSX.Element | null;
+}): import("react").JSX.Element | null;

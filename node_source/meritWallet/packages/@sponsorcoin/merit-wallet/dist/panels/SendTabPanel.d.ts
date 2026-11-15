@@ -42,4 +42,4 @@ export interface SendTabPanelProps {
     onSendTokenClick?: (e: React.SyntheticEvent) => void;
     onRecipientClick?: (e: React.SyntheticEvent) => void;
 }
-export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy, balanceText, balanceTitle, recipientBalanceText, recipientBalanceTitle, balanceLoading, recipientBalanceLoading, sendDecimals, sendBalanceRaw, sendHasRecipient, sendSymbol, onSendTokenClick, onRecipientClick, }: SendTabPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function SendTabPanel({ sendTokenSymbol, sendTokenAddress, sendTokenIcon, recipientSymbol, recipientAddress, recipientIcon, sendAmount, onSendAmountChange, onSubmit, submitBusy, balanceText, balanceTitle, recipientBalanceText, recipientBalanceTitle, balanceLoading, recipientBalanceLoading, sendDecimals, sendBalanceRaw, sendHasRecipient, sendSymbol, onSendTokenClick, onRecipientClick, }: SendTabPanelProps): React.JSX.Element;

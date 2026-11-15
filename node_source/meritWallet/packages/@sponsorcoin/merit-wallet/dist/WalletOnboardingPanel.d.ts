@@ -10,4 +10,4 @@ export interface WalletOnboardingPanelProps {
     /** Setup is finished and the wallet is unlocked. */
     onDone(): void;
 }
-export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }: WalletOnboardingPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }: WalletOnboardingPanelProps): import("react").JSX.Element;

@@ -8,4 +8,4 @@ export interface DetailRowProps {
      *  every other address display in the panel tree already has (AssetSelectDropDown's showCopy, TokenSlotPanels' CopyBtn). */
     copyable?: boolean;
 }
-export default function DetailRow({ label, value, zebra, copyable }: DetailRowProps): import("react/jsx-runtime").JSX.Element;
+export default function DetailRow({ label, value, zebra, copyable }: DetailRowProps): React.JSX.Element;

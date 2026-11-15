@@ -14,5 +14,5 @@ export interface WalletDataSource {
 export declare function WalletDataProvider({ value, children }: {
     value: WalletDataSource;
     children?: React.ReactNode;
-}): import("react/jsx-runtime").JSX.Element;
+}): React.JSX.Element;
 export declare function useWalletData(): WalletDataSource;

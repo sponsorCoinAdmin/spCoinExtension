@@ -34,4 +34,4 @@ export default function AccountDetailScreen({ account, role, host }: {
     account: spCoinAccount | undefined;
     role?: AccountDetailRole;
     host: AccountDetailHost;
-}): import("react/jsx-runtime").JSX.Element | null;
+}): import("react").JSX.Element | null;

@@ -41,4 +41,4 @@ export interface AgentSelectDropDownProps {
         className?: string;
     }>;
 }
-export default function AgentSelectDropDown({ icon, address, symbol, placeholderLabel, onSelectClick, listOpen, addrPrePostSize, panelGateId, panelGate: PanelGate, }: AgentSelectDropDownProps): import("react/jsx-runtime").JSX.Element;
+export default function AgentSelectDropDown({ icon, address, symbol, placeholderLabel, onSelectClick, listOpen, addrPrePostSize, panelGateId, panelGate: PanelGate, }: AgentSelectDropDownProps): React.JSX.Element;

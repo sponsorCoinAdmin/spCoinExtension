@@ -60,6 +60,7 @@ import {
   useExchangeContext,
   useSellTokenContract,
   useBuyTokenContract,
+  useUniBuyTokenContract,
   useSlippage,
   useTradeDirection,
   useSellAmount,
@@ -978,6 +979,8 @@ function MeritWalletInner({
   // own doc comment).
   const [sellTokenContract, setSellTokenContract] = useSellTokenContract();
   const [buyTokenContract, setBuyTokenContract] = useBuyTokenContract();
+  // the wallet's Swap tab quotes through Uniswap, whose buy token is its own (the 0x buy token above is a different context): it is the sell picker's peer
+  const [uniBuyTokenContract] = useUniBuyTokenContract();
   const { data: slippage, setBps: setSlippageBps } = useSlippage('zeroX');
   // 2026-10-05, ZERO_X_SELECT_PANEL parity (live report: the web
   // app's buy row reads "You Receive ± 2.00% [cog]", the
@@ -2006,6 +2009,10 @@ function MeritWalletInner({
         // the field's own token: the picker's address box opens pre-filled with it (2026-10-30, on request)
         currentTokenAddress: mode === 'sellToken' ? sellTokenContract?.address : mode === 'buyToken' ? buyTokenContract?.address : sendTokenEntry.address, // the Send field shows the native token until one is picked, so that is its token
         ownerId: mode === 'sellToken' ? 'sell' : mode === 'buyToken' ? 'buy' : 'send',
+        // the other side's token: the same token on both sides is a duplicate the picker refuses (provider commit guard + FSM DUPLICATE_INPUT_ERROR)
+        peerAddress: mode === 'sellToken' ? (uniBuyTokenContract?.address ?? buyTokenContract?.address) : mode === 'buyToken' ? sellTokenContract?.address : undefined,
+        // buyToken is the 0X engine's buy token (onCommit above sets setBuyTokenContract); the sell token is checked against the Uniswap buy token (peer above)
+        duplicateSource: mode === 'sendToken' ? undefined : mode === 'buyToken' ? ('Zero X' as const) : ('Uniswap' as const),
       };
     }
     if (mode === 'sendRecipient') {

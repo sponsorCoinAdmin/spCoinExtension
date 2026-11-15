@@ -9,4 +9,4 @@ export interface MessageDetailsSectionProps {
      *  real, ExchangeContext-bound row component. */
     renderTokenRow: (entry: MessageTokenEntry, index: number) => ReactNode;
 }
-export default function MessageDetailsSection({ errorMessage, renderAccountRow, renderTokenRow }: MessageDetailsSectionProps): import("react/jsx-runtime").JSX.Element | null;
+export default function MessageDetailsSection({ errorMessage, renderAccountRow, renderTokenRow }: MessageDetailsSectionProps): import("react").JSX.Element | null;

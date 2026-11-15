@@ -47,5 +47,5 @@ export interface MenuTabHeaderBarProps extends TabRowProps {
 }
 /** The tab strip itself — see this file's own header comment for why it's
  *  exported separately from MenuTabHeaderBar. */
-export declare function TabRow({ open, activeTab, onTabClick, disabled, disabledTitle, }: TabRowProps): import("react/jsx-runtime").JSX.Element;
-export default function MenuTabHeaderBar({ open, activeTab, onTabClick, disabled, disabledTitle, children, }: MenuTabHeaderBarProps): import("react/jsx-runtime").JSX.Element;
+export declare function TabRow({ open, activeTab, onTabClick, disabled, disabledTitle, }: TabRowProps): React.JSX.Element;
+export default function MenuTabHeaderBar({ open, activeTab, onTabClick, disabled, disabledTitle, children, }: MenuTabHeaderBarProps): React.JSX.Element;

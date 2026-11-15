@@ -1,3 +1,4 @@
+import React from 'react';
 export interface TokenDetailPanelProps {
     address: string;
     logoSrc?: string;
@@ -11,4 +12,4 @@ export interface TokenDetailPanelProps {
      *  same convention as AccountDetailPanel's own `loading`. */
     loading?: boolean;
 }
-export default function TokenDetailPanel({ address, logoSrc, name, symbol, decimals, website, explorer, description, loading, }: TokenDetailPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function TokenDetailPanel({ address, logoSrc, name, symbol, decimals, website, explorer, description, loading, }: TokenDetailPanelProps): React.JSX.Element;

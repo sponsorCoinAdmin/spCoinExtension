@@ -50,4 +50,4 @@ export interface TokenSelectDropDownProps {
         className?: string;
     }>;
 }
-export default function TokenSelectDropDown({ icon, defaultIconSrc, hasEntity, address, symbol, name, label, onSelectClick, onAddressClick, showChevron, showDisplay, addrPrePostSize, showSymbol, showName, collapseKey, onExpandedChange, restrictRowClickToChevron, copyLabel, style, dataPanelRoot, panelGateId, panelGate, }: TokenSelectDropDownProps): import("react/jsx-runtime").JSX.Element;
+export default function TokenSelectDropDown({ icon, defaultIconSrc, hasEntity, address, symbol, name, label, onSelectClick, onAddressClick, showChevron, showDisplay, addrPrePostSize, showSymbol, showName, collapseKey, onExpandedChange, restrictRowClickToChevron, copyLabel, style, dataPanelRoot, panelGateId, panelGate, }: TokenSelectDropDownProps): React.JSX.Element;

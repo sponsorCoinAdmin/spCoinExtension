@@ -13,7 +13,7 @@ export declare function joinPersistedTimeout(hours: number, minutes: number): nu
 export declare function PersistedTimeoutPicker({ hours, onChange }: {
     hours: number;
     onChange: (hours: number) => void;
-}): import("react/jsx-runtime").JSX.Element;
+}): import("react").JSX.Element;
 export interface WalletConfigEngine {
     uniSelectVisible: boolean;
     zeroXEngineVisible: boolean;

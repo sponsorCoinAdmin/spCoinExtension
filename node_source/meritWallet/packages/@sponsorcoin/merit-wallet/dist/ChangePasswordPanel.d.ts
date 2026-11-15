@@ -8,4 +8,4 @@ export default function ChangePasswordPanel({ changePassword, onDone, note, titl
     note?: string;
     title?: string;
     confirmLabel?: string;
-}): import("react/jsx-runtime").JSX.Element;
+}): import("react").JSX.Element;

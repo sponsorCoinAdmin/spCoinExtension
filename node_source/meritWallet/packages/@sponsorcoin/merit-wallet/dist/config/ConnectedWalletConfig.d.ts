@@ -20,5 +20,5 @@ export interface ConnectedWalletConfigProps extends Omit<PanelProps, 'securityPa
         onChanged?(): void;
     };
 }
-export default function ConnectedWalletConfig({ wallet, activeAddress, derives, walletSession, testAccounts, onLogoff, onResetPassword, onDeleteAccount, onDeleteWallet, ...panel }: ConnectedWalletConfigProps): import("react/jsx-runtime").JSX.Element;
+export default function ConnectedWalletConfig({ wallet, activeAddress, derives, walletSession, testAccounts, onLogoff, onResetPassword, onDeleteAccount, onDeleteWallet, ...panel }: ConnectedWalletConfigProps): React.JSX.Element;
 export {};

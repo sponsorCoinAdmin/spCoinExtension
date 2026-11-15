@@ -6,4 +6,4 @@ export interface AddressPanelProps {
     /** The row under the bar. Omit while there is nothing to show. */
     preview?: AssetPreviewRowProps | null;
 }
-export default function AddressPanel({ value, onChange, placeholder, preview, }: AddressPanelProps): import("react/jsx-runtime").JSX.Element;
+export default function AddressPanel({ value, onChange, placeholder, preview, }: AddressPanelProps): import("react").JSX.Element;

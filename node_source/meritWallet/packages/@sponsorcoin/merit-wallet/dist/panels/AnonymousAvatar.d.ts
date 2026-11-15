@@ -3,4 +3,4 @@ export interface AnonymousAvatarProps {
     src?: string;
     alt?: string;
 }
-export default function AnonymousAvatar({ src, alt, }: AnonymousAvatarProps): import("react/jsx-runtime").JSX.Element;
+export default function AnonymousAvatar({ src, alt, }: AnonymousAvatarProps): import("react").JSX.Element;

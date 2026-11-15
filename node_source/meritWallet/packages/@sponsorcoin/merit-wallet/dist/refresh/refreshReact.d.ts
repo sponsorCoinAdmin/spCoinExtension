@@ -8,7 +8,7 @@ export declare function useRefreshNode(id: string, spec: RefreshNodeSpec): Refre
 export declare function RefreshBranch({ id, children, ...spec }: RefreshNodeSpec & {
     id: string;
     children: React.ReactNode;
-}): import("react/jsx-runtime").JSX.Element;
+}): React.JSX.Element;
 /** The wallet's image cache (the one MeritWallet's lists read: sections by kind) and the origin its relative image paths are read from. MeritWallet provides it. */
 export declare const ImageCacheContext: React.Context<{
     caches: MeritWalletIconCaches;
@@ -27,4 +27,4 @@ export declare function RefreshTreeProvider({ tree, refreshToken, onDone, childr
     refreshToken: number; /** The tree has finished the refresh for this token (the Refresh button is enabled again). */
     onDone?: (refreshToken: number) => void;
     children: React.ReactNode;
-}): import("react/jsx-runtime").JSX.Element;
+}): React.JSX.Element;

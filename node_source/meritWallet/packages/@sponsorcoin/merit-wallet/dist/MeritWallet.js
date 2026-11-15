@@ -42,7 +42,7 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import { registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { StakeConfirmPopup, useWalletListed, amountGate } from '@sponsorcoin/spcoin-panels';
-import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useSelectedAccount, buildSpCoinAccount, hydrateAccountFromAddress, useExchangeContext, useSellTokenContract, useBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
+import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useSelectedAccount, buildSpCoinAccount, hydrateAccountFromAddress, useExchangeContext, useSellTokenContract, useBuyTokenContract, useUniBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, usePlatform } from './platform/platform';
@@ -296,6 +296,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // own doc comment).
     const [sellTokenContract, setSellTokenContract] = useSellTokenContract();
     const [buyTokenContract, setBuyTokenContract] = useBuyTokenContract();
+    // the wallet's Swap tab quotes through Uniswap, whose buy token is its own (the 0x buy token above is a different context): it is the sell picker's peer
+    const [uniBuyTokenContract] = useUniBuyTokenContract();
     const { data: slippage, setBps: setSlippageBps } = useSlippage('zeroX');
     // 2026-10-05, ZERO_X_SELECT_PANEL parity (live report: the web
     // app's buy row reads "You Receive ± 2.00% [cog]", the
@@ -1296,6 +1298,10 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 // the field's own token: the picker's address box opens pre-filled with it (2026-10-30, on request)
                 currentTokenAddress: mode === 'sellToken' ? sellTokenContract?.address : mode === 'buyToken' ? buyTokenContract?.address : sendTokenEntry.address, // the Send field shows the native token until one is picked, so that is its token
                 ownerId: mode === 'sellToken' ? 'sell' : mode === 'buyToken' ? 'buy' : 'send',
+                // the other side's token: the same token on both sides is a duplicate the picker refuses (provider commit guard + FSM DUPLICATE_INPUT_ERROR)
+                peerAddress: mode === 'sellToken' ? (uniBuyTokenContract?.address ?? buyTokenContract?.address) : mode === 'buyToken' ? sellTokenContract?.address : undefined,
+                // buyToken is the 0X engine's buy token (onCommit above sets setBuyTokenContract); the sell token is checked against the Uniswap buy token (peer above)
+                duplicateSource: mode === 'sendToken' ? undefined : mode === 'buyToken' ? 'Zero X' : 'Uniswap',
             };
         }
         if (mode === 'sendRecipient') {

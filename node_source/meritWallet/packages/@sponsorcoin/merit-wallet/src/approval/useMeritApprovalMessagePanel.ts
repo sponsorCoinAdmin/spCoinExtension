@@ -29,7 +29,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
-import { useExchangeContext, usePanelTree } from '@sponsorcoin/spcoin-exchange-engine';
+import { panelTreeTrace, useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { getPendingMeritApproval, resolveMeritApproval, subscribeMeritApproval, type MeritApprovalRequest } from './meritApproval';
 import { pendingApprovalMessageStore } from './pendingApprovalMessageStore';
 
@@ -52,6 +52,10 @@ export function useMeritApprovalMessagePanel(host?: ApprovalHost): void {
   const { setErrorMessage } = useExchangeContext();
   const { openPanel, closePanel } = usePanelTree();
   const shownRef = useRef(false);
+  // 2026-11-16 (owner: backed out of the approval screen with the back arrow and could not claim again until the server was restarted): the screen is the shared MESSAGE_PANEL. Leaving it by the back arrow (or a tab) is neither Approve nor
+  // Reject, so the request used to stay pending for ever and the next write was refused ("Another Merit Wallet approval is already pending"). Leaving the screen WITHOUT a decision now counts as Reject.
+  const messageVisible = usePanelVisible(SP_COIN_DISPLAY.MESSAGE_PANEL);
+  const seenVisibleRef = useRef(false);
 
   useEffect(() => subscribeMeritApproval(setRequest), []);
 
@@ -67,6 +71,8 @@ export function useMeritApprovalMessagePanel(host?: ApprovalHost): void {
   // 'decide': a person is needed (password, then approval) or the request resolves at once; resolveMeritApproval ignores a request that already moved on
   useEffect(() => {
     if (request?.phase !== 'decide') return;
+    // trace (approvalTrace): what this request needs from a person, and why
+    panelTreeTrace('approvalTrace:decide', { id: request.id, label: request.label, chainId: request.chainId, signer: request.signerAddress, isLocked: !!request.isLocked, needsApproval: !!request.needsApproval, manualAdvance: !!request.manualAdvance, background: !!request.background, outcome: request.isLocked && !passwordConfirmed ? 'ask for the password' : request.needsApproval ? 'ask Approve / Reject' : 'auto-approve' });
     if (request.isLocked && !passwordConfirmed) {
       setIsPasswordOpen(true);
       return;
@@ -99,6 +105,24 @@ export function useMeritApprovalMessagePanel(host?: ApprovalHost): void {
     setIsSigning(true);
     resolveMeritApproval(true);
   };
+
+  useEffect(() => {
+    if (!shownRef.current) {
+      seenVisibleRef.current = false;
+      return;
+    }
+    if (messageVisible) {
+      seenVisibleRef.current = true; // the screen we opened is really on screen now
+      return;
+    }
+    if (seenVisibleRef.current && request?.phase === 'decide' && !isSigning) {
+      seenVisibleRef.current = false;
+      panelTreeTrace('approvalTrace:dismissed', { id: request.id, label: request.label, rejected: true });
+      setIsApprovalOpen(false);
+      setIsPasswordOpen(false);
+      resolveMeritApproval(false);
+    }
+  }, [messageVisible, request?.id, request?.phase, request?.label, isSigning]);
 
   const phase = request?.phase;
   const showing = (phase === 'decide' || isSigning) && ((request?.isLocked && !passwordConfirmed && isPasswordOpen) || (request?.needsApproval && isApprovalOpen));

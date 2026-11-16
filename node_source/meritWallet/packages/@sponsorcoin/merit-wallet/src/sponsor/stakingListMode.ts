@@ -4,7 +4,9 @@
 // claim the sponsor rewards instead of unstaking). The opener sets the mode here just before it opens the panel; the list and the page title read it.
 import { useSyncExternalStore } from 'react';
 
-export type StakingListMode = { kind: 'unstake' } | { kind: 'claim'; role: 'Sponsor' | 'Recipient' | 'Agent' };
+// 2026-11-16 (docs/meritFixes.txt, ISSUE 1): a Claim list can be opened for ANOTHER account than the active one: the account picked in the Rewards account pill (`account`, a plain address). Omitted = the active account. The claim itself is still
+// sent by the active account's wallet (the contract's claim takes the account to claim for as its argument and does not check the sender).
+export type StakingListMode = { kind: 'unstake' } | { kind: 'claim'; role: 'Sponsor' | 'Recipient' | 'Agent'; account?: string };
 
 let current: StakingListMode = { kind: 'unstake' };
 const listeners = new Set<() => void>();

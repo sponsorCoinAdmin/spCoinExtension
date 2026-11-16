@@ -6,7 +6,7 @@
 // where the run-script endpoint is, which contract and chain, and how a CLAIM is executed (the web app's server script; the extension signs it with the vault).
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
-import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
+import { panelBoxStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { setStakingListMode } from '../sponsor/stakingListMode';
@@ -15,7 +15,7 @@ import { meritDebug } from '../debug/debugStore';
 import { withRoleFlags } from './accountRoleFlags';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDisplayProvider, AssetSelectProvider, useExchangeContext, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
-import { AddressSelect, ManageSponsorshipsPanel, createAccountRecordSource, runRewardScript as runRewardScriptCall, useManageSponsorshipsData, useManageSponsorshipsNavigation, } from '@sponsorcoin/spcoin-panels';
+import { AddressSelect, AccountSelectDropDown, ASSET_SELECT_DISPLAY, ManageSponsorshipsPanel, createAccountRecordSource, runRewardScript as runRewardScriptCall, useManageSponsorshipsData, useManageSponsorshipsNavigation, } from '@sponsorcoin/spcoin-panels';
 const noopRegisterRefresh = () => undefined;
 const noopSubscribe = () => () => undefined;
 const AUTO_REFRESH_KEY = 'spcoin_rewards_auto_refresh';
@@ -26,7 +26,10 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
     const useRegisterRefresh = extras.useRegisterRefresh ?? noopRegisterRefresh;
     const { exchangeContext } = useExchangeContext();
     const pendingVisible = usePanelVisible(SP_COIN_DISPLAY.MANAGE_PENDING_REWARDS);
-    const activeAccountAddr = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim();
+    const activeAccount = exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount;
+    // the account analysed: the one picked in the dropdown at the left of the Auto Refresh row, else the active account
+    const pickedAccountAddr = String(extras.accountPicker?.address ?? '').trim();
+    const activeAccountAddr = pickedAccountAddr || String(activeAccount?.address ?? '').trim();
     const activeContractAddr = host.contractAddress();
     const accessSource = host.accessSource ?? 'local';
     const [localAutoRefresh, setAutoRefresh] = useState(false);
@@ -123,7 +126,14 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
             }, onPendingClaim: () => void runTotalRewardAction('claim'), onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), 
             // 2026-11-13 (owner): every role's Claim opens the sponsorships list in Claim mode (Sponsor: what you sponsor; Recipient / Agent: who sponsors you); its buttons claim
             onRoleClaim: (role) => {
-                setStakingListMode({ kind: 'claim', role });
+                // the Claim list is built for the account the Rewards pill shows (the picked account, else the active one), not always the active account
+                setStakingListMode({ kind: 'claim', role, account: pickedAccountAddr || undefined });
                 unstakeAllSponsorships();
-            }, addressSelectContent: _jsx(AssetSelectDisplayProvider, { children: _jsx(AssetSelectProvider, { containerType: SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL, closePanelCallback: () => extras.onClose?.(), setSelectedAssetCallback: () => undefined, children: _jsx(AddressSelect, { callingParent: "ManageSponsorshipsPanel", defaultAddress: extras.depositAddress ?? host.contractAddress(), bypassDefaultFsm: true, useActiveAddr: true, shortAddr: true, preText: "Deposit Account:", showAccount: false }) }) }) }) }));
+            }, accountSelectContent: extras.accountPicker ? (_jsx(AccountSelectDropDown, { rootId: "REWARDS_ACCOUNT_SELECT_DROP_DOWN", hasEntity: !!activeAccountAddr, address: activeAccountAddr, symbol: pickedAccountAddr ? undefined : activeAccount?.symbol, name: pickedAccountAddr ? undefined : activeAccount?.name, label: "Select Account", copyLabel: "Copy Account Address", showDisplay: ASSET_SELECT_DISPLAY.ICON |
+                    ASSET_SELECT_DISPLAY.SYMBOL |
+                    ASSET_SELECT_DISPLAY.NAME |
+                    ASSET_SELECT_DISPLAY.ADDRESS |
+                    ASSET_SELECT_DISPLAY.COPY |
+                    ASSET_SELECT_DISPLAY.CHEVRON_DN |
+                    ASSET_SELECT_DISPLAY.ADDR_COMP, onSelectClick: () => extras.accountPicker?.onPick(), addrPrePostSize: 4, iconSizeClassName: walletPartClass.compactPill.iconSize, pillHeightClassName: walletPartClass.compactPill.pillHeight, pillFontClassName: walletPartClass.compactPill.pillFont, chevronSize: walletPartClass.compactPill.chevronSize, copyIconSize: walletPartClass.compactPill.copyIconSize, nameLineClassName: walletPartClass.compactPill.nameLine })) : undefined, addressSelectContent: _jsx(AssetSelectDisplayProvider, { children: _jsx(AssetSelectProvider, { containerType: SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL, closePanelCallback: () => extras.onClose?.(), setSelectedAssetCallback: () => undefined, children: _jsx(AddressSelect, { callingParent: "ManageSponsorshipsPanel", defaultAddress: extras.depositAddress ?? host.contractAddress(), bypassDefaultFsm: true, useActiveAddr: true, shortAddr: true, preText: "Deposit Account:", showAccount: false }) }) }) }) }));
 }

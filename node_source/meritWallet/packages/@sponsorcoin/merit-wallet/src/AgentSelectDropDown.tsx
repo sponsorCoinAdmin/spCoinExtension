@@ -87,6 +87,7 @@ export default function ConnectedAgentSelectDropDown({
       }
       address={isUnselected ? undefined : address || undefined}
       symbol={isUnselected ? undefined : agentAccount?.symbol}
+      name={isUnselected ? undefined : agentAccount?.name}
       placeholderLabel={label}
       onSelectClick={openAgentList}
       listOpen={agentListVisible}

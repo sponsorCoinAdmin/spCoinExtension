@@ -44,6 +44,11 @@ export interface RewardsPanelExtras {
     };
     /** The address the "Deposit Account" row starts from (the web app's preferred spCoin contract); default: the host's contract address. The row itself is drawn here, in every app. */
     depositAddress?: string;
+    /** 2026-11-15 (owner): the account the Rewards panel analyses. The dropdown at the left of the Auto Refresh row shows `address` (omit it to follow the active account) and `onPick` opens the host's account list; the host stores the pick. Omit the whole object and the panel shows no dropdown and analyses the active account. */
+    accountPicker?: {
+        address?: string;
+        onPick(): void;
+    };
     /** Close the Rewards panel (the Deposit Account picker closes it after a pick). */
     onClose?(): void;
     /** Debug trace sink. */

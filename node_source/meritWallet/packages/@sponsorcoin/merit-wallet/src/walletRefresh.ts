@@ -42,6 +42,13 @@ export function createWalletRefresh(callbacks: WalletRefreshCallbacks, onChange:
       if (state.refreshing) return;
       set({ refreshing: true });
       try {
+        // one place for both hosts: every cached account profile and image answer is dropped and every dropdown reads its profile again
+        try {
+          const { invalidateAllProfileCaches } = await import('@sponsorcoin/spcoin-exchange-engine');
+          await invalidateAllProfileCaches();
+        } catch {
+          // a refresh must not stop on a cache that cannot be cleared
+        }
         await callbacks.invalidate?.();
         await callbacks.reload?.();
         set({ refreshToken: state.refreshToken + 1 });

@@ -49,5 +49,5 @@ export default function ConnectedAgentSelectDropDown({ panelGateId, label = 'Sel
             ? (renderAccountAvatar
                 ? renderAccountAvatar(agentAccount)
                 : _jsx(AccountAvatar, { account: agentAccount, mode: SP_COIN_DISPLAY.AGENT_ACCOUNT, className: panelPartClass.avatarFill, roleLabel: "AGENT" }))
-            : undefined, address: isUnselected ? undefined : address || undefined, symbol: isUnselected ? undefined : agentAccount?.symbol, placeholderLabel: label, onSelectClick: openAgentList, listOpen: agentListVisible, addrPrePostSize: addrPrePostSize, panelGateId: panelGateId === null ? undefined : (panelGateId ?? SP_COIN_DISPLAY.AGENT_SELECT_DROP_DOWN), panelGate: panelGateId === null ? undefined : PanelGate }));
+            : undefined, address: isUnselected ? undefined : address || undefined, symbol: isUnselected ? undefined : agentAccount?.symbol, name: isUnselected ? undefined : agentAccount?.name, placeholderLabel: label, onSelectClick: openAgentList, listOpen: agentListVisible, addrPrePostSize: addrPrePostSize, panelGateId: panelGateId === null ? undefined : (panelGateId ?? SP_COIN_DISPLAY.AGENT_SELECT_DROP_DOWN), panelGate: panelGateId === null ? undefined : PanelGate }));
 }

@@ -252,6 +252,8 @@ const LIST_PANEL_ID_FOR_MODE: Record<Exclude<ActiveListMode, null>, SP_COIN_DISP
   buyToken: SP_COIN_DISPLAY.REMOTE_TOKEN_LIST,
   sendToken: SP_COIN_DISPLAY.REMOTE_TOKEN_LIST,
   sendRecipient: SP_COIN_DISPLAY.REMOTE_ACCOUNT_SEND_LIST,
+  // the Rewards tab's account dropdown picks from the same account list as the Send recipient
+  rewardsAccount: SP_COIN_DISPLAY.REMOTE_ACCOUNT_SEND_LIST,
   account: SP_COIN_DISPLAY.LOCAL_ACCOUNT_WALLET_LIST,
   network: SP_COIN_DISPLAY.NETWORK_LIST,
 };
@@ -1931,6 +1933,9 @@ function MeritWalletInner({
   // (an overlay that fully owns the panel body while open, not a layered
   // popover). onSelect closes it the same way a real row pick would.
   const closeListOverlay = () => setActiveList(null);
+  // 2026-11-15 (owner): the account the Rewards tab analyses; empty = follow the active account, and a switch of the active account clears the pick
+  const [rewardsAccountAddress, setRewardsAccountAddress] = useState('');
+  useEffect(() => setRewardsAccountAddress(''), [activeAccountAddress]);
   // the remote's account picker opens the account list by itself and closes it when the request is over
   const remoteSelectionOpen = !!remoteSelection;
   // 2026-11-06 (owner design): the selector is host state, not a panel on the stack, so it closes itself through openPanel's pre-open action: opening a tab panel ends it, like Back does (the add flow it opens from its own list does not)
@@ -2029,6 +2034,19 @@ function MeritWalletInner({
           : (uniPanelVisible && !zeroXVisible) ? 'Uniswap Sell Token Select'
           : (zeroXVisible && !uniPanelVisible) ? 'Zero X Sell Token Select'
           : 'Sell Token Select',
+      };
+    }
+    if (mode === 'rewardsAccount') {
+      return {
+        feedType: FEED_TYPE.REMOTE_ACCOUNT_SEND_LIST,
+        onCommit: (asset: TokenContract | spCoinAccount) => {
+          setRewardsAccountAddress(toChecksumAddress((asset as spCoinAccount).address as unknown as string) ?? '');
+          closeListOverlay();
+        },
+        selectOnLogoClick: true,
+        currentTokenAddress: rewardsAccountAddress || activeAccountAddress,
+        ownerId: 'rewardsAccount',
+        title: 'Select Rewards Account',
       };
     }
     if (mode === 'sendRecipient') {
@@ -2189,7 +2207,7 @@ function MeritWalletInner({
         : activeTab === 'SPONSOR'
           ? React.createElement(ConnectedSponsorPanel, { host: tradeHost })
           : activeTab === 'REWARDS' && rewardsHost
-            ? React.createElement(ConnectedRewardsPanel, { host: rewardsHost, extras: rewardsExtras })
+            ? React.createElement(ConnectedRewardsPanel, { host: rewardsHost, extras: { ...rewardsExtras, accountPicker: { address: rewardsAccountAddress, onPick: () => setActiveList('rewardsAccount') } } })
             : activeTab === 'REWARDS'
             ? React.createElement(ManageSponsorshipsPanel, {
                 // 2026-09-24, SPONSOR_STAKING_LIST EXT wiring (minimal bar) —
@@ -2839,6 +2857,8 @@ function MeritWalletInner({
     activeListMode === 'buyToken' ||
     activeListMode === 'sendToken'
       ? (activeListParams?.title ?? 'Select a Token')
+      : activeListMode === 'rewardsAccount'
+        ? (activeListParams?.title ?? 'Select Rewards Account')
       : activeListMode === 'sendRecipient'
         ? 'Select Recipient'
         : activeListMode === 'account'

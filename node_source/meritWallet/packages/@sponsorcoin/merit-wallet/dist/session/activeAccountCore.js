@@ -11,7 +11,7 @@ export function buildNextActiveAccount(account, currentActiveAccount, deps) {
         deps.normalizeAddress(String(currentActiveAccount.address)) === deps.normalizeAddress(account.address);
     const fallbackAccount = isSameAddressAsCurrent ? currentActiveAccount : undefined;
     return {
-        name: String(account.name || account.label || fallbackAccount?.name || 'Unnamed account').trim(),
+        name: String(account.name || account.label || fallbackAccount?.name || 'Unnamed Account').trim(),
         symbol: String(account.symbol || fallbackAccount?.symbol || '').trim(),
         type: fallbackAccount?.type ?? 'account',
         website: String(account.website || fallbackAccount?.website || '').trim(),

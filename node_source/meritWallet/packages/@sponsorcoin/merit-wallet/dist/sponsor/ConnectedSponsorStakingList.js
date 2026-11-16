@@ -9,9 +9,10 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { panelPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { parseUnits } from 'viem';
+import { registerCache } from '@sponsorcoin/spcoin-feeds/shared';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
-import { useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { panelTreeTrace, useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { SponsorStakingListPanel, StakeConfirmPopup, formatTokenAmount, } from '@sponsorcoin/spcoin-panels';
 import { AccountAvatarWithOpen, AccountSelectDropDownHosted, ACCOUNT_SELECT_DISPLAY, LoadingText } from '@sponsorcoin/spcoin-panels';
 import { buildClaimReceipt, buildUnstakeReceipt, toMessageAccount } from '../receipt/transactionReceipts';
@@ -31,6 +32,7 @@ const ROW_ACCOUNT_CELL = ({ account, mode, label, addrPrePostSize, addressSizeCl
 const ROW_AVATAR = (account) => _jsx(AccountAvatarWithOpen, { account: account, mode: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT, className: panelPartClass.rowAvatar });
 // The last list seen per (contract, sponsor): reopening the panel paints it at once and then refreshes (the web app's list cache did the same).
 const snapshots = new Map();
+registerCache('sponsor.stakingListSnapshots', () => snapshots.clear());
 function account(profile) {
     return toMessageAccount(profile);
 }
@@ -43,9 +45,13 @@ export default function ConnectedSponsorStakingList({ host }) {
     const isVisible = usePanelVisible(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST);
     const showReceipt = useTransactionReceipt();
     const activeProfile = useActiveAccountProfile();
-    const sponsor = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim();
+    const activeAccountAddress = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim();
     const decimals = host.decimals ?? 18;
     const listMode = useStakingListMode();
+    // 2026-11-16 (docs/meritFixes.txt, ISSUE 1: the Recipient and Agent Claim screens came up empty): the account this list is FOR. A Claim list opened from the Rewards tab is for the account the Rewards pill shows (listMode.account, the picked account);
+    // everything else (the Unstake list, a Claim list with no picked account) is for the active account. The name `sponsor` is kept for the account all the code below reads and claims for: its stakes, its Claim rows and the claim target `who`.
+    // The claim is still SENT by the active account's wallet (the hosts' claim takes this account as the contract's argument); the contract does not check the sender.
+    const sponsor = listMode.kind === 'claim' && listMode.account ? listMode.account.trim() : activeAccountAddress;
     const [recipients, setRecipients] = useState([]);
     const [stakeInfoByAddress, setStakeInfoByAddress] = useState({});
     const [loading, setLoading] = useState(false);
@@ -244,7 +250,8 @@ export default function ConnectedSponsorStakingList({ host }) {
                 throw new Error('This wallet cannot send the claim from here yet.');
             const profileOf = (a) => (a ? { address: a.address, name: a.name, symbol: a.symbol, logoURL: a.logoURL } : undefined);
             const sponsorAccount = exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount;
-            const mine = activeProfile?.address && activeProfile.address.toLowerCase() === sponsor.toLowerCase() ? activeProfile : sponsorAccount ? { address: sponsorAccount.address, name: sponsorAccount.name, symbol: sponsorAccount.symbol, logoURL: sponsorAccount.logoURL } : { address: sponsor };
+            const mine = activeProfile?.address && activeProfile.address.toLowerCase() === sponsor.toLowerCase() ? activeProfile : sponsorAccount && String(sponsorAccount.address ?? '').toLowerCase() === sponsor.toLowerCase() ? { address: sponsorAccount.address, name: sponsorAccount.name, symbol: sponsorAccount.symbol, logoURL: sponsorAccount.logoURL } : { address: sponsor };
+            // (a Claim list for a PICKED account is not the active account: its profile is just the address, and the receipt's account pills fill in the name and avatar by address)
             // The accounts a claim can pay: this account in its own role, the list's rows in the opposite role, and the agents under the rows.
             const involved = new Map();
             const add = (role, profile) => {
@@ -263,7 +270,10 @@ export default function ConnectedSponsorStakingList({ host }) {
             }
             const entries = [...involved.values()];
             const readAll = () => Promise.all(entries.map((entry) => (host.readBalance ? host.readBalance(String(entry.profile?.address)).catch(() => undefined) : Promise.resolve(undefined))));
+            // 2026-11-16 (claimTrace): which accounts the receipt can show (only these are read before and after the claim), and their balances before it
+            panelTreeTrace('claimTrace:list:start', { listRole: listMode.role, listAccount: sponsor, activeAccount: activeAccountAddress, target: target ? { recipient: target.recipient?.address, agent: target.agent?.address, rateKey: target.rateKey } : null, rows: recipients.length, involved: entries.map((e) => ({ role: e.role, address: e.profile?.address })) });
             const before = await readAll();
+            panelTreeTrace('claimTrace:list:before', { balances: entries.map((e, i) => ({ role: e.role, address: e.profile?.address, raw: before[i] === undefined ? 'unreadable' : String(before[i]) })) });
             // Which contract claim: the Total row (no target) claims the whole account for this role. A row claims just that row: the contract settles one recipient, one rate bucket or one agent of a sponsor (and pays every party the bucket touches).
             // Sponsor list: the rows are the account's recipients. Recipient list: the rows are the sponsors of the account. (Agent list rows still claim the whole account: one agent row spans several recipients.)
             const rowAddress = String(target?.recipient?.address ?? '').trim();
@@ -287,8 +297,12 @@ export default function ConnectedSponsorStakingList({ host }) {
                     args = [recipientKey];
                 }
             }
+            panelTreeTrace('claimTrace:list:send', { method, who, args });
             const sent = await host.claim(method, who, ...args);
+            panelTreeTrace('claimTrace:list:sent', { method, who, sent: sent && typeof sent === 'object' ? sent : String(sent) });
             const after = await readAll();
+            // every involved account with its raw balance before, after and the change: an account that is missing from the receipt shows here whether it was never read, unreadable, unchanged or paid
+            panelTreeTrace('claimTrace:list:after', { balances: entries.map((e, i) => ({ role: e.role, address: e.profile?.address, before: before[i] === undefined ? 'unreadable' : String(before[i]), after: after[i] === undefined ? 'unreadable' : String(after[i]), change: before[i] !== undefined && after[i] !== undefined ? String(after[i] - before[i]) : 'n/a' })) });
             const rows = [];
             let total = 0n;
             entries.forEach((entry, index) => {
@@ -308,6 +322,7 @@ export default function ConnectedSponsorStakingList({ host }) {
         }
         catch (err) {
             const text = String(err?.message ?? err);
+            panelTreeTrace('claimTrace:list:error', { message: text });
             setErrorMessage({ errCode: 0, msg: text, source: 'SponsorStakingList', status: STATUS.MESSAGE_ERROR, reason: 'The claim failed.' });
             openPanel(SP_COIN_DISPLAY.MESSAGE_PANEL, 'SponsorStakingList:claimFailed');
         }

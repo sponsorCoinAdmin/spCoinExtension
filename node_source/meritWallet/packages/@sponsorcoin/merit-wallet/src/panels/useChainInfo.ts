@@ -4,15 +4,20 @@
 // ("ETH | Ethereum", "HH | Hardhat"). Fetched once per chain and kept; the list row's own symbol and name are the fallback until it lands (or when a chain has no info.json).
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { registerCache } from '@sponsorcoin/spcoin-feeds/shared';
+import { getProfileEpoch, subscribeProfileEpoch } from '@sponsorcoin/spcoin-exchange-engine';
 
 export interface ChainInfo { name?: string; symbol?: string }
 
 const cache = new Map<string, ChainInfo | null>();
+// one of the app's caches: Refresh empties it (cacheRegistry), and every mounted hook reads again (the refresh number below)
+registerCache('network.chainInfo', () => cache.clear());
 
 export function useChainInfo(chainId: string | number | undefined, baseUrl: string = ''): ChainInfo | undefined {
   const key = chainId === undefined || chainId === '' ? '' : String(chainId);
   const [, bump] = useState(0);
+  const refreshEpoch = useSyncExternalStore(subscribeProfileEpoch, getProfileEpoch, getProfileEpoch);
   useEffect(() => {
     if (!key || cache.has(key)) return undefined;
     let cancelled = false;
@@ -25,6 +30,6 @@ export function useChainInfo(chainId: string | number | undefined, baseUrl: stri
       .catch(() => undefined)
       .finally(() => { if (!cancelled) bump((n) => n + 1); });
     return () => { cancelled = true; };
-  }, [key, baseUrl]);
+  }, [key, baseUrl, refreshEpoch]);
   return key ? cache.get(key) ?? undefined : undefined;
 }

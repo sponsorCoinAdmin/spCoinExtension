@@ -9,6 +9,9 @@
 // Two forms of the same thing: createWalletRefresh is plain TypeScript (the extension adapter is a script with its own render loop, not a
 // React component); useWalletRefresh wraps it in React state for hosts that are components (the web adapter).
 import { useCallback, useEffect, useRef, useState } from 'react';
+// 2026-11-16: a STATIC import. The first version loaded the engine with a dynamic import(...) here; in the extension's build that made the bundler split the shared chunks into a cycle (dist <-> sidepanel <-> chainRpc), the background script threw at load
+// ("r is not a function") and never answered a message, so the CI's extension walk hung for 25 minutes. The engine is already a normal dependency of this package.
+import { invalidateAllProfileCaches } from '@sponsorcoin/spcoin-exchange-engine';
 /** Framework-free refresh sequence. onChange fires after every state change (host re-renders from getState()). */
 export function createWalletRefresh(callbacks, onChange = () => undefined) {
     let state = { refreshing: false, refreshToken: 0 };
@@ -25,7 +28,6 @@ export function createWalletRefresh(callbacks, onChange = () => undefined) {
             try {
                 // one place for both hosts: every cached account profile and image answer is dropped and every dropdown reads its profile again
                 try {
-                    const { invalidateAllProfileCaches } = await import('@sponsorcoin/spcoin-exchange-engine');
                     await invalidateAllProfileCaches();
                 }
                 catch {

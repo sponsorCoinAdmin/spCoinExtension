@@ -63,6 +63,11 @@ export declare function useAccountForm({ connected, activeAddress, targetAddress
     handleRevertChanges: () => void;
     handleSubmit: (e: React.FormEvent) => Promise<void>;
     handleLogoFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+    registered: {
+        recipients: boolean;
+        agents: boolean;
+    };
+    setRegisteredRole: (role: "recipients" | "agents", checked: boolean) => void;
     logoPreviewSrc: string;
     invalidAddressPopupPreviousAddress: string | null;
     handleInvalidAddressContinue: () => void;

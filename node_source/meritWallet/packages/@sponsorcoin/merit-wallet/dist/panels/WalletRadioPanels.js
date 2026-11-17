@@ -96,6 +96,8 @@ import { panelBoxStyle, panelPartClass } from '@sponsorcoin/spcoin-common/styles
 import { usePanelVisible, usePanelTree, useActiveRadioPanel } from '@sponsorcoin/spcoin-exchange-engine';
 export default function WalletRadioPanels({ children, activeRadioPanel }) {
     const visible = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
+    // a pick list (token, recipient, agent, send recipient, account, network, wallet) is open: it holds its own address row and header and scrolls only its rows
+    const listOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL);
     const { openPanel } = usePanelTree();
     const currentlyActive = useActiveRadioPanel();
     useEffect(() => {
@@ -106,5 +108,5 @@ export default function WalletRadioPanels({ children, activeRadioPanel }) {
             openPanel(SP_COIN_DISPLAY.MERIT_INFO_PANEL, 'WalletRadioPanels:activeRadioPanel:default');
         }
     }, [activeRadioPanel, currentlyActive, openPanel]);
-    return (_jsx("div", { "data-panel": SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS], "data-visible": visible ? 'true' : 'false', style: panelBoxStyle.radioSlide(visible), children: _jsx("div", { style: panelBoxStyle.radioDebugFrame, children: _jsx("div", { className: panelPartClass.menuTabBody, style: panelBoxStyle.radioScrollBody, children: children }) }) }));
+    return (_jsx("div", { "data-panel": SP_COIN_DISPLAY[SP_COIN_DISPLAY.WALLET_RADIO_PANELS], "data-visible": visible ? 'true' : 'false', style: panelBoxStyle.radioSlide(visible), children: _jsx("div", { style: panelBoxStyle.radioDebugFrame, children: _jsx("div", { className: panelPartClass.menuTabBody, style: listOpen ? panelBoxStyle.radioScrollBodyList : panelBoxStyle.radioScrollBody, children: children }) }) }));
 }

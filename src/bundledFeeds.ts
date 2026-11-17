@@ -28,9 +28,10 @@ const tokenListOf = (chainId: number): unknown[] => {
 };
 registerEngineBundledFeeds({
   accountRoles: {
-    recipients: listOf('/assets/accounts/accountRoles/recipients.json'),
-    agents: listOf('/assets/accounts/accountRoles/agents.json'),
-    sponsors: listOf('/assets/accounts/accountRoles/sponsors.json'),
+    // 2026-11-16 (owner rules, docs/accountRegistryRules.txt): one shared registry file per role for every network; every account is a sponsor, so there is no sponsors file
+    recipients: listOf('/assets/accounts/recipients.accounts.json'),
+    agents: listOf('/assets/accounts/agents.accounts.json'),
+    sponsors: [],
   },
   tokenLists: Object.fromEntries([1, 8453, 137, 31337, 11155111].map((id) => [id, tokenListOf(id)])),
 });

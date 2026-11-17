@@ -117,6 +117,8 @@ export interface WalletRadioPanelsProps {
 
 export default function WalletRadioPanels({ children, activeRadioPanel }: WalletRadioPanelsProps) {
   const visible = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
+  // a pick list (token, recipient, agent, send recipient, account, network, wallet) is open: it holds its own address row and header and scrolls only its rows
+  const listOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_SELECT_LIST_PANEL);
   const { openPanel } = usePanelTree();
   const currentlyActive = useActiveRadioPanel();
 
@@ -139,7 +141,7 @@ export default function WalletRadioPanels({ children, activeRadioPanel }: Wallet
       >
         <div
           className={panelPartClass.menuTabBody}
-          style={panelBoxStyle.radioScrollBody}
+          style={listOpen ? panelBoxStyle.radioScrollBodyList : panelBoxStyle.radioScrollBody}
         >
           {children}
         </div>

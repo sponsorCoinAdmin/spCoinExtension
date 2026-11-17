@@ -2587,7 +2587,7 @@ function MeritWalletInner({
   const roleDetail = agentPanelVisible
     ? { role: SP_COIN_DISPLAY.AGENT_ACCOUNT as const, account: roleAccounts?.agentAccount, empty: 'No agent selected.' }
     : sponsorPanelVisible
-    ? { role: SP_COIN_DISPLAY.SPONSOR_ACCOUNT as const, account: roleAccounts?.sponsorAccount, empty: 'No sponsor selected.' }
+    ? { role: SP_COIN_DISPLAY.SPONSOR_ACCOUNT as const, account: roleAccounts?.selectedAccount, empty: 'No sponsor selected.' }
     : recipientPanelVisible
     ? { role: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT as const, account: roleAccounts?.recipientAccount, empty: 'No recipient selected.' }
     : undefined;
@@ -2862,9 +2862,14 @@ function MeritWalletInner({
       : activeListMode === 'sendRecipient'
         ? 'Select Recipient'
         : activeListMode === 'account'
-          ? 'Active Account Selection'
+          // 2026-11-16 (owner): the account list picks the account that signs, which is the sponsor; the recipient and agent lists, opened from the Sponsor tab or the panel tree, are named for what they pick.
+          ? 'Select Active Sponsor Account'
           : activeListMode === 'network'
             ? 'Select Network'
+            : listPanelOpen && activeChild === SP_COIN_DISPLAY.REMOTE_ACCOUNT_RECIPIENT_LIST
+            ? 'Select Active Recipient Account'
+            : listPanelOpen && activeChild === SP_COIN_DISPLAY.REMOTE_ACCOUNT_AGENT_LIST
+            ? 'Select Active Agent Account'
             : activeTab === 'SWAP'
           ? 'Trading Station'
           : activeTab === 'SEND'

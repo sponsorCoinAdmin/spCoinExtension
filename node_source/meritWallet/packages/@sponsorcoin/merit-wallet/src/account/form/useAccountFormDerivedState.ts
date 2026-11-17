@@ -17,6 +17,8 @@ interface Params {
   formData: AccountFormData;
   baselineData: AccountFormData;
   logoFile: File | null;
+  /** 2026-11-16: a Register as Recipient / Agent box differs from what is saved. */
+  registryChanged?: boolean;
   isLoadingAccount: boolean;
   isSaving: boolean;
 }
@@ -28,6 +30,7 @@ export function useAccountFormDerivedState({
   formData,
   baselineData,
   logoFile,
+  registryChanged = false,
   isLoadingAccount,
   isSaving,
 }: Params) {
@@ -51,7 +54,7 @@ export function useAccountFormDerivedState({
     );
   }, [formData, baselineData]);
 
-  const hasUnsavedChanges = hasDataChanges || !!logoFile;
+  const hasUnsavedChanges = hasDataChanges || !!logoFile || registryChanged;
 
   const accountMode: AccountMode = useMemo(() => {
     if (!connected || !publicKeyTrimmed) return 'create';

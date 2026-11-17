@@ -65,6 +65,8 @@ interface Props {
   onRevert: () => void;
   /** The words of the second button. Default "Revert Changes"; the Add New Account screen says "Cancel". */
   revertLabel?: string;
+  /** 2026-11-16 (owner rules): the Register as Recipient / Register as Agent boxes. Omitted = no rows (the Add New Account screen). */
+  registry?: { recipients: boolean; agents: boolean; onChange(role: 'recipients' | 'agents', checked: boolean): void };
 }
 
 export default function CreateAccountFormPanel({
@@ -103,6 +105,7 @@ export default function CreateAccountFormPanel({
   onFieldBlur,
   onRevert,
   revertLabel = 'Revert Changes',
+  registry,
 }: Props) {
   const [hoveredInput, setHoveredInput] = useState<string | null>(null);
   const [hoveringLinkTextField, setHoveringLinkTextField] = useState<
@@ -351,6 +354,29 @@ export default function CreateAccountFormPanel({
               ) : null}
             </div>
           </div>
+
+          {registry ? (
+            <div className={accountFormClass.contents}>
+              <div className={accountFormClass.registryRow((formFieldRows.length + 2 + (privateKeyRow ? 1 : 0)) % 2 === 0 ? zebraB : zebraA, cell)}>
+                {([
+                  { role: 'recipients' as const, label: 'Register as Recipient', checked: registry.recipients, title: 'List this account in the shared Recipients registry. Unchecked, it is removed from that file.' },
+                  { role: 'agents' as const, label: 'Register as Agent', checked: registry.agents, title: 'List this account in the shared Agents registry. Unchecked, it is removed from that file.' },
+                ]).map(({ role, label, checked, title }) => (
+                  <label key={role} className={accountFormClass.registryItem} title={title} htmlFor={fieldId(`register-${role}`)}>
+                    <span>{label}</span>
+                    <input
+                      type="checkbox"
+                      id={fieldId(`register-${role}`)}
+                      className={accountFormClass.registryBox}
+                      checked={connected && checked}
+                      disabled={!connected || isLoading}
+                      onChange={(e) => registry.onChange(role, e.target.checked)}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className={accountFormClass.contents}>
             <div className={accountFormClass.buttonRowOuter}>

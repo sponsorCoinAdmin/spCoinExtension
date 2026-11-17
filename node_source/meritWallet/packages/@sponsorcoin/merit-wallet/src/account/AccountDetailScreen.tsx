@@ -156,6 +156,7 @@ export default function AccountDetailScreen({ account, role = SP_COIN_DISPLAY.AC
             onChange={form.handleChange}
             onFieldBlur={form.handleFieldBlur}
             onRevert={form.handleRevertChanges}
+            registry={{ recipients: form.registered.recipients, agents: form.registered.agents, onChange: form.setRegisteredRole }}
             roleTable={<RoleTableComponent account={account} accountAddress={address} />}
             privateKeyRow={accountSource?.heldBy ? (style) => <HeldPrivateKeyRow heldBy={accountSource.heldBy!} {...style} /> : showKeyRow ? (style) => <AccountPrivateKeyRow address={address} reveal={reveal} idPrefix="account-component-" {...style} /> : undefined}
             connectButton={

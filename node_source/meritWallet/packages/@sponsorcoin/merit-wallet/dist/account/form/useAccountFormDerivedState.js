@@ -4,7 +4,7 @@
 'use client';
 import { useMemo } from 'react';
 import { trimForm } from './formHelpers';
-export function useAccountFormDerivedState({ connected, publicKey, accountExists, formData, baselineData, logoFile, isLoadingAccount, isSaving, }) {
+export function useAccountFormDerivedState({ connected, publicKey, accountExists, formData, baselineData, logoFile, registryChanged = false, isLoadingAccount, isSaving, }) {
     const publicKeyTrimmed = publicKey.trim();
     const hasDataChanges = useMemo(() => {
         const current = trimForm(formData);
@@ -20,7 +20,7 @@ export function useAccountFormDerivedState({ connected, publicKey, accountExists
             current.description !== baseline.description ||
             recipientNetworkChanged);
     }, [formData, baselineData]);
-    const hasUnsavedChanges = hasDataChanges || !!logoFile;
+    const hasUnsavedChanges = hasDataChanges || !!logoFile || registryChanged;
     const accountMode = useMemo(() => {
         if (!connected || !publicKeyTrimmed)
             return 'create';

@@ -6,6 +6,7 @@
 'use client';
 
 import { signInForToken } from '../signIn';
+import { fetchAccountRoleAddresses } from '@sponsorcoin/spcoin-feeds/accounts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
@@ -14,6 +15,7 @@ import {
   loadAccountRecord,
   saveAccountLogo,
   saveAccountRecord,
+  saveAccountRegistration,
   useCacheRefreshHandler,
   useErrorMessage,
   usePanelTree,
@@ -106,6 +108,10 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
   const [isLoadingAccount, setIsLoadingAccount] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  // 2026-11-16 (owner rules, docs/accountRegistryRules.txt): the Register as Recipient / Agent boxes. They start from the shared role files and are saved with the rest of the form: a box left unchecked REMOVES the account from that file.
+  type RegistryState = { recipients: boolean; agents: boolean };
+  const [registered, setRegistered] = useState<RegistryState>({ recipients: false, agents: false });
+  const [baselineRegistered, setBaselineRegistered] = useState<RegistryState>({ recipients: false, agents: false });
   const [resolvedAccountAddress, setResolvedAccountAddress] = useState<string>('');
   const [invalidAddressPopupPreviousAddress, setInvalidAddressPopupPreviousAddress] =
     useState<string | null>(null);
@@ -298,6 +304,23 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     return next;
   };
 
+  // read the two role files for the account on show; the boxes and their saved state both start from them
+  useEffect(() => {
+    if (!initialAccountAddress) return undefined;
+    let cancelled = false;
+    const key = initialAccountAddress.toLowerCase();
+    void Promise.all([fetchAccountRoleAddresses('recipients', 0), fetchAccountRoleAddresses('agents', 0)])
+      .then(([recipients, agents]) => {
+        if (cancelled) return;
+        const next = { recipients: recipients.some((a) => a.toLowerCase() === key), agents: agents.some((a) => a.toLowerCase() === key) };
+        setRegistered(next);
+        setBaselineRegistered(next);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [initialAccountAddress]);
+  const registryChanged = registered.recipients !== baselineRegistered.recipients || registered.agents !== baselineRegistered.agents;
+
   const derived = useAccountFormDerivedState({
     connected: isAuthSessionAvailable,
     publicKey,
@@ -305,6 +328,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     formData,
     baselineData,
     logoFile,
+    registryChanged,
     isLoadingAccount,
     isSaving,
   });
@@ -463,6 +487,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
   const handleRevertChanges = () => {
     if (!derived.isEditMode || derived.disableRevert || !derived.hasUnsavedChanges) return;
     setFormData(baselineData);
+    setRegistered(baselineRegistered);
     setLogoFile(null);
     setErrors({});
   };
@@ -530,6 +555,13 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         host.onLogoSaved?.(derived.publicKeyTrimmed, logoFile);
       }
 
+      // 2026-11-16: each box that changed is written to ITS role's shared file; unchecked = removed from that file. The same signed-in token as the profile save.
+      const changedRoles = (['recipients', 'agents'] as const).filter((role) => registered[role] !== baselineRegistered[role]);
+      for (const role of changedRoles) {
+        await saveAccountRegistration(role, derived.publicKeyTrimmed, registered[role], authToken);
+      }
+      if (changedRoles.length > 0) setBaselineRegistered({ ...registered });
+
       if (shouldSaveAccount) {
         const savedForm: AccountFormData = { ...normalizedForm };
         setAccountExists(true);
@@ -554,6 +586,8 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         showStatusMessage('Account metadata updated successfully', STATUS.SUCCESS, 'useAccountForm:save');
       } else if (shouldSaveLogo) {
         showStatusMessage('Account image updated successfully', STATUS.SUCCESS, 'useAccountForm:save');
+      } else if (changedRoles.length > 0) {
+        showStatusMessage('Registration updated successfully', STATUS.SUCCESS, 'useAccountForm:save');
       }
     } catch (err) {
       // a browser fetch that never reached a server says only "Failed to fetch": say what was being reached and why it may not answer
@@ -640,6 +674,8 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     handleRevertChanges,
     handleSubmit,
     handleLogoFileChange,
+    registered,
+    setRegisteredRole: (role: 'recipients' | 'agents', checked: boolean) => setRegistered((prev) => ({ ...prev, [role]: checked })),
     logoPreviewSrc,
     invalidAddressPopupPreviousAddress,
     handleInvalidAddressContinue,

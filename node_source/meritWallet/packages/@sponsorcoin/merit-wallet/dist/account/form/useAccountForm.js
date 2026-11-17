@@ -5,10 +5,11 @@
 // base URL of the hosted API for the sign-in. Loading and saving the record use the engine's account store; messages go to the shared message panel.
 'use client';
 import { signInForToken } from '../signIn';
+import { fetchAccountRoleAddresses } from '@sponsorcoin/spcoin-feeds/accounts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { getAccountLogoURL, loadAccountRecord, saveAccountLogo, saveAccountRecord, useCacheRefreshHandler, useErrorMessage, usePanelTree, getAccountServiceUrl, engineTrace, } from '@sponsorcoin/spcoin-exchange-engine';
+import { getAccountLogoURL, loadAccountRecord, saveAccountLogo, saveAccountRecord, saveAccountRegistration, useCacheRefreshHandler, useErrorMessage, usePanelTree, getAccountServiceUrl, engineTrace, } from '@sponsorcoin/spcoin-exchange-engine';
 import { DEFAULT_ACCOUNT_LOGO_URL, EMPTY_FORM_DATA, FORM_ERROR_FOCUS_ORDER, FORM_FIELDS, ensureAbsoluteAssetURL, getAbsoluteFieldError, getFieldTooLargeMessage, isValidEmail, isValidWebsite, normalizeAddress, shouldBlockAdditionalInput, trimForm, withCacheBust, } from './formHelpers';
 import { useAccountFormDerivedState } from './useAccountFormDerivedState';
 import { useAccountLiveRefresh } from './useAccountLiveRefresh';
@@ -45,6 +46,8 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
     const [isLoadingAccount, setIsLoadingAccount] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [logoFile, setLogoFile] = useState(null);
+    const [registered, setRegistered] = useState({ recipients: false, agents: false });
+    const [baselineRegistered, setBaselineRegistered] = useState({ recipients: false, agents: false });
     const [resolvedAccountAddress, setResolvedAccountAddress] = useState('');
     const [invalidAddressPopupPreviousAddress, setInvalidAddressPopupPreviousAddress] = useState(null);
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- an empty-string logoURL is not a usable URL and should fall back too, same as unset
@@ -230,6 +233,24 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         }
         return next;
     };
+    // read the two role files for the account on show; the boxes and their saved state both start from them
+    useEffect(() => {
+        if (!initialAccountAddress)
+            return undefined;
+        let cancelled = false;
+        const key = initialAccountAddress.toLowerCase();
+        void Promise.all([fetchAccountRoleAddresses('recipients', 0), fetchAccountRoleAddresses('agents', 0)])
+            .then(([recipients, agents]) => {
+            if (cancelled)
+                return;
+            const next = { recipients: recipients.some((a) => a.toLowerCase() === key), agents: agents.some((a) => a.toLowerCase() === key) };
+            setRegistered(next);
+            setBaselineRegistered(next);
+        })
+            .catch(() => undefined);
+        return () => { cancelled = true; };
+    }, [initialAccountAddress]);
+    const registryChanged = registered.recipients !== baselineRegistered.recipients || registered.agents !== baselineRegistered.agents;
     const derived = useAccountFormDerivedState({
         connected: isAuthSessionAvailable,
         publicKey,
@@ -237,6 +258,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         formData,
         baselineData,
         logoFile,
+        registryChanged,
         isLoadingAccount,
         isSaving,
     });
@@ -392,6 +414,7 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         if (!derived.isEditMode || derived.disableRevert || !derived.hasUnsavedChanges)
             return;
         setFormData(baselineData);
+        setRegistered(baselineRegistered);
         setLogoFile(null);
         setErrors({});
     };
@@ -447,6 +470,13 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
                 await saveAccountLogo(derived.publicKeyTrimmed, logoForm, authToken);
                 host.onLogoSaved?.(derived.publicKeyTrimmed, logoFile);
             }
+            // 2026-11-16: each box that changed is written to ITS role's shared file; unchecked = removed from that file. The same signed-in token as the profile save.
+            const changedRoles = ['recipients', 'agents'].filter((role) => registered[role] !== baselineRegistered[role]);
+            for (const role of changedRoles) {
+                await saveAccountRegistration(role, derived.publicKeyTrimmed, registered[role], authToken);
+            }
+            if (changedRoles.length > 0)
+                setBaselineRegistered({ ...registered });
             if (shouldSaveAccount) {
                 const savedForm = { ...normalizedForm };
                 setAccountExists(true);
@@ -470,6 +500,9 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
             }
             else if (shouldSaveLogo) {
                 showStatusMessage('Account image updated successfully', STATUS.SUCCESS, 'useAccountForm:save');
+            }
+            else if (changedRoles.length > 0) {
+                showStatusMessage('Registration updated successfully', STATUS.SUCCESS, 'useAccountForm:save');
             }
         }
         catch (err) {
@@ -546,6 +579,8 @@ export function useAccountForm({ connected, activeAddress, targetAddress, initia
         handleRevertChanges,
         handleSubmit,
         handleLogoFileChange,
+        registered,
+        setRegisteredRole: (role, checked) => setRegistered((prev) => ({ ...prev, [role]: checked })),
         logoPreviewSrc,
         invalidAddressPopupPreviousAddress,
         handleInvalidAddressContinue,

@@ -6,10 +6,12 @@ interface Params {
     formData: AccountFormData;
     baselineData: AccountFormData;
     logoFile: File | null;
+    /** 2026-11-16: a Register as Recipient / Agent box differs from what is saved. */
+    registryChanged?: boolean;
     isLoadingAccount: boolean;
     isSaving: boolean;
 }
-export declare function useAccountFormDerivedState({ connected, publicKey, accountExists, formData, baselineData, logoFile, isLoadingAccount, isSaving, }: Params): {
+export declare function useAccountFormDerivedState({ connected, publicKey, accountExists, formData, baselineData, logoFile, registryChanged, isLoadingAccount, isSaving, }: Params): {
     publicKeyTrimmed: string;
     hasDataChanges: boolean;
     hasUnsavedChanges: boolean;

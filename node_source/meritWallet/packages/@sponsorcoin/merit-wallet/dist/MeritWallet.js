@@ -1866,7 +1866,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const roleDetail = agentPanelVisible
         ? { role: SP_COIN_DISPLAY.AGENT_ACCOUNT, account: roleAccounts?.agentAccount, empty: 'No agent selected.' }
         : sponsorPanelVisible
-            ? { role: SP_COIN_DISPLAY.SPONSOR_ACCOUNT, account: roleAccounts?.sponsorAccount, empty: 'No sponsor selected.' }
+            ? { role: SP_COIN_DISPLAY.SPONSOR_ACCOUNT, account: roleAccounts?.selectedAccount, empty: 'No sponsor selected.' }
             : recipientPanelVisible
                 ? { role: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT, account: roleAccounts?.recipientAccount, empty: 'No recipient selected.' }
                 : undefined;
@@ -2125,20 +2125,25 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                                     : activeListMode === 'sendRecipient'
                                                                         ? 'Select Recipient'
                                                                         : activeListMode === 'account'
-                                                                            ? 'Active Account Selection'
+                                                                            // 2026-11-16 (owner): the account list picks the account that signs, which is the sponsor; the recipient and agent lists, opened from the Sponsor tab or the panel tree, are named for what they pick.
+                                                                            ? 'Select Active Sponsor Account'
                                                                             : activeListMode === 'network'
                                                                                 ? 'Select Network'
-                                                                                : activeTab === 'SWAP'
-                                                                                    ? 'Trading Station'
-                                                                                    : activeTab === 'SEND'
-                                                                                        ? 'Send Token'
-                                                                                        : activeTab === 'SPONSOR'
-                                                                                            ? 'Add Sponsorship'
-                                                                                            : activeTab === 'REWARDS'
-                                                                                                ? stakingListVisible
-                                                                                                    ? stakingListMode.kind === 'claim' ? `Claim ${stakingListMode.role} Rewards` : 'Unstake Sponsor Rewards'
-                                                                                                    : 'Rewards Management'
-                                                                                                : 'Wallet Config';
+                                                                                : listPanelOpen && activeChild === SP_COIN_DISPLAY.REMOTE_ACCOUNT_RECIPIENT_LIST
+                                                                                    ? 'Select Active Recipient Account'
+                                                                                    : listPanelOpen && activeChild === SP_COIN_DISPLAY.REMOTE_ACCOUNT_AGENT_LIST
+                                                                                        ? 'Select Active Agent Account'
+                                                                                        : activeTab === 'SWAP'
+                                                                                            ? 'Trading Station'
+                                                                                            : activeTab === 'SEND'
+                                                                                                ? 'Send Token'
+                                                                                                : activeTab === 'SPONSOR'
+                                                                                                    ? 'Add Sponsorship'
+                                                                                                    : activeTab === 'REWARDS'
+                                                                                                        ? stakingListVisible
+                                                                                                            ? stakingListMode.kind === 'claim' ? `Claim ${stakingListMode.role} Rewards` : 'Unstake Sponsor Rewards'
+                                                                                                            : 'Rewards Management'
+                                                                                                        : 'Wallet Config';
     // 2026-11-09 (owner design): the refresh tree of this wallet (refresh/refreshTree.ts); every screen's loaded data is a node in it
     const refreshTreeRef = useRef(undefined);
     if (!refreshTreeRef.current)

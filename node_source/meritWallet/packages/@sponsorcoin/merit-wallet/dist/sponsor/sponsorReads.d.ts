@@ -17,6 +17,8 @@ export interface TreeAgentRate {
     stakedSPCoins: string;
     /** Claim lists only (addPendingToTree): the reward this leaf has earned so far for the role being claimed, raw base units. */
     pending?: string;
+    /** Agent Claim lists only: the recipients whose buckets were merged into this leaf (the reward clocks are per (sponsor, recipient) bucket). */
+    recipients?: string[];
 }
 export interface TreeAgent {
     agentKey: string;

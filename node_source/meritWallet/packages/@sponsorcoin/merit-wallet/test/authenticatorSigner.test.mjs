@@ -18,7 +18,7 @@ const m = process.env.MUTANT;
 
 let src = fs.readFileSync(path.join(WEB, 'lib', 'spCoin', 'AuthenticatorSigner.ts'), 'utf8').replace(/\r\n/g, '\n');
 // the sender is not the signer's own address
-if (m === 'wrongFrom') src = src.replace('from: this.address,\n      to,', "from: '0x0000000000000000000000000000000000000001',\n      to,");
+if (m === 'wrongFrom') src = src.replace('from: this.address,\n      to,', "from: '0x8d581506486BC255B42D05754392573e46c34577',\n      to,");
 // the chain id of the transaction is dropped
 if (m === 'noChainId') src = src.replace('chainId: Number(tx.chainId ?? this.chainId),', 'chainId: 1,');
 // signTransaction no longer refuses

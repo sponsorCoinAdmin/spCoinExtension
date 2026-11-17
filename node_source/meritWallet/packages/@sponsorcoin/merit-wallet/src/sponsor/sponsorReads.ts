@@ -54,6 +54,8 @@ export interface TreeAgentRate {
   stakedSPCoins: string;
   /** Claim lists only (addPendingToTree): the reward this leaf has earned so far for the role being claimed, raw base units. */
   pending?: string;
+  /** Agent Claim lists only: the recipients whose buckets were merged into this leaf (the reward clocks are per (sponsor, recipient) bucket). */
+  recipients?: string[];
 }
 export interface TreeAgent {
   agentKey: string;
@@ -211,6 +213,7 @@ export async function loadRoleSponsorTree(role: 'Recipient' | 'Agent', account: 
         return { recipientKey: sponsorKey, rates };
       }
       const byRate = new Map<string, Map<string, bigint>>();
+      const sourcesOf = new Map<string, string[]>();
       const recipients = await getSponsorRecipientKeys(sponsorKey, read);
       for (const recipientKey of recipients) {
         const rateKeys = await getSponsorRecipientRateKeys(sponsorKey, recipientKey, read);
@@ -219,12 +222,16 @@ export async function loadRoleSponsorTree(role: 'Recipient' | 'Agent', account: 
           if (!agentKeys.some((key) => key.toLowerCase() === account.toLowerCase())) continue;
           const leaves = await getAgentTransactionList(sponsorKey, recipientKey, recipientRateKey, account, read);
           const bucket = byRate.get(recipientRateKey) ?? new Map<string, bigint>();
-          for (const leaf of leaves) bucket.set(leaf.agentRateKey, (bucket.get(leaf.agentRateKey) ?? 0n) + sum([leaf.stakedSPCoins]));
+          for (const leaf of leaves) {
+            bucket.set(leaf.agentRateKey, (bucket.get(leaf.agentRateKey) ?? 0n) + sum([leaf.stakedSPCoins]));
+            const sourceKey = `${recipientRateKey}:${leaf.agentRateKey}`;
+            sourcesOf.set(sourceKey, [...(sourcesOf.get(sourceKey) ?? []), recipientKey]);
+          }
           byRate.set(recipientRateKey, bucket);
         }
       }
       const rates: TreeRate[] = [...byRate.entries()].map(([recipientRateKey, leaves]) => {
-        const agentRates = [...leaves.entries()].map(([agentRateKey, amount]) => ({ agentRateKey, stakedSPCoins: amount.toString() }));
+        const agentRates = [...leaves.entries()].map(([agentRateKey, amount]) => ({ agentRateKey, stakedSPCoins: amount.toString(), recipients: sourcesOf.get(`${recipientRateKey}:${agentRateKey}`) ?? [] }));
         return { recipientRateKey, stakedSPCoins: sum(agentRates.map((leaf) => leaf.stakedSPCoins)).toString(), agents: [{ agentKey: account, rates: agentRates }] };
       });
       return { recipientKey: sponsorKey, rates };

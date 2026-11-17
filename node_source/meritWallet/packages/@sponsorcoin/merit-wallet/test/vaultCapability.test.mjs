@@ -218,7 +218,7 @@ await test('addAccount derives the next account; setActive / activeAddress follo
   assert.equal(vault.accounts().length, 2);
   await vault.setActive(second.address);
   assert.equal(vault.activeAddress().toLowerCase(), second.address.toLowerCase());
-  assert.equal(await code(vault.setActive('0x0000000000000000000000000000000000000001')), 'unknown_account');
+  assert.equal(await code(vault.setActive('0x8d581506486BC255B42D05754392573e46c34577')), 'unknown_account');
   vault.lock();
   assert.equal(vault.activeAddress(), undefined);
   assert.equal(await code(vault.addAccount()), 'locked');
@@ -230,7 +230,7 @@ await test('reveal: a wrong credential reveals nothing; the right one returns th
   assert.equal(await code(vault.revealRecoveryPhrase(pw('wrong-aaaa'))), 'wrong_credential');
   assert.equal((await vault.revealPrivateKey(pw('password-1'), HH0)).toLowerCase(), HH0_KEY);
   assert.equal(await vault.revealRecoveryPhrase(pw('password-1')), HARDHAT_DEV_MNEMONIC);
-  assert.equal(await code(vault.revealPrivateKey(pw('password-1'), '0x0000000000000000000000000000000000000001')), 'unknown_account');
+  assert.equal(await code(vault.revealPrivateKey(pw('password-1'), '0x8d581506486BC255B42D05754392573e46c34577')), 'unknown_account');
 });
 await test('onChange: unlock and lock are announced; an unsubscribed listener hears nothing', async () => {
   const { vault } = make();

@@ -334,7 +334,7 @@ async function renderWallet() {
     // the extension's profile loader (its bundle, never the hosted app): the provider's one effect for the ACTIVE account calls it
     loadAccountProfile: (address) => loadExtensionAccountProfile(address, baseUrl),
     wrap: (children) => React.createElement(DisplayStackProvider, { storage: displayStackStorage, children }),
-    features: { hydrateActiveAccount: false, hydrateRoleAccounts: false, normalizeListLogos: false, tokenRegistryRefresh: false, injectedWalletListener: false, followWalletMinimal: true },
+    features: { hydrateActiveAccount: false, hydrateRoleAccounts: false, tokenRegistryRefresh: false, injectedWalletListener: false, followWalletMinimal: true },
   };
 
   // Data lives outside React (this file isn't a component): each change just re-runs render() against the same root, the pattern

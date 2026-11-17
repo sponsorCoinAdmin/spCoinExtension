@@ -112,7 +112,7 @@ await test('rename, set active, and the first account is active by default', asy
   await acc.rename(second.address, '  Savings  ');
   assert.equal(acc.list().find((a) => a.address === second.address).name, 'Savings');
   await assert.rejects(acc.rename(second.address, '   '), /name is required/);
-  await assert.rejects(acc.setActive('0x0000000000000000000000000000000000000001'), /not in this wallet/);
+  await assert.rejects(acc.setActive('0x8d581506486BC255B42D05754392573e46c34577'), /not in this wallet/);
 });
 
 await test('revealMnemonic needs the password again: wrong fails, right returns the phrase, the session is untouched', async () => {
@@ -158,7 +158,7 @@ await test('getSigningAccount signs for derived and imported accounts (signature
     assert.equal(await viem.recoverMessageAddress({ message: 'hello merit', signature: sig }), rec.address);
     assert.equal(devOrigin, rec.address === HH0);
   }
-  assert.throws(() => acc.getSigningAccount('0x0000000000000000000000000000000000000001'), /not in this wallet/);
+  assert.throws(() => acc.getSigningAccount('0x8d581506486BC255B42D05754392573e46c34577'), /not in this wallet/);
 });
 
 await test('Load adds the 20 Hardhat test accounts as imported, devOrigin accounts without touching the wallet or its active account; a second Load adds nothing', async () => {

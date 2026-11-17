@@ -138,6 +138,17 @@ await test('claim list rows: a Recipient row (the sponsor) adds up to the Recipi
   const total = BigInt(rate.pendingDirect) + BigInt(rate.agents[0].rates[0].pending);
   assert.equal(total.toString(), (await estimatePendingRewards({ read, accountKey: R, now })).pendingRecipientRewards);
 });
+await test('claim list rows: an Agent row (the sponsor) adds up to the Agent pending of the Rewards page', async () => {
+  const { read } = chain(); const now = T0 + YEAR;
+  const tree = [{ recipientKey: S, rates: [{ recipientRateKey: '30', stakedSPCoins: (2000n * E18).toString(), agents: [{ agentKey: A, rates: [{ agentRateKey: '100', stakedSPCoins: (2000n * E18).toString(), recipients: [R] }] }] }] }];
+  await addPendingToTree('Agent', A, tree, read, now);
+  const rate = tree[0].rates[0];
+  const agentPending = BigInt(rate.agents[0].rates[0].pending);
+  assert.equal(agentPending.toString(), (await estimatePendingRewards({ read, accountKey: A, now })).pendingAgentRewards);
+  // the recipient's own reward is broken out: with the agent's it is the whole Recipient+Agent pool (agentRate 100 = 10 percent to the agent)
+  assert.equal(BigInt(rate.pendingDirect) * 1n, agentPending * 9n);
+  assert.ok(BigInt(rate.agents[0].rates[0].pending) > 0n);
+});
 await test('claim list rows: nothing accrued yet gives zero, and an unreadable inflation uses 10 percent', async () => {
   const { read } = chain({ inflation: null });
   const tree = treeOf(R);

@@ -148,7 +148,7 @@ await test('rejectAll rejects every pending request; approving an unknown id thr
 
 await test('unknown account is refused; the pending list carries no key material', async () => {
   const { approvals, signer, acc, address } = await setup();
-  assert.throws(() => signer.signMessage({ address: '0x0000000000000000000000000000000000000001', message: 'x' }), /not in this wallet/);
+  assert.throws(() => signer.signMessage({ address: '0x8d581506486BC255B42D05754392573e46c34577', message: 'x' }), /not in this wallet/);
   const p = signer.signMessage({ address, message: 'x' });
   const key = acc.getSigningAccount(address).account.getHdKey ? 'hd' : '';
   const dump = JSON.stringify(approvals.list());

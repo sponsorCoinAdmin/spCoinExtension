@@ -163,7 +163,7 @@ export async function estimateRewardsByMethod(method, params) {
  * 2026-11-14 (owner: the Claim list shows each row's pending reward beside its staked amount): fills in, for every bucket of a staking tree, the reward it has earned so far for the role being claimed, with the same formulas as
  * estimatePendingRewards (so the rows add up to the Pending amount on the Rewards page). In the tree, recipientKey is the row's account: the recipient when role is Sponsor (the account sponsors them), the sponsor when
  * role is Recipient (the account is the recipient). The bucket's own stake gets pendingDirect; each agent-rate leaf gets pending. Sponsor claims count the sponsor's share of every bucket; Recipient claims count the
- * recipient's share (the whole Recipient+Agent pool of a direct bucket, the pool less the agent's cut for an agent bucket). Agent trees merge buckets across recipients, so they are not supported here.
+ * recipient's share (the whole Recipient+Agent pool of a direct bucket, the pool less the agent's cut for an agent bucket). Agent trees merge buckets across recipients: each leaf lists them (recipients) and sums the agent share of each.
  * It returns a function that recomputes every figure for a later time from what was read (the stakes and reward clocks do not change between claims), so Auto Refresh can tick the amounts without reading the chain again.
  */
 export async function addPendingToTree(role, account, tree, read, now) {
@@ -181,6 +181,49 @@ export async function addPendingToTree(role, account, tree, read, now) {
         const recipient = role === 'Sponsor' ? node.recipientKey : account;
         await Promise.all(node.rates.map(async (rate) => {
             const rateKey = rate.recipientRateKey;
+            // 2026-11-17 (owner): an Agent Claim row is a sponsor; the agent has no direct stake, only the agent's cut of each agent bucket (one per recipient the leaf merges), so the direct part is 0 and each leaf sums the agent share of its buckets.
+            if (role === 'Agent') {
+                // 2026-11-17 (owner): the row's own account is the RECIPIENT of these buckets, so its reward (the pool less the agent's cut) is the row's pendingDirect, broken out from the agent leaves' rewards.
+                const recipientShares = [];
+                slots.push((at) => {
+                    let total = 0n;
+                    for (const share of recipientShares)
+                        total += share(at);
+                    rate.pendingDirect = total.toString();
+                });
+                for (const agent of rate.agents) {
+                    for (const leaf of agent.rates) {
+                        const sets = await Promise.all((leaf.recipients ?? []).map(async (recipientKey) => readSet(read, await read('getAgentRateTransactionSetKey', [
+                            { key: 'Sponsor Key', value: node.recipientKey },
+                            { key: 'Recipient Key', value: recipientKey },
+                            { key: 'Recipient Rate Key', value: rateKey },
+                            { key: 'Agent Key', value: account },
+                            { key: 'Agent Rate Key', value: leaf.agentRateKey },
+                        ]))));
+                        recipientShares.push((at) => {
+                            let total = 0n;
+                            for (const set of sets) {
+                                if (!set.inserted)
+                                    continue;
+                                const { recipientAgentPool } = splitRewardPool(accrue(set.totalStaked, set.lastUpdate, at, annualInflation), rateKey);
+                                total += splitAgentPool(recipientAgentPool, leaf.agentRateKey).recipientReward;
+                            }
+                            return total;
+                        });
+                        slots.push((at) => {
+                            let total = 0n;
+                            for (const set of sets) {
+                                if (!set.inserted)
+                                    continue;
+                                const { recipientAgentPool } = splitRewardPool(accrue(set.totalStaked, set.lastUpdate, at, annualInflation), rateKey);
+                                total += splitAgentPool(recipientAgentPool, leaf.agentRateKey).agentReward;
+                            }
+                            leaf.pending = total.toString();
+                        });
+                    }
+                }
+                return;
+            }
             const setKey = await read('getRecipientRateTransactionSetKey', [{ key: 'Sponsor Key', value: sponsor }, { key: 'Recipient Key', value: recipient }, { key: 'Recipient Rate Key', value: rateKey }]);
             const direct = await readSet(read, setKey);
             slots.push((at) => {

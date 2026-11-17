@@ -116,7 +116,7 @@ await test('personal_sign: refused before connect (4100); after connect it waits
     await t.approvals.approve(q.id);
     assert.equal(await viem.recoverMessageAddress({ message: 'hello dapp', signature: await p }), t.address);
   }
-  assert.equal(await code(t.pc.handle(SITE, { method: 'personal_sign', params: [hex, '0x0000000000000000000000000000000000000001'] })), PROVIDER_ERROR.unauthorized);
+  assert.equal(await code(t.pc.handle(SITE, { method: 'personal_sign', params: [hex, '0x8d581506486BC255B42D05754392573e46c34577'] })), PROVIDER_ERROR.unauthorized);
 });
 
 await test('eth_sendTransaction: needs the connected from; waits; approve broadcasts one raw tx; a dev account is refused on a real chain', async () => {

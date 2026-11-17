@@ -197,7 +197,7 @@ await test('authenticator: signing while locked is locked; an address not in the
   const parts = browserVault(fakeIndexedDb(), fakeSessionStorage());
   await parts.vault.importPhrase(HARDHAT_DEV_MNEMONIC, pw('password-1'));
   const { auth } = await authenticatorOver(parts, 'approve');
-  await assert.rejects(auth.signMessage('0x0000000000000000000000000000000000000001', 'x'), (e) => e.code === 'unauthorized');
+  await assert.rejects(auth.signMessage('0x8d581506486BC255B42D05754392573e46c34577', 'x'), (e) => e.code === 'unauthorized');
   parts.vault.lock();
   await assert.rejects(auth.signMessage(HH0, 'x'), (e) => e.code === 'locked');
 });

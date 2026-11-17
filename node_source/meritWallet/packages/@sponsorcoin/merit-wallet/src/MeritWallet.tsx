@@ -76,7 +76,7 @@ import {
   maxInputSz,
   TYPING_GRACE_MS,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, WalletSelectDropDownHosted, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, type AccountListRemoteSelection, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, type SecurityParts, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
+import { AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, type AccountListRemoteSelection, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, type SecurityParts, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, usePlatform, type MeritPlatform } from './platform/platform';
@@ -585,8 +585,6 @@ export interface MeritWalletProps {
   walletConnection?: Record<string, boolean>;
   /** Disconnect a wallet of the wallet list, by asset folder. Derived from `approverHost` when the host does not pass it. */
   onDisconnectWallet?: (slug: string) => void | Promise<unknown>;
-  /** Show the wallet pill (WalletSelectDropDown) just under the tabs: its down chevron opens the wallet list (REMOTE_WALLET_LIST), its icon opens the active wallet's panel (WALLET_PANEL). Default true. */
-  showWalletSelect?: boolean;
   /** Where the wallet asset files (public/assets/wallets) are served from: this page's own origin by default; a host on another origin (the extension) passes the web app's address. */
   walletAssetBaseUrl?: string;
   /** 2026-11-03 (owner request: the same for every app that uses this component): the address of the account service, the one server the wallet calls to sign in and publish an account profile (any server that implements /api/spCoin/auth and /api/spCoin/accounts). Every host injects it the same way; none is assumed. Omitted or empty: no call is made and Publish Account says so. */
@@ -828,7 +826,6 @@ function MeritWalletInner({
   nativeWalletId,
   walletConnection,
   onDisconnectWallet,
-  showWalletSelect = true,
   walletAssetBaseUrl,
   accountServiceUrl,
   wallet,
@@ -1506,7 +1503,7 @@ function MeritWalletInner({
   // 'account'/'network' branches) is declared below, after those two
   // functions — see its own doc comment there.
   // 2026-10-13 (owner request): the wallet pill belongs to the Add a Wallet/Account menu (ADD_WALLET_ACCOUNT: Create Account, Import, Connect), where it picks the wallet the account is added to, and to the wallet list
-  // it opens (REMOTE_WALLET_LIST). It is NOT on the account list itself or on the tab pages.
+  // it opens (WALLET_LIST_SELECT_PANEL). It is NOT on the account list itself or on the tab pages.
   const addMenuVisible = usePanelVisible(SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT);
   // 2026-10-13 (owner report): the back arrow on the Add / Manage Wallets and Accounts pages must pop the display stack one screen at a time (leaf -> menu -> account list). It used to close the list host first
   // (activeListMode), leaving the menu title over an empty body, and only the second press left.
@@ -1525,7 +1522,6 @@ function MeritWalletInner({
         : addMenuVisible
           ? SP_COIN_DISPLAY.ADD_WALLET_ACCOUNT
           : undefined;
-  const walletListVisible = usePanelVisible(SP_COIN_DISPLAY.REMOTE_WALLET_LIST);
 
   // 2026-10-03 — token balances (see fetchBalance's doc comment). The active
   // account is read straight off the resolved groups here because the tab bodies
@@ -3108,13 +3104,6 @@ function MeritWalletInner({
               WalletRadioPanels.tsx there already wraps this same way. Real
               shared code now, not two independently-hand-synced copies —
               see docs/npmPanelDisplayIssue.md. */}
-          {/* 2026-10-13 (owner request): the wallet pill, just under the tabs (not on the lock screen). The down chevron opens the wallet list, the icon the active wallet's panel. */}
-          {/* 2026-10-13 (owner request): the wallet pill belongs to the Active Account Selection page only, not to the tab pages. */}
-          {showWalletSelect && !remoteSelection && !passwordPanelShowing && panelTreeListOpen && walletListVisible && !addMenuVisible && !walletListLeafVisible && (
-            <div id="WALLET_SELECT_ROW" style={walletFrameStyle.walletSelectRow}>
-              <WalletSelectDropDownHosted walletId={pillWalletId} displayName={pillWalletId ? walletName(pillWalletId) : undefined} baseUrl={walletAssetBaseUrl} />
-            </div>
-          )}
           <WalletRadioPanels>{bodyWithTab}{stakingListNode}</WalletRadioPanels>
         </MenuTabHeaderBar>
       </div>

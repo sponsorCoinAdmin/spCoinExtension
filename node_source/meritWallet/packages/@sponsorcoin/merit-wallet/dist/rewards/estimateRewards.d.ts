@@ -39,7 +39,7 @@ export declare function estimateRewardsByMethod(method: string, params: Estimate
  * 2026-11-14 (owner: the Claim list shows each row's pending reward beside its staked amount): fills in, for every bucket of a staking tree, the reward it has earned so far for the role being claimed, with the same formulas as
  * estimatePendingRewards (so the rows add up to the Pending amount on the Rewards page). In the tree, recipientKey is the row's account: the recipient when role is Sponsor (the account sponsors them), the sponsor when
  * role is Recipient (the account is the recipient). The bucket's own stake gets pendingDirect; each agent-rate leaf gets pending. Sponsor claims count the sponsor's share of every bucket; Recipient claims count the
- * recipient's share (the whole Recipient+Agent pool of a direct bucket, the pool less the agent's cut for an agent bucket). Agent trees merge buckets across recipients, so they are not supported here.
+ * recipient's share (the whole Recipient+Agent pool of a direct bucket, the pool less the agent's cut for an agent bucket). Agent trees merge buckets across recipients: each leaf lists them (recipients) and sums the agent share of each.
  * It returns a function that recomputes every figure for a later time from what was read (the stakes and reward clocks do not change between claims), so Auto Refresh can tick the amounts without reading the chain again.
  */
-export declare function addPendingToTree(role: 'Sponsor' | 'Recipient', account: string, tree: TreeRecipient[], read: ChainRead, now: number | bigint): Promise<(at: number | bigint) => void>;
+export declare function addPendingToTree(role: 'Sponsor' | 'Recipient' | 'Agent', account: string, tree: TreeRecipient[], read: ChainRead, now: number | bigint): Promise<(at: number | bigint) => void>;

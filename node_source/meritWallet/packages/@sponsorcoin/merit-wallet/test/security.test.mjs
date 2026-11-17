@@ -92,7 +92,7 @@ await test('private key export needs the password again; the key matches the acc
   const k0 = await acc.revealPrivateKey('right-password', HH0);
   assert.equal(k0, HH0_KEY);
   assert.equal(req('viem/accounts').privateKeyToAccount(await acc.revealPrivateKey('right-password', imp.address)).address, imp.address);
-  await assert.rejects(acc.revealPrivateKey('right-password', '0x0000000000000000000000000000000000000001'), /not in this wallet/);
+  await assert.rejects(acc.revealPrivateKey('right-password', '0x8d581506486BC255B42D05754392573e46c34577'), /not in this wallet/);
   assert.equal(s.isUnlocked(), true); void other;
 });
 

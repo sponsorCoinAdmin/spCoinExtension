@@ -71,6 +71,8 @@ export default function ConnectedSponsorStakingList({ host }) {
     }, [store]);
     // Recomputes the rewards for "now" from what the last read found and redraws (no new reads); set by fetchList in Claim lists
     const tickRef = useRef(undefined);
+    // 2026-11-17 (owner: claim just the row picked): an Agent Claim row is one sponsor; its buckets are the (recipient, rate) pairs the agent sits in. Kept from the last read so a row's Claim settles only those, one call each.
+    const agentBuckets = useRef(new Map());
     // one chain clock per host, kept for the life of the list: Auto Refresh ticks count forward from the last block read
     const chainClockRef = useRef(undefined);
     const chainClockOf = () => {
@@ -107,7 +109,7 @@ export default function ConnectedSponsorStakingList({ host }) {
             // Claim lists show the reward each row has earned beside its stake. A failed read just leaves the rows without it (the staked amounts still show).
             let recompute;
             const chainClock = chainClockOf();
-            if (listMode.kind === 'claim' && listMode.role !== 'Agent' && chainClock) {
+            if (listMode.kind === 'claim' && chainClock) {
                 try {
                     recompute = await addPendingToTree(listMode.role, sponsor, tree, throttleRead(host.readDirect ?? host.read), await chainClock.now());
                 }
@@ -118,6 +120,12 @@ export default function ConnectedSponsorStakingList({ host }) {
             const rows = await Promise.all(tree.map(async (node) => account(await profileOf(node.recipientKey))));
             if (mine !== generation.current)
                 return;
+            if (listMode.kind === 'claim' && listMode.role === 'Agent') {
+                agentBuckets.current = new Map(tree.map((node, i) => [
+                    String(rows[i]?.address ?? '').trim().toLowerCase(),
+                    node.rates.map((rate) => ({ rateKey: rate.recipientRateKey, recipients: Array.from(new Set(rate.agents.flatMap((agent) => agent.rates.flatMap((leaf) => leaf.recipients ?? [])))) })),
+                ]));
+            }
             setRecipients(rows);
             // Every agent's profile first, so the panel's data can be rebuilt synchronously (Auto Refresh redraws it every second).
             const agentProfiles = new Map();
@@ -275,7 +283,7 @@ export default function ConnectedSponsorStakingList({ host }) {
             const before = await readAll();
             panelTreeTrace('claimTrace:list:before', { balances: entries.map((e, i) => ({ role: e.role, address: e.profile?.address, raw: before[i] === undefined ? 'unreadable' : String(before[i]) })) });
             // Which contract claim: the Total row (no target) claims the whole account for this role. A row claims just that row: the contract settles one recipient, one rate bucket or one agent of a sponsor (and pays every party the bucket touches).
-            // Sponsor list: the rows are the account's recipients. Recipient list: the rows are the sponsors of the account. (Agent list rows still claim the whole account: one agent row spans several recipients.)
+            // Sponsor list: the rows are the account's recipients. Recipient list: the rows are the sponsors of the account. (Agent list rows claim one sponsor each, bucket by bucket; the Total row claims the whole account.)
             const rowAddress = String(target?.recipient?.address ?? '').trim();
             const agentAddress = String(target?.agent?.address ?? '').trim();
             let method = 'claimOnChain' + listMode.role + 'Rewards';
@@ -297,8 +305,28 @@ export default function ConnectedSponsorStakingList({ host }) {
                     args = [recipientKey];
                 }
             }
-            panelTreeTrace('claimTrace:list:send', { method, who, args });
-            const sent = await host.claim(method, who, ...args);
+            // 2026-11-17 (owner): an Agent row claims only that row's sponsor: the contract's one-agent claim, once per (recipient, rate) bucket the agent sits in under that sponsor (it pays every party of the bucket, nothing outside it). The Total row still claims the whole account.
+            const agentCalls = [];
+            if (target && rowAddress && listMode.role === 'Agent') {
+                method = 'claimOnChainSponsorRewardsForAgent';
+                for (const bucket of agentBuckets.current.get(rowAddress.toLowerCase()) ?? []) {
+                    if (target.rateKey && bucket.rateKey !== target.rateKey)
+                        continue;
+                    for (const recipientKey of bucket.recipients)
+                        agentCalls.push({ who: rowAddress, args: [recipientKey, bucket.rateKey, sponsor] });
+                }
+                if (agentCalls.length === 0)
+                    throw new Error('This row has no agent bucket to claim.');
+            }
+            panelTreeTrace('claimTrace:list:send', { method, who, args, agentCalls: agentCalls.length });
+            let sent;
+            if (agentCalls.length > 0) {
+                for (const call of agentCalls)
+                    sent = await host.claim(method, call.who, ...call.args);
+            }
+            else {
+                sent = await host.claim(method, who, ...args);
+            }
             panelTreeTrace('claimTrace:list:sent', { method, who, sent: sent && typeof sent === 'object' ? sent : String(sent) });
             const after = await readAll();
             // every involved account with its raw balance before, after and the change: an account that is missing from the receipt shows here whether it was never read, unreadable, unchanged or paid

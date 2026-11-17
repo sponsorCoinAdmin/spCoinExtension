@@ -61,8 +61,8 @@ await test('list with allData pages', async () => {
   assert.equal(r.body.items.length, 1); assert.equal(r.body.totalItems, 2); assert.equal(r.body.hasNextPage, false);
 });
 await test('batch splits found / missing / invalid', async () => {
-  const r = await createAccountsApi(memoryStore()).batch(rq({ method: 'POST', body: { addresses: [A.toUpperCase().replace('0X', '0x'), '0x0000000000000000000000000000000000000001', 'nope'] } }));
-  assert.equal(r.body.countFound, 1); assert.deepEqual(r.body.missing, ['0x0000000000000000000000000000000000000001']); assert.deepEqual(r.body.invalid, ['nope']);
+  const r = await createAccountsApi(memoryStore()).batch(rq({ method: 'POST', body: { addresses: [A.toUpperCase().replace('0X', '0x'), '0x8d581506486BC255B42D05754392573e46c34577', 'nope'] } }));
+  assert.equal(r.body.countFound, 1); assert.deepEqual(r.body.missing, ['0x8d581506486BC255B42D05754392573e46c34577'.toLowerCase()]); // the API answers addresses in lower case assert.deepEqual(r.body.invalid, ['nope']);
 });
 await test('batch with no addresses is 400', async () => assert.equal((await createAccountsApi(memoryStore()).batch(rq({ body: {} }))).status, 400));
 await test('get: 400 bad address, 404 unknown, 200 with logo url', async () => {
@@ -164,12 +164,12 @@ await test('tokens list: allData pages, address lookup, logo url only when a log
   assert.equal(one.body.data.logoURL, `/assets/blockchains/8453/contracts/${folder(T1)}/logo.png`);
   const other = await api.list(rq({ query: { chainId: '31337', address: T2 } }));
   assert.equal(other.body.data.logoURL, undefined);
-  assert.equal((await api.list(rq({ query: { chainId: '8453', address: '0x0000000000000000000000000000000000000001' } }))).status, 404);
+  assert.equal((await api.list(rq({ query: { chainId: '8453', address: '0x8d581506486BC255B42D05754392573e46c34577' } }))).status, 404);
   assert.equal((await api.list(rq({ query: { chainId: '8453', address: 'bad' } }))).status, 400);
 });
 await test('tokens batch: both body shapes, invalid, missing, dedupe', async () => {
   const api = createTokensApi(tokenStore());
-  const r = await api.batch(rq({ method: 'POST', body: { chainId: 8453, addresses: [T1, T1, 'bad', '0x0000000000000000000000000000000000000001'] } }));
+  const r = await api.batch(rq({ method: 'POST', body: { chainId: 8453, addresses: [T1, T1, 'bad', '0x8d581506486BC255B42D05754392573e46c34577'] } }));
   assert.equal(r.body.countRequested, 2); assert.equal(r.body.countFound, 1); assert.equal(r.body.invalid.length, 1); assert.equal(r.body.missing.length, 1);
   const r2 = await api.batch(rq({ method: 'POST', body: { requests: [{ chainId: 31337, address: T2 }, { chainId: 0, address: T1 }] } }));
   assert.equal(r2.body.countFound, 1); assert.equal(r2.body.invalid.length, 1);

@@ -178,8 +178,6 @@ export interface MeritWalletProps {
     walletConnection?: Record<string, boolean>;
     /** Disconnect a wallet of the wallet list, by asset folder. Derived from `approverHost` when the host does not pass it. */
     onDisconnectWallet?: (slug: string) => void | Promise<unknown>;
-    /** Show the wallet pill (WalletSelectDropDown) just under the tabs: its down chevron opens the wallet list (REMOTE_WALLET_LIST), its icon opens the active wallet's panel (WALLET_PANEL). Default true. */
-    showWalletSelect?: boolean;
     /** Where the wallet asset files (public/assets/wallets) are served from: this page's own origin by default; a host on another origin (the extension) passes the web app's address. */
     walletAssetBaseUrl?: string;
     /** 2026-11-03 (owner request: the same for every app that uses this component): the address of the account service, the one server the wallet calls to sign in and publish an account profile (any server that implements /api/spCoin/auth and /api/spCoin/accounts). Every host injects it the same way; none is assumed. Omitted or empty: no call is made and Publish Account says so. */

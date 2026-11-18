@@ -213,18 +213,21 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
               }, 0n);
               const leafPending = agent.rates.map((r) => r.pending);
               const agentPending = leafPending.every((v) => v !== undefined) ? leafPending.reduce<bigint>((sum, v) => sum + BigInt(v as string), 0n).toString() : undefined;
+              const leafShare = agent.rates.map((r) => r.agentSharePending);
+              const agentShare = leafShare.every((v) => v !== undefined) ? leafShare.reduce<bigint>((sum, v) => sum + BigInt(v as string), 0n).toString() : undefined;
               return {
                 account: account(agentProfiles.get(agent.agentKey.toLowerCase()) ?? { address: agent.agentKey }),
                 stakedSPCoins: total.toString(),
                 pendingSPCoins: agentPending,
-                agentRates: agent.rates.map((r) => ({ agentRateKey: r.agentRateKey, stakedSPCoins: r.stakedSPCoins, pendingSPCoins: r.pending })),
+                sharePending: agentShare,
+                agentRates: agent.rates.map((r) => ({ agentRateKey: r.agentRateKey, stakedSPCoins: r.stakedSPCoins, pendingSPCoins: r.pending, sharePending: r.agentSharePending })),
               };
             });
             const pendingTotal =
               rate.pendingDirect !== undefined && agentAccounts.every((a) => a.pendingSPCoins !== undefined)
                 ? agentAccounts.reduce<bigint>((sum, a) => sum + BigInt(a.pendingSPCoins as string), BigInt(rate.pendingDirect)).toString()
                 : undefined;
-            return { rateKey: rate.recipientRateKey, stakedSPCoins: rate.stakedSPCoins, agentAccounts, pendingDirect: rate.pendingDirect, pendingTotal };
+            return { rateKey: rate.recipientRateKey, stakedSPCoins: rate.stakedSPCoins, agentAccounts, pendingDirect: rate.pendingDirect, pendingTotal, recipientSharePending: rate.recipientSharePending, sponsorSharePending: pendingTotal };
           });
         });
         return out;
@@ -448,8 +451,10 @@ export default function ConnectedSponsorStakingList({ host }: { host: SponsorSta
       mode={listMode.kind}
       autoRefresh={listMode.kind === 'claim' ? autoRefresh : undefined}
       onAutoRefreshChange={changeAutoRefresh}
-      firstColumnLabel={listMode.kind === 'claim' && listMode.role !== 'Sponsor' ? 'Sponsor' : undefined}
+      firstColumnLabel={listMode.kind === 'claim' ? (listMode.role === 'Sponsor' ? 'Sponsorship Contracts' : 'Sponsor') : undefined}
       onClaimRewards={handleClaim}
+      claimRole={listMode.kind === 'claim' ? listMode.role : undefined}
+      sponsorAccount={account(activeProfile?.address && activeProfile.address.toLowerCase() === sponsor.toLowerCase() ? activeProfile : { address: sponsor })}
     />
   );
 }

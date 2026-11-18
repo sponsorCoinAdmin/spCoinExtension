@@ -3003,7 +3003,7 @@ function MeritWalletInner({
           the Ctrl+Alt+A shortcut while locked, which is intended: there is no agent
           to pick before the wallet is unlocked. */}
       {!passwordPanelShowing && (
-        <AgentHeaderPanel agentName={agentAccount?.name}>
+        <AgentHeaderPanel agentName={agentAccount?.name} agentLogoURL={agentAccount?.logoURL}>
           {/* 2026-10-08 (docs/meritWalletNpmDesignToDo.txt row 5): the default is the engine-wired picker (AgentSelectDropDown.tsx in this
               package), the same one the web app uses, instead of an inert pill. A host can still pass its own through agentSelectSlot. */}
           <ConnectedAgentSelectDropDown />

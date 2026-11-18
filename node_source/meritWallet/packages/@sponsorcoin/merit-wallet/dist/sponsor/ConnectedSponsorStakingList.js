@@ -151,17 +151,20 @@ export default function ConnectedSponsorStakingList({ host }) {
                             }, 0n);
                             const leafPending = agent.rates.map((r) => r.pending);
                             const agentPending = leafPending.every((v) => v !== undefined) ? leafPending.reduce((sum, v) => sum + BigInt(v), 0n).toString() : undefined;
+                            const leafShare = agent.rates.map((r) => r.agentSharePending);
+                            const agentShare = leafShare.every((v) => v !== undefined) ? leafShare.reduce((sum, v) => sum + BigInt(v), 0n).toString() : undefined;
                             return {
                                 account: account(agentProfiles.get(agent.agentKey.toLowerCase()) ?? { address: agent.agentKey }),
                                 stakedSPCoins: total.toString(),
                                 pendingSPCoins: agentPending,
-                                agentRates: agent.rates.map((r) => ({ agentRateKey: r.agentRateKey, stakedSPCoins: r.stakedSPCoins, pendingSPCoins: r.pending })),
+                                sharePending: agentShare,
+                                agentRates: agent.rates.map((r) => ({ agentRateKey: r.agentRateKey, stakedSPCoins: r.stakedSPCoins, pendingSPCoins: r.pending, sharePending: r.agentSharePending })),
                             };
                         });
                         const pendingTotal = rate.pendingDirect !== undefined && agentAccounts.every((a) => a.pendingSPCoins !== undefined)
                             ? agentAccounts.reduce((sum, a) => sum + BigInt(a.pendingSPCoins), BigInt(rate.pendingDirect)).toString()
                             : undefined;
-                        return { rateKey: rate.recipientRateKey, stakedSPCoins: rate.stakedSPCoins, agentAccounts, pendingDirect: rate.pendingDirect, pendingTotal };
+                        return { rateKey: rate.recipientRateKey, stakedSPCoins: rate.stakedSPCoins, agentAccounts, pendingDirect: rate.pendingDirect, pendingTotal, recipientSharePending: rate.recipientSharePending, sponsorSharePending: pendingTotal };
                     });
                 });
                 return out;
@@ -359,5 +362,5 @@ export default function ConnectedSponsorStakingList({ host }) {
         }
     }, [listMode, host, sponsor, fetchList, setErrorMessage, openPanel, recipients, stakeInfoByAddress, exchangeContext, activeProfile, decimals, showReceipt]);
     const activeAccount = exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount;
-    return (_jsx(SponsorStakingListPanel, { recipients: recipients, stakeInfoByAddress: stakeInfoByAddress, decimals: decimals, loading: loading, error: error, activeUnstakeKey: activeUnstakeKey, accountCellSlot: ROW_ACCOUNT_CELL, avatarSlot: ROW_AVATAR, loadingContent: _jsx(LoadingText, {}), confirmPopupContent: ({ isOpen, target, totalAmount, onConfirm, onCancel }) => (_jsx(StakeConfirmPopup, { isOpen: isOpen, mode: "REVOKE", isSpCoin: true, spCoinContract: host.spCoinContract, activeAccount: activeAccount, recipientAccount: target?.recipient, agentAccount: target?.agent, hasAgent: Boolean(target?.agent), totalAmount: totalAmount, onCancel: onCancel, onConfirm: onConfirm })), onConfirmUnstake: handleConfirmUnstake, mode: listMode.kind, autoRefresh: listMode.kind === 'claim' ? autoRefresh : undefined, onAutoRefreshChange: changeAutoRefresh, firstColumnLabel: listMode.kind === 'claim' && listMode.role !== 'Sponsor' ? 'Sponsor' : undefined, onClaimRewards: handleClaim }));
+    return (_jsx(SponsorStakingListPanel, { recipients: recipients, stakeInfoByAddress: stakeInfoByAddress, decimals: decimals, loading: loading, error: error, activeUnstakeKey: activeUnstakeKey, accountCellSlot: ROW_ACCOUNT_CELL, avatarSlot: ROW_AVATAR, loadingContent: _jsx(LoadingText, {}), confirmPopupContent: ({ isOpen, target, totalAmount, onConfirm, onCancel }) => (_jsx(StakeConfirmPopup, { isOpen: isOpen, mode: "REVOKE", isSpCoin: true, spCoinContract: host.spCoinContract, activeAccount: activeAccount, recipientAccount: target?.recipient, agentAccount: target?.agent, hasAgent: Boolean(target?.agent), totalAmount: totalAmount, onCancel: onCancel, onConfirm: onConfirm })), onConfirmUnstake: handleConfirmUnstake, mode: listMode.kind, autoRefresh: listMode.kind === 'claim' ? autoRefresh : undefined, onAutoRefreshChange: changeAutoRefresh, firstColumnLabel: listMode.kind === 'claim' ? (listMode.role === 'Sponsor' ? 'Sponsorship Contracts' : 'Sponsor') : undefined, onClaimRewards: handleClaim, claimRole: listMode.kind === 'claim' ? listMode.role : undefined, sponsorAccount: account(activeProfile?.address && activeProfile.address.toLowerCase() === sponsor.toLowerCase() ? activeProfile : { address: sponsor }) }));
 }

@@ -276,13 +276,18 @@ export async function addPendingToTree(role: 'Sponsor' | 'Recipient' | 'Agent', 
           }
           const setKey = await read('getRecipientRateTransactionSetKey', [{ key: 'Sponsor Key', value: sponsor }, { key: 'Recipient Key', value: recipient }, { key: 'Recipient Rate Key', value: rateKey }]);
           const direct = await readSet(read, setKey);
+          // 2026-11-18 (owner: the Sponsor Claim list shows every party's share of a bucket): the recipient's cut of each part (the direct stake, then each agent leaf), summed per bucket below
+          const recipientParts = new Map<string, bigint>();
           slots.push((at) => {
             let pending = 0n;
+            let recipientPart = 0n;
             if (direct.inserted) {
               const { recipientAgentPool, sponsorReward } = splitRewardPool(accrue(direct.totalStaked, direct.lastUpdate, at, annualInflation), rateKey);
               pending = role === 'Sponsor' ? sponsorReward : recipientAgentPool;
+              recipientPart = recipientAgentPool;
             }
             rate.pendingDirect = pending.toString();
+            recipientParts.set('direct', recipientPart);
           });
           for (const agent of rate.agents) {
             for (const leaf of agent.rates) {
@@ -297,14 +302,23 @@ export async function addPendingToTree(role: 'Sponsor' | 'Recipient' | 'Agent', 
               slots.push((at) => {
                 if (!set.inserted) {
                   leaf.pending = '0';
+                  leaf.agentSharePending = '0';
+                  recipientParts.set(`${agent.agentKey}:${leaf.agentRateKey}`, 0n);
                   return;
                 }
                 const { recipientAgentPool, sponsorReward } = splitRewardPool(accrue(set.totalStaked, set.lastUpdate, at, annualInflation), rateKey);
-                const { recipientReward } = splitAgentPool(recipientAgentPool, leaf.agentRateKey);
+                const { recipientReward, agentReward } = splitAgentPool(recipientAgentPool, leaf.agentRateKey);
                 leaf.pending = (role === 'Sponsor' ? sponsorReward : recipientReward).toString();
+                leaf.agentSharePending = agentReward.toString();
+                recipientParts.set(`${agent.agentKey}:${leaf.agentRateKey}`, recipientReward);
               });
             }
           }
+          slots.push(() => {
+            let total = 0n;
+            for (const part of recipientParts.values()) total += part;
+            rate.recipientSharePending = total.toString();
+          });
         }),
       );
     }),

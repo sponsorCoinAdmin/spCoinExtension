@@ -2179,7 +2179,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                         }, 
                                         // 2026-11-11 (owner): a right click on the avatar opens ACCOUNT_PANEL too, through AccountSelectDropDown
                                         onIconContextMenu: (address) => { if (address)
-                                            openAccountDetail(address); }, walletName: activeWalletName }) })), !passwordPanelShowing && (_jsx(AgentHeaderPanel, { agentName: agentAccount?.name, children: _jsx(ConnectedAgentSelectDropDown, {}) })), _jsxs("div", { style: walletFrameStyle.body, children: [!passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.PANEL_TITLE, lazyLoad: false, children: _jsx(PanelTitle, { title: panelTitle, onMenuClick: handleMenuClick, menuOpen: menuTabHeaderVisible, 
+                                            openAccountDetail(address); }, walletName: activeWalletName }) })), !passwordPanelShowing && (_jsx(AgentHeaderPanel, { agentName: agentAccount?.name, agentLogoURL: agentAccount?.logoURL, children: _jsx(ConnectedAgentSelectDropDown, {}) })), _jsxs("div", { style: walletFrameStyle.body, children: [!passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.PANEL_TITLE, lazyLoad: false, children: _jsx(PanelTitle, { title: panelTitle, onMenuClick: handleMenuClick, menuOpen: menuTabHeaderVisible, 
                                                 // 2026-10-03, on request — on the Account Login / Create Account
                                                 // screen the title bar shows only its title: no back button (nothing
                                                 // to go back to while locked) and no hamburger menu.

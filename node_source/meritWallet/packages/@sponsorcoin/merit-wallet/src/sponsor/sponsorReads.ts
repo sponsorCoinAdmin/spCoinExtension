@@ -54,6 +54,8 @@ export interface TreeAgentRate {
   stakedSPCoins: string;
   /** Claim lists only (addPendingToTree): the reward this leaf has earned so far for the role being claimed, raw base units. */
   pending?: string;
+  /** Sponsor Claim lists only: the agent's cut of the pool this leaf has earned so far, raw base units (shown beside the sponsor's own reward, 2026-11-18). */
+  agentSharePending?: string;
   /** Agent Claim lists only: the recipients whose buckets were merged into this leaf (the reward clocks are per (sponsor, recipient) bucket). */
   recipients?: string[];
 }
@@ -68,6 +70,8 @@ export interface TreeRate {
   agents: TreeAgent[];
   /** Claim lists only (addPendingToTree): the reward the bucket's own stake (not its agents') has earned so far for the role being claimed, raw base units. */
   pendingDirect?: string;
+  /** Sponsor Claim lists only: the recipient's cut of this bucket (its own stake plus every agent leaf) earned so far, raw base units (2026-11-18). */
+  recipientSharePending?: string;
 }
 export interface TreeRecipient {
   recipientKey: string;

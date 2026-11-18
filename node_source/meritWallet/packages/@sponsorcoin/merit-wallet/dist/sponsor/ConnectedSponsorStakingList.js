@@ -158,7 +158,7 @@ export default function ConnectedSponsorStakingList({ host }) {
                                 stakedSPCoins: total.toString(),
                                 pendingSPCoins: agentPending,
                                 sharePending: agentShare,
-                                agentRates: agent.rates.map((r) => ({ agentRateKey: r.agentRateKey, stakedSPCoins: r.stakedSPCoins, pendingSPCoins: r.pending, sharePending: r.agentSharePending })),
+                                agentRates: agent.rates.map((r) => ({ agentRateKey: r.agentRateKey, stakedSPCoins: r.stakedSPCoins, pendingSPCoins: r.pending })),
                             };
                         });
                         const pendingTotal = rate.pendingDirect !== undefined && agentAccounts.every((a) => a.pendingSPCoins !== undefined)

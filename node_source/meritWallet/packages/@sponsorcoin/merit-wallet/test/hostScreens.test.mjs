@@ -19,7 +19,7 @@ let wallet = read('MeritWallet.tsx');
 let contract = read('hostContract.ts');
 if (m === 'noSwitch') wallet = swap(wallet, 'if (props.onboarding) {', 'if (false) {');
 if (m === 'switchInsideWired') wallet = swap(wallet, 'function MeritWalletWired(props: MeritWalletProps) {\n', 'function MeritWalletWired(props: MeritWalletProps) {\n  if (props.onboarding) return null;\n');
-if (m === 'noPlatform') wallet = swap(wallet, 'React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(WalletOnboardingPanel, props.onboarding))', 'React.createElement(WalletOnboardingPanel, props.onboarding)');
+if (m === 'noPlatform') wallet = swap(wallet, 'React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(SetupScreen, props.onboarding))', 'React.createElement(SetupScreen, props.onboarding)');
 if (m === 'notInContract') contract = swap(contract, "'walletLocked' | 'onboarding' | ", "'walletLocked' | ");
 if (m === 'nodeProp') wallet = swap(wallet, '  onboarding?: WalletOnboardingPanelProps;', '  onboarding?: React.ReactNode;');
 
@@ -32,7 +32,7 @@ await test('onboarding is data and functions (the setup panel\'s own props), nev
 });
 await test('the exported component shows the setup screen instead of the wallet, inside the platform context', () => {
   const body = wallet.slice(wallet.lastIndexOf('export default function MeritWallet(props: MeritWalletProps) {'));
-  assert.match(body, /if \(props\.onboarding\) \{\n\s+return React\.createElement\(MeritPlatformContext\.Provider, \{ value: props\.platform \?\? domPlatform \}, React\.createElement\(WalletOnboardingPanel, props\.onboarding\)\);\n\s+\}\n\s+return React\.createElement\(MeritWalletWired, props\);/);
+  assert.match(body, /if \(props\.onboarding\) \{\n\s+return React\.createElement\(MeritPlatformContext\.Provider, \{ value: props\.platform \?\? domPlatform \}, React\.createElement\(SetupScreen, props\.onboarding\)\);\n\s+\}\n\s+return React\.createElement\(MeritWalletWired, props\);/);
 });
 await test('the switch has no hooks (so turning setup on and off cannot change a hook count), and the wired wallet does not handle setup itself', () => {
   const body = wallet.slice(wallet.lastIndexOf('export default function MeritWallet(props: MeritWalletProps) {'));

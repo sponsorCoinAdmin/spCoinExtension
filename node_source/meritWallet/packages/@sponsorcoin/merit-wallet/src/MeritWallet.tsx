@@ -34,7 +34,7 @@
 
 'use client';
 
-import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName } from '@sponsorcoin/spcoin-common/styles';
+import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePeerStates, type PeerConnection } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
@@ -2896,6 +2896,12 @@ function MeritWalletInner({
     <ActiveAccountProfileContext.Provider value={activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined}>
     <div className={walletFrameClassName} style={walletFrameStyle.frame(fullWidth, docked)}>
       <style>{walletFrameCss}</style>
+      {/* 2026-11-18: the login screen has its own header with no ladybug, so the debug button sits in its corner (the normal header carries it otherwise) */}
+      {passwordPanelShowing && (
+        <div style={debugBugStyle.corner}>
+          <DebugBugButton />
+        </div>
+      )}
       {/* 2026-10-13 (owner request): the login / create-account page has its OWN grey header (LOGIN_HEADER): a text title and the close button, nothing else.
           While it shows, the network header and the account header below are not rendered. */}
       {passwordPanelShowing && (
@@ -3343,9 +3349,15 @@ function MeritWalletWired(props: MeritWalletProps) {
  * The component. First-run setup replaces the wallet (a different component type, so the wallet's own state starts fresh when setup ends, the same as when the host used to swap it out);
  * otherwise the wired wallet. The setup screen runs inside the same platform context (clipboard) as the wallet.
  */
+/** 2026-11-18: the first-run setup screen with its own debug runtime (hotkey, saved switch, error capture) and ladybug: the wallet proper is not mounted yet, so nothing else would provide them. */
+function SetupScreen(props: WalletOnboardingPanelProps) {
+  useDebugRuntime();
+  return React.createElement('div', { style: debugBugStyle.setupBox }, React.createElement('div', { style: debugBugStyle.setupCorner }, React.createElement(DebugBugButton)), React.createElement(WalletOnboardingPanel, props));
+}
+
 export default function MeritWallet(props: MeritWalletProps) {
   if (props.onboarding) {
-    return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(WalletOnboardingPanel, props.onboarding));
+    return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(SetupScreen, props.onboarding));
   }
   return React.createElement(MeritWalletWired, props);
 }

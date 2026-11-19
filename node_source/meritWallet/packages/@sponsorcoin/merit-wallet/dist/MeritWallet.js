@@ -33,7 +33,7 @@
 // Whether/when to render this component at all stays the host's call.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName } from '@sponsorcoin/spcoin-common/styles';
+import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePeerStates } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
@@ -2152,7 +2152,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const [treeDoneToken, setTreeDoneToken] = useState(refreshToken ?? 0);
     const imageCacheValue = useMemo(() => ({ caches: iconCachesRef.current, baseUrl: baseUrl ?? '' }), [baseUrl]);
     const refreshBusy = !!refreshing || (refreshToken ?? 0) !== treeDoneToken;
-    return (_jsx(ImageCacheContext.Provider, { value: imageCacheValue, children: _jsx(RefreshTreeProvider, { tree: refreshTree, refreshToken: refreshToken ?? 0, onDone: setTreeDoneToken, children: _jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.LOGIN_HEADER, lazyLoad: false, children: _jsx(LoginHeader, { title: recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login', onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_NETWORK_HEADER, lazyLoad: false, children: _jsx(WalletNetworkHeader, { mode: "normal", leftSlot: _jsx(NetworkSelectDropDown, { label: activeNetworkRow?.name, symbol: activeChainInfo?.symbol ?? activeNetworkRow?.symbol, name: activeChainInfo?.name ?? activeNetworkRow?.name, id: activeNetworkRow?.id, 
+    return (_jsx(ImageCacheContext.Provider, { value: imageCacheValue, children: _jsx(RefreshTreeProvider, { tree: refreshTree, refreshToken: refreshToken ?? 0, onDone: setTreeDoneToken, children: _jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx("div", { style: debugBugStyle.corner, children: _jsx(DebugBugButton, {}) })), passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.LOGIN_HEADER, lazyLoad: false, children: _jsx(LoginHeader, { title: recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login', onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_NETWORK_HEADER, lazyLoad: false, children: _jsx(WalletNetworkHeader, { mode: "normal", leftSlot: _jsx(NetworkSelectDropDown, { label: activeNetworkRow?.name, symbol: activeChainInfo?.symbol ?? activeNetworkRow?.symbol, name: activeChainInfo?.name ?? activeNetworkRow?.name, id: activeNetworkRow?.id, 
                                             // 2026-09-16, on live report ("the NetworkSelectDropDown is
                                             // not showing the network icon in the WALLET_NETWORK_HEADER")
                                             // — activeNetworkRow.iconSrc was already real (same value the
@@ -2401,9 +2401,14 @@ function MeritWalletWired(props) {
  * The component. First-run setup replaces the wallet (a different component type, so the wallet's own state starts fresh when setup ends, the same as when the host used to swap it out);
  * otherwise the wired wallet. The setup screen runs inside the same platform context (clipboard) as the wallet.
  */
+/** 2026-11-18: the first-run setup screen with its own debug runtime (hotkey, saved switch, error capture) and ladybug: the wallet proper is not mounted yet, so nothing else would provide them. */
+function SetupScreen(props) {
+    useDebugRuntime();
+    return React.createElement('div', { style: debugBugStyle.setupBox }, React.createElement('div', { style: debugBugStyle.setupCorner }, React.createElement(DebugBugButton)), React.createElement(WalletOnboardingPanel, props));
+}
 export default function MeritWallet(props) {
     if (props.onboarding) {
-        return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(WalletOnboardingPanel, props.onboarding));
+        return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(SetupScreen, props.onboarding));
     }
     return React.createElement(MeritWalletWired, props);
 }

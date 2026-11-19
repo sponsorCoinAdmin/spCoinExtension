@@ -289,8 +289,4 @@ export interface MeritWalletProps {
     /** docs/meritMigration.txt row 18: Reset Password and wallet deletion over host functions; the component draws the dialogs. */
     walletSession?: WalletSessionHost;
 }
-/**
- * The component. First-run setup replaces the wallet (a different component type, so the wallet's own state starts fresh when setup ends, the same as when the host used to swap it out);
- * otherwise the wired wallet. The setup screen runs inside the same platform context (clipboard) as the wallet.
- */
 export default function MeritWallet(props: MeritWalletProps): React.FunctionComponentElement<MeritWalletProps> | React.FunctionComponentElement<React.ProviderProps<MeritPlatform>>;

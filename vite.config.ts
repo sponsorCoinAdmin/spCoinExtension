@@ -31,6 +31,8 @@ function copyDataLogos() {
 
 export default defineConfig({
   plugins: [tailwindcss(), crx({ manifest }), copyDataLogos()],
+  // 2026-11-19 (owner): the debug dump names the build that is running (time it was built), so a reload of a stale copy is obvious
+  define: { __BUILD_TIME__: JSON.stringify(new Date().toISOString()) },
   // 2026-09-18, real bug found live ("Cannot read properties of null
   // (reading 'useState')") — @sponsorcoin/spcoin-exchange-engine (and, by
   // the same mechanism, spcoin-panels/spcoin-common/spcoin-feeds) are

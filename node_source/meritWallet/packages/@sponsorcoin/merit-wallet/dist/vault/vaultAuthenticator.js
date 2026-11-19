@@ -58,7 +58,7 @@ export function createVaultAuthenticator(options) {
         },
         async sendTransaction(tx) {
             try {
-                const { hash } = await signer.sendTransaction({ from: tx.from, to: tx.to, value: tx.value, data: tx.data, chainId: tx.chainId, origin });
+                const { hash } = await signer.sendTransaction({ from: tx.from, to: tx.to, value: tx.value, data: tx.data, chainId: tx.chainId, origin, display: tx.display });
                 return { hash: hash };
             }
             catch (error) {

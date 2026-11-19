@@ -14,6 +14,8 @@ export interface LocalTransactionRequest {
     data?: string;
     chainId: number;
     origin?: string;
+    /** 2026-11-19: what the approval screen may show about this request (a swap's title, tokens and amount). It is only shown, never signed, and rides in the approval request's `details.display`. */
+    display?: Record<string, unknown>;
 }
 export interface LocalSignerOptions {
     session: VaultSession<WalletVaultContents>;

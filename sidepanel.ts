@@ -36,6 +36,7 @@ import {
   invalidateSponsorReadCaches,
   invalidateSponsoredAmount,
   invalidateAllStakedFromSponsors,
+  describeRecents,
 } from '@sponsorcoin/spcoin-exchange-engine';
 import {
   extensionExchangeContextStorageExtensions,
@@ -102,7 +103,9 @@ setEngineTrace((message, data) => {
   meritDebug.log('engine', line);
 });
 // 2026-11-14: the wallet's ladybug dump (merit-wallet, the same in every app): what this host is and the worker's own trace (the connect path runs there)
-registerHostDebug(meritDebug, () => ({ app: 'extension', build: chrome.runtime.getManifest().version, server: 'none (the extension does not use a hosted app)', chainId: activeChainId, rpcUrl: chainRpcUrl(), contract: spCoinAddress() }));
+registerHostDebug(meritDebug, () => ({ app: 'extension', build: `${chrome.runtime.getManifest().version} built ${__BUILD_TIME__} (${new URL(import.meta.url).pathname.split('/').pop()})`, server: 'none (the extension does not use a hosted app)', chainId: activeChainId, rpcUrl: chainRpcUrl(), contract: spCoinAddress() }));
+// the Recent pick lists (mode and addresses: they decide what the pickers open on)
+meritDebug.setSection('recents', () => describeRecents());
 meritDebug.setSection('worker', async () => {
   const reply = (await chrome.runtime.sendMessage({ type: 'merit/debug/get' }).catch(() => undefined)) as { lines?: string[] } | undefined;
   return { lastLines: (reply?.lines ?? []).filter((l) => !/useStepPanel:|engine:/.test(l)).slice(-40) };

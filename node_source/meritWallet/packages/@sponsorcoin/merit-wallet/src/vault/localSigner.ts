@@ -31,6 +31,8 @@ export interface LocalTransactionRequest {
   data?: string;
   chainId: number;
   origin?: string;
+  /** 2026-11-19: what the approval screen may show about this request (a swap's title, tokens and amount). It is only shown, never signed, and rides in the approval request's `details.display`. */
+  display?: Record<string, unknown>;
 }
 
 export interface LocalSignerOptions {
@@ -111,7 +113,7 @@ export class LocalSigner {
         kind: 'transaction',
         origin: request.origin ?? 'wallet',
         summary: `Send ${request.value ?? 0n} wei${request.to ? ` to ${request.to}` : ' (contract creation)'} on chain ${request.chainId}`,
-        details: { from: account.address, to: request.to, value: request.value?.toString(), data: request.data, chainId: request.chainId },
+        details: { from: account.address, to: request.to, value: request.value?.toString(), data: request.data, chainId: request.chainId, ...(request.display ? { display: request.display } : {}) },
       },
       async () => {
         if (!this.o.session.isUnlocked()) throw new VaultLockedError();

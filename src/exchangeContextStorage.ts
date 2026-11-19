@@ -19,6 +19,7 @@ import {
 } from '@sponsorcoin/spcoin-exchange-engine';
 
 import { migrateDefaultOnPanelList } from './panelVisibilityStorage';
+import { rpcUrlForChain } from './chainRpc';
 
 const STORAGE_KEY = 'spcoin_exchange_context';
 
@@ -39,6 +40,32 @@ const STORAGE_KEY = 'spcoin_exchange_context';
 const stringifyWithBigInt = (value: unknown): string => serializeWithBigInt(value);
 const parseWithBigInt = (json: string): unknown => deserializeWithBigInt(json);
 
+const NATIVE_TOKEN = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+/** True only when the chain CONFIRMS there is no contract at the address (an empty eth_getCode answer). A node that cannot be reached, or an answer that says nothing, is not a confirmation. */
+async function confirmedNotAContract(rpcUrl: string, address: string): Promise<boolean> {
+  try {
+    const response = await fetch(rpcUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getCode', params: [address, 'latest'] }), signal: AbortSignal.timeout(4000) });
+    const answer = (await response.json()) as { result?: unknown };
+    return answer.result === '0x';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 2026-11-19 (owner: the Sell Token picker opened on an address the chain does not have): with the input checks off, an earlier build let an account address (a recipient) become the saved sell token, and every later boot restored it.
+ * A saved sell or buy token that the chain confirms is not a contract is a bad save, so the saved context is dropped and the wallet starts from a fresh default (the same recovery as the missing-trade-data case below).
+ */
+async function savedTokensAreContracts(parsed: unknown): Promise<boolean> {
+  const members = (parsed as { apiCoreSyncedMembers?: { network?: { appChainId?: number }; tradeData?: { sellTokenContract?: { address?: string }; buyTokenContract?: { address?: string } } } } | undefined)?.apiCoreSyncedMembers;
+  const rpcUrl = members?.network?.appChainId ? rpcUrlForChain(Number(members.network.appChainId)) : undefined;
+  if (!rpcUrl) return true;
+  const addresses = [members?.tradeData?.sellTokenContract?.address, members?.tradeData?.buyTokenContract?.address].filter((a): a is string => typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a) && a.toLowerCase() !== NATIVE_TOKEN);
+  const missing = await Promise.all(addresses.map((address) => confirmedNotAContract(rpcUrl, address)));
+  return !missing.some(Boolean);
+}
+
 async function readExchangeContext(): Promise<unknown | undefined> {
   try {
     const stored = await chrome.storage.local.get(STORAGE_KEY);
@@ -51,6 +78,12 @@ async function readExchangeContext(): Promise<unknown | undefined> {
     if (!trade || typeof trade.zeroX !== 'object' || trade.zeroX === null || typeof trade.uniswap !== 'object' || trade.uniswap === null) {
       // eslint-disable-next-line no-console
       console.error('[exchangeContextStorage] the saved ExchangeContext has no trade data (zeroX / uniswap), starting fresh');
+      await chrome.storage.local.remove(STORAGE_KEY);
+      return undefined;
+    }
+    if (!(await savedTokensAreContracts(parsed))) {
+      // eslint-disable-next-line no-console
+      console.error('[exchangeContextStorage] the saved sell or buy token is not a contract on its chain, starting fresh');
       await chrome.storage.local.remove(STORAGE_KEY);
       return undefined;
     }

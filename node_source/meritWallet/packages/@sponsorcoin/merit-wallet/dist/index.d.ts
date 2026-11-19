@@ -40,6 +40,7 @@ export type { WalletSessionPhase, WalletPasswordMode, WalletSessionStatus, Walle
 export { useWalletSession } from './session/walletSessionReact';
 export type { UseWalletSessionResult } from './session/walletSessionReact';
 export { readContractDirect, toRunScriptShape, createDirectReadStep } from './chain/directReads';
+export { SPOIN_STAKE_ABI } from './chain/spCoinStakeAbi';
 export type { DirectReadParams, DirectReadStepParams } from './chain/directReads';
 export { MERIT_RDNS, discoverWallets, findMeritWallet, createInjectedWalletApi } from './provider/injectedWallet';
 export type { Eip1193Provider, Eip6963Detail, DiscoveryWindow, InjectedWalletApi } from './provider/injectedWallet';

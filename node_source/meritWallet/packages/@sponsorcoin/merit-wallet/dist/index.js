@@ -32,6 +32,7 @@ export { MIN_WALLET_PASSWORD_LENGTH, passwordModeFor, phaseFromStatus, submitWal
 export { validateLogin, isLoginGateClosed, deriveLoginState, resolveLoginState } from './session/validateLogin';
 export { useWalletSession } from './session/walletSessionReact';
 export { readContractDirect, toRunScriptShape, createDirectReadStep } from './chain/directReads';
+export { SPOIN_STAKE_ABI } from './chain/spCoinStakeAbi';
 export { MERIT_RDNS, discoverWallets, findMeritWallet, createInjectedWalletApi } from './provider/injectedWallet';
 export { useMetaMask, METAMASK_RDNS } from './provider/useMetaMask';
 export { useMeritLink } from './provider/useMeritLink';

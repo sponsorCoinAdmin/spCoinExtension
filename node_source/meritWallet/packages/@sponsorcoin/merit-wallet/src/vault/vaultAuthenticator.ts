@@ -67,7 +67,7 @@ export function createVaultAuthenticator(options: VaultAuthenticatorOptions): Au
     },
     async sendTransaction(tx: AuthenticatorTransaction) {
       try {
-        const { hash } = await signer.sendTransaction({ from: tx.from, to: tx.to, value: tx.value, data: tx.data, chainId: tx.chainId, origin });
+        const { hash } = await signer.sendTransaction({ from: tx.from, to: tx.to, value: tx.value, data: tx.data, chainId: tx.chainId, origin, display: tx.display as Record<string, unknown> | undefined });
         return { hash: hash as Hex };
       } catch (error) {
         return translate(error);

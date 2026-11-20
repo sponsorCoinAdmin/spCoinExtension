@@ -69,22 +69,6 @@ export function createStandaloneWallet(options) {
         authenticator,
         wallet,
         approvals,
-        testAccounts: {
-            needsPassword: false,
-            async status() {
-                return parts.accounts.hardhatTestAccountStatus();
-            },
-            async load() {
-                const result = await parts.accounts.loadHardhatTestAccounts();
-                announceAccounts();
-                return { added: result.added };
-            },
-            async unload() {
-                const result = await parts.accounts.unloadHardhatTestAccounts();
-                announceAccounts();
-                return result;
-            },
-        },
         onboarding: {
             createWallet: async (password) => ({ recoveryPhrase: (await vault.create({ kind: 'password', value: password })).recoveryPhrase }),
             importWallet: async (recoveryPhrase, password) => {

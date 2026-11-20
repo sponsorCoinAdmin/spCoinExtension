@@ -7,12 +7,11 @@ import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-run
 import { useState } from 'react';
 import { WalletConfigPanel } from '@sponsorcoin/spcoin-panels';
 import { useWalletDerivedProps } from '../wallet/walletProps';
-import TestAccountsSection from '../TestAccountsSection';
 import WalletSessionDialogs, { sessionConfigHandlers } from './WalletSessionDialogs';
 const SECTIONS = ['security', 'signing', 'backup'];
-export default function ConnectedWalletConfig({ wallet, activeAddress, derives = SECTIONS, walletSession, testAccounts, onLogoff, onResetPassword, onDeleteAccount, onDeleteWallet, ...panel }) {
+export default function ConnectedWalletConfig({ wallet, activeAddress, derives = SECTIONS, walletSession, testAccountsContent, onLogoff, onResetPassword, onDeleteAccount, onDeleteWallet, ...panel }) {
     const derived = useWalletDerivedProps(wallet, activeAddress, derives);
     const [dialog, setDialog] = useState(null);
     const handlers = sessionConfigHandlers(walletSession, setDialog, { onResetPassword, onDeleteAccount, onDeleteWallet });
-    return (_jsxs(_Fragment, { children: [_jsx(WalletConfigPanel, { ...panel, securityPanelContent: derived.configSecurityPanelContent, signingPanelContent: derived.configSigningPanelContent, backupPanelContent: derived.configBackupPanelContent, testAccountsContent: testAccounts ? _jsx(TestAccountsSection, { api: testAccounts.api, authenticationType: testAccounts.authenticationType, onChanged: testAccounts.onChanged }) : undefined, onLogoff: onLogoff, onResetPassword: handlers.onResetPassword, onDeleteAccount: handlers.onDeleteAccount, onDeleteWallet: handlers.onDeleteWallet }), _jsx(WalletSessionDialogs, { dialog: dialog, onClose: () => setDialog(null), session: walletSession })] }));
+    return (_jsxs(_Fragment, { children: [_jsx(WalletConfigPanel, { ...panel, securityPanelContent: derived.configSecurityPanelContent, signingPanelContent: derived.configSigningPanelContent, backupPanelContent: derived.configBackupPanelContent, testAccountsContent: testAccountsContent, onLogoff: onLogoff, onResetPassword: handlers.onResetPassword, onDeleteAccount: handlers.onDeleteAccount, onDeleteWallet: handlers.onDeleteWallet }), _jsx(WalletSessionDialogs, { dialog: dialog, onClose: () => setDialog(null), session: walletSession })] }));
 }

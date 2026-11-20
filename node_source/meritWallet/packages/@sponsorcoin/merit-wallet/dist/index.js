@@ -53,7 +53,6 @@ export { default as MeritWalletHostView, meritWalletPropsFromHost } from './Meri
 export { default as ChangePasswordPanel } from './ChangePasswordPanel';
 export { default as DeleteWalletDialog } from './DeleteWalletDialog';
 export { AuthenticationType, authenticationTypeLabel } from './auth/authenticationType';
-export { default as TestAccountsSection } from './TestAccountsSection';
 export { default as PasswordPromptDialog } from './PasswordPromptDialog';
 export { default as ConnectedRewardsPanel } from './rewards/ConnectedRewardsPanel';
 export { createSecuritySetup } from './security/mfaFactorsStore';

@@ -71,8 +71,6 @@ export type { MeritWalletHostSections } from './MeritWalletHostView';
 export { default as ChangePasswordPanel } from './ChangePasswordPanel';
 export { default as DeleteWalletDialog } from './DeleteWalletDialog';
 export { AuthenticationType, authenticationTypeLabel } from './auth/authenticationType';
-export { default as TestAccountsSection } from './TestAccountsSection';
-export type { TestAccountsApi, TestAccountsSectionProps } from './TestAccountsSection';
 export { default as PasswordPromptDialog } from './PasswordPromptDialog';
 export { default as ConnectedRewardsPanel } from './rewards/ConnectedRewardsPanel';
 export type { RewardsHost, RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';

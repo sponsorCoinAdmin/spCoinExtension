@@ -12,6 +12,7 @@ import { startDappApprovals } from './src/dappApprovals';
 import { remoteSelectionStore } from './src/remoteSelectionStore';
 import { extensionPeers, meritWebConnection } from './src/extensionPeers';
 import { traceFrom } from './src/debugTrace';
+import { TestAccountsSection } from '@meritWallets/meritDevOnly';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
 import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, throttleRead, AuthenticationType, MeritWalletHostView, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost, meritDebug, registerHostDebug, readChainTimestamp } from '@sponsorcoin/merit-wallet';
 import { persistedTimeoutMs } from '@sponsorcoin/merit-wallet';
@@ -992,14 +993,15 @@ async function renderWallet() {
                 tradeHost: extensionTradeHost,
               },
               slots: {
-                configTestAccounts: {
+                // 2026-11-19: the Test Accounts section comes from @meritWallets/meritDevOnly (test-only code) and is handed to the wallet as a node
+                configTestAccountsContent: React.createElement(TestAccountsSection, {
                   api: vaultTestAccountsApi,
                   authenticationType: AuthenticationType.VAULT,
                   onChanged: () => {
                     vaultRowsStale = true;
                     render();
                   },
-                },
+                }),
               },
               lock: {
                 // 2026-10-08 (table row 23): the lock gate is the component's own: while the vault is locked it shows the password screen in place of everything.

@@ -4,7 +4,8 @@
 // (VaultAccountsPanel, WalletOnboardingPanel) and the vault in the background worker. Every call is a merit/* message to the worker; the worker
 // is the only place keys exist. A failed reply becomes an Error with the worker's message so the screens can show it.
 import { extensionVault } from './localVaultAuthenticator';
-import type { TestAccountsApi, VaultAccountsApi } from '@sponsorcoin/merit-wallet';
+import type { VaultAccountsApi } from '@sponsorcoin/merit-wallet';
+import type { TestAccountsApi } from '@meritWallets/meritDevOnly';
 
 type Reply = {
   ok: boolean;

@@ -13,7 +13,6 @@ import { createLocalVaultParts, type LocalVaultParts, type VaultCapability } fro
 import { createVaultAuthenticator } from '../vault/vaultAuthenticator';
 import type { VaultSessionStore, VaultStorage } from '../vault/vaultSession';
 import { createWallet, type Wallet } from '../wallet/wallet';
-import type { TestAccountsApi } from '../TestAccountsSection';
 
 export interface StandaloneChain {
   chainId: number;
@@ -53,8 +52,6 @@ export interface StandaloneWallet {
   /** Every request that wants a signature waits here until a screen approves or rejects it. */
   approvals: ApprovalController;
   onboarding: StandaloneOnboarding;
-  /** The Config tab's Test Accounts section over this vault: loads Hardhat's 20 published test accounts (imported, devOrigin: they sign only on chain 31337) and removes them again. For development: their keys are public. */
-  testAccounts: TestAccountsApi;
   /** Come back unlocked after a page reload when the session key is still valid. Safe to call often. */
   restore(): Promise<boolean>;
 }
@@ -115,22 +112,6 @@ export function createStandaloneWallet(options: StandaloneWalletOptions): Standa
     authenticator,
     wallet,
     approvals,
-    testAccounts: {
-      needsPassword: false,
-      async status() {
-        return parts.accounts.hardhatTestAccountStatus();
-      },
-      async load() {
-        const result = await parts.accounts.loadHardhatTestAccounts();
-        announceAccounts();
-        return { added: result.added };
-      },
-      async unload() {
-        const result = await parts.accounts.unloadHardhatTestAccounts();
-        announceAccounts();
-        return result;
-      },
-    },
     onboarding: {
       createWallet: async (password) => ({ recoveryPhrase: (await vault.create({ kind: 'password', value: password })).recoveryPhrase }),
       importWallet: async (recoveryPhrase, password) => {

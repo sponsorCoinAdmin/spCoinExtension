@@ -9,7 +9,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPublicClient, http } from 'viem';
 import { walletFrameClassName, walletFrameStyle } from '@sponsorcoin/spcoin-common/styles';
 import MeritWalletHostView from '../MeritWalletHostView';
-import { AuthenticationType } from '../auth/authenticationType';
 import { domPlatform } from '../platform/domPlatform';
 import StandaloneProviders from './StandaloneProviders';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
@@ -20,7 +19,7 @@ import { registerStandaloneDebug } from './registerStandaloneDebug';
 import { registerStandaloneData } from './registerStandaloneData';
 import { createBalanceReader } from '../balance/createBalanceReader';
 import { createStandaloneWallet } from './createStandaloneWallet';
-export default function MeritWalletStandalone({ chains, core: given, onClose, docked = false, brandLogoSrc = '/assets/miscellaneous/meritWalletLogin.webp', testAccounts = false, data: snapshot, namespace, storage, sessionStore, autoLockMs }) {
+export default function MeritWalletStandalone({ chains, core: given, onClose, docked = false, brandLogoSrc = '/assets/miscellaneous/meritWalletLogin.webp', data: snapshot, namespace, storage, sessionStore, autoLockMs }) {
     // registered before the first render, so the first thing the wallet reads already has its data
     useState(() => {
         if (snapshot)
@@ -129,7 +128,6 @@ export default function MeritWalletStandalone({ chains, core: given, onClose, do
                 // the account list is the vault's (approverHost); giving the empty list up front stops the component asking a hosted app for test accounts (the "falling back to sample data" error)
                 accountGroups: [], chainId: chain.chainId, baseUrl: '', activeAccountAddress: address ?? '', fetchBalance },
             selection: { approvalPage },
-            slots: { configTestAccounts: testAccounts ? { api: core.testAccounts, authenticationType: AuthenticationType.VAULT, onChanged: () => void refresh() } : undefined },
             actions: { sendAmount, onSendAmountChange: setSendAmount, sendBusy, onSendSubmit, tradeHost },
             lock: { onboarding, passwordIconSrc: brandLogoSrc },
         },

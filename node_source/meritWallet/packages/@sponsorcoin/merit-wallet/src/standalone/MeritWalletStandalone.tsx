@@ -10,7 +10,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPublicClient, http } from 'viem';
 import { walletFrameClassName, walletFrameStyle } from '@sponsorcoin/spcoin-common/styles';
 import MeritWalletHostView from '../MeritWalletHostView';
-import { AuthenticationType } from '../auth/authenticationType';
 import type { StakeConfirmHostState, TradeHost } from '../trade/tradeHost';
 import { domPlatform } from '../platform/domPlatform';
 import StandaloneProviders from './StandaloneProviders';
@@ -30,15 +29,13 @@ export interface MeritWalletStandaloneProps extends Omit<StandaloneWalletOptions
   data?: StandaloneDataSnapshot;
   /** The image on the login and setup screens. Default: the Merit login art under /assets/miscellaneous (the data package's assets folder, served by the page like every other image the wallet asks for). */
   brandLogoSrc?: string;
-  /** Show the Config tab's Test Accounts section (load Hardhat's published test accounts into this wallet). Default false: those keys are public, so only a development page turns it on. */
-  testAccounts?: boolean;
   /** A wallet the page already created (to share one wallet between several mounts). Omitted: one is created for this mount. */
   core?: StandaloneWallet;
   onClose: () => void;
   docked?: boolean;
 }
 
-export default function MeritWalletStandalone({ chains, core: given, onClose, docked = false, brandLogoSrc = '/assets/miscellaneous/meritWalletLogin.webp', testAccounts = false, data: snapshot, namespace, storage, sessionStore, autoLockMs }: MeritWalletStandaloneProps) {
+export default function MeritWalletStandalone({ chains, core: given, onClose, docked = false, brandLogoSrc = '/assets/miscellaneous/meritWalletLogin.webp', data: snapshot, namespace, storage, sessionStore, autoLockMs }: MeritWalletStandaloneProps) {
   // registered before the first render, so the first thing the wallet reads already has its data
   useState(() => {
     if (snapshot) registerStandaloneData(snapshot);
@@ -160,7 +157,6 @@ export default function MeritWalletStandalone({ chains, core: given, onClose, do
         // the account list is the vault's (approverHost); giving the empty list up front stops the component asking a hosted app for test accounts (the "falling back to sample data" error)
         accountGroups: [], chainId: chain.chainId, baseUrl: '', activeAccountAddress: address ?? '', fetchBalance },
       selection: { approvalPage },
-      slots: { configTestAccounts: testAccounts ? { api: core.testAccounts, authenticationType: AuthenticationType.VAULT, onChanged: () => void refresh() } : undefined },
       actions: { sendAmount, onSendAmountChange: setSendAmount, sendBusy, onSendSubmit, tradeHost },
       lock: { onboarding, passwordIconSrc: brandLogoSrc },
     },

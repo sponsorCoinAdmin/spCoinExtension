@@ -1,4 +1,6 @@
-// File: node_source/meritWallet/packages/@sponsorcoin/merit-wallet/src/TestAccountsSection.tsx
+// File: node_source/@meritWallets/meritDevOnly/src/TestAccountsSection.tsx
+//
+// 2026-11-19: moved here from @sponsorcoin/merit-wallet. It is test code (Hardhat's published accounts), so it lives only in the test project and is passed to the wallet as a node (configTestAccountsContent); a release never contains it.
 //
 // 2026-10-08 (docs/design/accountAuthDesign.txt) -- the Config tab's "Test Accounts" section: Load puts Hardhat's standard test accounts into whatever store this
 // wallet authenticates with (the server keystore for AuthenticationType.KEYSTORE, the vault for VAULT), Unload takes them out again. Wallet setup no
@@ -9,9 +11,7 @@
 import { configSectionStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useState } from 'react';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
-import type { AuthenticationType} from './auth/authenticationType';
-import { authenticationTypeLabel } from './auth/authenticationType';
-import PasswordPromptDialog from './PasswordPromptDialog';
+import { authenticationTypeLabel, PasswordPromptDialog, type AuthenticationType } from '@sponsorcoin/merit-wallet';
 
 export interface TestAccountsApi {
   /** How many of the standard test accounts are in the store. */

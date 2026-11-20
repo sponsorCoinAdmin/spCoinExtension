@@ -11,7 +11,6 @@ import { type MenuTabKey, type MeritWalletNetworkRow } from './panels';
 import { type ApprovalHost } from './approval/useMeritApprovalMessagePanel';
 import { type RewardsHost, type RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
 import { type AddAccountHost } from './account/AddAccountFlow';
-import { type TestAccountsApi } from './TestAccountsSection';
 import { type TradeHost } from './trade/tradeHost';
 import type { WalletSessionHost } from './walletSessionHost';
 import { type AccountDetailHost } from './account/AccountDetailScreen';
@@ -259,11 +258,8 @@ export interface MeritWalletProps {
     /** The Config tab's "Backup file" section (derived from `wallet` when its key-keeping backend can make a backup file). */
     configBackupPanelContent?: React.ReactNode;
     /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */
-    configTestAccounts?: {
-        api: TestAccountsApi;
-        authenticationType?: AuthenticationType;
-        onChanged?(): void;
-    };
+    /** 2026-11-19: the Config tab's Test Accounts section, built by the HOST (the section lives in @meritWallets/meritDevOnly, a package that never ships in a release), like configDevToolsContent. Absent: no section. */
+    configTestAccountsContent?: React.ReactNode;
     /** 2026-10-08: how this wallet authenticates locally: KEYSTORE (web app, server keystore) or VAULT (extension). Set by the host. */
     authenticationType?: AuthenticationType;
     configUniSelectVisible?: boolean;

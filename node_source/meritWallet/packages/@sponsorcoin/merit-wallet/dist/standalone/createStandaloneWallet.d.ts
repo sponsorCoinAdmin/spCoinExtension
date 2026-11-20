@@ -3,7 +3,6 @@ import { ApprovalController } from '../vault/approvals';
 import { type LocalVaultParts, type VaultCapability } from '../vault/vaultCapability';
 import type { VaultSessionStore, VaultStorage } from '../vault/vaultSession';
 import { type Wallet } from '../wallet/wallet';
-import type { TestAccountsApi } from '../TestAccountsSection';
 export interface StandaloneChain {
     chainId: number;
     /** The JSON-RPC endpoint this chain is read and written through. */
@@ -40,8 +39,6 @@ export interface StandaloneWallet {
     /** Every request that wants a signature waits here until a screen approves or rejects it. */
     approvals: ApprovalController;
     onboarding: StandaloneOnboarding;
-    /** The Config tab's Test Accounts section over this vault: loads Hardhat's 20 published test accounts (imported, devOrigin: they sign only on chain 31337) and removes them again. For development: their keys are public. */
-    testAccounts: TestAccountsApi;
     /** Come back unlocked after a page reload when the session key is still valid. Safe to call often. */
     restore(): Promise<boolean>;
 }

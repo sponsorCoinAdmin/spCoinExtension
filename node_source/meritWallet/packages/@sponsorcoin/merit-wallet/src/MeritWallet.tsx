@@ -105,7 +105,6 @@ import { useMeritApprovalMessagePanel, type ApprovalHost } from './approval/useM
 import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageStore';
 import ConnectedRewardsPanel, { type RewardsHost, type RewardsPanelExtras } from './rewards/ConnectedRewardsPanel';
 import AddAccountFlow, { type AddAccountHost } from './account/AddAccountFlow';
-import TestAccountsSection, { type TestAccountsApi } from './TestAccountsSection';
 import ConnectedSponsorPanel from './sponsor/ConnectedSponsorPanel';
 import { ConnectedTradeButton, type TradeHost } from './trade/tradeHost';
 import WalletSessionDialogs, { sessionConfigHandlers, type WalletSessionDialog } from './config/WalletSessionDialogs';
@@ -768,7 +767,8 @@ export interface MeritWalletProps {
   /** The Config tab's "Backup file" section (derived from `wallet` when its key-keeping backend can make a backup file). */
   configBackupPanelContent?: React.ReactNode;
   /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */
-  configTestAccounts?: { api: TestAccountsApi; authenticationType?: AuthenticationType; onChanged?(): void };
+  /** 2026-11-19: the Config tab's Test Accounts section, built by the HOST (the section lives in @meritWallets/meritDevOnly, a package that never ships in a release), like configDevToolsContent. Absent: no section. */
+  configTestAccountsContent?: React.ReactNode;
   /** 2026-10-08: how this wallet authenticates locally: KEYSTORE (web app, server keystore) or VAULT (extension). Set by the host. */
   authenticationType?: AuthenticationType;
   configUniSelectVisible?: boolean;
@@ -894,7 +894,7 @@ function MeritWalletInner({
   configSecurityPanelContent,
   configSigningPanelContent,
   configBackupPanelContent,
-  configTestAccounts,
+  configTestAccountsContent,
   configUniSelectVisible,
   onConfigUniswapEngineChange,
   configZeroXEngineVisible,
@@ -2245,7 +2245,7 @@ function MeritWalletInner({
                 securityPanelContent: securitySetup ? (parts: SecurityParts) => React.createElement(React.Fragment, null, React.createElement(SecuritySetupScreen, { ...securitySetup, passwordContent: parts.passwordSettings, accountButtons: parts.accountButtons }), configSecurityPanelContent) : configSecurityPanelContent,
                 signingPanelContent: configSigningPanelContent,
                 backupPanelContent: configBackupPanelContent,
-                testAccountsContent: configTestAccounts ? React.createElement(TestAccountsSection, { api: configTestAccounts.api, authenticationType: configTestAccounts.authenticationType, onChanged: configTestAccounts.onChanged }) : undefined,
+                testAccountsContent: configTestAccountsContent,
                 uniSelectVisible: configUniSelectVisible,
                 onUniswapEngineChange: onConfigUniswapEngineChange,
                 zeroXEngineVisible: configZeroXEngineVisible,
@@ -2852,18 +2852,20 @@ function MeritWalletInner({
         : activeListMode === 'sellToken' ||
     activeListMode === 'buyToken' ||
     activeListMode === 'sendToken'
-      ? (activeListParams?.title ?? 'Select a Token')
+      // 2026-11-19 (owner): the title names the role the pick is for, not the shared list's generic "Select a Token"
+      ? (activeListMode === 'sellToken' ? 'Select Token to Sell' : activeListMode === 'buyToken' ? 'Select Token to Buy' : 'Select Token to Send')
       : activeListMode === 'rewardsAccount'
         ? (activeListParams?.title ?? 'Select Rewards Account')
       : activeListMode === 'sendRecipient'
-        ? 'Select Recipient'
+        ? 'Select Recipient to Receive Token'
         : activeListMode === 'account'
           // 2026-11-16 (owner): the account list picks the account that signs, which is the sponsor; the recipient and agent lists, opened from the Sponsor tab or the panel tree, are named for what they pick.
           ? 'Select Active Sponsor Account'
           : activeListMode === 'network'
             ? 'Select Network'
             : listPanelOpen && activeChild === SP_COIN_DISPLAY.REMOTE_ACCOUNT_RECIPIENT_LIST
-            ? 'Select Active Recipient Account'
+            // 2026-11-19 (owner): opened from the Sponsor tab, the recipient list is where the sponsor picks who to sponsor
+            ? (activeTab === 'SPONSOR' ? 'Select Recipient To Sponsor' : 'Select Active Recipient Account')
             : listPanelOpen && activeChild === SP_COIN_DISPLAY.REMOTE_ACCOUNT_AGENT_LIST
             ? 'Select Active Agent Account'
             : activeTab === 'SWAP'
@@ -2905,15 +2907,14 @@ function MeritWalletInner({
       {/* 2026-10-13 (owner request): the login / create-account page has its OWN grey header (LOGIN_HEADER): a text title and the close button, nothing else.
           While it shows, the network header and the account header below are not rendered. */}
       {passwordPanelShowing && (
-        <PanelGate panel={SP_COIN_DISPLAY.LOGIN_HEADER} lazyLoad={false}>
-          <LoginHeader
-            title={recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login'}
-            onClose={onClose}
-            appType={appType}
-            wwwIconSrc={wwwIconSrc}
-            closeIconSrc={closeIconSrc}
-          />
-        </PanelGate>
+        // 2026-11-19 (owner): the grey header is ALWAYS on the login screen (it holds the close X, and the ladybug sits left of it), so it is not behind the panel-tree switch
+        <LoginHeader
+          title={recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login'}
+          onClose={onClose}
+          appType={appType}
+          wwwIconSrc={wwwIconSrc}
+          closeIconSrc={closeIconSrc}
+        />
       )}
       {!passwordPanelShowing && (
       <PanelGate panel={SP_COIN_DISPLAY.WALLET_NETWORK_HEADER} lazyLoad={false}>

@@ -38,12 +38,18 @@ registerEngineBundledFeeds({
 
 // The engine's network helpers (the context's network record: name, symbol, RPC) read the static network data a host registers: each chain's default settings from the bundle, and the chain list
 // and configured networks from the feeds package's own registry.
+// 2026-11-20: each chain's default settings are read from the data itself (every chain the snapshot carries) and registered FIRST: the network feed takes the endpoint of a network that carries none of its own (the Hardhat test chain) from them, so the list below has that chain only when the data does
+const defaultSettings = Object.fromEntries(
+  Object.keys(data).flatMap((k) => {
+    const m = /^\/assets\/blockchains\/(\d+)\/defaultNetworkSettings\.json$/i.exec(k);
+    return m ? [[Number(m[1]), data[k]]] : [];
+  }),
+);
+registerNetworkData({ chainIdList: [], defaultSettings: defaultSettings as never, configuredNetworks: [] });
 const configured = listConfiguredNetworks({ showTestNets: true });
 registerNetworkData({
   chainIdList: configured.map((n) => ({ chainId: n.chainId, name: n.name, symbol: n.symbol })),
-  defaultSettings: Object.fromEntries(
-    configured.map((n) => [n.chainId, data['/assets/blockchains/' + n.chainId + '/defaultNetworkSettings.json'] ?? {}]),
-  ) as never,
+  defaultSettings: defaultSettings as never,
   configuredNetworks: configured as unknown[],
 });
 

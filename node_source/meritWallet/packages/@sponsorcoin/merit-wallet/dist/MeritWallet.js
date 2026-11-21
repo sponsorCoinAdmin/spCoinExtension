@@ -43,7 +43,7 @@ import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import { registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { StakeConfirmPopup, useWalletListed, amountGate } from '@sponsorcoin/spcoin-panels';
 import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useSelectedAccount, buildSpCoinAccount, hydrateAccountFromAddress, useExchangeContext, useSellTokenContract, useBuyTokenContract, useActiveListPanelParams, useUniBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
-import { ImportNetwork, useHideTodoNetworks, AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
+import { ImportNetwork, useHideTodoNetworks, useWalletMode, resolveWalletMode, AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, usePlatform } from './platform/platform';
 import { RefreshTreeProvider, ImageCacheContext } from './refresh/refreshReact';
@@ -1041,6 +1041,14 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const [showUnconnected, setShowUnconnected] = useState(false);
     // 2026-11-20 (owner request): "Hide ToDo Networks" (the Config tab's ToDo section) removes the check box and shows none of those networks
     const hideTodoNetworks = useHideTodoNetworks();
+    // 2026-11-20 (owner): in Test mode the Hardhat test network 31337 is loaded into the network list by itself (no endpoint is added when it already has one, or when the person turned it off by choosing Prod)
+    const walletModeChoice = useWalletMode();
+    const testMode = resolveWalletMode(walletModeChoice, !!(configTestAccountsContent || onOpenTargetChange)) === 'test';
+    useEffect(() => {
+        if (!testMode || getNetworkConfiguration(31337)?.rpcUrl)
+            return;
+        addCustomNetwork({ name: 'HardHat', symbol: 'HH_BASE', chainId: 31337, rpcUrl: 'http://127.0.0.1:8545', explorerUrl: '' }, { verify: false }).catch(() => undefined);
+    }, [testMode]);
     // Reset Password and wallet deletion: the component draws the dialogs, the host (walletSession) supplies the calls.
     const [sessionDialog, setSessionDialog] = useState(null);
     const sessionHandlers = sessionConfigHandlers(walletSession, setSessionDialog, { onResetPassword: onConfigResetPassword, onDeleteAccount: onConfigDeleteAccount, onDeleteWallet: onConfigDeleteWallet });

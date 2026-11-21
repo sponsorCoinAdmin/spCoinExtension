@@ -1772,8 +1772,14 @@ function MeritWalletInner({
   const walletModeChoice = useWalletMode();
   const testMode = resolveWalletMode(walletModeChoice, !!configTestAccountsContent) === 'test';
   useEffect(() => {
-    if (!testMode || getNetworkConfiguration(31337)?.rpcUrl) return;
-    addCustomNetwork({ name: 'HardHat', symbol: 'HH_BASE', chainId: 31337, rpcUrl: 'http://127.0.0.1:8545', explorerUrl: '' }, { verify: false }).catch(() => undefined);
+    if (!testMode) return;
+    const current = getNetworkConfiguration(31337);
+    if (current?.rpcUrl === TEST_CHAIN_RPC) return;
+    // one fixed address on every device (2026-11-21, owner: the apps must not differ); a different saved address is replaced. The server maps it to the chain.
+    const run = current?.rpcUrl
+      ? editNetwork(31337, { name: current.name, symbol: current.symbol, rpcUrl: TEST_CHAIN_RPC, explorerUrl: current.explorerUrl ?? '' }, { verify: false })
+      : addCustomNetwork({ name: 'HardHat', symbol: 'HH_BASE', chainId: 31337, rpcUrl: TEST_CHAIN_RPC, explorerUrl: '' }, { verify: false });
+    run.catch(() => undefined);
   }, [testMode]);
   // Reset Password and wallet deletion: the component draws the dialogs, the host (walletSession) supplies the calls.
   const [sessionDialog, setSessionDialog] = useState<WalletSessionDialog>(null);
@@ -3448,6 +3454,9 @@ function SetupScreen(props: WalletOnboardingPanelProps) {
 
 /** 2026-11-21 (owner): the Test / Prod choice (Dev Settings on the Config tab) is offered in every build until production is released; the owner tests on sponsorcoin.org. Set this to false at the production release and the choice disappears. */
 const TEST_CHOICE_AVAILABLE = true;
+
+/** 2026-11-21 (owner): the shared Hardhat test chain (31337): one fixed address, the same on every device. The server (nginx, deploy/nginx/merit-wallet.conf of the merit-wallet repo) maps this path to the node, so moving the node never touches an app. */
+const TEST_CHAIN_RPC = 'https://sponsorcoin.org/rpc/31337';
 
 export default function MeritWallet(props: MeritWalletProps) {
   if (props.onboarding) {

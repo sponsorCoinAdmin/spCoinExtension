@@ -21,6 +21,7 @@
 
 import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
+import { LoadableImage } from '@sponsorcoin/spcoin-panels';
 
 // Single source of truth: spcoin-feeds' ANONYMOUS_ACCOUNT_AVATAR_URL.
 export const ANONYMOUS_ACCOUNT_ICON_SRC = ANONYMOUS_ACCOUNT_AVATAR_URL;
@@ -34,5 +35,5 @@ export default function AnonymousAvatar({
   src = ANONYMOUS_ACCOUNT_ICON_SRC,
   alt = 'No account selected',
 }: AnonymousAvatarProps) {
-  return <img src={src} alt={alt} style={panelBoxStyle.fitImage} />;
+  return <LoadableImage src={src} alt={alt} style={panelBoxStyle.fitImage} />;
 }

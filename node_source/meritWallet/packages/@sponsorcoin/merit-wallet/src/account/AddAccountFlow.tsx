@@ -10,7 +10,7 @@ import DetailScreenLayout from './DetailScreenLayout';
 import AccountFormPanel from './form/AccountFormPanel';
 import { useEffect, useRef, useState } from 'react';
 import { generatePrivateKey, privateKeyToAddress } from 'viem/accounts';
-import { ImportWalletForm, PrivateKeyField, WalletListPanel, useAddWalletFlow, useWalletListed, walletListedStore } from '@sponsorcoin/spcoin-panels';
+import { ImportWallet, ImportWalletForm, PrivateKeyField, WalletListPanel, useAddWalletFlow, useWalletListed, walletListedStore } from '@sponsorcoin/spcoin-panels';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
 import { panelStore, useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { pendingApprovalMessageStore } from '../approval/pendingApprovalMessageStore';
@@ -125,7 +125,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   useEffect(() => {
     if (!menuVisible) return undefined;
     const timer = setTimeout(() => {
-      if (panelStore.isVisible(SP.ADD_WALLET_ACCOUNT) && !panelStore.isVisible(SP.IMPORT_A_WALLET) && !panelStore.isVisible(SP.IMPORT_AN_ACCOUNT) && !panelStore.isVisible(SP.CREATE_ACCOUNT) && !panelStore.isVisible(SP.WALLET_LIST_SELECT_PANEL)) flow.clearAddWalletFlow('AddAccountFlow:noMenu');
+      if (panelStore.isVisible(SP.ADD_WALLET_ACCOUNT) && !panelStore.isVisible(SP.IMPORT_A_WALLET) && !panelStore.isVisible(SP.IMPORT_WALLET) && !panelStore.isVisible(SP.IMPORT_AN_ACCOUNT) && !panelStore.isVisible(SP.CREATE_ACCOUNT) && !panelStore.isVisible(SP.WALLET_LIST_SELECT_PANEL)) flow.clearAddWalletFlow('AddAccountFlow:noMenu');
     }, 0);
     return () => clearTimeout(timer);
   }, [menuVisible]);
@@ -310,9 +310,19 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
       {flow.walletListVisible && (
         <div style={addAccountStyle.listBleed}>
           {/* 2026-11-07 (owner): this wallet is not imported into itself, so its row is not listed */}
-          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs.filter((slug) => slug !== nativeSlug)} listed={listed} onToggleListed={toggleListed} headerLabel="Remote Wallet" />
+          <WalletListPanel onSelect={() => undefined} wallets={walletSlugs.filter((slug) => slug !== nativeSlug)} listed={listed} onToggleListed={toggleListed} headerLabel="Remote Wallet" onImportWallet={() => openPanel(SP.IMPORT_WALLET, 'AddAccountFlow:importWalletButton')} />
           {error && <p style={addAccountStyle.error}>{error}</p>}
         </div>
+      )}
+      {flow.importWalletPanelVisible && (
+        // 2026-11-20 (owner request): IMPORT_WALLET, opened by the Import Wallet button under the wallet list: the MetaMask-style Secret Recovery Phrase page. Imports through the same host.importWallet the old page uses.
+        <ImportWallet
+          validate={isValidMnemonic}
+          firstAddress={firstAddressOfMnemonic}
+          error={error || (host.importWallet ? '' : unavailable.importWallet)}
+          isImporting={busy}
+          onImport={(mnemonic) => void run(() => host.importWallet!(normalizeMnemonic(mnemonic), target?.id))}
+        />
       )}
       {flow.importWalletVisible && (
         <ImportWalletForm

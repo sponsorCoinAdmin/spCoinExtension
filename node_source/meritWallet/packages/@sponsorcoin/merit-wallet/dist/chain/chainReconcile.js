@@ -77,6 +77,10 @@ export function reconcileChain(input, refs, host) {
             host.setAppChainId(walletChainId);
             return;
         }
+        if (input.walletFollowsApp === false) {
+            logState('keep-app-chain-on-connect', { msg: 'Just connected and the wallet chain differs from appChainId -> the app keeps its chain; the wallet is not switched (walletFollowsApp=false)' });
+            return;
+        }
         logState('switch-wallet-on-connect', {
             msg: 'Just connected and wallet chain mismatched appChainId -> switch wallet to appChainId',
         });
@@ -104,6 +108,10 @@ export function reconcileChain(input, refs, host) {
         const prevApp = refs.prevAppChainId.current;
         const walletChanged = typeof prevWallet === 'number' && prevWallet !== walletChainId;
         const appChanged = typeof prevApp === 'number' && prevApp !== appChainId;
+        if (input.walletFollowsApp === false && !walletChanged) {
+            logState('keep-app-chain', { msg: 'App and wallet chains differ and the wallet did not change -> the app keeps its chain; the wallet is not switched (walletFollowsApp=false)', prevWallet, prevApp });
+            return;
+        }
         if (appChanged && !walletChanged) {
             logState('switch-wallet-on-app-change', { msg: 'App chain changed while wallet stayed same -> switch wallet', prevWallet, prevApp });
             host.switchWalletTo(appChainId, 'switch-wallet-on-app-change', { walletChainId, prevWallet, prevApp });

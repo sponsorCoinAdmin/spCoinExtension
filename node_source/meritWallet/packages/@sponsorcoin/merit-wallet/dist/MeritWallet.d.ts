@@ -39,6 +39,14 @@ export interface MeritWalletProps {
     titleBadgeSrc?: string;
     onRefresh?: () => void;
     refreshing?: boolean;
+    /** 2026-11-20 (owner: "can the phone's back button do the same as the app's back button?"): tells the host whether Back has somewhere to go, and hands it the same action the header's arrow runs. Called when that changes. A browser host ties the phone's back button to it. */
+    onNavigationChange?: (state: {
+        canGoBack: boolean; /** how many Back presses lead home (0 at home) */
+        depth: number;
+        goBack: () => void;
+    }) => void;
+    /** 2026-11-20: when the wallet opens with an empty screen stack, put the visible tab on it (the stack rule is "the visible tab is on the stack before anything opens"), so Back from a list returns to that tab and not to the About screen. Off by default: the web app and the extension keep their own start-up. */
+    seedTabOnStack?: boolean;
     /** Forwarded to WalletHeader's own appType — the real source of truth
      *  for which close icon renders (see that file's own doc comment).
      *  Omit for the default X, correct for the web app and any not-yet-wired
@@ -260,6 +268,8 @@ export interface MeritWalletProps {
     /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */
     /** 2026-11-19: the Config tab's Test Accounts section, built by the HOST (the section lives in @meritWallets/meritDevOnly, a package that never ships in a release), like configDevToolsContent. Absent: no section. */
     configTestAccountsContent?: React.ReactNode;
+    /** 2026-11-20: the Config tab's Display Size slider, built by a host that can scale its page (the browser host). Absent: no section. */
+    configDisplaySizeContent?: React.ReactNode;
     /** 2026-10-08: how this wallet authenticates locally: KEYSTORE (web app, server keystore) or VAULT (extension). Set by the host. */
     authenticationType?: AuthenticationType;
     configUniSelectVisible?: boolean;

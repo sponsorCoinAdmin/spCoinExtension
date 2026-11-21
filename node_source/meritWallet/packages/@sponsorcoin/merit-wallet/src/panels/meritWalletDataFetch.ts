@@ -69,6 +69,10 @@ export interface MeritWalletNetworkRow {
    *  replaces this component's own prior hardcoded `row.id !== 'hardhat'`
    *  check, which only worked for SAMPLE_NETWORK_ROWS' own made-up ids. */
   isTestnet?: boolean;
+  /** 2026-11-20: switched off from the row menu (dimmed, not selectable). */
+  disabled?: boolean;
+  /** 2026-11-20: listed but not wired into the wallet yet; shown only when "Show Unconnected Networks" is ticked. */
+  unconnected?: boolean;
   /** Full, already-resolved icon URL (e.g. spcoin-feeds/networks'
    *  NetworkRecord.logoURL prefixed with whatever origin the caller is
    *  pointed at) — a plain string, not a React.ReactNode, matching this
@@ -127,7 +131,8 @@ export async function buildNetworkRows(
 ): Promise<MeritWalletNetworkRow[]> {
   const networks = listConfiguredNetworks({ showTestNets: true });
   const iconUrls = await Promise.all(
-    networks.map((network) => caches.getCachedNetworkIconDataUrl(network.logoURL, baseUrl, forceRefresh)),
+    // a network added by hand has no logo file: nothing to fetch
+    networks.map((network) => (network.logoURL ? caches.getCachedNetworkIconDataUrl(network.logoURL, baseUrl, forceRefresh) : Promise.resolve(undefined))),
   );
 
   return networks.map((network, i) => ({
@@ -136,6 +141,8 @@ export async function buildNetworkRows(
     name: network.name,
     isActive: network.chainId === chainId,
     isTestnet: network.isTestnet,
+    disabled: network.disabled,
+    unconnected: network.unconnected,
     iconSrc: iconUrls[i],
   }));
 }

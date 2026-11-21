@@ -13,6 +13,11 @@ export interface ChainReconcileInput {
     appNetworkConnected: boolean;
     /** The stored session came from localStorage rather than a fresh boot. */
     hydratedFromLocalStorage: boolean;
+    /**
+     * 2026-11-20 (owner: "these are just networks, they should have nothing to do with MetaMask"): false = the app's network choice never drives the outside wallet. A network pick (and a returning connect that disagrees) leaves the wallet where it is
+     * and the app keeps its chain; the wallet still drives the app when the WALLET changes chain. Omitted / true: the original rules above, unchanged (the test pins that against the original effect body).
+     */
+    walletFollowsApp?: boolean;
 }
 export interface Ref<T> {
     current: T;

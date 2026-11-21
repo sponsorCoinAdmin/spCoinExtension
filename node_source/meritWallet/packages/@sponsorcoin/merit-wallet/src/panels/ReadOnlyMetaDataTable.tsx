@@ -9,6 +9,7 @@
 import React from 'react';
 import { msTableTw } from '@sponsorcoin/spcoin-panels';
 import { metaTableClass } from '@sponsorcoin/spcoin-common/styles';
+import { LoadableImage } from '@sponsorcoin/spcoin-panels';
 
 
 export interface MetaDataRow {
@@ -76,7 +77,7 @@ export default function ReadOnlyMetaDataTable({
   return (
     <div id={id} className={metaTableClass.root(className)}>
       <div className={metaTableClass.logoBox(logoContainerSizeClassName, logoContainerClassName)}>
-        <img
+        <LoadableImage
           src={logoURL}
           alt={logoAlt}
           className={metaTableClass.logoImage(logoSizeClassName, logoRoundedClassName, logoBackgroundClassName)}

@@ -2,7 +2,7 @@ import type { MeritWalletProps } from './MeritWallet';
 import type { NetworkRecord } from '@sponsorcoin/spcoin-feeds/networks';
 import type { WalletDataSource } from './walletData';
 /** How the wallet is framed and closed: layout, title bar, header icons, refresh. */
-export type HostLayout = Pick<MeritWalletProps, 'docked' | 'fullWidth' | 'onClose' | 'titleBadgeSrc' | 'appType' | 'wwwIconSrc' | 'closeIconSrc' | 'infoIconSrc' | 'onRefresh' | 'refreshing' | 'refreshToken'>;
+export type HostLayout = Pick<MeritWalletProps, 'docked' | 'fullWidth' | 'onClose' | 'titleBadgeSrc' | 'appType' | 'wwwIconSrc' | 'closeIconSrc' | 'infoIconSrc' | 'onRefresh' | 'refreshing' | 'refreshToken' | 'onNavigationChange' | 'seedTabOnStack'>;
 /** UI state the host remembers across loads (its own storage). */
 export type HostUiState = Pick<MeritWalletProps, 'initialActiveTab' | 'onActiveTabChange' | 'initialMenuOpen' | 'onMenuOpenChange' | 'initialOpenTarget' | 'onOpenTargetChange'>;
 /** Data the host supplies or lets the component fetch itself (chainId + baseUrl + storage turn the self-fetch on). */
@@ -12,7 +12,7 @@ export type HostSelection = Pick<MeritWalletProps, 'onAccountRowSelect' | 'onNet
 /** Transactions the user starts from the Send and Sponsor tabs, and the input state around them. */
 export type HostActions = Pick<MeritWalletProps, 'sendAmount' | 'onSendAmountChange' | 'sendBusy' | 'onSendSubmit' | 'tradeHost'>;
 /** The body: who owns the radio groups, the overlay host, and the slots a host fills with its own panels. */
-export type HostSlots = Pick<MeritWalletProps, 'manageRadioPanels' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configSigningPanelContent' | 'configBackupPanelContent' | 'configTestAccountsContent' | 'configResetPanelsContent' | 'configDevToolsContent'>;
+export type HostSlots = Pick<MeritWalletProps, 'manageRadioPanels' | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configSigningPanelContent' | 'configBackupPanelContent' | 'configTestAccountsContent' | 'configDisplaySizeContent' | 'configResetPanelsContent' | 'configDevToolsContent'>;
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */
 export type HostLock = Pick<MeritWalletProps, 'passwordMode' | 'walletLocked' | 'onboarding' | 'onResetWallet' | 'passwordIconSrc' | 'approvalHost' | 'passwordErrorText' | 'passwordNoticeText' | 'onPasswordSubmit' | 'passwordSubmitting' | 'recoveryPhrase' | 'onRecoveryPhraseSaved' | 'securitySetup'>;
 /** The Config tab's values and handlers. */

@@ -14,6 +14,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { detailPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import DetailRow from './DetailRow';
+import { LoadableImage } from '@sponsorcoin/spcoin-panels';
 export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestnet }) {
     const rows = [
         { label: 'Network Id', value: id },
@@ -21,5 +22,5 @@ export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestne
         { label: 'Symbol', value: symbol || '—' },
         { label: 'Network Type', value: isTestnet ? 'Testnet' : 'Mainnet' },
     ];
-    return (_jsx("div", { style: detailPanelStyle.screen, children: _jsxs("div", { style: detailPanelStyle.card, children: [_jsx("div", { style: detailPanelStyle.logoRow, children: _jsx("div", { style: detailPanelStyle.logoBox, children: logoSrc ? (_jsx("img", { src: logoSrc, alt: "", style: detailPanelStyle.logoContain })) : null }) }), _jsx("div", { style: detailPanelStyle.rows, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
+    return (_jsx("div", { style: detailPanelStyle.screen, children: _jsxs("div", { style: detailPanelStyle.card, children: [_jsx("div", { style: detailPanelStyle.logoRow, children: _jsx("div", { style: detailPanelStyle.logoBox, children: logoSrc ? (_jsx(LoadableImage, { src: logoSrc, alt: "", style: detailPanelStyle.logoContain })) : null }) }), _jsx("div", { style: detailPanelStyle.rows, children: rows.map((row, i) => (_jsx(DetailRow, { label: row.label, value: row.value, zebra: i % 2 === 0 }, row.label))) })] }) }));
 }

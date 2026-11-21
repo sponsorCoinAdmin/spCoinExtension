@@ -68,13 +68,17 @@ function buildMeritWalletIconCaches(storage) {
 // (getCachedIconDataUrl never throws) rather than breaking the whole list.
 export async function buildNetworkRows(chainId, baseUrl, caches, forceRefresh = false) {
     const networks = listConfiguredNetworks({ showTestNets: true });
-    const iconUrls = await Promise.all(networks.map((network) => caches.getCachedNetworkIconDataUrl(network.logoURL, baseUrl, forceRefresh)));
+    const iconUrls = await Promise.all(
+    // a network added by hand has no logo file: nothing to fetch
+    networks.map((network) => (network.logoURL ? caches.getCachedNetworkIconDataUrl(network.logoURL, baseUrl, forceRefresh) : Promise.resolve(undefined))));
     return networks.map((network, i) => ({
         id: String(network.chainId),
         symbol: network.symbol,
         name: network.name,
         isActive: network.chainId === chainId,
         isTestnet: network.isTestnet,
+        disabled: network.disabled,
+        unconnected: network.unconnected,
         iconSrc: iconUrls[i],
     }));
 }

@@ -21,7 +21,7 @@ import type { WalletDataSource } from './walletData';
 export type HostLayout = Pick<
   MeritWalletProps,
   | 'docked' | 'fullWidth' | 'onClose' | 'titleBadgeSrc' | 'appType' | 'wwwIconSrc' | 'closeIconSrc' | 'infoIconSrc'
-  | 'onRefresh' | 'refreshing' | 'refreshToken'
+  | 'onRefresh' | 'refreshing' | 'refreshToken' | 'onNavigationChange' | 'seedTabOnStack'
 >;
 
 /** UI state the host remembers across loads (its own storage). */
@@ -56,7 +56,7 @@ export type HostActions = Pick<
 export type HostSlots = Pick<
   MeritWalletProps,
   | 'manageRadioPanels'
-  | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configSigningPanelContent' | 'configBackupPanelContent' | 'configTestAccountsContent' | 'configResetPanelsContent' | 'configDevToolsContent'
+  | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configSigningPanelContent' | 'configBackupPanelContent' | 'configTestAccountsContent' | 'configDisplaySizeContent' | 'configResetPanelsContent' | 'configDevToolsContent'
 >;
 
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */

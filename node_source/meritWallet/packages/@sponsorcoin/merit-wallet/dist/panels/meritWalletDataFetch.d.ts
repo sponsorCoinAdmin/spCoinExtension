@@ -14,6 +14,10 @@ export interface MeritWalletNetworkRow {
      *  replaces this component's own prior hardcoded `row.id !== 'hardhat'`
      *  check, which only worked for SAMPLE_NETWORK_ROWS' own made-up ids. */
     isTestnet?: boolean;
+    /** 2026-11-20: switched off from the row menu (dimmed, not selectable). */
+    disabled?: boolean;
+    /** 2026-11-20: listed but not wired into the wallet yet; shown only when "Show Unconnected Networks" is ticked. */
+    unconnected?: boolean;
     /** Full, already-resolved icon URL (e.g. spcoin-feeds/networks'
      *  NetworkRecord.logoURL prefixed with whatever origin the caller is
      *  pointed at) — a plain string, not a React.ReactNode, matching this

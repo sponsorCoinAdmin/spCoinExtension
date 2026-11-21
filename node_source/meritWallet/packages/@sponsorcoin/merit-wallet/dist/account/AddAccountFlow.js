@@ -10,7 +10,7 @@ import DetailScreenLayout from './DetailScreenLayout';
 import AccountFormPanel from './form/AccountFormPanel';
 import { useEffect, useRef, useState } from 'react';
 import { generatePrivateKey, privateKeyToAddress } from 'viem/accounts';
-import { ImportWalletForm, PrivateKeyField, WalletListPanel, useAddWalletFlow, useWalletListed, walletListedStore } from '@sponsorcoin/spcoin-panels';
+import { ImportWallet, ImportWalletForm, PrivateKeyField, WalletListPanel, useAddWalletFlow, useWalletListed, walletListedStore } from '@sponsorcoin/spcoin-panels';
 import { STATUS } from '@sponsorcoin/spcoin-common/context';
 import { panelStore, useExchangeContext, usePanelTree, usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { pendingApprovalMessageStore } from '../approval/pendingApprovalMessageStore';
@@ -63,7 +63,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         if (!menuVisible)
             return undefined;
         const timer = setTimeout(() => {
-            if (panelStore.isVisible(SP.ADD_WALLET_ACCOUNT) && !panelStore.isVisible(SP.IMPORT_A_WALLET) && !panelStore.isVisible(SP.IMPORT_AN_ACCOUNT) && !panelStore.isVisible(SP.CREATE_ACCOUNT) && !panelStore.isVisible(SP.WALLET_LIST_SELECT_PANEL))
+            if (panelStore.isVisible(SP.ADD_WALLET_ACCOUNT) && !panelStore.isVisible(SP.IMPORT_A_WALLET) && !panelStore.isVisible(SP.IMPORT_WALLET) && !panelStore.isVisible(SP.IMPORT_AN_ACCOUNT) && !panelStore.isVisible(SP.CREATE_ACCOUNT) && !panelStore.isVisible(SP.WALLET_LIST_SELECT_PANEL))
                 flow.clearAddWalletFlow('AddAccountFlow:noMenu');
         }, 0);
         return () => clearTimeout(timer);
@@ -259,7 +259,9 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
         }
         walletListedStore.set(slug, false);
     };
-    return (_jsxs("div", { style: addAccountStyle.screen, children: [flow.walletListVisible && (_jsxs("div", { style: addAccountStyle.listBleed, children: [_jsx(WalletListPanel, { onSelect: () => undefined, wallets: walletSlugs.filter((slug) => slug !== nativeSlug), listed: listed, onToggleListed: toggleListed, headerLabel: "Remote Wallet" }), error && _jsx("p", { style: addAccountStyle.error, children: error })] })), flow.importWalletVisible && (_jsx(ImportWalletForm, { value: phrase, onChange: setPhrase, invalid: phraseInvalid, previewAddress: phrasePreview, error: error, isImporting: busy, onImport: () => void run(() => host.importWallet(normalizeMnemonic(phrase), target?.id)) })), accountScreenVisible && (
+    return (_jsxs("div", { style: addAccountStyle.screen, children: [flow.walletListVisible && (_jsxs("div", { style: addAccountStyle.listBleed, children: [_jsx(WalletListPanel, { onSelect: () => undefined, wallets: walletSlugs.filter((slug) => slug !== nativeSlug), listed: listed, onToggleListed: toggleListed, headerLabel: "Remote Wallet", onImportWallet: () => openPanel(SP.IMPORT_WALLET, 'AddAccountFlow:importWalletButton') }), error && _jsx("p", { style: addAccountStyle.error, children: error })] })), flow.importWalletPanelVisible && (
+            // 2026-11-20 (owner request): IMPORT_WALLET, opened by the Import Wallet button under the wallet list: the MetaMask-style Secret Recovery Phrase page. Imports through the same host.importWallet the old page uses.
+            _jsx(ImportWallet, { validate: isValidMnemonic, firstAddress: firstAddressOfMnemonic, error: error || (host.importWallet ? '' : unavailable.importWallet), isImporting: busy, onImport: (mnemonic) => void run(() => host.importWallet(normalizeMnemonic(mnemonic), target?.id)) })), flow.importWalletVisible && (_jsx(ImportWalletForm, { value: phrase, onChange: setPhrase, invalid: phraseInvalid, previewAddress: phrasePreview, error: error, isImporting: busy, onImport: () => void run(() => host.importWallet(normalizeMnemonic(phrase), target?.id)) })), accountScreenVisible && (
             // 2026-11-07 (owner: "we are removing redundancy here"): Create a Merit Account is the ACCOUNT DETAILS screen in add mode. 2026-11-09 (owner: one base): it is drawn by the same base layout (DetailScreenLayout) as Account Details, with its picture and its table passed in; its own small form is gone. The title is Add New Account and the button Add Account.
             _jsx(DetailScreenLayout, { screenId: "ACCOUNT_INFO", onSubmit: (event) => {
                     event.preventDefault();

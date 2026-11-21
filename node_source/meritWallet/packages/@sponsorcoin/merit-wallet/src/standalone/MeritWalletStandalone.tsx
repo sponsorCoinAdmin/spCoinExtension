@@ -1,7 +1,7 @@
 // File: src/standalone/MeritWalletStandalone.tsx
 //
 // 2026-11-18 (docs/design/standAloneWalletInstall.txt) -- the Merit Wallet as ONE component a page can mount with nothing but its chains:
-//   <MeritWalletStandalone chains={[{ chainId: 31337, rpcUrl: 'https://rpc.sponsorcoin.org' }]} onClose={...} />
+//   <MeritWalletStandalone chains={[{ chainId: 31337, rpcUrl: 'https://rpc.example.org' }]} onClose={...} />
 // It builds the host object itself (createStandaloneWallet: the browser vault, its authenticator, the wallet) and hands it to the same MeritWalletHostView the web app and the extension use, so it is the SAME wallet, not a copy.
 // Layer 1: first-run setup (create / import / restore), unlock, lock, accounts. Balances, send and the trade tabs arrive in the next layers (their hosts are left out, so those panels show their empty state).
 'use client';

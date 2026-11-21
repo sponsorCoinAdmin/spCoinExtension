@@ -16,6 +16,7 @@
 import { detailPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import DetailRow from './DetailRow';
+import { LoadableImage } from '@sponsorcoin/spcoin-panels';
 
 export interface NetworkDetailPanelProps {
   id: string;
@@ -39,7 +40,7 @@ export default function NetworkDetailPanel({ id, logoSrc, name, symbol, isTestne
         <div style={detailPanelStyle.logoRow}>
           <div style={detailPanelStyle.logoBox}>
             {logoSrc ? (
-              <img src={logoSrc} alt="" style={detailPanelStyle.logoContain} />
+              <LoadableImage src={logoSrc} alt="" style={detailPanelStyle.logoContain} />
             ) : null}
           </div>
         </div>

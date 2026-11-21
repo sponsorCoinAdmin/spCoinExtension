@@ -13,6 +13,7 @@
 import { detailPanelStyle } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import DetailRow from './DetailRow';
+import { LoadableImage } from '@sponsorcoin/spcoin-panels';
 
 export interface TokenDetailPanelProps {
   address: string;
@@ -61,7 +62,7 @@ export default function TokenDetailPanel({
               // square box to fill it completely. `contain` (what
               // NetworkDetailPanel already uses) shows the whole image
               // instead, letterboxed if needed -- no crop, no quality loss.
-              <img src={logoSrc} alt="" style={detailPanelStyle.logoContain} />
+              <LoadableImage src={logoSrc} alt="" style={detailPanelStyle.logoContain} />
             ) : null}
           </div>
         </div>

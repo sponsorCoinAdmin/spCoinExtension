@@ -1770,7 +1770,7 @@ function MeritWalletInner({
   const hideTodoNetworks = useHideTodoNetworks();
   // 2026-11-20 (owner): in Test mode the Hardhat test network 31337 is loaded into the network list by itself (no endpoint is added when it already has one, or when the person turned it off by choosing Prod)
   const walletModeChoice = useWalletMode();
-  const testMode = resolveWalletMode(walletModeChoice, !!(configTestAccountsContent || onOpenTargetChange)) === 'test';
+  const testMode = resolveWalletMode(walletModeChoice, !!configTestAccountsContent) === 'test';
   useEffect(() => {
     if (!testMode || getNetworkConfiguration(31337)?.rpcUrl) return;
     addCustomNetwork({ name: 'HardHat', symbol: 'HH_BASE', chainId: 31337, rpcUrl: 'http://127.0.0.1:8545', explorerUrl: '' }, { verify: false }).catch(() => undefined);
@@ -2277,7 +2277,7 @@ function MeritWalletInner({
                 signingPanelContent: configSigningPanelContent,
                 backupPanelContent: configBackupPanelContent,
                 testAccountsContent: configTestAccountsContent,
-                testChoice: !!(configTestAccountsContent || onOpenTargetChange),
+                testChoice: TEST_CHOICE_AVAILABLE,
                 displaySizeContent: configDisplaySizeContent,
                 uniSelectVisible: configUniSelectVisible,
                 onUniswapEngineChange: onConfigUniswapEngineChange,
@@ -3445,6 +3445,9 @@ function SetupScreen(props: WalletOnboardingPanelProps) {
   useDebugRuntime();
   return React.createElement('div', { style: debugBugStyle.setupBox }, React.createElement('div', { style: debugBugStyle.setupCorner }, React.createElement(DebugBugButton)), React.createElement(WalletOnboardingPanel, props));
 }
+
+/** 2026-11-21 (owner): the Test / Prod choice (Dev Settings on the Config tab) is offered in every build until production is released; the owner tests on sponsorcoin.org. Set this to false at the production release and the choice disappears. */
+const TEST_CHOICE_AVAILABLE = true;
 
 export default function MeritWallet(props: MeritWalletProps) {
   if (props.onboarding) {

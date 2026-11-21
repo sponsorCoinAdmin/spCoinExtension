@@ -1555,6 +1555,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                             signingPanelContent: configSigningPanelContent,
                             backupPanelContent: configBackupPanelContent,
                             testAccountsContent: configTestAccountsContent,
+                            testChoice: !!(configTestAccountsContent || onOpenTargetChange),
                             displaySizeContent: configDisplaySizeContent,
                             uniSelectVisible: configUniSelectVisible,
                             onUniswapEngineChange: onConfigUniswapEngineChange,

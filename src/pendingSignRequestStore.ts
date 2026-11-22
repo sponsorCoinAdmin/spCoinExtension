@@ -49,6 +49,8 @@ export interface PendingSignRequest {
   amount?: { label: string; value: string };
   /** Labelled rows with an optional token image (2026-11-05): a transaction request's To Contract, Method, Amount in Wei and Amount in token. */
   rows?: { label: string; value: string; token?: { address: string; chainId: number }; copy?: boolean; mono?: boolean }[];
+  /** 2026-11-22 (owner: uniformity in processing): the facts of a transaction (what is sent, from whom, to what) and the display it brings, so the shared approval screen can draw it exactly as every other Merit wallet does. */
+  transaction?: { from: string; to: string; data?: string; value?: string; chainId: number; display?: Record<string, unknown> };
   /** Button wording for a request that is not a transaction (the connect page). */
   approveLabel?: string;
   rejectLabel?: string;

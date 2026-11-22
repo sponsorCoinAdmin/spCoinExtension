@@ -14,6 +14,8 @@
 
 import { createElement } from 'react';
 import { TransactionConfirmPanel } from '@sponsorcoin/spcoin-panels';
+import { TransactionApprovalScreen } from '@sponsorcoin/merit-wallet';
+import { rpcUrlForChain } from './chainRpc';
 import {
   approvePendingSignRequest,
   clearPendingSignRequest,
@@ -30,6 +32,13 @@ export function buildApprovalPage(): { title: string; element: ReturnType<typeof
   const title = request.title.startsWith('Connect') ? 'Connect Request' : request.title.startsWith('Transaction') ? 'Transaction Request' : request.title.startsWith('Signature') ? 'Signature Request' : 'Approval Request';
   // the connect page does not repeat the account and the chain: they are in the wallet's header right above it
   const isConnect = request.title.startsWith('Connect');
+  // 2026-11-22 (owner: uniformity in processing): a transaction is drawn by the shared approval screen, the one every Merit wallet uses (merit-wallet's TransactionApprovalScreen)
+  if (request.transaction) {
+    const t = request.transaction;
+    const info = { id: String(request.id), kind: 'transaction' as const, origin: 'wallet', summary: request.message ?? request.title, createdAt: 0, details: { from: t.from, to: t.to, data: t.data, value: t.value, chainId: t.chainId, display: t.display } };
+    const screen = createElement(TransactionApprovalScreen, { info, nativeSymbol: 'ETH', rpcUrl: rpcUrlForChain(t.chainId), busy: isPendingSignRequestBusy(), onApprove: approvePendingSignRequest, onReject: rejectPendingSignRequest });
+    return { title, element: screen, onCancel: rejectPendingSignRequest };
+  }
   const element = createElement(TransactionConfirmPanel, {
     title: request.title,
     message: request.message,

@@ -22,19 +22,6 @@ export async function isVaultAccount(address: string | undefined): Promise<boole
   return !!reply?.ok && !!reply.accounts?.some((a) => a.address.toLowerCase() === address.trim().toLowerCase());
 }
 
-/** The local Hardhat chain, where the published test keys are allowed to sign. */
-const DEV_CHAIN_ID = 31337;
-
-/**
- * Quiet approval: a Hardhat test-key account (devOrigin) signing on the local chain 31337 from the wallet's own screens is not asked to confirm. The keys are public
- * and the coins are worthless, so the Approve step is only friction; any real account, or any other chain, always asks.
- */
-async function isQuietAccount(address: string, chainId: number): Promise<boolean> {
-  if (chainId !== DEV_CHAIN_ID) return false;
-  const reply = await worker({ type: 'merit/accounts/list' }).catch(() => undefined);
-  return !!reply?.ok && !!reply.accounts?.some((a) => a.devOrigin === true && a.address.toLowerCase() === address.trim().toLowerCase());
-}
-
 export type ConfirmCopy = Omit<PendingSignRequest, 'id'>;
 
 interface LocalTransaction {
@@ -94,7 +81,8 @@ export async function signWithVault(tx: LocalTransaction, confirm: ConfirmCopy):
     const early = await done; // refused before it was queued (locked wallet, development account on a real chain, ...)
     throw new Error(early.message || `Send refused (${early.error ?? 'unknown'}).`);
   }
-  const approved = (await isQuietAccount(tx.from, tx.chainId)) || (await requestSignApproval(confirm));
+  // 2026-11-22 (owner: uniformity in processing): every transaction asks, on every chain; the Hardhat test chain is no longer signed quietly (the browser wallet and the web app ask there too)
+  const approved = await requestSignApproval(confirm);
   if (!approved) {
     await worker({ type: 'merit/signing/reject', id: queued });
     await done.catch(() => undefined);

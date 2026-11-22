@@ -71,7 +71,15 @@ const localVaultBase: Authenticator = {
       const d = tx.display;
       return await signWithVault(
         { from: tx.from, to: tx.to ?? '', data: tx.data, value: tx.value === undefined ? undefined : tx.value.toString(), chainId: tx.chainId },
-        { ...confirmCopy(d?.title ?? 'Approve transaction', tx.from, tx.chainId, d?.message), contractAddress: d?.contractAddress, accounts: d?.accounts, tokens: d?.tokens, amount: d?.amount },
+        {
+          ...confirmCopy(d?.title ?? 'Approve transaction', tx.from, tx.chainId, d?.message),
+          contractAddress: d?.contractAddress,
+          accounts: d?.accounts,
+          tokens: d?.tokens,
+          amount: d?.amount,
+          // the facts the shared approval screen draws from (the same shape the browser wallet's vault queue holds)
+          transaction: { from: tx.from, to: tx.to ?? '', data: tx.data, value: tx.value === undefined ? undefined : tx.value.toString(), chainId: tx.chainId, display: d as unknown as Record<string, unknown> | undefined },
+        },
       );
     } catch (error) {
       throw translate(error);

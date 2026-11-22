@@ -1,0 +1,70 @@
+// File: src/approval/swapApprovalDisplay.ts
+//
+// 2026-11-22 (owner: "we need uniformity in processing"): what a swap's approval screen is told, written ONCE for every Merit wallet. The browser wallet, the stand-alone wallet and the extension each carried their own copy of this
+// (a confirmCopy and a wrapper around the executor's execute), and the copies had drifted. A host now calls swapConfirmCopy with the approval-details request the shared swap flow hands its signer, and wraps its executor with
+// withSwapApprovalDisplay; the swap, and the ERC20 approve sent before it, then reach the approval screen with the same title, contract, tokens, amounts and method.
+
+/** The Uniswap V3 router the screen names: the contract the person is asking to trade for them. */
+const CONTRACT_SYMBOL = 'Uniswap V3';
+const CONTRACT_NAME = 'SwapRouter02';
+
+export interface SwapConfirmCopy {
+  title: string;
+  message: string;
+  amount?: { label: string; value: string };
+  tokens: Array<{ label: string; symbol?: string; name?: string; address?: string; logoURL?: string; detail?: string }>;
+  contractSymbol: string;
+  contractName: string;
+}
+
+/** What the confirmation screen shows for the swap, from the approval-details request the shared swap flow (runUniswapSwap) hands the signer. */
+export function swapConfirmCopy(request: any, minReceived: string): SwapConfirmCopy {
+  return {
+    title: 'Approve Uniswap V3 Swap',
+    message: `Minimum received ${minReceived}`,
+    amount: request?.amount as { label: string; value: string } | undefined,
+    tokens: ((request?.tokens ?? []) as any[]).map((tk) => ({ label: tk.label, symbol: tk.token?.symbol, name: tk.token?.name, address: tk.token?.address, logoURL: tk.token?.logoURL, detail: tk.detail })),
+    contractSymbol: CONTRACT_SYMBOL,
+    contractName: CONTRACT_NAME,
+  };
+}
+
+const APPROVE_LABEL = 'Uniswap V3 Approve';
+const MULTI_HOP_LABEL = 'Uniswap V3 Multi-hop Swap';
+
+/** The spender an ERC20 approve(spender, amount) names: the last 40 hex digits of the first 32-byte word after the selector. */
+export function approveSpender(data?: string): string | undefined {
+  return data && data.length >= 74 && data.slice(0, 10).toLowerCase() === '0x095ea7b3' ? `0x${data.slice(34, 74)}` : undefined;
+}
+
+interface ExecutorRequest {
+  data?: string;
+  display?: { label?: string; title?: string; contractAddress?: string; amount?: unknown; tokens?: unknown; [key: string]: unknown };
+  [key: string]: unknown;
+}
+
+/**
+ * Wraps an executor's execute so the swap itself (label `swapLabel`) and the spending approval sent before it ('Uniswap V3 Approve') carry the swap's display: the title, the tokens and amounts, the router's name, and for the
+ * approval the router as the Contract (read from the approve call) and the swap call that follows, so its Method names the whole flow ("ERC20 Approve → Uniswap V3 (exactInputSingle)").
+ */
+export function withSwapApprovalDisplay<F extends (req: any) => Promise<any>>(inner: F, swapLabel: string, confirm: SwapConfirmCopy): F {
+  const swapMethod = swapLabel === MULTI_HOP_LABEL ? 'exactInput' : 'exactInputSingle';
+  return ((req: ExecutorRequest) => {
+    const label = req.display?.label;
+    if (label !== swapLabel && label !== APPROVE_LABEL) return inner(req);
+    const isApprove = label === APPROVE_LABEL;
+    return inner({
+      ...req,
+      display: {
+        ...req.display,
+        title: confirm.title,
+        label: confirm.message,
+        contractSymbol: confirm.contractSymbol,
+        contractName: confirm.contractName,
+        amount: confirm.amount ?? req.display?.amount,
+        tokens: confirm.tokens.length ? confirm.tokens : req.display?.tokens,
+        ...(isApprove ? { contractAddress: approveSpender(req.data) ?? req.display?.contractAddress, swapMethod } : {}),
+      },
+    });
+  }) as F;
+}

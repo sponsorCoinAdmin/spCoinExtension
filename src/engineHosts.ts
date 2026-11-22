@@ -9,7 +9,7 @@
 //   chain clients    viem clients over the chain's RPC from the network registry (the app chain, and any chain by id)
 import { useMemo, useSyncExternalStore } from 'react';
 import { createPublicClient, formatUnits, http, type Abi } from 'viem';
-import { createQuoteClient } from '@sponsorcoin/merit-wallet';
+import { createQuoteClient, swapConfirmCopy } from '@sponsorcoin/merit-wallet';
 import type { PriceRequestParams } from '@sponsorcoin/spcoin-common/context';
 import {
   decodeSpCoinErrorFromError,
@@ -99,12 +99,8 @@ function useExtensionChainPublicClient(chainId?: number) {
 
 /** What the confirmation screen shows for the swap, from the approval-details request the shared swap flow (runUniswapSwap) hands the signer. */
 function confirmCopy(request: any, minReceived: string) {
-  return {
-    title: String(request?.title ?? 'Swapping via Uniswap V3'),
-    message: `Minimum received ${minReceived}`,
-    amount: request?.amount as { label: string; value: string } | undefined,
-    tokens: ((request?.tokens ?? []) as any[]).map((tk) => ({ label: tk.label, symbol: tk.token?.symbol, name: tk.token?.name, address: tk.token?.address, logoURL: tk.token?.logoURL })),
-  };
+  // 2026-11-22 (owner: uniformity in processing): the same copy every Merit wallet gives its approval screen (merit-wallet's approval/swapApprovalDisplay.ts)
+  return swapConfirmCopy(request, minReceived);
 }
 
 /** The Uniswap row's swap I/O: the signer is the request itself (the vault signs locally behind the confirmation screen, see tradeExecutorMerit.ts); the executors are the extension's. */

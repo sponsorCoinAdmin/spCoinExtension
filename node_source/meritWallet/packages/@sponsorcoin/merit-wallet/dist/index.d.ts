@@ -160,3 +160,6 @@ export { pushContextPatch, type PushHost, type PushHooks, type PushPlan } from '
 export { reconcileChain, decideWalletChainChanged, type WalletChainChangedDecision, type ChainReconcileInput, type ChainReconcileRefs, type ChainReconcileHost, type SwitchPhase } from './chain/chainReconcile';
 export { default as CopyIcon } from './account/form/CopyIcon';
 export { createMeritWalletIconCaches } from './panels/meritWalletDataFetch';
+export { default as TransactionApprovalScreen, type TransactionApprovalScreenProps } from './approval/TransactionApprovalScreen';
+export { describeApproval as describeTransactionApproval, methodName, methodLabel, type ApprovalView, type ApproveView, type ApproveEntry } from './approval/transactionApproval';
+export { swapConfirmCopy, withSwapApprovalDisplay, approveSpender, type SwapConfirmCopy } from './approval/swapApprovalDisplay';

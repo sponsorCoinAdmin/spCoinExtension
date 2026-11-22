@@ -18,6 +18,7 @@ import {
   type ExecuteUniswapV3SwapResult,
   type ExecuteUniswapV3SwapParams as PortableSwapParams,
 } from '@sponsorcoin/spcoin-onchain';
+import { withSwapApprovalDisplay, type SwapConfirmCopy } from '@sponsorcoin/merit-wallet';
 import { buildMeritTradeExecutorContext } from './tradeExecutorMerit';
 import type { TradeExecutorContext, TradeExecutorAccount } from '@sponsorcoin/spcoin-exchange-engine';
 
@@ -32,7 +33,7 @@ interface ExecuteUniswapV3SwapParamsExt {
   fee?: number;
   fromAddress: string;
   /** What the confirmation screen shows for the swap itself (the approval-details request the shared swap flow builds); filled in where the portable call has none. */
-  confirm?: { title?: string; message?: string; amount?: { label: string; value: string }; tokens?: unknown[]; accounts?: unknown[] };
+  confirm?: SwapConfirmCopy;
 }
 
 export type { ExecuteUniswapV3SwapResult };
@@ -60,15 +61,8 @@ export async function executeUniswapV3Swap({
     account,
   );
 
-  if (confirm) {
-    const inner = context.executor.execute.bind(context.executor);
-    context.executor.execute = (req) =>
-      inner(
-        req.display?.label === 'Uniswap V3 Swap'
-          ? { ...req, display: { ...req.display, title: confirm.title ?? req.display.title, label: confirm.message ?? req.display.label, amount: confirm.amount ?? req.display.amount, tokens: (confirm.tokens ?? req.display.tokens) as never, accounts: (confirm.accounts ?? req.display.accounts) as never } }
-          : req,
-      );
-  }
+  // 2026-11-22 (owner: uniformity in processing): the swap and the spending approval sent before it carry the display every Merit wallet uses (merit-wallet's approval/swapApprovalDisplay.ts)
+  if (confirm) context.executor.execute = withSwapApprovalDisplay(context.executor.execute.bind(context.executor), 'Uniswap V3 Swap', confirm);
 
   const portableParams: PortableSwapParams = {
     chainId,

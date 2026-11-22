@@ -222,3 +222,8 @@ export { pushContextPatch, type PushHost, type PushHooks, type PushPlan } from '
 export { reconcileChain, decideWalletChainChanged, type WalletChainChangedDecision, type ChainReconcileInput, type ChainReconcileRefs, type ChainReconcileHost, type SwitchPhase } from './chain/chainReconcile';
 export { default as CopyIcon } from './account/form/CopyIcon';
 export { createMeritWalletIconCaches } from './panels/meritWalletDataFetch';
+
+// 2026-11-22 (owner: "we need uniformity in processing"): the one approval screen and the one description of a request, shared by every Merit wallet (browser, stand-alone, extension, web).
+export { default as TransactionApprovalScreen, type TransactionApprovalScreenProps } from './approval/TransactionApprovalScreen';
+export { describeApproval as describeTransactionApproval, methodName, methodLabel, type ApprovalView, type ApproveView, type ApproveEntry } from './approval/transactionApproval';
+export { swapConfirmCopy, withSwapApprovalDisplay, approveSpender, type SwapConfirmCopy } from './approval/swapApprovalDisplay';

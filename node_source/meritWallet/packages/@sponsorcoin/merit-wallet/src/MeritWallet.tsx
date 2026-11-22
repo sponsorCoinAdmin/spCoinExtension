@@ -3033,7 +3033,7 @@ function MeritWalletInner({
     <RefreshTreeProvider tree={refreshTree} refreshToken={refreshToken ?? 0} onDone={setTreeDoneToken}>
     <WalletBalanceContext.Provider value={walletBalanceValue}>
     {/* 2026-10-09: connect mode is derived from "no active account"; every action button below turns into a Connect button that opens the account list. */}
-    <WalletConnectProvider hasAccount={!!String(activeAccountAddress ?? '').trim()} openAccountList={() => setActiveList('account')}>
+    <WalletConnectProvider hasAccount={!!String(activeAccountAddress ?? '').trim()} activeAddress={String(activeAccountAddress ?? '').trim()} openAccountList={() => setActiveList('account')}>
     <ActiveAccountProfileContext.Provider value={activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined}>
     <div className={walletFrameClassName} style={walletFrameStyle.frame(fullWidth, docked)}>
       <style>{walletFrameCss}</style>

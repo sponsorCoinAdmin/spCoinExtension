@@ -40,6 +40,7 @@ export interface AuthenticatorDisplay {
   /** 2026-11-22: what the contract is called on the approval screen ("Uniswap V3", "SwapRouter02"). */
   contractSymbol?: string;
   contractName?: string;
+  swapMethod?: string;
   accounts?: { role: string; address: string; symbol?: string; name?: string; logoURL?: string }[];
   tokens?: { label: string; symbol?: string; name?: string; address?: string; logoURL?: string; detail?: string }[];
   amount?: { label: string; value: string };

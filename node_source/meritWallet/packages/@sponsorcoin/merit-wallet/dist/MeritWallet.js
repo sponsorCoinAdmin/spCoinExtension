@@ -35,6 +35,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useWalletFrameScale, frameScaleControl } from './display/walletFrameScale';
 import { usePeerStates } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
@@ -344,6 +345,9 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // top-of-file doc comment on why this is the one shared component).
     // The hamburger and the tab bar share ONE state: the MENU_TAB_HEADER_BAR flag in the panel tree (no local copy). initialMenuOpen seeds the flag once; onMenuOpenChange hears every change, whoever made it (the hamburger, the panel-tree row).
     const menuTabHeaderVisible = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
+    // 2026-11-22: a host with no scale control of its own (everything but the browser host) gets the wallet's own, which zooms this frame
+    const frameScale = useWalletFrameScale();
+    const ownScale = !configDisplaySizeContent;
     const menuSeeded = useRef(false);
     useEffect(() => {
         if (menuSeeded.current)
@@ -1593,7 +1597,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                             backupPanelContent: configBackupPanelContent,
                             testAccountsContent: configTestAccountsContent,
                             testChoice: TEST_CHOICE_AVAILABLE,
-                            displaySizeContent: configDisplaySizeContent,
+                            displaySizeContent: configDisplaySizeContent ?? frameScaleControl(frameScale),
                             uniSelectVisible: configUniSelectVisible,
                             onUniswapEngineChange: onConfigUniswapEngineChange,
                             zeroXEngineVisible: configZeroXEngineVisible,
@@ -2319,7 +2323,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         openPanel(TAB_PANEL_IDS[activeTab], 'MeritWallet:seedActiveTab');
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [seedTabOnStack, passwordPanelShowing, displayStackIds.length, activeTab]);
-    return (_jsx(ImageCacheContext.Provider, { value: imageCacheValue, children: _jsx(RefreshTreeProvider, { tree: refreshTree, refreshToken: refreshToken ?? 0, onDone: setTreeDoneToken, children: _jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), activeAddress: String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx("div", { style: debugBugStyle.corner, children: _jsx(DebugBugButton, {}) })), passwordPanelShowing && (
+    return (_jsx(ImageCacheContext.Provider, { value: imageCacheValue, children: _jsx(RefreshTreeProvider, { tree: refreshTree, refreshToken: refreshToken ?? 0, onDone: setTreeDoneToken, children: _jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), activeAddress: String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: ownScale ? walletFrameStyle.scaled(walletFrameStyle.frame(fullWidth, docked), frameScale.percent) : walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx("div", { style: debugBugStyle.corner, children: _jsx(DebugBugButton, {}) })), passwordPanelShowing && (
                                 // 2026-11-19 (owner): the grey header is ALWAYS on the login screen (it holds the close X, and the ladybug sits left of it), so it is not behind the panel-tree switch
                                 _jsx(LoginHeader, { title: recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login', onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_NETWORK_HEADER, lazyLoad: false, children: _jsx(WalletNetworkHeader, { mode: "normal", leftSlot: _jsx(NetworkSelectDropDown, { label: activeNetworkRow?.name, symbol: activeChainInfo?.symbol ?? activeNetworkRow?.symbol, name: activeChainInfo?.name ?? activeNetworkRow?.name, id: activeNetworkRow?.id, 
                                             // 2026-09-16, on live report ("the NetworkSelectDropDown is

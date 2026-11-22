@@ -36,6 +36,7 @@
 
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useWalletFrameScale, frameScaleControl } from './display/walletFrameScale';
 import { usePeerStates, type PeerConnection } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
@@ -1035,6 +1036,9 @@ function MeritWalletInner({
   // top-of-file doc comment on why this is the one shared component).
   // The hamburger and the tab bar share ONE state: the MENU_TAB_HEADER_BAR flag in the panel tree (no local copy). initialMenuOpen seeds the flag once; onMenuOpenChange hears every change, whoever made it (the hamburger, the panel-tree row).
   const menuTabHeaderVisible = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
+  // 2026-11-22: a host with no scale control of its own (everything but the browser host) gets the wallet's own, which zooms this frame
+  const frameScale = useWalletFrameScale();
+  const ownScale = !configDisplaySizeContent;
   const menuSeeded = useRef(false);
   useEffect(() => {
     if (menuSeeded.current) return;
@@ -2311,7 +2315,7 @@ function MeritWalletInner({
                 backupPanelContent: configBackupPanelContent,
                 testAccountsContent: configTestAccountsContent,
                 testChoice: TEST_CHOICE_AVAILABLE,
-                displaySizeContent: configDisplaySizeContent,
+                displaySizeContent: configDisplaySizeContent ?? frameScaleControl(frameScale),
                 uniSelectVisible: configUniSelectVisible,
                 onUniswapEngineChange: onConfigUniswapEngineChange,
                 zeroXEngineVisible: configZeroXEngineVisible,
@@ -3062,7 +3066,7 @@ function MeritWalletInner({
     {/* 2026-10-09: connect mode is derived from "no active account"; every action button below turns into a Connect button that opens the account list. */}
     <WalletConnectProvider hasAccount={!!String(activeAccountAddress ?? '').trim()} activeAddress={String(activeAccountAddress ?? '').trim()} openAccountList={() => setActiveList('account')}>
     <ActiveAccountProfileContext.Provider value={activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined}>
-    <div className={walletFrameClassName} style={walletFrameStyle.frame(fullWidth, docked)}>
+    <div className={walletFrameClassName} style={ownScale ? walletFrameStyle.scaled(walletFrameStyle.frame(fullWidth, docked), frameScale.percent) : walletFrameStyle.frame(fullWidth, docked)}>
       <style>{walletFrameCss}</style>
       {/* 2026-11-18: the login screen has its own header with no ladybug, so the debug button sits in its corner (the normal header carries it otherwise) */}
       {passwordPanelShowing && (

@@ -16,6 +16,8 @@ interface Display {
   contractSymbol?: string;
   /** The swap call that follows a spending approval ("exactInputSingle"); the Method row then names the whole flow. */
   swapMethod?: string;
+  /** A method the caller already knows by name (a request made before the call data exists, like the web app's swap approval); wins over the one read from the call data. */
+  method?: string;
 }
 
 interface Details {
@@ -116,7 +118,7 @@ export function describeApproval(info: ApprovalRequestInfo, nativeSymbol: string
     const contractAddress = shown?.contractAddress ?? (hasData ? d.to : undefined);
     const approve: ApproveView | undefined =
       shown && tokenList.length && contractAddress
-        ? { from: String(d.from ?? ''), method: methodLabel(methodName(d.data), shown.contractSymbol, pick('Sell')?.address, shown.swapMethod), contract: { address: contractAddress, symbol: shown.contractSymbol, name: shown.contractName }, sendToken: pick('Sell'), receiveToken: pick('Receive'), estimateOut: quotedOut(tokenList) }
+        ? { from: String(d.from ?? ''), method: methodLabel(shown.method ?? methodName(d.data), shown.contractSymbol, pick('Sell')?.address, shown.swapMethod), contract: { address: contractAddress, symbol: shown.contractSymbol, name: shown.contractName }, sendToken: pick('Sell'), receiveToken: pick('Receive'), estimateOut: quotedOut(tokenList) }
         : undefined;
     return {
       // a request that brings its own text shows that; the plain summary is the fallback

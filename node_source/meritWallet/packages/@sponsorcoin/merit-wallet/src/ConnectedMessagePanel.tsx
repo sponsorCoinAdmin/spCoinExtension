@@ -18,6 +18,7 @@ import { useExchangeContext, stepPanelContentStore } from '@sponsorcoin/spcoin-e
 import { MessageAccountRow, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { MessagePanelReal } from './panels';
 import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageStore';
+import TransactionApprovalScreen from './approval/TransactionApprovalScreen';
 
 /** The web app's MessageTokenRow, unchanged. */
 function DefaultTokenRow({ entry }: { entry: MessageTokenEntry }) {
@@ -54,6 +55,10 @@ export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow
   // A step-through popup published for MESSAGE_PANEL (the Swap tab's Steps flow) replaces the normal message while it is up.
   const stepContent = useSyncExternalStore(stepPanelContentStore.subscribe, stepPanelContentStore.getSnapshot, stepPanelContentStore.getServerSnapshot);
   // A write waiting on a person (Approve / Reject, the password) always comes first: the step popup returns once it is answered.
+  // 2026-11-22 (owner: uniformity in processing): a swap's approval is the shared Approve screen, the same one every Merit wallet draws. A wallet that needs its password first keeps the message card (it has the password field).
+  if (pendingApproval?.screen && !pendingApproval.requirePassword) {
+    return <TransactionApprovalScreen info={pendingApproval.screen.info} nativeSymbol={pendingApproval.screen.nativeSymbol} busy={pendingApproval.busy} onApprove={pendingApproval.onApprove} onReject={pendingApproval.onReject} />;
+  }
   if (stepContent && !pendingApproval) return <div style={messageRowStyle.stepContent}>{stepContent as React.ReactNode}</div>;
   return (
     <MessagePanelReal

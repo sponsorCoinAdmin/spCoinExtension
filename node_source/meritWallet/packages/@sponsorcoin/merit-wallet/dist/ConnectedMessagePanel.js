@@ -17,6 +17,7 @@ import { useExchangeContext, stepPanelContentStore } from '@sponsorcoin/spcoin-e
 import { MessageAccountRow, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { MessagePanelReal } from './panels';
 import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageStore';
+import TransactionApprovalScreen from './approval/TransactionApprovalScreen';
 /** The web app's MessageTokenRow, unchanged. */
 function DefaultTokenRow({ entry }) {
     return (_jsxs("div", { style: messageRowStyle.tokenColumn, children: [_jsxs("div", { style: messageRowStyle.line, children: [_jsx(TokenLogo, { tokenContract: entry.token, className: "", style: messageRowStyle.tokenLogo }), _jsxs("span", { style: messageRowStyle.label, children: [_jsxs("span", { style: messageRowStyle.role, children: [entry.label, ":"] }), ' ', [entry.token.symbol, entry.token.name].filter(Boolean).join(': ')] })] }), entry.detail && _jsx("div", { style: messageRowStyle.detail, children: entry.detail })] }));
@@ -31,6 +32,10 @@ export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow
     // A step-through popup published for MESSAGE_PANEL (the Swap tab's Steps flow) replaces the normal message while it is up.
     const stepContent = useSyncExternalStore(stepPanelContentStore.subscribe, stepPanelContentStore.getSnapshot, stepPanelContentStore.getServerSnapshot);
     // A write waiting on a person (Approve / Reject, the password) always comes first: the step popup returns once it is answered.
+    // 2026-11-22 (owner: uniformity in processing): a swap's approval is the shared Approve screen, the same one every Merit wallet draws. A wallet that needs its password first keeps the message card (it has the password field).
+    if (pendingApproval?.screen && !pendingApproval.requirePassword) {
+        return _jsx(TransactionApprovalScreen, { info: pendingApproval.screen.info, nativeSymbol: pendingApproval.screen.nativeSymbol, busy: pendingApproval.busy, onApprove: pendingApproval.onApprove, onReject: pendingApproval.onReject });
+    }
     if (stepContent && !pendingApproval)
         return _jsx("div", { style: messageRowStyle.stepContent, children: stepContent });
     return (_jsx(MessagePanelReal, { errorMessage: errorMessage, renderAccountRow: renderAccountRow ?? ((entry, i) => _jsx(MessageAccountRow, { entry: entry }, `${entry.role}-${i}`)), renderTokenRow: renderTokenRow ?? ((entry, i) => _jsx(DefaultTokenRow, { entry: entry }, `token-${i}`)), pendingApproval: pendingApproval }));

@@ -28,6 +28,7 @@ import { messagePanelClass, walletPartClass, transactionConfirmPanelStyle, messa
 import AcknowledgeDialog from './AcknowledgeDialog';
 import { scheduleClipboardClear } from './clipboardClear';
 import { Eye, EyeOff } from 'lucide-react';
+import type { ApprovalRequestInfo } from '../vault/approvals';
 
 /** The text of a message, with the small image of the contract after every "Contract: 0x…" line (the Uniswap router's logo on a swap receipt); every other line is plain text. */
 function MessageText({ text, chainId }: { text: string; chainId: number }) {
@@ -111,6 +112,8 @@ export interface MessagePanelPendingApproval {
   acknowledgements?: MessagePanelAcknowledgement[];
   /** 2026-11-11 (owner): the heading shown in the wallet's PANEL_TITLE (one line) while this message is up, instead of the screen's own title. */
   panelTitle?: string;
+  /** 2026-11-22 (owner: uniformity in processing): the request, in the shape the shared approval screen draws (a swap). When set and no password is needed, ConnectedMessagePanel draws that screen instead of the message card. */
+  screen?: { info: ApprovalRequestInfo; nativeSymbol: string };
 }
 
 export interface MessagePanelAcknowledgement {

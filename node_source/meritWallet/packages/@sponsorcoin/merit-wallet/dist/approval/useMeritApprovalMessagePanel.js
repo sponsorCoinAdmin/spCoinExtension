@@ -32,6 +32,29 @@ import { panelTreeTrace, useExchangeContext, usePanelTree, usePanelVisible } fro
 import { getPendingMeritApproval, resolveMeritApproval, subscribeMeritApproval } from './meritApproval';
 import { pendingApprovalMessageStore } from './pendingApprovalMessageStore';
 const SOURCE = 'MeritApproval';
+/**
+ * 2026-11-22 (owner: uniformity in processing): a swap's approval, in the shape the shared approval screen draws (the same screen the browser wallet and the extension show). The web app asks once, before the transactions
+ * exist, so there is no call data: the request names the router, the swap call and the tokens, and the screen draws those (no gas estimate without a call to estimate). Any other write keeps the message card.
+ */
+function swapScreen(request) {
+    if (!request.contractAddress || !request.contractSymbol || !request.swapMethod || !request.tokens?.length)
+        return undefined;
+    const tokens = request.tokens.map((t) => ({ label: t.label, symbol: t.token?.symbol, name: t.token?.name, address: t.token?.address, logoURL: t.token?.logoURL, detail: t.detail }));
+    const info = {
+        id: String(request.id),
+        kind: 'transaction',
+        origin: 'wallet',
+        summary: request.title ?? `Approve ${request.label}`,
+        createdAt: 0,
+        details: {
+            from: request.signerAddress,
+            to: request.contractAddress,
+            chainId: request.chainId,
+            display: { title: request.title, contractAddress: request.contractAddress, contractSymbol: request.contractSymbol, contractName: request.contractName, swapMethod: request.swapMethod, method: request.swapMethod, amount: request.amount, tokens },
+        },
+    };
+    return { info, nativeSymbol: 'ETH' };
+}
 export function useMeritApprovalMessagePanel(host) {
     const [request, setRequest] = useState(getPendingMeritApproval());
     const [isPasswordOpen, setIsPasswordOpen] = useState(false);
@@ -149,6 +172,7 @@ export function useMeritApprovalMessagePanel(host) {
                 setIsPasswordOpen(false);
                 resolveMeritApproval(false);
             },
+            screen: swapScreen(request),
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showing, request?.id, passwordError, isSigning]);

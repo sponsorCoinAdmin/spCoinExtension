@@ -6,6 +6,10 @@ export interface MeritApprovalRequest {
     signerAddress: string;
     chainId: number;
     contractAddress?: string;
+    /** 2026-11-22 (owner: uniformity in processing): a swap's router name and the call it will make; the shared approval screen draws them. */
+    contractSymbol?: string;
+    contractName?: string;
+    swapMethod?: string;
     /**
      * The inverse of provider.ts's securityApproved(chainId, signerAddress) —
      * what that check actually means depends on the current

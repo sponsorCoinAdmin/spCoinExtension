@@ -20,7 +20,7 @@ import {
   useSendTokenContract,
   useSurfaceBalanceError,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import { ComponentMarker, PanelGate, SendButton, SendLayoutContainer, useWalletTokenBalance } from '@sponsorcoin/spcoin-panels';
+import { ComponentMarker, PanelGate, SendButton, SendLayoutContainer, useConnectMode, useWalletTokenBalance } from '@sponsorcoin/spcoin-panels';
 import { buildSendReceipt } from '../receipt/transactionReceipts';
 
 // The standard native-token placeholder address.
@@ -59,7 +59,9 @@ export default function SendComponent() {
   const toAccount = exchangeContext?.apiCoreSyncedMembers.accounts?.sendRecipientAddress;
   const fromAccount = exchangeContext?.apiCoreSyncedMembers.accounts?.activeAccount;
   const toAddress = toAccount?.address ?? '';
-  const activeAccountAddr = fromAccount?.address as Address | undefined;
+  // 2026-11-21: the exchange context can lag the wallet's own active account (the "No active account" bug); fall back to the address the host passed to WalletConnectProvider.
+  const { activeAddress: hostActiveAddress } = useConnectMode();
+  const activeAccountAddr = (fromAccount?.address || hostActiveAddress || undefined) as Address | undefined;
 
   // 2026-10-05 — the wallet's shared balance source (header's active account + the host's fetcher).
   const { balance: balanceRaw, error: balanceError } = useWalletTokenBalance(tokenAddr, tokenDecimals);

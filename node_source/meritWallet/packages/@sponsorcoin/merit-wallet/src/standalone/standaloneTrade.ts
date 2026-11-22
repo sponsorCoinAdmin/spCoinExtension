@@ -22,6 +22,7 @@ import {
   type TradeExecutorContext,
   type UseSwapFunctionsParams,
 } from '@sponsorcoin/spcoin-exchange-engine';
+import { useConnectMode } from '@sponsorcoin/spcoin-panels';
 import { createDirectReadStep } from '../chain/directReads';
 import { SPOIN_STAKE_ABI } from '../chain/spCoinStakeAbi';
 import type { Authenticator } from '../auth/authenticator';
@@ -90,6 +91,7 @@ export function registerStandaloneTradeHosts(authenticator: Authenticator, chain
 
   function useStandaloneSwapFunctions(): ReturnType<typeof useSwapFunctions> {
     const { exchangeContext } = useExchangeContext();
+    const { activeAddress: hostActiveAddress } = useConnectMode(); // 2026-11-21: the wallet's own active account, for when the exchange context has not caught up
     const [activeSpCoinAddress] = useActiveSpCoinAddress();
     const [buyTokenContract] = useBuyTokenContract();
     const tradeData = exchangeContext?.apiCoreSyncedMembers.tradeData;
@@ -106,7 +108,7 @@ export function registerStandaloneTradeHosts(authenticator: Authenticator, chain
 
     const params: UseSwapFunctionsParams = {
       buildTradeExecutorContext: async (_display, chainId, rpcUrl) => {
-        const from = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim();
+        const from = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim() || hostActiveAddress;
         return { account: { address: from, isConnected: Boolean(from), chainId }, executor: createStandaloneTradeExecutor(authenticator, from, rpcUrl || rpcOf(chainId) || '') };
       },
       activeSpCoinAddress,

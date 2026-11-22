@@ -5,6 +5,7 @@
 // Without it the Swap button reports "This app has not registered a signer for Uniswap swaps."
 import { createPublicClient, formatUnits, http } from 'viem';
 import { decodeSpCoinErrorFromError, executeUniswapV3Swap as executeSwapPortable, setApiProviderHook, setQuoteService, setSwapFunctionsHook, setUniswapSwapIoHook, useActiveSpCoinAddress, useBuyTokenContract, useExchangeContext, useSwapFunctions, useUniswapV3CombinedQuote, } from '@sponsorcoin/spcoin-exchange-engine';
+import { useConnectMode } from '@sponsorcoin/spcoin-panels';
 import { createDirectReadStep } from '../chain/directReads';
 import { SPOIN_STAKE_ABI } from '../chain/spCoinStakeAbi';
 /** The engine only calls invalidateQueries after a confirmed trade; the stand-alone wallet has no query cache (balances re-read on their own). */
@@ -65,6 +66,7 @@ export function registerStandaloneTradeHosts(authenticator, chains, rpcOf) {
     };
     function useStandaloneSwapFunctions() {
         const { exchangeContext } = useExchangeContext();
+        const { activeAddress: hostActiveAddress } = useConnectMode(); // 2026-11-21: the wallet's own active account, for when the exchange context has not caught up
         const [activeSpCoinAddress] = useActiveSpCoinAddress();
         const [buyTokenContract] = useBuyTokenContract();
         const tradeData = exchangeContext?.apiCoreSyncedMembers.tradeData;
@@ -79,7 +81,7 @@ export function registerStandaloneTradeHosts(authenticator, chains, rpcOf) {
         const sponsorQuote = sponsorQuoteData ? { amountOut: sponsorQuoteData.amountOut, isMultiHop: sponsorQuoteData.isMultiHop } : undefined;
         const params = {
             buildTradeExecutorContext: async (_display, chainId, rpcUrl) => {
-                const from = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim();
+                const from = String(exchangeContext?.apiCoreSyncedMembers?.accounts?.activeAccount?.address ?? '').trim() || hostActiveAddress;
                 return { account: { address: from, isConnected: Boolean(from), chainId }, executor: createStandaloneTradeExecutor(authenticator, from, rpcUrl || rpcOf(chainId) || '') };
             },
             activeSpCoinAddress,

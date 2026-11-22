@@ -610,6 +610,34 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     const { displayStackIds } = useDisplayStack();
     const topOfStackId = displayStackIds.length > 0 ? displayStackIds[displayStackIds.length - 1] : undefined;
     const highlightedTab = topOfStackId != null ? TAB_KEY_BY_PANEL_ID[topOfStackId] ?? null : null;
+    // 2026-11-22 (owner report: closing the Send receipt landed on the Swap tab): a receipt opens in MESSAGE_PANEL, which replaces the tab's own panel in its radio group,
+    // and when it closes the group falls back to its default (Swap, TRADING_STATION_PANEL). Remember the tab that was up when the message opened and, if the message closes
+    // and the fallback is what is left, put that tab back. Not done when the user clicked a tab while it was open, or when something else (an account list, a detail) took over.
+    const tabBeforeMessageRef = useRef(null);
+    const restoreTabAfterMessageRef = useRef(null);
+    const messageWasVisibleRef = useRef(false);
+    React.useEffect(() => {
+        if (messageVisible && !messageWasVisibleRef.current) {
+            tabBeforeMessageRef.current = lastKnownTabRef.current;
+            restoreTabAfterMessageRef.current = null;
+        }
+        else if (!messageVisible && messageWasVisibleRef.current) {
+            const tab = tabBeforeMessageRef.current;
+            restoreTabAfterMessageRef.current = tab && tab !== 'SWAP' ? tab : null;
+            tabBeforeMessageRef.current = null;
+        }
+        messageWasVisibleRef.current = messageVisible;
+        const pending = restoreTabAfterMessageRef.current;
+        if (!pending || messageVisible)
+            return;
+        if (activeMainOverlay === TAB_PANEL_IDS.SWAP) {
+            restoreTabAfterMessageRef.current = null;
+            openPanel(TAB_PANEL_IDS[pending], 'MeritWallet:restoreTabAfterMessage');
+        }
+        else if (activeMainOverlay != null) {
+            restoreTabAfterMessageRef.current = null; // something else is on top: leave it
+        }
+    }, [messageVisible, activeMainOverlay, openPanel]);
     // The list owns its picker destination in the engine's parameter store;
     // this component keeps no duplicate slot state. The panel tree still owns visibility.
     const activeListModeLocal = React.useSyncExternalStore(activeListPanelStore.subscribe, activeListPanelStore.getWalletListSelectionSlot, () => null);
@@ -1089,6 +1117,8 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
             activeTab,
             activeMainOverlay: activeMainOverlay != null ? SP_COIN_DISPLAY[activeMainOverlay] : null,
         });
+        restoreTabAfterMessageRef.current = null; // the user chose a tab: no automatic restore of the one before a message
+        tabBeforeMessageRef.current = null;
         openPanel(TAB_PANEL_IDS[tab], 'MeritWallet:handleTabClick');
         // 2026-11-01 (owner rule: "closing a radio panel, or any other panel, closes just that panel, nothing else") -- a tab switch only
         // closes the panels the plain pop/push rule above closes (ASSET_SELECT_LIST_PANEL goes off the stack). The list's own ACTIVE_LIST_PANEL,

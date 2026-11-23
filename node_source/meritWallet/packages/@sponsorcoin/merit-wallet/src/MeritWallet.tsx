@@ -36,7 +36,7 @@
 
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useWalletFrameScale, frameScaleControl } from './display/walletFrameScale';
+import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl } from './display/walletFrameScale';
 import { usePeerStates, type PeerConnection } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
@@ -45,7 +45,7 @@ import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import { registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
-import { StakeConfirmPopup, useWalletListed, amountGate } from '@sponsorcoin/spcoin-panels';
+import { StakeConfirmPopup, useWalletListed, amountGate, TableDataScaleProvider } from '@sponsorcoin/spcoin-panels';
 import {
   usePanelTree,
   usePanelVisible,
@@ -1038,6 +1038,7 @@ function MeritWalletInner({
   const menuTabHeaderVisible = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
   // 2026-11-22: a host with no scale control of its own (everything but the browser host) gets the wallet's own, which zooms this frame
   const frameScale = useWalletFrameScale();
+  const tableScale = useTableDataScale();
   const ownScale = !configDisplaySizeContent;
   const menuSeeded = useRef(false);
   useEffect(() => {
@@ -2316,6 +2317,7 @@ function MeritWalletInner({
                 testAccountsContent: configTestAccountsContent,
                 testChoice: TEST_CHOICE_AVAILABLE,
                 displaySizeContent: configDisplaySizeContent ?? frameScaleControl(frameScale),
+                tableDataSizeContent: tableScaleControl(tableScale),
                 uniSelectVisible: configUniSelectVisible,
                 onUniswapEngineChange: onConfigUniswapEngineChange,
                 zeroXEngineVisible: configZeroXEngineVisible,
@@ -3061,6 +3063,7 @@ function MeritWalletInner({
 
   return (
     <ImageCacheContext.Provider value={imageCacheValue}>
+    <TableDataScaleProvider percent={tableScale.percent}>
     <RefreshTreeProvider tree={refreshTree} refreshToken={refreshToken ?? 0} onDone={setTreeDoneToken}>
     <WalletBalanceContext.Provider value={walletBalanceValue}>
     {/* 2026-10-09: connect mode is derived from "no active account"; every action button below turns into a Connect button that opens the account list. */}
@@ -3327,6 +3330,7 @@ function MeritWalletInner({
     </WalletConnectProvider>
     </WalletBalanceContext.Provider>
     </RefreshTreeProvider>
+    </TableDataScaleProvider>
     </ImageCacheContext.Provider>
   );
 }

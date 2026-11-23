@@ -29,7 +29,6 @@ import { useActiveAccountProfile } from '../swap/activeAccountProfile';
 import { loadRoleSponsorTree, loadSponsorTree, throttleRead, type ChainRead, type TreeRecipient } from './sponsorReads';
 import { addPendingToTree } from '../rewards/estimateRewards';
 import { createChainClock, type ChainClock } from '../rewards/chainClock';
-import { assetListRowClass, listStyle } from '@sponsorcoin/spcoin-common/styles';
 import { unstakeSpCoin, type UnstakeSend } from './unstakeWalk';
 import { useStakingListMode } from './stakingListMode';
 
@@ -46,13 +45,7 @@ const ROW_ACCOUNT_CELL: SponsorStakingAccountCellSlot = ({ account, mode, label,
     addrPrePostSize={addrPrePostSize}
     addressSizeClassName={addressSizeClassName}
     panelGateId={null}
-    // 2026-11-07 (owner): the same scale as the account list's rows and the header's dropdown (list icon, name, pill and glyph sizes)
-    iconSizeClassName={assetListRowClass.iconSizeClassName_assetSelectDropDown}
-    pillHeightClassName={assetListRowClass.pillHeightClassName_assetSelectDropDown}
-    pillFontClassName={assetListRowClass.pillFontClassName_assetSelectDropDown}
-    nameLineClassName={assetListRowClass.nameLineClassName_assetSelectDropDown}
-    chevronSize={listStyle.glyphPx}
-    copyIconSize={listStyle.glyphPx}
+    // 2026-11-22 (owner): the row's pill keeps the dropdown defaults (one size from AssetSelectDropDown), nothing is reset per row
   />
 );
 const ROW_AVATAR = (account: spCoinAccount) => <AccountAvatarWithOpen account={account} mode={SP_COIN_DISPLAY.RECIPIENT_ACCOUNT} className={panelPartClass.rowAvatar} />;

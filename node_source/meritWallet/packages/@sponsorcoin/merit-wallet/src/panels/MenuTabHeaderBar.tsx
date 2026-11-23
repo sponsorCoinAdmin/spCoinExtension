@@ -25,7 +25,7 @@
 'use client';
 
 import { menuTabStyle, panelPartClass } from '@sponsorcoin/spcoin-common/styles';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 export type MenuTabKey = 'SWAP' | 'SEND' | 'SPONSOR' | 'REWARDS' | 'CONFIG';
 
@@ -124,6 +124,36 @@ export function TabRow({
   const handleClick = (tab: MenuTabKey) =>
     onTabClick && !disabled ? () => onTabClick(tab) : undefined;
 
+  // 2026-11-22 (owner): a mouse click selects a tab, but press-and-hold and drag slides the strip left and right (like a swipe on a touch screen, which the strip's own overflow scroll already handles). Only the mouse needs this: a touch drag scrolls natively.
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const drag = useRef<{ startX: number; startScroll: number; moved: boolean } | null>(null);
+  const DRAG_THRESHOLD_PX = 5;
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0 || !rowRef.current) return;
+    drag.current = { startX: e.clientX, startScroll: rowRef.current.scrollLeft, moved: false };
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || !rowRef.current) return;
+    const dx = e.clientX - d.startX;
+    if (!d.moved && Math.abs(dx) < DRAG_THRESHOLD_PX) return;
+    if (!d.moved) {
+      d.moved = true;
+      rowRef.current.setPointerCapture(e.pointerId);
+    }
+    rowRef.current.scrollLeft = d.startScroll - dx;
+  };
+  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (drag.current?.moved && rowRef.current?.hasPointerCapture(e.pointerId)) rowRef.current.releasePointerCapture(e.pointerId);
+    // the click that ends a drag must not select the tab under the pointer: the click event fires after this, so the flag is cleared after it
+    const moved = drag.current?.moved;
+    drag.current = moved ? { startX: 0, startScroll: 0, moved: true } : null;
+    if (moved) setTimeout(() => { drag.current = null; }, 0);
+  };
+  const swallowClickAfterDrag = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (drag.current?.moved) { e.preventDefault(); e.stopPropagation(); }
+  };
+
   return (
     <div
       style={menuTabStyle.slide(open)}
@@ -141,8 +171,14 @@ export function TabRow({
           the second one specifically. */}
       <style>{menuTabStyle.hideScrollbarRule}</style>
       <div
+        ref={rowRef}
         className={panelPartClass.menuTabRow}
         style={menuTabStyle.row}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={swallowClickAfterDrag}
       >
         {TABS.map((tab) => (
           <TabButton

@@ -7,18 +7,21 @@ import { DisplaySizePanel } from '@sponsorcoin/spcoin-panels';
 import { usePlatform } from '../platform/platform';
 
 const KEY = 'merit.walletFrameScale.v1';
+const TABLE_KEY = 'merit.tableDataScale.v1';
 export const FRAME_SCALE_MIN = 80;
 export const FRAME_SCALE_MAX = 200;
+export const TABLE_SCALE_MIN = 60;
+export const TABLE_SCALE_MAX = 120;
 
-function parse(raw: string | null): number {
+function parse(raw: string | null, min: number, max: number): number {
   const n = Number(raw);
-  return raw !== null && Number.isFinite(n) && n >= FRAME_SCALE_MIN && n <= FRAME_SCALE_MAX ? n : 100;
+  return raw !== null && Number.isFinite(n) && n >= min && n <= max ? n : 100;
 }
 
 /** The saved scale lives in the platform's own preference store (the wallet never touches the device itself). */
 export function useWalletFrameScale(): { percent: number; setPercent(next: number): void } {
   const { storage } = usePlatform();
-  const [percent, set] = useState<number>(() => parse(storage.get(KEY)));
+  const [percent, set] = useState<number>(() => parse(storage.get(KEY), FRAME_SCALE_MIN, FRAME_SCALE_MAX));
   const setPercent = useCallback((next: number) => {
     set(next);
     storage.set(KEY, String(next));
@@ -28,4 +31,19 @@ export function useWalletFrameScale(): { percent: number; setPercent(next: numbe
 
 export function frameScaleControl(scale: { percent: number; setPercent(next: number): void }): React.ReactNode {
   return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: FRAME_SCALE_MIN, max: FRAME_SCALE_MAX });
+}
+
+/** The Table Data Size (the tables' own zoom), kept in the platform's preference store; 100 = as designed. */
+export function useTableDataScale(): { percent: number; setPercent(next: number): void } {
+  const { storage } = usePlatform();
+  const [percent, set] = useState<number>(() => parse(storage.get(TABLE_KEY), TABLE_SCALE_MIN, TABLE_SCALE_MAX));
+  const setPercent = useCallback((next: number) => {
+    set(next);
+    storage.set(TABLE_KEY, String(next));
+  }, [storage]);
+  return { percent, setPercent };
+}
+
+export function tableScaleControl(scale: { percent: number; setPercent(next: number): void }): React.ReactNode {
+  return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: TABLE_SCALE_MIN, max: TABLE_SCALE_MAX, title: 'Table Data Size', panelId: 'TABLE_DATA_SIZE_PANEL' });
 }

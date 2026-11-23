@@ -21,14 +21,11 @@ import { useActiveAccountProfile } from '../swap/activeAccountProfile';
 import { loadRoleSponsorTree, loadSponsorTree, throttleRead } from './sponsorReads';
 import { addPendingToTree } from '../rewards/estimateRewards';
 import { createChainClock } from '../rewards/chainClock';
-import { assetListRowClass, listStyle } from '@sponsorcoin/spcoin-common/styles';
 import { unstakeSpCoin } from './unstakeWalk';
 import { useStakingListMode } from './stakingListMode';
 // The row's account pill and avatar are the same in every app (they were the web app's slots).
 const ROW_ACCOUNT_SELECT_DISPLAY = ACCOUNT_SELECT_DISPLAY.ICON | ACCOUNT_SELECT_DISPLAY.NAME | ACCOUNT_SELECT_DISPLAY.ADDRESS | ACCOUNT_SELECT_DISPLAY.COPY;
-const ROW_ACCOUNT_CELL = ({ account, mode, label, addrPrePostSize, addressSizeClassName, onAddressClick }) => (_jsx(AccountSelectDropDownHosted, { recipientAccount: account, mode: mode, label: label, showDisplay: ROW_ACCOUNT_SELECT_DISPLAY, onSelectClick: (e) => e.preventDefault(), onAddressClick: onAddressClick, addrPrePostSize: addrPrePostSize, addressSizeClassName: addressSizeClassName, panelGateId: null, 
-    // 2026-11-07 (owner): the same scale as the account list's rows and the header's dropdown (list icon, name, pill and glyph sizes)
-    iconSizeClassName: assetListRowClass.iconSizeClassName_assetSelectDropDown, pillHeightClassName: assetListRowClass.pillHeightClassName_assetSelectDropDown, pillFontClassName: assetListRowClass.pillFontClassName_assetSelectDropDown, nameLineClassName: assetListRowClass.nameLineClassName_assetSelectDropDown, chevronSize: listStyle.glyphPx, copyIconSize: listStyle.glyphPx }));
+const ROW_ACCOUNT_CELL = ({ account, mode, label, addrPrePostSize, addressSizeClassName, onAddressClick }) => (_jsx(AccountSelectDropDownHosted, { recipientAccount: account, mode: mode, label: label, showDisplay: ROW_ACCOUNT_SELECT_DISPLAY, onSelectClick: (e) => e.preventDefault(), onAddressClick: onAddressClick, addrPrePostSize: addrPrePostSize, addressSizeClassName: addressSizeClassName, panelGateId: null }));
 const ROW_AVATAR = (account) => _jsx(AccountAvatarWithOpen, { account: account, mode: SP_COIN_DISPLAY.RECIPIENT_ACCOUNT, className: panelPartClass.rowAvatar });
 // The last list seen per (contract, sponsor): reopening the panel paints it at once and then refreshes (the web app's list cache did the same).
 const snapshots = new Map();

@@ -5,7 +5,6 @@
 // the pending approval, the debug advance gate).
 'use client';
 
-import { walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import React from 'react';
 import { usePlatform } from '../platform/platform';
 import { SP_COIN_DISPLAY as SP } from '@sponsorcoin/spcoin-common/panels';
@@ -32,11 +31,6 @@ export default function ConnectedSponsorPanel({ host }: { host?: SponsorPanelHos
         <RecipientSelectDropDownHosted
           panelGateId={SP.STAKED_RECIPIENT_SELECT_DROP_DOWN}
           collapseKey={collapseKey}
-          iconSizeClassName={walletPartClass.compactPill.iconSize}
-          pillHeightClassName={walletPartClass.compactPill.pillHeight}
-          pillFontClassName={walletPartClass.compactPill.pillFont}
-          chevronSize={walletPartClass.compactPill.chevronSize}
-          copyIconSize={walletPartClass.compactPill.copyIconSize}
         />
       ),
     }),

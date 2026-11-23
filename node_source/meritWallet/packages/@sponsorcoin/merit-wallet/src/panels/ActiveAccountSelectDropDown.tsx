@@ -7,7 +7,6 @@
 // It reads the panel tree itself: the host passes no chevron state, so the pill cannot disagree with what is drawn.
 import React, { useSyncExternalStore } from 'react';
 import { SP_COIN_DISPLAY, PARENT_OF, isSubChildOf } from '@sponsorcoin/spcoin-common/panels';
-import { walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { panelStore, engineTrace, useSelectedAccount, buildSpCoinAccount } from '@sponsorcoin/spcoin-exchange-engine';
 import { AccountSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 
@@ -94,12 +93,6 @@ export default function ActiveAccountSelectDropDown({ icon, address, symbol, nam
       addrPrePostSize={4}
       // 2026-11-13 (owner): the header's expanded address shows as much of itself as fits, not a clip at the end
       fitAddress
-      iconSizeClassName={walletPartClass.compactPill.iconSize}
-      pillHeightClassName={walletPartClass.compactPill.pillHeight}
-      pillFontClassName={walletPartClass.compactPill.pillFont}
-      chevronSize={walletPartClass.compactPill.chevronSize}
-      copyIconSize={walletPartClass.compactPill.copyIconSize}
-      nameLineClassName={walletPartClass.compactPill.nameLine}
     />
   );
 }

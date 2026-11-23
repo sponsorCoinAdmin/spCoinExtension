@@ -24,7 +24,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { menuTabStyle, panelPartClass } from '@sponsorcoin/spcoin-common/styles';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 const TABS = [
     { key: 'SWAP', label: 'Swap' },
     { key: 'SEND', label: 'Send' },
@@ -39,7 +39,44 @@ function TabButton({ label, active, onClick, disabled, title, }) {
  *  exported separately from MenuTabHeaderBar. */
 export function TabRow({ open = true, activeTab = 'SWAP', onTabClick, disabled = false, disabledTitle, }) {
     const handleClick = (tab) => onTabClick && !disabled ? () => onTabClick(tab) : undefined;
-    return (_jsxs("div", { style: menuTabStyle.slide(open), children: [_jsx("style", { children: menuTabStyle.hideScrollbarRule }), _jsxs("div", { className: panelPartClass.menuTabRow, style: menuTabStyle.row, children: [TABS.map((tab) => (_jsx(TabButton, { label: tab.label, active: activeTab === tab.key, onClick: handleClick(tab.key), disabled: disabled, title: disabled ? disabledTitle : undefined }, tab.key))), _jsx(TabButton, { label: "Config", active: activeTab === 'CONFIG', onClick: handleClick('CONFIG'), disabled: disabled, title: disabled ? disabledTitle : undefined })] })] }));
+    // 2026-11-22 (owner): a mouse click selects a tab, but press-and-hold and drag slides the strip left and right (like a swipe on a touch screen, which the strip's own overflow scroll already handles). Only the mouse needs this: a touch drag scrolls natively.
+    const rowRef = useRef(null);
+    const drag = useRef(null);
+    const DRAG_THRESHOLD_PX = 5;
+    const onPointerDown = (e) => {
+        if (e.pointerType !== 'mouse' || e.button !== 0 || !rowRef.current)
+            return;
+        drag.current = { startX: e.clientX, startScroll: rowRef.current.scrollLeft, moved: false };
+    };
+    const onPointerMove = (e) => {
+        const d = drag.current;
+        if (!d || !rowRef.current)
+            return;
+        const dx = e.clientX - d.startX;
+        if (!d.moved && Math.abs(dx) < DRAG_THRESHOLD_PX)
+            return;
+        if (!d.moved) {
+            d.moved = true;
+            rowRef.current.setPointerCapture(e.pointerId);
+        }
+        rowRef.current.scrollLeft = d.startScroll - dx;
+    };
+    const endDrag = (e) => {
+        if (drag.current?.moved && rowRef.current?.hasPointerCapture(e.pointerId))
+            rowRef.current.releasePointerCapture(e.pointerId);
+        // the click that ends a drag must not select the tab under the pointer: the click event fires after this, so the flag is cleared after it
+        const moved = drag.current?.moved;
+        drag.current = moved ? { startX: 0, startScroll: 0, moved: true } : null;
+        if (moved)
+            setTimeout(() => { drag.current = null; }, 0);
+    };
+    const swallowClickAfterDrag = (e) => {
+        if (drag.current?.moved) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+    return (_jsxs("div", { style: menuTabStyle.slide(open), children: [_jsx("style", { children: menuTabStyle.hideScrollbarRule }), _jsxs("div", { ref: rowRef, className: panelPartClass.menuTabRow, style: menuTabStyle.row, onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, onClickCapture: swallowClickAfterDrag, children: [TABS.map((tab) => (_jsx(TabButton, { label: tab.label, active: activeTab === tab.key, onClick: handleClick(tab.key), disabled: disabled, title: disabled ? disabledTitle : undefined }, tab.key))), _jsx(TabButton, { label: "Config", active: activeTab === 'CONFIG', onClick: handleClick('CONFIG'), disabled: disabled, title: disabled ? disabledTitle : undefined })] })] }));
 }
 export default function MenuTabHeaderBar({ open = true, activeTab = 'SWAP', onTabClick, disabled, disabledTitle, children, }) {
     return (

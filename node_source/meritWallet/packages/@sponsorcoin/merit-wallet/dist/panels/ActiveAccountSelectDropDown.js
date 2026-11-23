@@ -8,7 +8,6 @@ import { jsx as _jsx } from "react/jsx-runtime";
 // It reads the panel tree itself: the host passes no chevron state, so the pill cannot disagree with what is drawn.
 import { useSyncExternalStore } from 'react';
 import { SP_COIN_DISPLAY, PARENT_OF, isSubChildOf } from '@sponsorcoin/spcoin-common/panels';
-import { walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { panelStore, engineTrace, useSelectedAccount, buildSpCoinAccount } from '@sponsorcoin/spcoin-exchange-engine';
 import { AccountSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 /** LOCAL_ACCOUNT_WALLET_LIST and everything nested under it, any depth. */
@@ -53,5 +52,5 @@ export default function ActiveAccountSelectDropDown({ icon, address, symbol, nam
         // activate first (above), then AccountSelectDropDown runs its own actions: it makes this the SELECTED account, then calls onSelectClick / onIconClick
         onSelected: address ? () => setSelectedAccount(buildSpCoinAccount({ address, ...(name ? { name } : {}), ...(symbol ? { symbol } : {}) })) : undefined, onSelectClick: onSelectClick || onActivate ? () => { activate(); onSelectClick?.(); } : undefined, onIconClick: onIconClick || onActivate ? () => { activate(); onIconClick?.(address ?? ''); } : undefined, onIconContextMenu: onIconContextMenu ? () => onIconContextMenu(address ?? '') : undefined, addrPrePostSize: 4, 
         // 2026-11-13 (owner): the header's expanded address shows as much of itself as fits, not a clip at the end
-        fitAddress: true, iconSizeClassName: walletPartClass.compactPill.iconSize, pillHeightClassName: walletPartClass.compactPill.pillHeight, pillFontClassName: walletPartClass.compactPill.pillFont, chevronSize: walletPartClass.compactPill.chevronSize, copyIconSize: walletPartClass.compactPill.copyIconSize, nameLineClassName: walletPartClass.compactPill.nameLine }));
+        fitAddress: true }));
 }

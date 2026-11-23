@@ -6,7 +6,7 @@
 // where the run-script endpoint is, which contract and chain, and how a CLAIM is executed (the web app's server script; the extension signs it with the vault).
 'use client';
 
-import { panelBoxStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { setStakingListMode } from '../sponsor/stakingListMode';
@@ -236,7 +236,11 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
         onPendingEstimate={() => {
           if (!pendingRoleUnavailable) void runTotalRewardAction('estimate');
         }}
-        onPendingClaim={() => void runTotalRewardAction('claim')}
+        // 2026-11-22 (owner): the Pending row's Claim opens the Claim list (the sponsorship tree, expandable down to each agent rate, with Claim buttons) instead of sending one blind total claim; the list's Total row claims everything
+        onPendingClaim={() => {
+          setStakingListMode({ kind: 'claim', role: 'Sponsor', account: pickedAccountAddr || undefined });
+          unstakeAllSponsorships();
+        }}
         onOpenPendingGroup={onOpenRewardsByAccountType}
         onPendingHeaderEstimate={() => void runAvailableRoleRewardEstimates()}
         onClosePendingGroup={onCloseRewardsByAccountType}
@@ -269,12 +273,6 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
               }
               onSelectClick={() => extras.accountPicker?.onPick()}
               addrPrePostSize={4}
-              iconSizeClassName={walletPartClass.compactPill.iconSize}
-              pillHeightClassName={walletPartClass.compactPill.pillHeight}
-              pillFontClassName={walletPartClass.compactPill.pillFont}
-              chevronSize={walletPartClass.compactPill.chevronSize}
-              copyIconSize={walletPartClass.compactPill.copyIconSize}
-              nameLineClassName={walletPartClass.compactPill.nameLine}
             />
           ) : undefined
         }

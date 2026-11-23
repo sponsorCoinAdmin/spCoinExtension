@@ -28,7 +28,6 @@
 'use client';
 
 import React from 'react';
-import { dropDownStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 
 export interface NetworkSelectDropDownProps {
@@ -105,11 +104,6 @@ export default function NetworkSelectDropDown({
       // clicking it should just open the picker like the rest of the pill.
       onAddressClick={onSelectClick}
       onIconClick={onIconClick ? () => onIconClick() : undefined}
-      iconSizeClassName={walletPartClass.headerPill(dropDownStyle.header).iconSize}
-      pillHeightClassName={walletPartClass.headerPill(dropDownStyle.header).pillHeight}
-      pillFontClassName={walletPartClass.headerPill(dropDownStyle.header).pillFont}
-      chevronSize={dropDownStyle.header.chevronSizePx}
-      copyIconSize={dropDownStyle.header.copyIconSizePx}
     />
   );
 }

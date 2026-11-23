@@ -6,7 +6,7 @@
 // where the run-script endpoint is, which contract and chain, and how a CLAIM is executed (the web app's server script; the extension signs it with the vault).
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
-import { panelBoxStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { usePlatform } from '../platform/platform';
 import { setStakingListMode } from '../sponsor/stakingListMode';
@@ -123,7 +123,12 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
             stakedIsZero: stakedIsZero, autoRefresh: autoRefresh, onAutoRefreshChange: changeAutoRefresh, pendingVisible: pendingVisible, pendingInitialLoading: pendingInitialLoading, pendingRoleUnavailable: pendingRoleUnavailable, pendingIsZero: pendingIsZero, pendingClaimInProgress: totalReward.loading && totalReward.action === 'claim', pendingClaimDisabled: !pendingInitialLoading && ((totalReward.loading && totalReward.action === 'claim') || !activeContractAddr || !activeAccountAddr), pendingErrorText: totalReward.error, onPendingEstimate: () => {
                 if (!pendingRoleUnavailable)
                     void runTotalRewardAction('estimate');
-            }, onPendingClaim: () => void runTotalRewardAction('claim'), onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), 
+            }, 
+            // 2026-11-22 (owner): the Pending row's Claim opens the Claim list (the sponsorship tree, expandable down to each agent rate, with Claim buttons) instead of sending one blind total claim; the list's Total row claims everything
+            onPendingClaim: () => {
+                setStakingListMode({ kind: 'claim', role: 'Sponsor', account: pickedAccountAddr || undefined });
+                unstakeAllSponsorships();
+            }, onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), 
             // 2026-11-13 (owner): every role's Claim opens the sponsorships list in Claim mode (Sponsor: what you sponsor; Recipient / Agent: who sponsors you); its buttons claim
             onRoleClaim: (role) => {
                 // the Claim list is built for the account the Rewards pill shows (the picked account, else the active one), not always the active account
@@ -135,5 +140,5 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
                     ASSET_SELECT_DISPLAY.ADDRESS |
                     ASSET_SELECT_DISPLAY.COPY |
                     ASSET_SELECT_DISPLAY.CHEVRON_DN |
-                    ASSET_SELECT_DISPLAY.ADDR_COMP, onSelectClick: () => extras.accountPicker?.onPick(), addrPrePostSize: 4, iconSizeClassName: walletPartClass.compactPill.iconSize, pillHeightClassName: walletPartClass.compactPill.pillHeight, pillFontClassName: walletPartClass.compactPill.pillFont, chevronSize: walletPartClass.compactPill.chevronSize, copyIconSize: walletPartClass.compactPill.copyIconSize, nameLineClassName: walletPartClass.compactPill.nameLine })) : undefined, addressSelectContent: _jsx(AssetSelectDisplayProvider, { children: _jsx(AssetSelectProvider, { containerType: SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL, closePanelCallback: () => extras.onClose?.(), setSelectedAssetCallback: () => undefined, children: _jsx(AddressSelect, { callingParent: "ManageSponsorshipsPanel", defaultAddress: extras.depositAddress ?? host.contractAddress(), bypassDefaultFsm: true, useActiveAddr: true, shortAddr: true, preText: "Deposit Account:", showAccount: false }) }) }) }) }));
+                    ASSET_SELECT_DISPLAY.ADDR_COMP, onSelectClick: () => extras.accountPicker?.onPick(), addrPrePostSize: 4 })) : undefined, addressSelectContent: _jsx(AssetSelectDisplayProvider, { children: _jsx(AssetSelectProvider, { containerType: SP_COIN_DISPLAY.MANAGE_SPONSORSHIPS_PANEL, closePanelCallback: () => extras.onClose?.(), setSelectedAssetCallback: () => undefined, children: _jsx(AddressSelect, { callingParent: "ManageSponsorshipsPanel", defaultAddress: extras.depositAddress ?? host.contractAddress(), bypassDefaultFsm: true, useActiveAddr: true, shortAddr: true, preText: "Deposit Account:", showAccount: false }) }) }) }) }));
 }

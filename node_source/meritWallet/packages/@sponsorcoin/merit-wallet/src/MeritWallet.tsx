@@ -97,6 +97,7 @@ import { Ban, Eye, Pencil } from 'lucide-react';
 import { addCustomNetwork, editNetwork, getNetworkConfiguration, setNetworkDisabled, subscribeCustomNetworks } from '@sponsorcoin/spcoin-feeds/networks';
 import { createMeritWalletIconCaches, buildNetworkRows as selfFetchNetworkRows, fetchAccountGroups as selfFetchAccountGroups, buildTokenRows as selfFetchTokenRows, NetworkSelectDropDown, WalletAccountHeader, PanelTitle, MenuTabHeaderBar, type MenuTabKey, WalletRadioPanels, TradingStationPanel, SendTabPanel, MeritInfoPanelReal, type MeritWalletNetworkRow } from './panels';
 import TokenPanel from './TokenPanel';
+import { TokenBuyPanel, TokenSellPanel, TokenBuySwapPanel, TokenSellSwapPanel, TokenSendPanel } from './TokenSlotPanels';
 import ConnectedNetworkPanel from './ConnectedNetworkPanel';
 // Panel visibility in this component goes through exactly one engine:
 // @sponsorcoin/spcoin-exchange-engine's panelStore, read via PanelGate /
@@ -1754,7 +1755,17 @@ function MeritWalletInner({
   // TokenPanel.tsx (the package's own, separately-mounted copy) already
   // correctly uses.
   const [previewToken, setPreviewTokenContract] = usePreviewTokenContract();
-  const tokenDetailVisible = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL) && assetRadioOpen;
+  // 2026-11-23 (owner: the image of any token dropdown opens its asset panel on a right click / touch-and-hold): the token detail screen is drawn for TOKEN_PANEL and for each slot's own panel (the Swap tab's sell and buy token, the Sponsor tab's, the Send tab's)
+  const tokenPanelOpen = usePanelVisible(SP_COIN_DISPLAY.TOKEN_PANEL);
+  const tokenSlotPanelOpen: Array<[boolean, React.ComponentType]> = [
+    [usePanelVisible(SP_COIN_DISPLAY.TOKEN_SELL_SWAP_PANEL), TokenSellSwapPanel],
+    [usePanelVisible(SP_COIN_DISPLAY.TOKEN_BUY_SWAP_PANEL), TokenBuySwapPanel],
+    [usePanelVisible(SP_COIN_DISPLAY.TOKEN_SELL_PANEL), TokenSellPanel],
+    [usePanelVisible(SP_COIN_DISPLAY.TOKEN_BUY_PANEL), TokenBuyPanel],
+    [usePanelVisible(SP_COIN_DISPLAY.TOKEN_SEND_PANEL), TokenSendPanel],
+  ];
+  const TokenSlotScreen = tokenSlotPanelOpen.find(([open]) => open)?.[1];
+  const tokenDetailVisible = (tokenPanelOpen || !!TokenSlotScreen) && assetRadioOpen;
   const previewTokenAddress = previewToken?.address ?? null;
   // Same idea, for the network-list's own icon (Select Network) — see
   // onNetworkIconClick's own doc comment for why this one needs no
@@ -2752,7 +2763,7 @@ function MeritWalletInner({
   // AccountDetailScreen reads its host), so no props are needed.
   // 2026-11-09 (owner: TOKEN_PANEL open in the panel tree but empty on screen; the trace showed tokenDetailVisible true, tokenDetailOverlay false, previewTokenAddress null): it is drawn whenever it is visible, not only when a token is
   // being previewed. TokenPanel decides what to show: the previewed token, else the buy or sell token, else its own "No token contract selected" notice (it closes itself when it was not opened from the panel tree).
-  const tokenDetailOverlay = tokenDetailVisible ? React.createElement(TokenPanel, {}) : null;
+  const tokenDetailOverlay = tokenDetailVisible ? React.createElement(tokenPanelOpen || !TokenSlotScreen ? TokenPanel : TokenSlotScreen, {}) : null;
 
   // No loading branch needed — unlike accounts/tokens, this row's own data
   // (networkRowsSource) is already fully in memory the moment the icon is

@@ -21,6 +21,7 @@
 
 import { tokenWrapperStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useRef } from 'react';
+import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 import { STATIC_MISSING_TOKEN_ICON_URL } from '@sponsorcoin/spcoin-feeds/shared';
 
@@ -48,6 +49,8 @@ export interface TokenSelectDropDownProps {
    *  pill. */
   onSelectClick?: (e: React.SyntheticEvent) => void;
   onAddressClick?: (e: React.MouseEvent) => void;
+  /** The token panel the image's right click / touch-and-hold opens (TOKEN_PANEL by default; TOKEN_SELL_SWAP_PANEL, TOKEN_BUY_SWAP_PANEL, TOKEN_SEND_PANEL, ... for a trade row). */
+  iconPanel?: SP_COIN_DISPLAY;
   /** Whether a chevron renders at all — Token's chevron has no open/closed
    *  direction toggle (unlike Account/Agent/Recipient's CHEVRON_UP/DN),
    *  just present-or-absent, matching the original's
@@ -87,6 +90,7 @@ export default function TokenSelectDropDown({
   label = 'Select Token',
   onSelectClick,
   onAddressClick,
+  iconPanel = SP_COIN_DISPLAY.TOKEN_PANEL,
   showChevron = false,
   showDisplay,
   addrPrePostSize = 4,
@@ -151,6 +155,7 @@ export default function TokenSelectDropDown({
         showName={showName}
         onRowClick={handleRowClick}
         onAddressClick={onAddressClick}
+        iconPanel={iconPanel}
         restrictRowClickToChevron={restrictRowClickToChevron}
         addrPrePostSize={addrPrePostSize}
         panelGateId={panelGateId}

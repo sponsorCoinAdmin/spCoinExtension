@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
-import { useExchangeContext, usePanelVisible, defaultStaticImage } from '@sponsorcoin/spcoin-exchange-engine';
+import { useBuyTokenContract, useExchangeContext, usePanelVisible, defaultStaticImage } from '@sponsorcoin/spcoin-exchange-engine';
 import { getTokenMetaData } from '@sponsorcoin/spcoin-panels';
 import { ReadOnlyMetaDataTable } from './panels';
 import { useWalletData } from './walletData';
@@ -198,7 +198,7 @@ export function TokenBuyPanel() {
 
 export function TokenSellPanel() {
   const { exchangeContext } = useExchangeContext();
-  const tokenContract = exchangeContext?.apiCoreSyncedMembers?.activeTokens?.sponsorSellTokenContract;
+  const tokenContract = exchangeContext?.apiCoreSyncedMembers?.activeTokens?.sponsorSellTokenContract ?? exchangeContext?.apiCoreSyncedMembers?.tradeData?.sellTokenContract; // 2026-11-23: the row shows tradeData's token before the tab sync has mirrored it into activeTokens
   return (
     <TokenSlotDetailPanel
       panelEnum={SP_COIN_DISPLAY.TOKEN_SELL_PANEL}
@@ -213,7 +213,8 @@ export function TokenSellPanel() {
 
 export function TokenBuySwapPanel() {
   const { exchangeContext } = useExchangeContext();
-  const tokenContract = exchangeContext?.apiCoreSyncedMembers?.activeTokens?.swapBuyTokenContract;
+  const [buyTokenContract] = useBuyTokenContract();
+  const tokenContract = exchangeContext?.apiCoreSyncedMembers?.activeTokens?.swapBuyTokenContract ?? buyTokenContract;
   return (
     <TokenSlotDetailPanel
       panelEnum={SP_COIN_DISPLAY.TOKEN_BUY_SWAP_PANEL}
@@ -228,7 +229,7 @@ export function TokenBuySwapPanel() {
 
 export function TokenSellSwapPanel() {
   const { exchangeContext } = useExchangeContext();
-  const tokenContract = exchangeContext?.apiCoreSyncedMembers?.activeTokens?.swapSellTokenContract;
+  const tokenContract = exchangeContext?.apiCoreSyncedMembers?.activeTokens?.swapSellTokenContract ?? exchangeContext?.apiCoreSyncedMembers?.tradeData?.sellTokenContract;
   return (
     <TokenSlotDetailPanel
       panelEnum={SP_COIN_DISPLAY.TOKEN_SELL_SWAP_PANEL}

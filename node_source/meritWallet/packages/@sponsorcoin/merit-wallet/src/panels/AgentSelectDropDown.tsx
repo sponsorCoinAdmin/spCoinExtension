@@ -6,6 +6,7 @@
 'use client';
 
 import React from 'react';
+import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AccountSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 
 export interface AgentSelectDropDownProps {
@@ -50,6 +51,7 @@ export default function AgentSelectDropDown({ icon, address, symbol, name, place
         ASSET_SELECT_DISPLAY.ADDR_COMP
       }
       onSelectClick={onSelectClick}
+      iconPanel={SP_COIN_DISPLAY.AGENT_PANEL}
       addrPrePostSize={addrPrePostSize}
       panelGateId={panelGateId}
       panelGate={panelGate}

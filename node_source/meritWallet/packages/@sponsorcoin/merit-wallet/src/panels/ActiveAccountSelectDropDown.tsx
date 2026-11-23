@@ -90,6 +90,7 @@ export default function ActiveAccountSelectDropDown({ icon, address, symbol, nam
       onSelectClick={onSelectClick || onActivate ? () => { activate(); onSelectClick?.(); } : undefined}
       onIconClick={onIconClick || onActivate ? () => { activate(); onIconClick?.(address ?? ''); } : undefined}
       onIconContextMenu={onIconContextMenu ? () => onIconContextMenu(address ?? '') : undefined}
+      iconPanel={SP_COIN_DISPLAY.ACCOUNT_PANEL}
       addrPrePostSize={4}
       // 2026-11-13 (owner): the header's expanded address shows as much of itself as fits, not a clip at the end
       fitAddress

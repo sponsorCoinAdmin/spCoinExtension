@@ -26,6 +26,7 @@
 // way.
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
+import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { AssetSelectDropDown, ASSET_SELECT_DISPLAY } from '@sponsorcoin/spcoin-panels';
 export default function NetworkSelectDropDown({ icon, label = 'Not Connected', onSelectClick, onIconClick, chevronUp = false, symbol, name, id, }) {
     const twoLines = id !== undefined && id !== '';
@@ -51,5 +52,5 @@ export default function NetworkSelectDropDown({ icon, label = 'Not Connected', o
         // pill's visible area) silently did nothing. Passing the same
         // handler here — there's nothing real to toggle in this slot, so
         // clicking it should just open the picker like the rest of the pill.
-        onAddressClick: onSelectClick, onIconClick: onIconClick ? () => onIconClick() : undefined }));
+        onAddressClick: onSelectClick, onIconClick: onIconClick ? () => onIconClick() : undefined, iconPanel: SP_COIN_DISPLAY.NETWORK_PANEL }));
 }

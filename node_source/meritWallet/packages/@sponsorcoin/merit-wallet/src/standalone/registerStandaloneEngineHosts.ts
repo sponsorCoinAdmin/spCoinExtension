@@ -8,7 +8,7 @@ import { createPublicClient, http } from 'viem';
 import { engineTrace, getDefaultNetworkSettings, setAppPublicClientHook, setApprovalPendingHook, setChainPublicClientHook, useAppChainId } from '@sponsorcoin/spcoin-exchange-engine';
 import type { ApprovalController } from '../vault/approvals';
 import type { Authenticator } from '../auth/authenticator';
-import { registerStandaloneTradeHosts } from './standaloneTrade';
+import { registerTradeEngineHosts } from '../trade/tradeEngineHost';
 import type { StandaloneChain } from './createStandaloneWallet';
 
 let registeredFor: unknown;
@@ -48,5 +48,5 @@ export function registerStandaloneEngineHosts(chains: readonly StandaloneChain[]
   setChainPublicClientHook(useStandaloneChainPublicClient as never);
   setApprovalPendingHook(useStandaloneApprovalPending);
   // the Swap tab's hooks (swap functions, the Uniswap signer): only when the wallet has an authenticator to sign with
-  if (authenticator) registerStandaloneTradeHosts(authenticator, chains, rpcOf);
+  if (authenticator) registerTradeEngineHosts(authenticator, rpcOf);
 }

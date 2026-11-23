@@ -136,6 +136,7 @@ export { default as CopyIcon } from './account/form/CopyIcon';
 export { createMeritWalletIconCaches } from './panels/meritWalletDataFetch';
 // 2026-11-22 (owner: "we need uniformity in processing"): the one approval screen and the one description of a request, shared by every Merit wallet (browser, stand-alone, extension, web).
 export { default as TransactionApprovalScreen } from './approval/TransactionApprovalScreen';
+export { createTradeExecutor, registerTradeEngineHosts, viemTradeChainIo } from './trade/tradeEngineHost';
 export { authenticatorDisplayOf } from './approval/authenticatorDisplay';
 export { useApprovalPage } from './approval/useApprovalPage';
 export { describeApproval as describeTransactionApproval, methodName, methodLabel } from './approval/transactionApproval';

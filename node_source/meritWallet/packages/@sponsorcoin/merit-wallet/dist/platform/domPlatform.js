@@ -108,7 +108,7 @@ export const domPlatform = {
         const wants = { ctrl: parts.includes('ctrl'), alt: parts.includes('alt'), shift: parts.includes('shift') };
         const handler = (event) => {
             // event.code, not event.key: with Ctrl+Alt (AltGr on some layouts) the character typed is not the letter
-            const pressed = event.code === `Key${key.toUpperCase()}` || event.key.toLowerCase() === key;
+            const pressed = event.code === `Key${key.toUpperCase()}` || event.key?.toLowerCase() === key;
             if (pressed && event.ctrlKey === wants.ctrl && event.altKey === wants.alt && event.shiftKey === wants.shift) {
                 event.preventDefault();
                 listener();

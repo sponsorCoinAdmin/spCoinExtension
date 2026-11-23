@@ -41,7 +41,8 @@ import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
-import { registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
+import { ensureAbsoluteAssetURL } from './account/form/formHelpers';
+import { loadAccountRecord, registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { StakeConfirmPopup, useWalletListed, amountGate, TableDataScaleProvider } from '@sponsorcoin/spcoin-panels';
 import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useSelectedAccount, buildSpCoinAccount, hydrateAccountFromAddress, useExchangeContext, useSellTokenContract, useBuyTokenContract, useActiveListPanelParams, useUniBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { ImportNetwork, useHideTodoNetworks, useWalletMode, resolveWalletMode, AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
@@ -232,6 +233,21 @@ const SAMPLE_NETWORK_ROWS = [
     { id: 'polygon', symbol: 'MATIC', name: 'Polygon', address: '0x00000000000000000000000000000000001010' },
     { id: 'hardhat', symbol: 'HH', name: 'Hardhat', address: '0x0000000000000000000000000000000000539b' },
 ];
+/** The account detail host of a wallet whose host injects none: every account is shown, none can be edited here. */
+const READ_ONLY_ACCOUNT_DETAIL_HOST = {
+    form: {
+        signerLabel: 'This wallet',
+        processLogo: async (file) => file,
+        // the account's saved image, the same one the lists and the approval screen show
+        resolveAvatar: async (address) => {
+            const url = String((await loadAccountRecord(address).catch(() => undefined))?.logoURL ?? '');
+            return url ? ensureAbsoluteAssetURL(url) : undefined;
+        },
+        signIn: async () => { throw new Error('This wallet cannot edit accounts here.'); },
+    },
+    connected: false,
+    canEdit: () => false,
+};
 // 2026-10-03 — accountEntryToSpCoinAccount (the AccountListEntry ->
 // spCoinAccount bridge for AccountListRewardsPanel, added 2026-09-24) removed:
 // the header account list now renders AccountListCard directly, which takes
@@ -1987,15 +2003,17 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // The active account's detail: the address picked from a list, else the active account (the panel opened from the header).
     const detailAddress = accountDetailAddress ?? String(activeAccountForDetail?.address ?? '').trim() ?? undefined;
     // 2026-11-08 (docs/design/removeAccountPlan.txt rows 3 and 5): the screen asks who holds the account (the wallet answers) and leaves when the account was removed
-    const detailHost = accountDetailHost && wallet
+    // 2026-11-23 (owner: the account image's right click showed an empty Account Details in the browser wallet): a wallet whose host injects no account detail host still shows the account, read-only (no editing, no key reveal)
+    const hostForDetail = accountDetailHost ?? READ_ONLY_ACCOUNT_DETAIL_HOST;
+    const detailHost = hostForDetail && wallet
         ? {
-            ...accountDetailHost,
-            accountSource: accountDetailHost.accountSource ?? (async (address, symbol) => {
+            ...hostForDetail,
+            accountSource: hostForDetail.accountSource ?? (async (address, symbol) => {
                 const value = await resolveAccountSource(wallet, address, activeAccountAddress, accountDetailGroup ?? undefined, symbol);
                 setAccountDetailTitle(value?.title ?? null);
                 return value;
             }),
-            accountBalance: accountDetailHost.accountBalance ?? (fetchBalance
+            accountBalance: hostForDetail.accountBalance ?? (fetchBalance
                 ? async (address) => {
                     const value = await fetchBalance({ accountAddress: address }).catch(() => undefined);
                     // 2026-11-11: the amount only; the confirmation words it where it shows it (RemoveAccountPanel)
@@ -2013,7 +2031,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                 closePanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved');
             },
         }
-        : accountDetailHost;
+        : hostForDetail;
     const accountDetailOverlay = !detailHost
         ? null
         : roleDetail

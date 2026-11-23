@@ -44,7 +44,8 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
-import { registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
+import { ensureAbsoluteAssetURL } from './account/form/formHelpers';
+import { loadAccountRecord, registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
 import { StakeConfirmPopup, useWalletListed, amountGate, TableDataScaleProvider } from '@sponsorcoin/spcoin-panels';
 import {
   usePanelTree,
@@ -294,6 +295,22 @@ const SAMPLE_NETWORK_ROWS: NetworkListEntry[] = [
 ];
 
 export type { MeritWalletNetworkRow };
+
+/** The account detail host of a wallet whose host injects none: every account is shown, none can be edited here. */
+const READ_ONLY_ACCOUNT_DETAIL_HOST: AccountDetailHost = {
+  form: {
+    signerLabel: 'This wallet',
+    processLogo: async (file) => file,
+    // the account's saved image, the same one the lists and the approval screen show
+    resolveAvatar: async (address) => {
+      const url = String(((await loadAccountRecord(address).catch(() => undefined)) as { logoURL?: unknown } | undefined)?.logoURL ?? '');
+      return url ? ensureAbsoluteAssetURL(url) : undefined;
+    },
+    signIn: async () => { throw new Error('This wallet cannot edit accounts here.'); },
+  },
+  connected: false,
+  canEdit: () => false,
+};
 
 export interface MeritWalletProps {
   /** Docked (full-height, square corners, no right border — a split-pane
@@ -2705,15 +2722,17 @@ function MeritWalletInner({
   // The active account's detail: the address picked from a list, else the active account (the panel opened from the header).
   const detailAddress = accountDetailAddress ?? String((activeAccountForDetail as { address?: string } | undefined)?.address ?? '').trim() ?? undefined;
   // 2026-11-08 (docs/design/removeAccountPlan.txt rows 3 and 5): the screen asks who holds the account (the wallet answers) and leaves when the account was removed
-  const detailHost: AccountDetailHost | undefined = accountDetailHost && wallet
+  // 2026-11-23 (owner: the account image's right click showed an empty Account Details in the browser wallet): a wallet whose host injects no account detail host still shows the account, read-only (no editing, no key reveal)
+  const hostForDetail: AccountDetailHost = accountDetailHost ?? READ_ONLY_ACCOUNT_DETAIL_HOST;
+  const detailHost: AccountDetailHost | undefined = hostForDetail && wallet
     ? {
-        ...accountDetailHost,
-        accountSource: accountDetailHost.accountSource ?? (async (address: string, symbol?: string) => {
+        ...hostForDetail,
+        accountSource: hostForDetail.accountSource ?? (async (address: string, symbol?: string) => {
           const value = await resolveAccountSource(wallet, address, activeAccountAddress, accountDetailGroup ?? undefined, symbol);
           setAccountDetailTitle(value?.title ?? null);
           return value;
         }),
-        accountBalance: accountDetailHost.accountBalance ?? (fetchBalance
+        accountBalance: hostForDetail.accountBalance ?? (fetchBalance
           ? async (address: string) => {
               const value = await fetchBalance({ accountAddress: address }).catch(() => undefined);
               // 2026-11-11: the amount only; the confirmation words it where it shows it (RemoveAccountPanel)
@@ -2730,7 +2749,7 @@ function MeritWalletInner({
           closePanel(SP_COIN_DISPLAY.ACCOUNT_PANEL, 'NAV_CLOSE:MeritWallet:accountRemoved');
         },
       }
-    : accountDetailHost;
+    : hostForDetail;
   const accountDetailOverlay = !detailHost
     ? null
     : roleDetail

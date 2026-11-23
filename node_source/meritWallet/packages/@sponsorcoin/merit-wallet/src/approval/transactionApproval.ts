@@ -52,7 +52,7 @@ export interface ApprovalView {
   contractAddress?: string;
   /** The contract method, shown on its own left-justified Method row when the request names it. */
   method?: string;
-  /** Set for a request that brings its own display with tokens (a swap): the browser wallet draws it with ApproveTransactionPanel. */
+  /** Set for a request that brings its own display with tokens (a swap): drawn with the token pills and gas lines. */
   approve?: ApproveView;
 }
 

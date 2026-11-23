@@ -2,12 +2,12 @@
 //
 // 2026-11-22 (owner: "we need uniformity in processing"): the ONE approval screen every Merit wallet draws for a queued request, so a swap, a send or a spending approval looks and reads the same in the browser wallet, the stand-alone
 // wallet and the extension (and the web app). A host hands it the request it is holding (the same ApprovalRequestInfo shape the vault's queue uses) and what to do on Approve / Reject; it works out the text (describeApproval), asks the
-// chain for a gas estimate, and draws ApproveTransactionPanel (a swap or approval that names its tokens) or TransactionConfirmPanel (everything else: a plain send, a signature, a connect).
+// chain for a gas estimate, and draws TransactionConfirmPanel (a swap or approval with its token pills and gas lines, a plain send, a signature, a connect).
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { createPublicClient, formatEther, formatUnits, http, type PublicClient } from 'viem';
-import { ApproveTransactionPanel, TransactionConfirmPanel, AssetSelectDropDown, ASSET_SELECT_DISPLAY, TokenLogo } from '@sponsorcoin/spcoin-panels';
+import { TransactionConfirmPanel, AssetSelectDropDown, ASSET_SELECT_DISPLAY, TokenLogo } from '@sponsorcoin/spcoin-panels';
 import { fitImageStyle } from '@sponsorcoin/spcoin-common/styles';
 import { getNetworkConfiguration } from '@sponsorcoin/spcoin-feeds/networks';
 import { loadAccountRecord, useExchangeContext } from '@sponsorcoin/spcoin-exchange-engine';
@@ -135,43 +135,33 @@ export default function TransactionApprovalScreen({ info, nativeSymbol, rpcUrl, 
     const icon = p.kind === 'token' && chainId !== undefined ? <TokenLogo address={p.address} chainId={chainId} className="" style={fitImageStyle} /> : imageIcon(account?.logoURL ?? p.logoURL);
     return { label: p.label, value: p.value, node: <ApprovalPill rootId="APPROVAL_PILL" icon={icon} address={p.address} symbol={account?.symbol ?? p.symbol} name={account?.name ?? p.name} copy /> };
   });
-  if (view.approve) {
-    const a = view.approve;
-    return (
-      <ApproveTransactionPanel
-        title={view.title}
-        accountAddress={a.from}
-        method={a.method}
-        contract={a.contract}
-        sendToken={a.sendToken}
-        receiveToken={a.receiveToken}
-        chainId={view.chainId}
-        amount={view.amount}
-        estimateOut={a.estimateOut}
-        gasLimit={gas?.limit}
-        gasPrice={gas?.price}
-        fee={gas?.fee}
-        busy={busy}
-        onApprove={() => onApprove()}
-        onReject={onReject}
-      />
-    );
-  }
+  // a swap (or the spending approval before it) names its tokens: the same layout as every other approval (Account, Network, Contract, Method), then the Send and Receive token pills and the gas estimate
+  const swap = view.approve;
+  const swapIcon = (e: { logoURL?: string; symbol?: string; name?: string; address: string }) => <TokenLogo logoURL={e.logoURL} symbol={e.symbol} name={e.name} address={e.address} chainId={chainId} className="" style={fitImageStyle} />;
+  const swapPill = (rootId: string, e: { logoURL?: string; symbol?: string; name?: string; address: string }) => <ApprovalPill rootId={rootId} icon={swapIcon(e)} address={e.address} symbol={e.symbol} name={e.name} copy />;
+  const swapRows = swap
+    ? [
+        swap.sendToken ? { label: 'Send Token:', value: view.amount?.value, node: swapPill('APPROVAL_SEND', swap.sendToken) } : undefined,
+        swap.receiveToken ? { label: 'Receive Token:', value: swap.estimateOut, node: swapPill('APPROVAL_RECEIVE', swap.receiveToken) } : undefined,
+      ].filter((r): r is NonNullable<typeof r> => !!r)
+    : undefined;
+  const gasRows = swap && gas ? [{ label: 'Gas Limit:', value: gas.limit }, ...(gas.price ? [{ label: 'Gas Price:', value: gas.price }] : []), ...(gas.fee ? [{ label: 'Gas Fee:', value: gas.fee }] : [])] : undefined;
   return (
     <TransactionConfirmPanel
       title={view.title}
-      message={view.method && view.message === view.method ? undefined : view.message}
-      method={view.method}
-      methodLabel={view.method === 'ERC20 Approve' ? 'Approve Method:' : 'Method:'}
+      message={swap || (view.method && view.message === view.method) ? undefined : view.message}
+      method={swap ? swap.method : view.method}
+      methodLabel={swap ? (swap.method.startsWith('ERC20 Approve') ? 'Approve Method:' : 'Method:') : view.method === 'ERC20 Approve' ? 'Approve Method:' : 'Method:'}
       accounts={accounts as never}
-      tokens={view.tokens as never}
-      amount={view.amount}
+      tokens={swap ? undefined : (view.tokens as never)}
+      amount={swap ? undefined : view.amount}
       amounts={view.amounts}
       chainId={view.chainId}
       contractAddress={view.contractAddress}
       networkSlot={networkSlot}
-      pillRows={pillRows}
-      contractSlot={contractSlot}
+      pillRows={swapRows ?? pillRows}
+      rows={gasRows}
+      contractSlot={swap ? <ApprovalPill rootId="APPROVAL_CONTRACT" icon={swapIcon(swap.contract)} address={swap.contract.address} symbol={swap.contract.symbol} name={swap.contract.name} copy /> : contractSlot}
       accountSlot={accountSlot}
       busy={busy}
       embedded

@@ -6,6 +6,7 @@
 import { createPublicClient, formatUnits, http, type Abi } from 'viem';
 import {
   decodeSpCoinErrorFromError,
+  executeMultiHopUniswapV3Swap as executeMultiHopPortable,
   executeUniswapV3Swap as executeSwapPortable,
   setApiProviderHook,
   setQuoteService,
@@ -26,6 +27,8 @@ import { useConnectMode } from '@sponsorcoin/spcoin-panels';
 import { createDirectReadStep } from '../chain/directReads';
 import { SPOIN_STAKE_ABI } from '../chain/spCoinStakeAbi';
 import type { Authenticator } from '../auth/authenticator';
+import { authenticatorDisplayOf } from '../approval/authenticatorDisplay';
+import { swapConfirmCopy, withSwapApprovalDisplay } from '../approval/swapApprovalDisplay';
 import type { StandaloneChain } from './createStandaloneWallet';
 
 /** The engine only calls invalidateQueries after a confirmed trade; the stand-alone wallet has no query cache (balances re-read on their own). */
@@ -48,21 +51,13 @@ export async function waitForTradeReceipt(rpcUrl: string, hash: string, timeoutM
 export function createStandaloneTradeExecutor(authenticator: Authenticator, from: string, defaultRpcUrl: string): TradeExecutor {
   return {
     async execute({ to, data, value, chainId, rpcUrl, display }): Promise<TradeExecutionResult> {
-      const amountEntry = display?.amount;
       const { hash } = await authenticator.sendTransaction({
         from,
         to,
         data,
         value: value !== undefined ? BigInt(value) : undefined,
         chainId,
-        display: {
-          title: display?.title ?? display?.label ?? 'Transaction',
-          message: display?.label,
-          contractAddress: display?.contractAddress,
-          accounts: display?.accounts as never,
-          tokens: display?.tokens as never,
-          amount: amountEntry ? { label: amountEntry.label, value: amountEntry.value } : undefined,
-        },
+        display: authenticatorDisplayOf(display as never),
       });
       const receipt = await waitForTradeReceipt(rpcUrl || defaultRpcUrl, hash);
       return { transactionHash: hash, receipt } as TradeExecutionResult;
@@ -126,39 +121,24 @@ export function registerStandaloneTradeHosts(authenticator: Authenticator, chain
     return useSwapFunctions(params);
   }
 
-  /** What the confirmation screen shows for the swap, from the approval-details request the shared swap flow hands the signer. */
-  const confirmCopy = (request: any, minReceived: string) => ({
-    title: String(request?.title ?? 'Swapping via Uniswap V3'),
-    message: `Minimum received ${minReceived}`,
-    amount: request?.amount as { label: string; value: string } | undefined,
-    tokens: ((request?.tokens ?? []) as any[]).map((tk) => ({ label: tk.label, symbol: tk.token?.symbol, name: tk.token?.name, address: tk.token?.address, logoURL: tk.token?.logoURL })),
-  });
-
   function useStandaloneUniswapSwapIo() {
+    // one confirmation + execution path for a one-step and a two-step (through the wrapped native token) swap; only the router call differs. The swap and the spending approval before it reach the approval screen with the display every Merit wallet uses (approval/swapApprovalDisplay.ts)
+    const runSwap = async (p: any, label: string, exec: (context: TradeExecutorContext) => Promise<any>) => {
+      const request = p.signer as any;
+      const buy = (request?.tokens ?? []).find((tk: any) => String(tk.label).startsWith('Receive'))?.token;
+      const minReceived = `${formatUnits(p.amountOutMinimum, buy?.decimals ?? 18)} ${buy?.symbol ?? ''}`.trim();
+      const from = String(request?.activeAccountAddress ?? p.recipient);
+      const executor = createStandaloneTradeExecutor(authenticator, from, p.rpcUrl);
+      executor.execute = withSwapApprovalDisplay(executor.execute.bind(executor), label, swapConfirmCopy(request, minReceived));
+      const context: TradeExecutorContext = { account: { address: from, isConnected: Boolean(from), chainId: p.chainId }, executor };
+      const result = await exec(context);
+      return { transactionHash: result.transactionHash, receipt: result.receipt, approvalSubmitted: !!(result as any).approvalSubmitted };
+    };
     return {
       // the signer is the request itself: the vault signs behind the approval page
       getSigner: async (request: unknown) => request,
-      executeSingle: async (p: any) => {
-        const request = p.signer as any;
-        const buy = (request?.tokens ?? []).find((tk: any) => String(tk.label).startsWith('Receive'))?.token;
-        const minReceived = `${formatUnits(p.amountOutMinimum, buy?.decimals ?? 18)} ${buy?.symbol ?? ''}`.trim();
-        const from = String(request?.activeAccountAddress ?? p.recipient);
-        const confirm = confirmCopy(request, minReceived);
-        const executor = createStandaloneTradeExecutor(authenticator, from, p.rpcUrl);
-        const inner = executor.execute.bind(executor);
-        executor.execute = (req) =>
-          inner(
-            req.display?.label === 'Uniswap V3 Swap'
-              ? { ...req, display: { ...req.display, title: confirm.title ?? req.display.title, label: confirm.message ?? req.display.label, amount: confirm.amount ?? req.display.amount, tokens: (confirm.tokens ?? req.display.tokens) as never } }
-              : req,
-          );
-        const context: TradeExecutorContext = { account: { address: from, isConnected: Boolean(from), chainId: p.chainId }, executor };
-        const result = await executeSwapPortable({ chainId: p.chainId, tokenIn: p.tokenIn, tokenOut: p.tokenOut, amountIn: p.amountIn, amountOutMinimum: p.amountOutMinimum, recipient: p.recipient, fee: p.fee, context, rpcUrl: p.rpcUrl });
-        return { transactionHash: result.transactionHash, receipt: result.receipt, approvalSubmitted: !!(result as any).approvalSubmitted };
-      },
-      executeMultiHop: async () => {
-        throw new Error('Multi-hop swaps are not available in the stand-alone wallet yet.');
-      },
+      executeSingle: (p: any) => runSwap(p, 'Uniswap V3 Swap', (context) => executeSwapPortable({ chainId: p.chainId, tokenIn: p.tokenIn, tokenOut: p.tokenOut, amountIn: p.amountIn, amountOutMinimum: p.amountOutMinimum, recipient: p.recipient, fee: p.fee, context, rpcUrl: p.rpcUrl })),
+      executeMultiHop: (p: any) => runSwap(p, 'Uniswap V3 Multi-hop Swap', (context) => executeMultiHopPortable({ chainId: p.chainId, tokenIn: p.tokenIn, through: p.through, tokenOut: p.tokenOut, amountIn: p.amountIn, amountOutMinimum: p.amountOutMinimum, recipient: p.recipient, feeIn: p.feeIn, context, rpcUrl: p.rpcUrl })),
       invalidateBalanceQueries: () => undefined,
     };
   }

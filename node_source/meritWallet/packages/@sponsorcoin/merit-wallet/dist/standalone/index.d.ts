@@ -5,7 +5,6 @@ export type { StandaloneChain, StandaloneOnboarding, StandaloneWallet, Standalon
 export { createStandaloneSend } from './standaloneSend';
 export type { StandaloneSendOptions, StandaloneSendParams } from './standaloneSend';
 export { useStandaloneApproval } from './useStandaloneApproval';
-export { describeApproval } from './describeApproval';
 export type { StandaloneApprovalPage } from './useStandaloneApproval';
 export { registerStandaloneDebug, endpointForDump } from './registerStandaloneDebug';
 export { meritDebug } from '../debug/debugStore';

@@ -30,6 +30,8 @@ export interface AuthenticatorDisplay {
     contractSymbol?: string;
     contractName?: string;
     swapMethod?: string;
+    /** The swap call itself (not the spending approval before it). */
+    swapStep?: boolean;
     accounts?: {
         role: string;
         address: string;

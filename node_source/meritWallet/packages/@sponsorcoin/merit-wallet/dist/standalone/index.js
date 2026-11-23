@@ -5,7 +5,6 @@ export { default as MeritWalletStandalone } from './MeritWalletStandalone';
 export { createStandaloneWallet, STANDALONE_AUTO_LOCK_MS } from './createStandaloneWallet';
 export { createStandaloneSend } from './standaloneSend';
 export { useStandaloneApproval } from './useStandaloneApproval';
-export { describeApproval } from './describeApproval';
 export { registerStandaloneDebug, endpointForDump } from './registerStandaloneDebug';
 export { meritDebug } from '../debug/debugStore';
 export { registerStandaloneEngineHosts } from './registerStandaloneEngineHosts';

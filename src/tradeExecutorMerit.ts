@@ -17,7 +17,7 @@ import type {
   TradeExecutorContext,
   TradeExecutorAccount,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import type { PendingSignRequestAccountEntry, PendingSignRequestTokenEntry } from './pendingSignRequestStore';
+import { authenticatorDisplayOf } from '@sponsorcoin/merit-wallet';
 import { ethCall, isVaultAccount, vaultUnavailableMessage, waitForReceipt } from './localSigning';
 import { localVaultAuthenticator } from './localVaultAuthenticator';
 import { authenticatorFor, isExternalAccount } from './externalAccounts';
@@ -51,7 +51,6 @@ function createMeritTradeExecutor(params: MeritTradeExecutorParams): TradeExecut
       rpcUrl,
       display,
     }): Promise<TradeExecutionResult> {
-      const amountEntry = display?.amount;
       // LOCAL: an account of the unlocked vault signs in the background worker, behind the same confirmation screen.
       if (params.from && ((await isVaultAccount(params.from)) || (await isExternalAccount(params.from)))) {
         // the vault is an authenticator like any other (src/localVaultAuthenticator.ts): the request, and what its confirmation screen shows, go to it
@@ -61,22 +60,7 @@ function createMeritTradeExecutor(params: MeritTradeExecutorParams): TradeExecut
           data,
           value: value !== undefined ? BigInt(value) : undefined,
           chainId,
-          display: {
-            title: display?.title ?? display?.label ?? 'Transaction',
-            message: display?.label,
-            contractAddress: display?.contractAddress,
-            contractSymbol: (display as { contractSymbol?: string } | undefined)?.contractSymbol,
-            contractName: (display as { contractName?: string } | undefined)?.contractName,
-            swapMethod: (display as { swapMethod?: string } | undefined)?.swapMethod,
-            accounts: display?.accounts as PendingSignRequestAccountEntry[] | undefined,
-            tokens: display?.tokens as PendingSignRequestTokenEntry[] | undefined,
-            amount: amountEntry ? { label: amountEntry.label, value: amountEntry.value } : undefined,
-            // 2026-11-23: the same extra fields every Merit wallet hands its approval screen (a claim's per-role amounts, the call's name, a stake's token and account pills)
-            amounts: (display as { amounts?: Array<{ label: string; value: string }> } | undefined)?.amounts,
-            method: (display as { method?: string } | undefined)?.method,
-            pills: (display as { pills?: never } | undefined)?.pills,
-            swapStep: (display as { swapStep?: boolean } | undefined)?.swapStep,
-          },
+          display: authenticatorDisplayOf(display as never),
         });
         // Wait for the block so the caller can say "confirmed" (the web app's signer does the same) and show block / gas.
         const receipt = await waitForReceipt(rpcUrl || params.rpcUrl, hash);

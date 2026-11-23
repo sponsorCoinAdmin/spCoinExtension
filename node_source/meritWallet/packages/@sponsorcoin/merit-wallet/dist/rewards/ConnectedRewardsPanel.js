@@ -123,12 +123,7 @@ export default function ConnectedRewardsPanel({ host, extras = {} }) {
             stakedIsZero: stakedIsZero, autoRefresh: autoRefresh, onAutoRefreshChange: changeAutoRefresh, pendingVisible: pendingVisible, pendingInitialLoading: pendingInitialLoading, pendingRoleUnavailable: pendingRoleUnavailable, pendingIsZero: pendingIsZero, pendingClaimInProgress: totalReward.loading && totalReward.action === 'claim', pendingClaimDisabled: !pendingInitialLoading && ((totalReward.loading && totalReward.action === 'claim') || !activeContractAddr || !activeAccountAddr), pendingErrorText: totalReward.error, onPendingEstimate: () => {
                 if (!pendingRoleUnavailable)
                     void runTotalRewardAction('estimate');
-            }, 
-            // 2026-11-22 (owner): the Pending row's Claim opens the Claim list (the sponsorship tree, expandable down to each agent rate, with Claim buttons) instead of sending one blind total claim; the list's Total row claims everything
-            onPendingClaim: () => {
-                setStakingListMode({ kind: 'claim', role: 'Sponsor', account: pickedAccountAddr || undefined });
-                unstakeAllSponsorships();
-            }, onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), 
+            }, onPendingClaim: () => void runTotalRewardAction('claim'), onOpenPendingGroup: onOpenRewardsByAccountType, onPendingHeaderEstimate: () => void runAvailableRoleRewardEstimates(), onClosePendingGroup: onCloseRewardsByAccountType, rewardRows: rewardRows, onRoleEstimate: (role) => void runRewardAction(role, 'estimate'), 
             // 2026-11-13 (owner): every role's Claim opens the sponsorships list in Claim mode (Sponsor: what you sponsor; Recipient / Agent: who sponsors you); its buttons claim
             onRoleClaim: (role) => {
                 // the Claim list is built for the account the Rewards pill shows (the picked account, else the active one), not always the active account

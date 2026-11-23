@@ -236,11 +236,7 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
         onPendingEstimate={() => {
           if (!pendingRoleUnavailable) void runTotalRewardAction('estimate');
         }}
-        // 2026-11-22 (owner): the Pending row's Claim opens the Claim list (the sponsorship tree, expandable down to each agent rate, with Claim buttons) instead of sending one blind total claim; the list's Total row claims everything
-        onPendingClaim={() => {
-          setStakingListMode({ kind: 'claim', role: 'Sponsor', account: pickedAccountAddr || undefined });
-          unstakeAllSponsorships();
-        }}
+        onPendingClaim={() => void runTotalRewardAction('claim')}
         onOpenPendingGroup={onOpenRewardsByAccountType}
         onPendingHeaderEstimate={() => void runAvailableRoleRewardEstimates()}
         onClosePendingGroup={onCloseRewardsByAccountType}

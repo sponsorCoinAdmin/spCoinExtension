@@ -60,6 +60,7 @@ export { createChainClock, readChainTimestamp } from './rewards/chainClock';
 export { meritDebug, createDebugStore, redact, registerHostDebug, hideAddressSecrets, DEBUG_SECTIONS } from './debug/debugStore';
 export { DebugBugButton, DebugConfigSection, useDebugRuntime, useDebugEnabled, DEBUG_HOTKEY } from './debug/DebugBug';
 export { withRoleFlags } from './rewards/accountRoleFlags';
+export { claimAmountsFor, formatClaimAmount } from './rewards/claimAmounts';
 export { estimatePendingRewards, estimateRewardsByMethod, accrue, splitRewardPool, splitAgentPool } from './rewards/estimateRewards';
 export { default as WalletSecuritySection } from './WalletSecuritySection';
 export { default as ConnectedSponsorStakingList } from './sponsor/ConnectedSponsorStakingList';

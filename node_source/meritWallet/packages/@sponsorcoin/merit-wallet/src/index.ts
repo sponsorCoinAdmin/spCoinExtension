@@ -114,6 +114,7 @@ export { createChainClock, readChainTimestamp, type ChainClock } from './rewards
 export { meritDebug, createDebugStore, redact, registerHostDebug, hideAddressSecrets, DEBUG_SECTIONS, type DebugStore, type HostDebugInfo } from './debug/debugStore';
 export { DebugBugButton, DebugConfigSection, useDebugRuntime, useDebugEnabled, DEBUG_HOTKEY } from './debug/DebugBug';
 export { withRoleFlags } from './rewards/accountRoleFlags';
+export { claimAmountsFor, formatClaimAmount, type ClaimAmounts } from './rewards/claimAmounts';
 export { estimatePendingRewards, estimateRewardsByMethod, accrue, splitRewardPool, splitAgentPool, type PendingRewards, type EstimateRewardsParams } from './rewards/estimateRewards';
 export { default as WalletSecuritySection } from './WalletSecuritySection';
 export type { WalletSecurityApi } from './WalletSecuritySection';

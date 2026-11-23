@@ -44,6 +44,12 @@ export interface AuthenticatorDisplay {
   accounts?: { role: string; address: string; symbol?: string; name?: string; logoURL?: string }[];
   tokens?: { label: string; symbol?: string; name?: string; address?: string; logoURL?: string; detail?: string }[];
   amount?: { label: string; value: string };
+  /** More labelled amounts shown above `amount` (a Total claim's per-role rewards). */
+  amounts?: { label: string; value: string }[];
+  /** The contract method, when the caller names it (shown on its own Method row). */
+  method?: string;
+  /** Labelled token / account dropdown pills drawn on the approval screen (a stake's sponsored spCoins and its recipient). */
+  pills?: { label: string; kind: 'token' | 'account'; address: string; symbol?: string; name?: string; logoURL?: string; value?: string }[];
 }
 
 export interface AuthenticatorTransaction {

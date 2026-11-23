@@ -242,12 +242,13 @@ export default function ConnectedRewardsPanel({ host, extras = {} }: { host: Rew
         onClosePendingGroup={onCloseRewardsByAccountType}
         rewardRows={rewardRows}
         onRoleEstimate={(role) => void runRewardAction(role, 'estimate')}
-        // 2026-11-13 (owner): every role's Claim opens the sponsorships list in Claim mode (Sponsor: what you sponsor; Recipient / Agent: who sponsors you); its buttons claim
-        onRoleClaim={(role) => {
+        // 2026-11-23 (owner): the Sponsor / Recipient / Agent label opens that role's rewards list in Claim mode (Sponsor: what you sponsor; Recipient / Agent: who sponsors you); its buttons claim. The row's own Claim button claims that role directly, with the approve receipt.
+        onRoleShow={(role) => {
           // the Claim list is built for the account the Rewards pill shows (the picked account, else the active one), not always the active account
           setStakingListMode({ kind: 'claim', role, account: pickedAccountAddr || undefined });
           unstakeAllSponsorships();
         }}
+        onRoleClaim={(role) => void runRewardAction(role, 'claim')}
         accountSelectContent={
           extras.accountPicker ? (
             <AccountSelectDropDown

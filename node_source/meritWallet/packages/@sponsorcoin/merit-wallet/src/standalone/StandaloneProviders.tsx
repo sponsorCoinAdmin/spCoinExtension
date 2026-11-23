@@ -12,6 +12,7 @@ import {
   DisplayStackProvider,
   ExchangeProviderCore,
   PanelBootstrap,
+  useActiveSpCoin,
   buildDefaultExchangeContext,
   clone as cloneContext,
   deriveStandardBootPanelState,
@@ -29,6 +30,12 @@ export interface StandaloneProvidersProps {
 }
 
 let hostApiDisabled = false;
+
+/** 2026-11-23 (owner: new wallets had no active spCoin, and the sponsor quote ran against the stale fallback address, so it said "No Pool"): loads the chain's active spCoin into the exchange context, the same way the web app's AppBootstrap and the extension's ActiveSpCoinLoader do. No UI. */
+function ActiveSpCoinLoader(): null {
+  useActiveSpCoin();
+  return null;
+}
 
 export default function StandaloneProviders({ chainId, address, children }: StandaloneProvidersProps) {
   const [queryClient] = useState(() => new QueryClient());
@@ -53,6 +60,6 @@ export default function StandaloneProviders({ chainId, address, children }: Stan
   return React.createElement(
     QueryClientProvider,
     { client: queryClient },
-    React.createElement(ExchangeProviderCore, { walletSource, bootExtensions: { derivePanelState: deriveStandardBootPanelState as never }, host }, React.createElement(PanelBootstrap), children),
+    React.createElement(ExchangeProviderCore, { walletSource, bootExtensions: { derivePanelState: deriveStandardBootPanelState as never }, host }, React.createElement(PanelBootstrap), React.createElement(ActiveSpCoinLoader), children),
   );
 }

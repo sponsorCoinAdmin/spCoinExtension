@@ -44,7 +44,7 @@ export function withSwapApprovalDisplay(inner, swapLabel, confirm) {
                 contractName: confirm.contractName,
                 amount: confirm.amount ?? req.display?.amount,
                 tokens: confirm.tokens.length ? confirm.tokens : req.display?.tokens,
-                ...(isApprove ? { contractAddress: approveSpender(req.data) ?? req.display?.contractAddress, swapMethod } : {}),
+                ...(isApprove ? { contractAddress: approveSpender(req.data) ?? req.display?.contractAddress, swapMethod } : { swapStep: true }),
             },
         });
     });

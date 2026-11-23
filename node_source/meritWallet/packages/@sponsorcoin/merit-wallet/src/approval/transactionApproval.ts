@@ -2,20 +2,29 @@
 //
 // 2026-11-22 (owner: uniformity in processing): MOVED here from the browser wallet package so every Merit wallet (browser, stand-alone, extension, web) describes a request the same way. Originally 2026-11-19 -- what the browser approval screen says for one queued request (a transaction, a signature). Pure: no React, no panels, so it is tested under node. The screen itself is useBrowserApproval.ts.
 // A request may carry `details.display`, the richer text the caller built for it (a swap's title, tokens and amount; the vault keeps it, never signs it). When it is there it wins over the plain "send X wei to Y" summary.
-import { formatEther } from 'viem';
+import { formatEther, toFunctionSelector } from 'viem';
 import type { ApprovalRequestInfo } from '../vault/approvals';
 
+export interface PillEntry { label: string; kind: 'token' | 'account'; address: string; symbol?: string; name?: string; logoURL?: string; value?: string }
+
 interface Display {
+  /** The call's name when the caller gives one (a claim's claimOnChain... method). */
+  label?: string;
   title?: string;
   message?: string;
   contractAddress?: string;
   accounts?: Array<{ role: string; address: string }>;
   tokens?: unknown[];
   amount?: { label: string; value: string };
+  /** Extra labelled amounts shown above `amount` (a Total claim's per-role rewards). */
+  amounts?: Array<{ label: string; value: string }>;
+  pills?: PillEntry[];
   contractName?: string;
   contractSymbol?: string;
   /** The swap call that follows a spending approval ("exactInputSingle"); the Method row then names the whole flow. */
   swapMethod?: string;
+  /** The swap call itself (not the spending approval before it): its Method reads "Uniswap V3 (exactInput)" without the approve prefix. */
+  swapStep?: boolean;
   /** A method the caller already knows by name (a request made before the call data exists, like the web app's swap approval); wins over the one read from the call data. */
   method?: string;
 }
@@ -37,8 +46,12 @@ export interface ApprovalView {
   accounts?: Array<{ role: string; address: string }>;
   tokens?: unknown[];
   amount?: { label: string; value: string };
+  amounts?: Array<{ label: string; value: string }>;
+  pills?: PillEntry[];
   chainId?: number;
   contractAddress?: string;
+  /** The contract method, shown on its own left-justified Method row when the request names it. */
+  method?: string;
   /** Set for a request that brings its own display with tokens (a swap): the browser wallet draws it with ApproveTransactionPanel. */
   approve?: ApproveView;
 }
@@ -55,7 +68,12 @@ export interface ApproveView {
 }
 
 /** The first four bytes of the call data, named when they are a call this wallet knows; otherwise the selector itself. */
+/** The spCoin contract's reward claims, named by their selectors so a claim shows its method even when the request carries no display name. */
+const CLAIM_NAMES = ['claimOnChainTotalRewards', 'claimOnChainSponsorRewards', 'claimOnChainAgentRewards', 'claimOnChainRecipientRewards'];
+const CLAIM_SELECTORS: Record<string, string> = Object.fromEntries(CLAIM_NAMES.map((n) => [toFunctionSelector(`${n}(address)`).toLowerCase(), n]));
+
 const METHODS: Record<string, string> = {
+  ...CLAIM_SELECTORS,
   '0x095ea7b3': 'ERC20 Approve',
   '0xa9059cbb': 'ERC20 Transfer',
   '0x04e45aaf': 'exactInputSingle',
@@ -118,7 +136,7 @@ export function describeApproval(info: ApprovalRequestInfo, nativeSymbol: string
     const contractAddress = shown?.contractAddress ?? (hasData ? d.to : undefined);
     const approve: ApproveView | undefined =
       shown && tokenList.length && contractAddress
-        ? { from: String(d.from ?? ''), method: methodLabel(shown.method ?? methodName(d.data), shown.contractSymbol, pick('Sell')?.address, shown.swapMethod), contract: { address: contractAddress, symbol: shown.contractSymbol, name: shown.contractName }, sendToken: pick('Sell'), receiveToken: pick('Receive'), estimateOut: quotedOut(tokenList) }
+        ? { from: String(d.from ?? ''), method: shown.swapStep && shown.contractSymbol ? `${shown.contractSymbol} (${shown.method ?? methodName(d.data)})` : methodLabel(shown.method ?? methodName(d.data), shown.contractSymbol, pick('Sell')?.address, shown.swapMethod), contract: { address: contractAddress, symbol: shown.contractSymbol, name: shown.contractName }, sendToken: pick('Sell'), receiveToken: pick('Receive'), estimateOut: quotedOut(tokenList) }
         : undefined;
     return {
       // a request that brings its own text shows that; the plain summary is the fallback
@@ -126,9 +144,12 @@ export function describeApproval(info: ApprovalRequestInfo, nativeSymbol: string
       message: shown?.message ?? info.summary,
       accounts: transactionAccounts(d, shown, hasData),
       tokens: shown?.tokens?.length ? shown.tokens : undefined,
+      amounts: shown?.amounts,
+      pills: shown?.pills,
       amount: shown?.amount ?? (d.value !== undefined && !hasData ? { label: 'Amount', value: `${formatEther(BigInt(d.value))} ${nativeSymbol}` } : undefined),
       chainId: d.chainId,
       contractAddress,
+      method: shown?.method ?? shown?.label ?? (hasData ? METHODS[String(d.data).slice(0, 10).toLowerCase()] : undefined),
       approve,
     };
   }

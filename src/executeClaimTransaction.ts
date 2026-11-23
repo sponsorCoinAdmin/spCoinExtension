@@ -23,11 +23,14 @@ interface ExecuteClaimTransactionParams {
   fromAddress: string;
   /** Optional unlock token for locked accounts (same pattern as stake send). */
   unlockToken?: string;
+  /** What the claim will pay, for the approval screen (merit-wallet's claimAmountsFor). */
+  amountText?: string;
+  roleAmounts?: Array<{ label: string; value: string }>;
   /** Called after the transaction confirms (cache refresh / re-fetch). */
   onConfirmed?: () => void | Promise<void>;
 }
 
-export async function executeClaimTransaction({ rpcUrl, accountKey, method, abi, contractAddress, chainId, fromAddress, onConfirmed }: ExecuteClaimTransactionParams): Promise<ExecuteClaimTransactionResult> {
+export async function executeClaimTransaction({ rpcUrl, accountKey, method, abi, contractAddress, chainId, fromAddress, amountText, roleAmounts, onConfirmed }: ExecuteClaimTransactionParams): Promise<ExecuteClaimTransactionResult> {
   const context: TradeExecutorContext = buildMeritTradeExecutorContext({ rpcUrl }, { address: fromAddress, isConnected: Boolean(fromAddress), chainId } as TradeExecutorAccount);
-  return executeClaimTransactionCore({ accountKey, method, contractAddress, chainId, rpcUrl, fromAddress, context, abi, onConfirmed });
+  return executeClaimTransactionCore({ accountKey, method, contractAddress, chainId, rpcUrl, fromAddress, context, abi, amountText, roleAmounts, onConfirmed });
 }

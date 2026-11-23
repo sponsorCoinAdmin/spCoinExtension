@@ -44,8 +44,9 @@ export default function MessageDetailsSection({ errorMessage, renderAccountRow, 
       {hasAmount && <MessageLabelValueRow label={errorMessage!.amount!.label} value={errorMessage!.amount!.value} />}
       {hasReason && <MessageLabelValueRow label="Reason" value={errorMessage!.reason!} />}
       {hasGasFee && <MessageLabelValueRow label="Gas Fee" value={errorMessage!.gasFee!} />}
+      {errorMessage?.tokensFirst && hasTokens && errorMessage!.tokens!.map((entry, i) => renderTokenRow(entry, i))}
       {hasAccounts && errorMessage!.accounts!.map((entry, i) => renderAccountRow(entry, i))}
-      {hasTokens && errorMessage!.tokens!.map((entry, i) => renderTokenRow(entry, i))}
+      {!errorMessage?.tokensFirst && hasTokens && errorMessage!.tokens!.map((entry, i) => renderTokenRow(entry, i))}
     </div>
   );
 }

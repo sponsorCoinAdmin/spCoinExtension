@@ -71,6 +71,11 @@ function createMeritTradeExecutor(params: MeritTradeExecutorParams): TradeExecut
             accounts: display?.accounts as PendingSignRequestAccountEntry[] | undefined,
             tokens: display?.tokens as PendingSignRequestTokenEntry[] | undefined,
             amount: amountEntry ? { label: amountEntry.label, value: amountEntry.value } : undefined,
+            // 2026-11-23: the same extra fields every Merit wallet hands its approval screen (a claim's per-role amounts, the call's name, a stake's token and account pills)
+            amounts: (display as { amounts?: Array<{ label: string; value: string }> } | undefined)?.amounts,
+            method: (display as { method?: string } | undefined)?.method,
+            pills: (display as { pills?: never } | undefined)?.pills,
+            swapStep: (display as { swapStep?: boolean } | undefined)?.swapStep,
           },
         });
         // Wait for the block so the caller can say "confirmed" (the web app's signer does the same) and show block / gas.

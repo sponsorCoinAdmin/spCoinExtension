@@ -1,4 +1,13 @@
 import type { ApprovalRequestInfo } from '../vault/approvals';
+export interface PillEntry {
+    label: string;
+    kind: 'token' | 'account';
+    address: string;
+    symbol?: string;
+    name?: string;
+    logoURL?: string;
+    value?: string;
+}
 export interface ApprovalView {
     title: string;
     message: string;
@@ -11,8 +20,15 @@ export interface ApprovalView {
         label: string;
         value: string;
     };
+    amounts?: Array<{
+        label: string;
+        value: string;
+    }>;
+    pills?: PillEntry[];
     chainId?: number;
     contractAddress?: string;
+    /** The contract method, shown on its own left-justified Method row when the request names it. */
+    method?: string;
     /** Set for a request that brings its own display with tokens (a swap): the browser wallet draws it with ApproveTransactionPanel. */
     approve?: ApproveView;
 }

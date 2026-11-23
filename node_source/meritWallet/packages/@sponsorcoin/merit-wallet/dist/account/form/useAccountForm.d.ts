@@ -46,7 +46,7 @@ export declare function useAccountForm({ connected, activeAddress, targetAddress
     disableRevert: boolean;
     publicKey: string;
     formData: AccountFormData;
-    errors: Partial<Record<"publicKey" | AccountFormField, string>>;
+    errors: Partial<Record<AccountFormField | "publicKey", string>>;
     accountExists: boolean;
     isLoadingAccount: boolean;
     isSaving: boolean;
@@ -54,7 +54,7 @@ export declare function useAccountForm({ connected, activeAddress, targetAddress
     descriptionTextareaRef: import("react").MutableRefObject<HTMLTextAreaElement | null>;
     serverLogoURL: string;
     setFormData: import("react").Dispatch<import("react").SetStateAction<AccountFormData>>;
-    setErrors: import("react").Dispatch<import("react").SetStateAction<Partial<Record<"publicKey" | AccountFormField, string>>>>;
+    setErrors: import("react").Dispatch<import("react").SetStateAction<Partial<Record<AccountFormField | "publicKey", string>>>>;
     handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
     handleFieldBlur: (field: AccountFormField) => void;
     handlePublicKeyChange: (e: React.ChangeEvent<HTMLInputElement>) => void;

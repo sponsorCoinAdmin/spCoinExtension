@@ -112,6 +112,7 @@ export function registerStandaloneTradeHosts(authenticator: Authenticator, chain
         return { account: { address: from, isConnected: Boolean(from), chainId }, executor: createStandaloneTradeExecutor(authenticator, from, rpcUrl || rpcOf(chainId) || '') };
       },
       activeSpCoinAddress,
+      fallbackActiveAccountAddress: hostActiveAddress,
       sponsorQuote,
       abi: SPOIN_STAKE_ABI as Abi,
       readStep,

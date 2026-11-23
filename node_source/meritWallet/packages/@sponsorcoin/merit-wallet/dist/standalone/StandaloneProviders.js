@@ -7,8 +7,13 @@
 'use client';
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DisplayStackProvider, ExchangeProviderCore, PanelBootstrap, buildDefaultExchangeContext, clone as cloneContext, deriveStandardBootPanelState, disableHostApi, } from '@sponsorcoin/spcoin-exchange-engine';
+import { DisplayStackProvider, ExchangeProviderCore, PanelBootstrap, useActiveSpCoin, buildDefaultExchangeContext, clone as cloneContext, deriveStandardBootPanelState, disableHostApi, } from '@sponsorcoin/spcoin-exchange-engine';
 let hostApiDisabled = false;
+/** 2026-11-23 (owner: new wallets had no active spCoin, and the sponsor quote ran against the stale fallback address, so it said "No Pool"): loads the chain's active spCoin into the exchange context, the same way the web app's AppBootstrap and the extension's ActiveSpCoinLoader do. No UI. */
+function ActiveSpCoinLoader() {
+    useActiveSpCoin();
+    return null;
+}
 export default function StandaloneProviders({ chainId, address, children }) {
     const [queryClient] = useState(() => new QueryClient());
     // The shared libraries ask a hosted app for data by default; a stand-alone wallet has none, so every such call answers 'not available' instead of fetching.
@@ -29,5 +34,5 @@ export default function StandaloneProviders({ chainId, address, children }) {
         features: { hydrateActiveAccount: false, hydrateRoleAccounts: false, tokenRegistryRefresh: false, injectedWalletListener: false, followWalletMinimal: true },
     }));
     const walletSource = { ready: true, address: address, isConnected: !!address, chainId };
-    return React.createElement(QueryClientProvider, { client: queryClient }, React.createElement(ExchangeProviderCore, { walletSource, bootExtensions: { derivePanelState: deriveStandardBootPanelState }, host }, React.createElement(PanelBootstrap), children));
+    return React.createElement(QueryClientProvider, { client: queryClient }, React.createElement(ExchangeProviderCore, { walletSource, bootExtensions: { derivePanelState: deriveStandardBootPanelState }, host }, React.createElement(PanelBootstrap), React.createElement(ActiveSpCoinLoader), children));
 }

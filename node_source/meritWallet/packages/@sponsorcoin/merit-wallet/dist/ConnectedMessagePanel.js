@@ -20,7 +20,7 @@ import { pendingApprovalMessageStore } from './approval/pendingApprovalMessageSt
 import TransactionApprovalScreen from './approval/TransactionApprovalScreen';
 /** The web app's MessageTokenRow, unchanged. */
 function DefaultTokenRow({ entry }) {
-    return (_jsxs("div", { style: messageRowStyle.tokenColumn, children: [_jsxs("div", { style: messageRowStyle.line, children: [_jsx(TokenLogo, { tokenContract: entry.token, className: "", style: messageRowStyle.tokenLogo }), _jsxs("span", { style: messageRowStyle.label, children: [_jsxs("span", { style: messageRowStyle.role, children: [entry.label, ":"] }), ' ', [entry.token.symbol, entry.token.name].filter(Boolean).join(': ')] })] }), entry.detail && _jsx("div", { style: messageRowStyle.detail, children: entry.detail })] }));
+    return (_jsxs("div", { style: messageRowStyle.tokenColumn, children: [_jsxs("div", { style: messageRowStyle.line, children: [_jsx(TokenLogo, { tokenContract: entry.token, className: "", style: messageRowStyle.tokenLogo }), _jsxs("span", { style: messageRowStyle.label, children: [_jsxs("span", { style: messageRowStyle.role, children: [entry.label.replace(/:$/, ''), ":"] }), ' ', [entry.token.symbol, entry.token.name].filter(Boolean).join(': ')] })] }), entry.detail && _jsx("div", { style: messageRowStyle.detail, children: entry.detail })] }));
 }
 export default function ConnectedMessagePanel({ renderAccountRow, renderTokenRow }) {
     const { errorMessage } = useExchangeContext();

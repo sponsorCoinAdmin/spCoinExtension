@@ -27,7 +27,7 @@ function DefaultTokenRow({ entry }: { entry: MessageTokenEntry }) {
       <div style={messageRowStyle.line}>
         <TokenLogo tokenContract={entry.token} className="" style={messageRowStyle.tokenLogo} />
         <span style={messageRowStyle.label}>
-          <span style={messageRowStyle.role}>{entry.label}:</span>{' '}
+          <span style={messageRowStyle.role}>{entry.label.replace(/:$/, '')}:</span>{' '}
           {[entry.token.symbol, entry.token.name].filter(Boolean).join(': ')}
         </span>
       </div>

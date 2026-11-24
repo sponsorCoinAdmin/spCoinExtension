@@ -35,7 +35,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl } from './display/walletFrameScale';
+import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX } from './display/walletFrameScale';
 import { usePeerStates } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
@@ -43,7 +43,7 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import { ensureAbsoluteAssetURL } from './account/form/formHelpers';
 import { loadAccountRecord, registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
-import { StakeConfirmPopup, useWalletListed, amountGate, TableDataScaleProvider } from '@sponsorcoin/spcoin-panels';
+import { StakeConfirmPopup, useWalletListed, amountGate, TableDataScaleProvider, MetaTableScaleProvider } from '@sponsorcoin/spcoin-panels';
 import { usePanelTree, usePanelVisible, useOpenActiveListPanel, useActiveListPanelChild, useEnforceRadioPanelGroups, useEnforcePanelAncestorVisibility, useAgentAccount, useActiveAccount, useSelectedAccount, buildSpCoinAccount, hydrateAccountFromAddress, useExchangeContext, useSellTokenContract, useBuyTokenContract, useActiveListPanelParams, useUniBuyTokenContract, useSlippage, useTradeDirection, useSellAmount, useBuyAmount, activeListPanelStore, panelTreeTrace, useDisplayStack, usePreviewTokenContract, clampDisplay, isIntermediateDecimal, maxInputSz, TYPING_GRACE_MS, } from '@sponsorcoin/spcoin-exchange-engine';
 import { ImportNetwork, useHideTodoNetworks, useWalletMode, resolveWalletMode, AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, AccountListCard, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, NetworkListTable, WalletConfigPanel, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import { domPlatform } from './platform/domPlatform';
@@ -366,6 +366,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
     // 2026-11-22: a host with no scale control of its own (everything but the browser host) gets the wallet's own, which zooms this frame
     const frameScale = useWalletFrameScale();
     const tableScale = useTableDataScale();
+    const metaTableScale = useMetaTableScale();
     const ownScale = !configDisplaySizeContent;
     const menuSeeded = useRef(false);
     useEffect(() => {
@@ -1626,6 +1627,7 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                             testChoice: TEST_CHOICE_AVAILABLE,
                             displaySizeContent: configDisplaySizeContent ?? frameScaleControl(frameScale),
                             tableDataSizeContent: tableScaleControl(tableScale),
+                            metaTableSizeContent: metaTableScaleControl(metaTableScale),
                             // 2026-11-23 (owner): the Trading Engines boxes show what the Swap tab really draws (the engine's panels in the panel tree), not a host's copy that can fall behind; a host's handler still runs, and without one the box turns the engine's panels on/off itself
                             uniSelectVisible: uniPanelVisible,
                             onUniswapEngineChange: (checked) => {
@@ -2363,54 +2365,54 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
         openPanel(TAB_PANEL_IDS[activeTab], 'MeritWallet:seedActiveTab');
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [seedTabOnStack, passwordPanelShowing, displayStackIds.length, activeTab]);
-    return (_jsx(ImageCacheContext.Provider, { value: imageCacheValue, children: _jsx(TableDataScaleProvider, { percent: tableScale.percent, children: _jsx(RefreshTreeProvider, { tree: refreshTree, refreshToken: refreshToken ?? 0, onDone: setTreeDoneToken, children: _jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), activeAddress: String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: ownScale ? walletFrameStyle.scaled(walletFrameStyle.frame(fullWidth, docked), frameScale.percent) : walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx("div", { style: debugBugStyle.corner, children: _jsx(DebugBugButton, {}) })), passwordPanelShowing && (
-                                    // 2026-11-19 (owner): the grey header is ALWAYS on the login screen (it holds the close X, and the ladybug sits left of it), so it is not behind the panel-tree switch
-                                    _jsx(LoginHeader, { title: recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login', onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_NETWORK_HEADER, lazyLoad: false, children: _jsx(WalletNetworkHeader, { mode: "normal", leftSlot: _jsx(NetworkSelectDropDown, { label: activeNetworkRow?.name, symbol: activeChainInfo?.symbol ?? activeNetworkRow?.symbol, name: activeChainInfo?.name ?? activeNetworkRow?.name, id: activeNetworkRow?.id, 
-                                                // 2026-09-16, on live report ("the NetworkSelectDropDown is
-                                                // not showing the network icon in the WALLET_NETWORK_HEADER")
-                                                // — activeNetworkRow.iconSrc was already real (same value the
-                                                // Select Network list's own rows resolve their icon from
-                                                // below), this render site just never turned it into an
-                                                // <img> and passed it into NetworkSelectDropDown's own icon
-                                                // slot — same conversion the network-list rows already do.
-                                                icon: activeNetworkRow?.iconSrc
-                                                    ? React.createElement('img', {
-                                                        src: activeNetworkRow.iconSrc,
-                                                        alt: '',
-                                                        style: fitImageStyle,
-                                                    })
-                                                    : undefined, onSelectClick: () => toggleList('network'), onIconClick: activeNetworkRow
-                                                    ? () => {
-                                                        openNetworkDetail(activeNetworkRow.id);
-                                                        onNetworkIconClick?.(activeNetworkRow.id);
-                                                    }
-                                                    : undefined, chevronUp: activeListMode === 'network' || activeChild === SP_COIN_DISPLAY.NETWORK_LIST }), titleBadgeSrc: titleBadgeSrc, extraActions: _jsx(DebugBugButton, {}), onRefresh: onRefresh, refreshing: refreshBusy, onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_ACCOUNT_HEADER, lazyLoad: false, children: _jsx(WalletAccountHeader, { icon: activeAccountEntry?.icon, address: activeAccountEntry?.address, symbol: activeAccountEntry?.symbol, name: activeAccountEntry?.name, placeholderLabel: "Select Account", onSelectClick: () => toggleList('account'), onIconClick: (address) => {
-                                                if (!address)
-                                                    return;
-                                                openAccountDetail(address);
-                                                onAccountIconClick?.(address);
-                                            }, 
-                                            // 2026-11-11 (owner): a right click on the avatar opens ACCOUNT_PANEL too, through AccountSelectDropDown
-                                            onIconContextMenu: (address) => { if (address)
-                                                openAccountDetail(address); }, walletName: activeWalletName }) })), !passwordPanelShowing && (_jsx(AgentHeaderPanel, { agentName: agentAccount?.name, agentLogoURL: agentAccount?.logoURL, children: _jsx(ConnectedAgentSelectDropDown, {}) })), _jsxs("div", { style: walletFrameStyle.body, children: [!passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.PANEL_TITLE, lazyLoad: false, children: _jsx(PanelTitle, { title: panelTitle, onMenuClick: handleMenuClick, menuOpen: menuTabHeaderVisible, 
-                                                    // 2026-10-03, on request — on the Account Login / Create Account
-                                                    // screen the title bar shows only its title: no back button (nothing
-                                                    // to go back to while locked) and no hamburger menu.
-                                                    hideBackButton: passwordPanelShowing, hideMenuButton: passwordPanelShowing, 
-                                                    // 2026-09-15 — the back arrow already existed (inert, no
-                                                    // onBackClick ever passed); now real whenever a list overlay is
-                                                    // open, closing it back to the tab it was opened from.
-                                                    // 2026-10-05, task 11c (live report: back arrow did nothing
-                                                    // with SPONSORSHIP_PANEL open — no detail overlay was open,
-                                                    // so this was `undefined` and the click was inert) — final
-                                                    // fallback is now the real panel-tree pop-top: closePanel's
-                                                    // legacy string-first overload pops the top IS_STACK_COMPONENT
-                                                    // off displayStack, hides it (NAV_CLOSE: invoker →
-                                                    // radio-restore-on-pop) and re-opens whatever is next on the
-                                                    // stack (usePanelTree.ts's closePanel pop-top branch). No-ops
-                                                    // safely when the stack is empty. Same call shape as the web
-                                                    // app's own ActiveWalletPanelTitle back button.
-                                                    onBackClick: handleBack }) })), _jsx(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: _jsxs(WalletRadioPanels, { children: [bodyWithTab, stakingListNode] }) })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession })] }) }) }) }) }) }) }));
+    return (_jsx(ImageCacheContext.Provider, { value: imageCacheValue, children: _jsx(TableDataScaleProvider, { percent: tableScale.percent, onChange: tableScale.setPercent, min: TABLE_SCALE_MIN, max: TABLE_SCALE_MAX, children: _jsx(MetaTableScaleProvider, { percent: metaTableScale.percent, onChange: metaTableScale.setPercent, min: META_SCALE_MIN, max: META_SCALE_MAX, children: _jsx(RefreshTreeProvider, { tree: refreshTree, refreshToken: refreshToken ?? 0, onDone: setTreeDoneToken, children: _jsx(WalletBalanceContext.Provider, { value: walletBalanceValue, children: _jsx(WalletConnectProvider, { hasAccount: !!String(activeAccountAddress ?? '').trim(), activeAddress: String(activeAccountAddress ?? '').trim(), openAccountList: () => setActiveList('account'), children: _jsx(ActiveAccountProfileContext.Provider, { value: activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined, children: _jsxs("div", { className: walletFrameClassName, style: ownScale ? walletFrameStyle.scaled(walletFrameStyle.frame(fullWidth, docked), frameScale.percent) : walletFrameStyle.frame(fullWidth, docked), children: [_jsx("style", { children: walletFrameCss }), passwordPanelShowing && (_jsx("div", { style: debugBugStyle.corner, children: _jsx(DebugBugButton, {}) })), passwordPanelShowing && (
+                                        // 2026-11-19 (owner): the grey header is ALWAYS on the login screen (it holds the close X, and the ladybug sits left of it), so it is not behind the panel-tree switch
+                                        _jsx(LoginHeader, { title: recoveryPhrase || passwordMode === 'setup' ? 'Create Merit Wallet Account' : 'Merit Wallet Login', onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_NETWORK_HEADER, lazyLoad: false, children: _jsx(WalletNetworkHeader, { mode: "normal", leftSlot: _jsx(NetworkSelectDropDown, { label: activeNetworkRow?.name, symbol: activeChainInfo?.symbol ?? activeNetworkRow?.symbol, name: activeChainInfo?.name ?? activeNetworkRow?.name, id: activeNetworkRow?.id, 
+                                                    // 2026-09-16, on live report ("the NetworkSelectDropDown is
+                                                    // not showing the network icon in the WALLET_NETWORK_HEADER")
+                                                    // — activeNetworkRow.iconSrc was already real (same value the
+                                                    // Select Network list's own rows resolve their icon from
+                                                    // below), this render site just never turned it into an
+                                                    // <img> and passed it into NetworkSelectDropDown's own icon
+                                                    // slot — same conversion the network-list rows already do.
+                                                    icon: activeNetworkRow?.iconSrc
+                                                        ? React.createElement('img', {
+                                                            src: activeNetworkRow.iconSrc,
+                                                            alt: '',
+                                                            style: fitImageStyle,
+                                                        })
+                                                        : undefined, onSelectClick: () => toggleList('network'), onIconClick: activeNetworkRow
+                                                        ? () => {
+                                                            openNetworkDetail(activeNetworkRow.id);
+                                                            onNetworkIconClick?.(activeNetworkRow.id);
+                                                        }
+                                                        : undefined, chevronUp: activeListMode === 'network' || activeChild === SP_COIN_DISPLAY.NETWORK_LIST }), titleBadgeSrc: titleBadgeSrc, extraActions: _jsx(DebugBugButton, {}), onRefresh: onRefresh, refreshing: refreshBusy, onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_ACCOUNT_HEADER, lazyLoad: false, children: _jsx(WalletAccountHeader, { icon: activeAccountEntry?.icon, address: activeAccountEntry?.address, symbol: activeAccountEntry?.symbol, name: activeAccountEntry?.name, placeholderLabel: "Select Account", onSelectClick: () => toggleList('account'), onIconClick: (address) => {
+                                                    if (!address)
+                                                        return;
+                                                    openAccountDetail(address);
+                                                    onAccountIconClick?.(address);
+                                                }, 
+                                                // 2026-11-11 (owner): a right click on the avatar opens ACCOUNT_PANEL too, through AccountSelectDropDown
+                                                onIconContextMenu: (address) => { if (address)
+                                                    openAccountDetail(address); }, walletName: activeWalletName }) })), !passwordPanelShowing && (_jsx(AgentHeaderPanel, { agentName: agentAccount?.name, agentLogoURL: agentAccount?.logoURL, children: _jsx(ConnectedAgentSelectDropDown, {}) })), _jsxs("div", { style: walletFrameStyle.body, children: [!passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.PANEL_TITLE, lazyLoad: false, children: _jsx(PanelTitle, { title: panelTitle, onMenuClick: handleMenuClick, menuOpen: menuTabHeaderVisible, 
+                                                        // 2026-10-03, on request — on the Account Login / Create Account
+                                                        // screen the title bar shows only its title: no back button (nothing
+                                                        // to go back to while locked) and no hamburger menu.
+                                                        hideBackButton: passwordPanelShowing, hideMenuButton: passwordPanelShowing, 
+                                                        // 2026-09-15 — the back arrow already existed (inert, no
+                                                        // onBackClick ever passed); now real whenever a list overlay is
+                                                        // open, closing it back to the tab it was opened from.
+                                                        // 2026-10-05, task 11c (live report: back arrow did nothing
+                                                        // with SPONSORSHIP_PANEL open — no detail overlay was open,
+                                                        // so this was `undefined` and the click was inert) — final
+                                                        // fallback is now the real panel-tree pop-top: closePanel's
+                                                        // legacy string-first overload pops the top IS_STACK_COMPONENT
+                                                        // off displayStack, hides it (NAV_CLOSE: invoker →
+                                                        // radio-restore-on-pop) and re-opens whatever is next on the
+                                                        // stack (usePanelTree.ts's closePanel pop-top branch). No-ops
+                                                        // safely when the stack is empty. Same call shape as the web
+                                                        // app's own ActiveWalletPanelTitle back button.
+                                                        onBackClick: handleBack }) })), _jsx(MenuTabHeaderBar, { open: menuTabHeaderVisible && !passwordPanelShowing, activeTab: highlightedTab, onTabClick: handleTabClick, children: _jsxs(WalletRadioPanels, { children: [bodyWithTab, stakingListNode] }) })] }), _jsx(WalletSessionDialogs, { dialog: sessionDialog, onClose: () => setSessionDialog(null), session: walletSession })] }) }) }) }) }) }) }) }));
 }
 let warnedNoAccountSource = false;
 /**

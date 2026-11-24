@@ -10,9 +10,10 @@
 'use client';
 
 import React from 'react';
-import { accountDetailClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { accountDetailClass, metaTableScaleStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible, useSetPanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { useMetaTableScale, usePinchMetaTable } from '@sponsorcoin/spcoin-panels';
 import DetailImageBlock, { type DetailAvatarProps } from './DetailImageBlock';
 import { RefreshBranch } from '../refresh/refreshReact';
 
@@ -54,6 +55,10 @@ export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId,
   const activeAccountHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
   const logoVisible = usePanelVisible(logoFlag);
   const metaVisible = usePanelVisible(metaFlag);
+  // 2026-11-24 (owner): the Meta Table Size slider zooms the meta table of every detail screen, here, the one place they share
+  const metaTableScale = useMetaTableScale();
+  // 2026-11-24 (owner): a two-finger pinch on the meta table changes the Meta Table Size
+  const pinch = usePinchMetaTable();
   const setPanelVisible = useSetPanelVisible();
   const resizeSignal = [menuTabHeaderOpen, activeAccountHeaderOpen, resizeKey].join(':');
   // 2026-11-09 (owner: no unnecessary wrappers): screen -> body -> block -> picture box -> picture. The screen is the <form> itself when it submits; the body is the shared stacked column; the logo block is DetailImageBlock.
@@ -72,7 +77,7 @@ export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId,
         />
       ) : null}
       {metaVisible ? (
-        <div id={metaId} className={accountDetailClass.metaBlock}>
+        <div id={metaId} ref={pinch.ref} className={accountDetailClass.metaBlock} style={metaTableScaleStyle.apply(metaTableScale, pinch.style)}>
           {table}
         </div>
       ) : null}

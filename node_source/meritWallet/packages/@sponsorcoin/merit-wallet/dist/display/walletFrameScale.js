@@ -9,6 +9,9 @@ const KEY = 'merit.walletFrameScale.v1';
 const TABLE_KEY = 'merit.tableDataScale.v1';
 export const FRAME_SCALE_MIN = 80;
 export const FRAME_SCALE_MAX = 200;
+const META_KEY = 'merit.metaTableScale.v1';
+export const META_SCALE_MIN = 80;
+export const META_SCALE_MAX = 200;
 export const TABLE_SCALE_MIN = 60;
 export const TABLE_SCALE_MAX = 120;
 function parse(raw, min, max) {
@@ -28,7 +31,7 @@ export function useWalletFrameScale() {
 export function frameScaleControl(scale) {
     return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: FRAME_SCALE_MIN, max: FRAME_SCALE_MAX });
 }
-/** The Table Data Size (the tables' own zoom), kept in the platform's preference store; 100 = as designed. */
+/** The Data Table Size (the tables' own zoom; renamed from Table Data Size 2026-11-24, owner), kept in the platform's preference store; 100 = as designed. */
 export function useTableDataScale() {
     const { storage } = usePlatform();
     const [percent, set] = useState(() => parse(storage.get(TABLE_KEY), TABLE_SCALE_MIN, TABLE_SCALE_MAX));
@@ -39,5 +42,18 @@ export function useTableDataScale() {
     return { percent, setPercent };
 }
 export function tableScaleControl(scale) {
-    return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: TABLE_SCALE_MIN, max: TABLE_SCALE_MAX, title: 'Table Data Size', panelId: 'TABLE_DATA_SIZE_PANEL' });
+    return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: TABLE_SCALE_MIN, max: TABLE_SCALE_MAX, title: 'Data Table Size', panelId: 'TABLE_DATA_SIZE_PANEL' });
+}
+/** 2026-11-24 (owner): the Meta Table Size (the detail screens' meta tables), kept in the platform's preference store; 100 = as designed. */
+export function useMetaTableScale() {
+    const { storage } = usePlatform();
+    const [percent, set] = useState(() => parse(storage.get(META_KEY), META_SCALE_MIN, META_SCALE_MAX));
+    const setPercent = useCallback((next) => {
+        set(next);
+        storage.set(META_KEY, String(next));
+    }, [storage]);
+    return { percent, setPercent };
+}
+export function metaTableScaleControl(scale) {
+    return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: META_SCALE_MIN, max: META_SCALE_MAX, title: 'Meta Table Size', panelId: 'META_TABLE_SIZE_PANEL' });
 }

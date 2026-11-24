@@ -9,9 +9,10 @@
 // A screen supplies only what differs: the avatar's own props (the image, the upload button or none, the words of the toggle) and the meta block's content.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { accountDetailClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { accountDetailClass, metaTableScaleStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible, useSetPanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
+import { useMetaTableScale, usePinchMetaTable } from '@sponsorcoin/spcoin-panels';
 import DetailImageBlock from './DetailImageBlock';
 import { RefreshBranch } from '../refresh/refreshReact';
 /** 2026-11-09 (owner): the space (px) kept clear around the image inside its box when a screen does not set its own: 20 above, 5 below, 20 left and right. */
@@ -22,10 +23,14 @@ export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId,
     const activeAccountHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);
     const logoVisible = usePanelVisible(logoFlag);
     const metaVisible = usePanelVisible(metaFlag);
+    // 2026-11-24 (owner): the Meta Table Size slider zooms the meta table of every detail screen, here, the one place they share
+    const metaTableScale = useMetaTableScale();
+    // 2026-11-24 (owner): a two-finger pinch on the meta table changes the Meta Table Size
+    const pinch = usePinchMetaTable();
     const setPanelVisible = useSetPanelVisible();
     const resizeSignal = [menuTabHeaderOpen, activeAccountHeaderOpen, resizeKey].join(':');
     // 2026-11-09 (owner: no unnecessary wrappers): screen -> body -> block -> picture box -> picture. The screen is the <form> itself when it submits; the body is the shared stacked column; the logo block is DetailImageBlock.
-    const body = (_jsxs("div", { id: "ACTIVE_ACCOUNT_BODY", className: walletPartClass.accountBody(activeBody), children: [logoVisible ? (_jsx(DetailImageBlock, { id: logoId, last: !metaVisible && activeBody, ...avatar, imageBuffer: { t: tBuffer ?? DEFAULT_IMAGE_BUFFER.t, b: bBuffer ?? DEFAULT_IMAGE_BUFFER.b, r: rBuffer ?? DEFAULT_IMAGE_BUFFER.r, l: lBuffer ?? DEFAULT_IMAGE_BUFFER.l }, toggleOn: metaVisible, onToggle: () => setPanelVisible(metaFlag, !metaVisible, toggleTrace), sectionBottomBuffer: activeBody ? 18 : 8, resizeSignal: resizeSignal })) : null, metaVisible ? (_jsx("div", { id: metaId, className: accountDetailClass.metaBlock, children: table })) : null] }));
+    const body = (_jsxs("div", { id: "ACTIVE_ACCOUNT_BODY", className: walletPartClass.accountBody(activeBody), children: [logoVisible ? (_jsx(DetailImageBlock, { id: logoId, last: !metaVisible && activeBody, ...avatar, imageBuffer: { t: tBuffer ?? DEFAULT_IMAGE_BUFFER.t, b: bBuffer ?? DEFAULT_IMAGE_BUFFER.b, r: rBuffer ?? DEFAULT_IMAGE_BUFFER.r, l: lBuffer ?? DEFAULT_IMAGE_BUFFER.l }, toggleOn: metaVisible, onToggle: () => setPanelVisible(metaFlag, !metaVisible, toggleTrace), sectionBottomBuffer: activeBody ? 18 : 8, resizeSignal: resizeSignal })) : null, metaVisible ? (_jsx("div", { id: metaId, ref: pinch.ref, className: accountDetailClass.metaBlock, style: metaTableScaleStyle.apply(metaTableScale, pinch.style), children: table })) : null] }));
     // the screen is a branch of the refresh tree (named by its logo block: ACCOUNT_LOGO -> ACCOUNT_PANEL); the image and any table inside it are its children
     return (_jsx(RefreshBranch, { id: logoId.replace(/_LOGO$/, '_PANEL'), children: onSubmit ? (_jsx("form", { id: screenId, onSubmit: onSubmit, className: accountDetailClass.screen, children: body })) : (_jsx("div", { id: screenId, className: accountDetailClass.screen, children: body })) }));
 }

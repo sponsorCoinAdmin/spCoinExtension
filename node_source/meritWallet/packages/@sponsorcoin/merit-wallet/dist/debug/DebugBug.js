@@ -67,8 +67,8 @@ export function DebugBugButton() {
 export function DebugConfigSection() {
     const platform = usePlatform();
     const enabled = useDebugEnabled();
-    return (_jsxs("div", { children: [_jsxs("label", { style: debugBugStyle.checkRow, children: [_jsx("input", { type: "checkbox", id: "MERIT_DEBUG_CHECK", checked: enabled, onChange: (event) => {
-                            meritDebug.setEnabled(event.target.checked);
-                            platform.storage.set(ENABLED_KEY, String(event.target.checked));
-                        } }), "Debug (red ladybug in the header, Ctrl+Alt+B)"] }), _jsx("p", { style: debugBugStyle.hint, children: "Shows one text dump of this wallet (chain, account, clock, rewards, errors) to copy and compare between apps. It holds no passwords or keys." })] }));
+    return (_jsx("div", { children: _jsxs("label", { style: debugBugStyle.checkRow, children: [_jsx("input", { type: "checkbox", id: "MERIT_DEBUG_CHECK", checked: enabled, onChange: (event) => {
+                        meritDebug.setEnabled(event.target.checked);
+                        platform.storage.set(ENABLED_KEY, String(event.target.checked));
+                    } }), "Debug (red ladybug in the header, Ctrl+Alt+B)"] }) }));
 }

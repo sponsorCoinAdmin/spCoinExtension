@@ -128,7 +128,6 @@ export function DebugConfigSection() {
         />
         Debug (red ladybug in the header, Ctrl+Alt+B)
       </label>
-      <p style={debugBugStyle.hint}>Shows one text dump of this wallet (chain, account, clock, rewards, errors) to copy and compare between apps. It holds no passwords or keys.</p>
     </div>
   );
 }

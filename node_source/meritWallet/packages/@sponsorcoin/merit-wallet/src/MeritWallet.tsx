@@ -2346,10 +2346,20 @@ function MeritWalletInner({
                 testChoice: TEST_CHOICE_AVAILABLE,
                 displaySizeContent: configDisplaySizeContent ?? frameScaleControl(frameScale),
                 tableDataSizeContent: tableScaleControl(tableScale),
-                uniSelectVisible: configUniSelectVisible,
-                onUniswapEngineChange: onConfigUniswapEngineChange,
-                zeroXEngineVisible: configZeroXEngineVisible,
-                on0xEngineChange: onConfig0xEngineChange,
+                // 2026-11-23 (owner): the Trading Engines boxes show what the Swap tab really draws (the engine's panels in the panel tree), not a host's copy that can fall behind; a host's handler still runs, and without one the box turns the engine's panels on/off itself
+                uniSelectVisible: uniPanelVisible,
+                onUniswapEngineChange: (checked: boolean) => {
+                  setRealPanelVisible(SP_COIN_DISPLAY.UNI_SELECT_PANEL, checked, 'WalletConfig:uniswapEngine');
+                  setRealPanelVisible(SP_COIN_DISPLAY.UNI_TRADE_BUTTON, checked, 'WalletConfig:uniswapEngine');
+                  onConfigUniswapEngineChange?.(checked);
+                },
+                zeroXEngineVisible: zeroXVisible,
+                on0xEngineChange: (checked: boolean) => {
+                  setRealPanelVisible(SP_COIN_DISPLAY.ZERO_X_SELECT_PANEL, checked, 'WalletConfig:zeroXEngine');
+                  setRealPanelVisible(SP_COIN_DISPLAY.ZERO_X_TOKEN_SELECT_DROP_DOWN, checked, 'WalletConfig:zeroXEngine');
+                  setRealPanelVisible(SP_COIN_DISPLAY.ZERO_X_TRADE_BUTTON, checked, 'WalletConfig:zeroXEngine');
+                  onConfig0xEngineChange?.(checked);
+                },
                 resetPanelsContent: configResetPanelsContent,
                 devToolsContent: React.createElement(React.Fragment, null, configDevToolsContent, React.createElement(DebugConfigSection)),
                 extensionChannel: configExtensionChannel,

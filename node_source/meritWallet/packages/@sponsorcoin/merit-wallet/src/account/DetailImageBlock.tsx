@@ -10,10 +10,11 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { accountDetailClass, avatarPanelClass, avatarPreviewStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { accountDetailClass, avatarPanelClass, avatarPreviewStyle, detailImagePanelStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import AvatarControls from './form/AvatarControls';
 import AvatarPicture from './form/AvatarPicture';
 import { useAvatarPreviewSize } from './form/useAvatarPreviewSize';
+import { imageContentBox, type ImageContentBox } from './form/imageContentBox';
 import { useCachedImage, type CachedImageKind } from '../refresh/refreshReact';
 
 /** What a screen decides about its picture; everything else (the limits, the boundary, the toggle's state) is the layout's. */
@@ -71,7 +72,7 @@ export default function DetailImageBlock({
   hideUpload = false,
   toggleLabel,
   imageKind,
-  fitImageShape = false,
+  fitImageShape = true,
   imageBuffer,
   toggleOn,
   onToggle,
@@ -81,7 +82,9 @@ export default function DetailImageBlock({
   const previewSrc = useCachedImage(logoPreviewSrc, imageKind);
   // the picture's width divided by its height, known once it has loaded (1 until then, and always 1 for a square box)
   const [imageAspect, setImageAspect] = useState(1);
-  const aspect = fitImageShape ? imageAspect : 1;
+  // 2026-11-24 (owner rule 1): the visible pixels of the picture, so the box is cut to them (2px above and below) instead of to the file's own empty margins
+  const [crop, setCrop] = useState<ImageContentBox | undefined>(undefined);
+  const aspect = fitImageShape ? (crop ? (imageAspect * (crop.x1 - crop.x0)) / (crop.y1 - crop.y0) : imageAspect) : 1;
   const blockRef = useRef<HTMLDivElement | null>(null);
   const controlsRef = useRef<HTMLElement | null>(null);
   const noRef = useRef<HTMLElement | null>(null);
@@ -107,14 +110,19 @@ export default function DetailImageBlock({
   );
   return (
     <div id={id} ref={blockRef} className={last ? accountDetailClass.imageBlockLast : accountDetailClass.imageBlock}>
+      {/* 2026-11-24 (owner): the white panel holds the picture AND its two buttons (Select Preview Image / Account Meta), the buttons below the picture */}
+      <div className={detailImagePanelStyle.panelClass} style={detailImagePanelStyle.panel(previewSize)}>
       <AvatarPicture
         boxClass={previewBoxClass ?? avatarPanelClass.previewBox}
-        boxStyle={avatarPreviewStyle(previewSize, imageBuffer, fitImageShape ? aspect : undefined)}
+        boxStyle={{ ...avatarPreviewStyle(previewSize, imageBuffer, fitImageShape ? aspect : undefined), ...detailImagePanelStyle.picture }}
         hasImage={!!logoPreviewSrc}
         src={previewSrc}
         alt={previewAlt}
-        onLoad={fitImageShape ? (event) => { const { naturalWidth, naturalHeight } = event.currentTarget; if (naturalWidth && naturalHeight) setImageAspect(naturalWidth / naturalHeight); } : undefined}
+        onLoad={fitImageShape ? (event) => { const { naturalWidth, naturalHeight } = event.currentTarget; if (naturalWidth && naturalHeight) { setImageAspect(naturalWidth / naturalHeight); setCrop(imageContentBox(event.currentTarget)); } } : undefined}
+        crop={fitImageShape ? crop : undefined}
+        cropAspect={fitImageShape && crop ? aspect : undefined}
       />
+      <div className={detailImagePanelStyle.controlsClass} style={detailImagePanelStyle.controls}>
       <AvatarControls
         connected={connected}
         isEditMode={isEditMode}
@@ -132,6 +140,8 @@ export default function DetailImageBlock({
         onToggle={onToggle}
         controlRef={controlsRef}
       />
+      </div>
+      </div>
     </div>
   );
 }

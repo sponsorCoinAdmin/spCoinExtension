@@ -3,9 +3,10 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { type DetailAvatarProps } from './DetailImageBlock';
 export type { DetailAvatarProps };
 /** 2026-11-09 (owner): the space (px) kept clear around the image inside its box when a screen does not set its own: 20 above, 5 below, 20 left and right. */
+/** 2026-11-24 (owner rule 1, changed from 2px to 0px): the box holds the picture edge to edge, top and bottom, on every detail screen. */
 export declare const DEFAULT_IMAGE_BUFFER: {
-    readonly t: 20;
-    readonly b: 5;
+    readonly t: 0;
+    readonly b: 0;
     readonly l: 20;
     readonly r: 20;
 };
@@ -29,7 +30,7 @@ export interface DetailScreenLayoutProps {
     resizeKey?: string;
     /** The words the panel-tree trace shows for the toggle. */
     toggleTrace: string;
-    /** Optional px kept clear between the image box's edges and the image: top, bottom, right, left. A screen that sets none gets DEFAULT_IMAGE_BUFFER (top 20, bottom 5, left 20, right 20); one that sets some gets the default for the rest. */
+    /** Optional px kept clear between the image box's edges and the image: top, bottom, right, left. A screen that sets none gets DEFAULT_IMAGE_BUFFER (top 0, bottom 0, left 20, right 20); one that sets some gets the default for the rest. */
     tBuffer?: number;
     bBuffer?: number;
     rBuffer?: number;

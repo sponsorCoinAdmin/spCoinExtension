@@ -5,8 +5,9 @@
 'use client';
 
 import React from 'react';
-import { avatarPanelClass } from '@sponsorcoin/spcoin-common/styles';
+import { avatarPanelClass, avatarPictureCropStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
+import type { ImageContentBox } from './imageContentBox';
 
 export interface AvatarPictureProps {
   boxClass: string;
@@ -16,12 +17,16 @@ export interface AvatarPictureProps {
   src: string;
   alt: string;
   onLoad?: React.ReactEventHandler<HTMLImageElement>;
+  /** Show only this part of the picture (its visible pixels), filling the box. */
+  crop?: ImageContentBox;
+  /** width / height of the cropped part: the box takes this shape at whatever width it has, so the picture is never stretched. */
+  cropAspect?: number;
 }
 
-export default function AvatarPicture({ boxClass, boxStyle, hasImage, src, alt, onLoad }: AvatarPictureProps) {
+export default function AvatarPicture({ boxClass, boxStyle, hasImage, src, alt, onLoad, crop, cropAspect }: AvatarPictureProps) {
   return (
-    <div className={boxClass} style={boxStyle}>
-      {hasImage ? <img src={src} onLoad={onLoad} alt={alt} className={avatarPanelClass.previewImage} /> : <img src={ANONYMOUS_ACCOUNT_AVATAR_URL} alt="No picture" className={avatarPanelClass.previewImage} />}
+    <div className={boxClass} style={crop && cropAspect ? avatarPictureCropStyle.box(boxStyle) : boxStyle}>
+      {hasImage && crop ? <div style={avatarPictureCropStyle.viewport(cropAspect)}><img src={src} onLoad={onLoad} alt={alt} style={avatarPictureCropStyle.image(crop)} /></div> : hasImage ? <img src={src} onLoad={onLoad} alt={alt} className={avatarPanelClass.previewImage} /> : <img src={ANONYMOUS_ACCOUNT_AVATAR_URL} alt="No picture" className={avatarPanelClass.previewImage} />}
     </div>
   );
 }

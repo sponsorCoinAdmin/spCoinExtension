@@ -85,7 +85,7 @@ export default function AccountAvatarPanel({
   const headingRef = useRef<HTMLDivElement | null>(null);
   const selectedRowRef = useRef<HTMLDivElement | null>(null);
   const uploadControlTextClass =
-    uploadControlTextClassName ?? 'px-6 text-center text-[120%] font-bold';
+    uploadControlTextClassName ?? 'px-1 text-center text-xs font-bold whitespace-nowrap';
   const hasSelectedRow = Boolean(selectedRowContent);
 
   // the size of the preview is the shared rule (useAvatarPreviewSize.ts), the same one the detail screens' image block uses

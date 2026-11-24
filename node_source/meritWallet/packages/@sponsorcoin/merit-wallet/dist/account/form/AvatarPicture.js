@@ -4,8 +4,8 @@
 // Account pages, AccountAvatarPanel.tsx) both draw it: a box of the given size and class with the picture in it, or the standard Anonymous.png (2026-11-12, owner: not the words "No logo found on server") when there is none.
 'use client';
 import { jsx as _jsx } from "react/jsx-runtime";
-import { avatarPanelClass } from '@sponsorcoin/spcoin-common/styles';
+import { avatarPanelClass, avatarPictureCropStyle } from '@sponsorcoin/spcoin-common/styles';
 import { ANONYMOUS_ACCOUNT_AVATAR_URL } from '@sponsorcoin/spcoin-feeds/accounts';
-export default function AvatarPicture({ boxClass, boxStyle, hasImage, src, alt, onLoad }) {
-    return (_jsx("div", { className: boxClass, style: boxStyle, children: hasImage ? _jsx("img", { src: src, onLoad: onLoad, alt: alt, className: avatarPanelClass.previewImage }) : _jsx("img", { src: ANONYMOUS_ACCOUNT_AVATAR_URL, alt: "No picture", className: avatarPanelClass.previewImage }) }));
+export default function AvatarPicture({ boxClass, boxStyle, hasImage, src, alt, onLoad, crop, cropAspect }) {
+    return (_jsx("div", { className: boxClass, style: crop && cropAspect ? avatarPictureCropStyle.box(boxStyle) : boxStyle, children: hasImage && crop ? _jsx("div", { style: avatarPictureCropStyle.viewport(cropAspect), children: _jsx("img", { src: src, onLoad: onLoad, alt: alt, style: avatarPictureCropStyle.image(crop) }) }) : hasImage ? _jsx("img", { src: src, onLoad: onLoad, alt: alt, className: avatarPanelClass.previewImage }) : _jsx("img", { src: ANONYMOUS_ACCOUNT_AVATAR_URL, alt: "No picture", className: avatarPanelClass.previewImage }) }));
 }

@@ -155,7 +155,7 @@ export function walletName(id: string, platform?: WalletPlatform): string {
   // FALLBACK ONLY: a table of the built-in ids, for an authenticator that supplies no displayName. A new wallet supplies its own name (authenticatorName); nothing is added here.
 
   if (id === 'serverKeystore') return 'Merit (Web App)';
-  if (id === 'browserVault') return 'Merit Wallet (Web)';
+  if (id === 'browserVault') return 'Merit (Web)';
   if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit') return 'Merit (Ext)';
   if (id === 'deviceVault') return platform ? `Merit Wallet (${PLATFORM_WORDS[platform]})` : 'Merit Wallet (Phone)';
   if (id === 'injected:io.metamask') return 'MetaMask';

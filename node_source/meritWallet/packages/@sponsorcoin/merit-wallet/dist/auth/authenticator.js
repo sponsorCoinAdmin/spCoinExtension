@@ -24,7 +24,7 @@ export function walletName(id, platform) {
     if (id === 'serverKeystore')
         return 'Merit (Web App)';
     if (id === 'browserVault')
-        return 'Merit Wallet (Web)';
+        return 'Merit (Web)';
     if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit')
         return 'Merit (Ext)';
     if (id === 'deviceVault')

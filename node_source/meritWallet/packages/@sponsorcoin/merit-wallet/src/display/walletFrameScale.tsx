@@ -3,7 +3,7 @@
 // 2026-11-22 (owner: Display Size in every Merit wallet: extension, web app, sponsorcoin.org). The browser host scales its whole page (meritBrowser/displayScale.ts) and passes its own slider as configDisplaySizeContent. Every other host (the extension side panel,
 // the web app's popup) passes none, so the wallet supplies the same slider itself and scales its OWN frame with CSS zoom. The frame's width and height limits are divided by the scale first, so the frame keeps its size on screen and its contents grow (like browser zoom).
 import React, { useCallback, useState } from 'react';
-import { DisplaySizePanel } from '@sponsorcoin/spcoin-panels';
+import { DisplaySizePanel, DisplayScaleProvider } from '@sponsorcoin/spcoin-panels';
 import { usePlatform } from '../platform/platform';
 
 const KEY = 'merit.walletFrameScale.v1';
@@ -64,4 +64,12 @@ export function useMetaTableScale(): { percent: number; setPercent(next: number)
 
 export function metaTableScaleControl(scale: { percent: number; setPercent(next: number): void }): React.ReactNode {
   return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: META_SCALE_MIN, max: META_SCALE_MAX, title: 'Meta Table Size', panelId: 'META_TABLE_SIZE_PANEL' });
+}
+
+/**
+ * 2026-11-24 (owner: pinch on a header bar changes the Display Size): when the wallet scales its OWN frame (the host gave no Display Size slider), it provides that scale to the header bars; when a host owns the scale (the browser page), the host's provider is left alone.
+ */
+export function OwnDisplayScale({ own, scale, children }: { own: boolean; scale: { percent: number; setPercent(next: number): void }; children: React.ReactNode }): React.ReactElement {
+  if (!own) return React.createElement(React.Fragment, null, children);
+  return React.createElement(DisplayScaleProvider, { percent: scale.percent, onChange: scale.setPercent, min: FRAME_SCALE_MIN, max: FRAME_SCALE_MAX }, children);
 }

@@ -24,7 +24,8 @@
 
 'use client';
 
-import { menuTabStyle, panelPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { menuTabStyle, panelPartClass, mergeStyle } from '@sponsorcoin/spcoin-common/styles';
+import { usePinchDisplay } from '@sponsorcoin/spcoin-panels';
 import React, { useRef, useState } from 'react';
 
 export type MenuTabKey = 'SWAP' | 'SEND' | 'SPONSOR' | 'REWARDS' | 'CONFIG';
@@ -154,9 +155,12 @@ export function TabRow({
     if (drag.current?.moved) { e.preventDefault(); e.stopPropagation(); }
   };
 
+  // 2026-11-24 (owner): a two-finger pinch on the tab bar changes the Display Size
+  const pinch = usePinchDisplay();
   return (
     <div
-      style={menuTabStyle.slide(open)}
+      ref={pinch.ref}
+      style={mergeStyle(menuTabStyle.slide(open), pinch.style)}
     >
       {/* 2026-09-12 — matches the real app's own AccountPanelTabBar.tsx
           exactly: `overflow-x-auto` (real, functional horizontal scroll —

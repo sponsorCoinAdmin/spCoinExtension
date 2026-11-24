@@ -21,7 +21,8 @@
 // 30px buttons) rather than copying the real, popup-sized numbers verbatim.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { panelTitleStyle } from '@sponsorcoin/spcoin-common/styles';
+import { panelTitleStyle, mergeStyle } from '@sponsorcoin/spcoin-common/styles';
+import { usePinchDisplay } from '@sponsorcoin/spcoin-panels';
 import { useState } from 'react';
 import { ArrowLeft, Menu } from 'lucide-react';
 // IconButton's own width (see IconButton below) — the spacer must match it or
@@ -31,5 +32,7 @@ function IconButton({ onClick, ariaLabel, active, children, }) {
     return (_jsx("button", { type: "button", onClick: onClick, "aria-label": ariaLabel, title: ariaLabel, onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false), style: panelTitleStyle.iconButton({ active: !!active, hovered, clickable: !!onClick }), children: children }));
 }
 export default function PanelTitle({ title = 'Trading Station', onBackClick, onMenuClick, menuOpen, hideBackButton = false, hideMenuButton = false, }) {
-    return (_jsxs("div", { style: panelTitleStyle.row, children: [_jsx("div", { style: panelTitleStyle.side(hideBackButton), children: !hideBackButton && (_jsx(IconButton, { onClick: onBackClick, ariaLabel: "Go back", children: _jsx(ArrowLeft, { ...panelTitleStyle.icon }) })) }), _jsx("h2", { style: panelTitleStyle.title, children: title }), _jsx("div", { style: panelTitleStyle.side(hideMenuButton), children: !hideMenuButton && (_jsx(IconButton, { onClick: onMenuClick, ariaLabel: "Open wallet menu", active: menuOpen, children: _jsx(Menu, { ...panelTitleStyle.icon }) })) })] }));
+    // 2026-11-24 (owner): a two-finger pinch on the title bar changes the Display Size
+    const pinch = usePinchDisplay();
+    return (_jsxs("div", { ref: pinch.ref, style: mergeStyle(panelTitleStyle.row, pinch.style), children: [_jsx("div", { style: panelTitleStyle.side(hideBackButton), children: !hideBackButton && (_jsx(IconButton, { onClick: onBackClick, ariaLabel: "Go back", children: _jsx(ArrowLeft, { ...panelTitleStyle.icon }) })) }), _jsx("h2", { style: panelTitleStyle.title, children: title }), _jsx("div", { style: panelTitleStyle.side(hideMenuButton), children: !hideMenuButton && (_jsx(IconButton, { onClick: onMenuClick, ariaLabel: "Open wallet menu", active: menuOpen, children: _jsx(Menu, { ...panelTitleStyle.icon }) })) })] }));
 }

@@ -22,7 +22,8 @@
 
 'use client';
 
-import { panelTitleStyle } from '@sponsorcoin/spcoin-common/styles';
+import { panelTitleStyle, mergeStyle } from '@sponsorcoin/spcoin-common/styles';
+import { usePinchDisplay } from '@sponsorcoin/spcoin-panels';
 import React, { useState } from 'react';
 import { ArrowLeft, Menu } from 'lucide-react';
 
@@ -86,9 +87,12 @@ export default function PanelTitle({
   hideBackButton = false,
   hideMenuButton = false,
 }: PanelTitleProps) {
+  // 2026-11-24 (owner): a two-finger pinch on the title bar changes the Display Size
+  const pinch = usePinchDisplay();
   return (
     <div
-      style={panelTitleStyle.row}
+      ref={pinch.ref}
+      style={mergeStyle(panelTitleStyle.row, pinch.style)}
     >
       <div style={panelTitleStyle.side(hideBackButton)}>
         {!hideBackButton && (

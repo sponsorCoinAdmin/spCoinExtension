@@ -32,3 +32,14 @@ export declare function metaTableScaleControl(scale: {
     percent: number;
     setPercent(next: number): void;
 }): React.ReactNode;
+/**
+ * 2026-11-24 (owner: pinch on a header bar changes the Display Size): when the wallet scales its OWN frame (the host gave no Display Size slider), it provides that scale to the header bars; when a host owns the scale (the browser page), the host's provider is left alone.
+ */
+export declare function OwnDisplayScale({ own, scale, children }: {
+    own: boolean;
+    scale: {
+        percent: number;
+        setPercent(next: number): void;
+    };
+    children: React.ReactNode;
+}): React.ReactElement;

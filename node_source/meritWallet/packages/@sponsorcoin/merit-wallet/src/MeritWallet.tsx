@@ -36,7 +36,7 @@
 
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX } from './display/walletFrameScale';
+import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, OwnDisplayScale, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX } from './display/walletFrameScale';
 import { usePeerStates, type PeerConnection } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
@@ -3109,6 +3109,7 @@ function MeritWalletInner({
     <ImageCacheContext.Provider value={imageCacheValue}>
     <TableDataScaleProvider percent={tableScale.percent} onChange={tableScale.setPercent} min={TABLE_SCALE_MIN} max={TABLE_SCALE_MAX}>
     <MetaTableScaleProvider percent={metaTableScale.percent} onChange={metaTableScale.setPercent} min={META_SCALE_MIN} max={META_SCALE_MAX}>
+    <OwnDisplayScale own={ownScale} scale={frameScale}>
     <RefreshTreeProvider tree={refreshTree} refreshToken={refreshToken ?? 0} onDone={setTreeDoneToken}>
     <WalletBalanceContext.Provider value={walletBalanceValue}>
     {/* 2026-10-09: connect mode is derived from "no active account"; every action button below turns into a Connect button that opens the account list. */}
@@ -3371,6 +3372,7 @@ function MeritWalletInner({
     </WalletConnectProvider>
     </WalletBalanceContext.Provider>
     </RefreshTreeProvider>
+    </OwnDisplayScale>
     </MetaTableScaleProvider>
     </TableDataScaleProvider>
     </ImageCacheContext.Provider>

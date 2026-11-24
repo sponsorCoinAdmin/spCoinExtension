@@ -33,10 +33,10 @@
 // Tailwind pipeline just to render correctly).
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { accountHeaderStyle } from '@sponsorcoin/spcoin-common/styles';
+import { accountHeaderStyle, mergeStyle } from '@sponsorcoin/spcoin-common/styles';
 import { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import { PanelGate, usePinchDisplay } from '@sponsorcoin/spcoin-panels';
 import ActiveAccountSelectDropDown from './ActiveAccountSelectDropDown';
 const DEFAULT_ROLES = { isSponsor: false, isRecipient: false, isAgent: false };
 function RoleCell({ label, active, title, onClick, borderRight, }) {
@@ -60,5 +60,7 @@ export default function WalletAccountHeader({ pillSlot, roleSlot, icon, address,
     // roleSlot === null is an explicit "render nothing" — distinct from
     // undefined ("caller didn't pass one, use the default").
     const resolvedRole = roleSlot === null ? null : roleSlot ?? _jsx(DefaultRoleTable, { roles: roles, onRoleClick: onRoleClick });
-    return (_jsxs("div", { title: walletName ? `Signs with ${walletName}` : undefined, style: accountHeaderStyle.row, children: [_jsx("div", { style: accountHeaderStyle.pill, children: _jsx(PanelGate, { panel: SP_COIN_DISPLAY.ACCOUNT_SELECT_DROP_DOWN, lazyLoad: false, children: resolvedPill }) }), resolvedRole && (_jsx("div", { style: accountHeaderStyle.role, children: _jsx(PanelGate, { panel: SP_COIN_DISPLAY.ROLE_TABLE_COMPONENT, lazyLoad: false, children: resolvedRole }) }))] }));
+    // 2026-11-24 (owner): a two-finger pinch on this bar changes the Display Size
+    const pinch = usePinchDisplay();
+    return (_jsxs("div", { ref: pinch.ref, title: walletName ? `Signs with ${walletName}` : undefined, style: mergeStyle(accountHeaderStyle.row, pinch.style), children: [_jsx("div", { style: accountHeaderStyle.pill, children: _jsx(PanelGate, { panel: SP_COIN_DISPLAY.ACCOUNT_SELECT_DROP_DOWN, lazyLoad: false, children: resolvedPill }) }), resolvedRole && (_jsx("div", { style: accountHeaderStyle.role, children: _jsx(PanelGate, { panel: SP_COIN_DISPLAY.ROLE_TABLE_COMPONENT, lazyLoad: false, children: resolvedRole }) }))] }));
 }

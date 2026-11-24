@@ -34,10 +34,10 @@
 
 'use client';
 
-import { accountHeaderStyle } from '@sponsorcoin/spcoin-common/styles';
+import { accountHeaderStyle, mergeStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
-import { PanelGate } from '@sponsorcoin/spcoin-panels';
+import { PanelGate, usePinchDisplay } from '@sponsorcoin/spcoin-panels';
 import ActiveAccountSelectDropDown from './ActiveAccountSelectDropDown';
 
 
@@ -218,10 +218,13 @@ export default function WalletAccountHeader({
   const resolvedRole =
     roleSlot === null ? null : roleSlot ?? <DefaultRoleTable roles={roles} onRoleClick={onRoleClick} />;
 
+  // 2026-11-24 (owner): a two-finger pinch on this bar changes the Display Size
+  const pinch = usePinchDisplay();
   return (
     <div
+      ref={pinch.ref}
       title={walletName ? `Signs with ${walletName}` : undefined}
-      style={accountHeaderStyle.row}
+      style={mergeStyle(accountHeaderStyle.row, pinch.style)}
     >
       <div style={accountHeaderStyle.pill}>
         <PanelGate panel={SP_COIN_DISPLAY.ACCOUNT_SELECT_DROP_DOWN} lazyLoad={false}>

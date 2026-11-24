@@ -23,7 +23,8 @@
 // numbers verbatim.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { menuTabStyle, panelPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { menuTabStyle, panelPartClass, mergeStyle } from '@sponsorcoin/spcoin-common/styles';
+import { usePinchDisplay } from '@sponsorcoin/spcoin-panels';
 import { useRef, useState } from 'react';
 const TABS = [
     { key: 'SWAP', label: 'Swap' },
@@ -76,7 +77,9 @@ export function TabRow({ open = true, activeTab = 'SWAP', onTabClick, disabled =
             e.stopPropagation();
         }
     };
-    return (_jsxs("div", { style: menuTabStyle.slide(open), children: [_jsx("style", { children: menuTabStyle.hideScrollbarRule }), _jsxs("div", { ref: rowRef, className: panelPartClass.menuTabRow, style: menuTabStyle.row, onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, onClickCapture: swallowClickAfterDrag, children: [TABS.map((tab) => (_jsx(TabButton, { label: tab.label, active: activeTab === tab.key, onClick: handleClick(tab.key), disabled: disabled, title: disabled ? disabledTitle : undefined }, tab.key))), _jsx(TabButton, { label: "Config", active: activeTab === 'CONFIG', onClick: handleClick('CONFIG'), disabled: disabled, title: disabled ? disabledTitle : undefined })] })] }));
+    // 2026-11-24 (owner): a two-finger pinch on the tab bar changes the Display Size
+    const pinch = usePinchDisplay();
+    return (_jsxs("div", { ref: pinch.ref, style: mergeStyle(menuTabStyle.slide(open), pinch.style), children: [_jsx("style", { children: menuTabStyle.hideScrollbarRule }), _jsxs("div", { ref: rowRef, className: panelPartClass.menuTabRow, style: menuTabStyle.row, onPointerDown: onPointerDown, onPointerMove: onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, onClickCapture: swallowClickAfterDrag, children: [TABS.map((tab) => (_jsx(TabButton, { label: tab.label, active: activeTab === tab.key, onClick: handleClick(tab.key), disabled: disabled, title: disabled ? disabledTitle : undefined }, tab.key))), _jsx(TabButton, { label: "Config", active: activeTab === 'CONFIG', onClick: handleClick('CONFIG'), disabled: disabled, title: disabled ? disabledTitle : undefined })] })] }));
 }
 export default function MenuTabHeaderBar({ open = true, activeTab = 'SWAP', onTabClick, disabled, disabledTitle, children, }) {
     return (

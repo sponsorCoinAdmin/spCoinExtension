@@ -26,7 +26,14 @@ export interface AvatarPictureProps {
 export default function AvatarPicture({ boxClass, boxStyle, hasImage, src, alt, onLoad, crop, cropAspect }: AvatarPictureProps) {
   return (
     <div className={boxClass} style={crop && cropAspect ? avatarPictureCropStyle.box(boxStyle) : boxStyle}>
-      {hasImage && crop ? <div style={avatarPictureCropStyle.viewport(cropAspect)}><img src={src} onLoad={onLoad} alt={alt} style={avatarPictureCropStyle.image(crop)} /></div> : hasImage ? <img src={src} onLoad={onLoad} alt={alt} className={avatarPanelClass.previewImage} /> : <img src={ANONYMOUS_ACCOUNT_AVATAR_URL} alt="No picture" className={avatarPanelClass.previewImage} />}
+      {(() => {
+        const shownSrc = hasImage ? src : ANONYMOUS_ACCOUNT_AVATAR_URL;
+        const shownAlt = hasImage ? alt : 'No picture';
+        // 2026-11-24 (owner): the standard Anonymous picture is trimmed to its pixels exactly like a chosen one, so every logo box looks the same
+        return crop
+          ? <div style={avatarPictureCropStyle.viewport(cropAspect)}><img src={shownSrc} onLoad={onLoad} alt={shownAlt} style={avatarPictureCropStyle.image(crop)} /></div>
+          : <img src={shownSrc} onLoad={onLoad} alt={shownAlt} className={avatarPanelClass.previewImage} />;
+      })()}
     </div>
   );
 }

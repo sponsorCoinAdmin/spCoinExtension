@@ -15,7 +15,7 @@ import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import { useBuyTokenContract, useExchangeContext, usePanelVisible, defaultStaticImage } from '@sponsorcoin/spcoin-exchange-engine';
 import { getTokenMetaData } from '@sponsorcoin/spcoin-panels';
-import { ReadOnlyMetaDataTable } from './panels';
+import MetaDetailScreen from './account/MetaDetailScreen';
 import { useWalletData } from './walletData';
 import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 
@@ -75,8 +75,8 @@ export function tokenDetailRows(contract: TokenContract) {
 interface TokenContractDetailPanelProps {
   containerId: string;
   panelVisible: boolean;
-  metaDataVisible: boolean;
-  logoVisible: boolean;
+  metaFlag: SP_COIN_DISPLAY;
+  logoFlag: SP_COIN_DISPLAY;
   tokenContract: TokenContract | undefined;
   emptyTitle: string;
   emptySubtitle?: string;
@@ -86,8 +86,8 @@ interface TokenContractDetailPanelProps {
 function TokenContractDetailPanel({
   containerId,
   panelVisible,
-  metaDataVisible,
-  logoVisible,
+  metaFlag,
+  logoFlag,
   tokenContract,
   emptyTitle,
   emptySubtitle = 'Select a token to view its details.',
@@ -139,19 +139,20 @@ function TokenContractDetailPanel({
   const logoURL = (displayContract.logoURL ?? '').toString().trim();
   const name = (displayContract.name ?? '').toString().trim();
 
-  const rows = tokenDetailRows(displayContract);
-
+  // 2026-11-24 (owner): drawn by the same shared screen as TOKEN_PANEL, ACCOUNT_PANEL and NETWORK_PANEL (MetaDetailScreen), so every panel under ASSET_RADIO_PANELS has one look; its LOGO / META_DATA flags are the panel's own
   return (
-    <div id={containerId}>
-      {metaDataVisible && (
-        <ReadOnlyMetaDataTable
-          rows={rows}
-          logoURL={logoURL || defaultStaticImage}
-          logoAlt={name}
-          logoVisible={logoVisible}
-        />
-      )}
-    </div>
+    <MetaDetailScreen
+      screenId={containerId}
+      logoFlag={logoFlag}
+      metaFlag={metaFlag}
+      logoId={containerId.replace(/_PANEL$/, '_LOGO')}
+      metaId={containerId.replace(/_PANEL$/, '_META_DATA')}
+      logoSrc={logoURL || defaultStaticImage}
+      logoAlt={name}
+      toggleLabel="Token Meta"
+      imageKind="token"
+      rows={tokenDetailRows(displayContract)}
+    />
   );
 }
 
@@ -166,14 +167,12 @@ interface TokenSlotDetailPanelProps {
 
 function TokenSlotDetailPanel({ panelEnum, metaDataEnum, logoEnum, containerId, tokenContract, emptyTitle }: TokenSlotDetailPanelProps) {
   const panelVisible = usePanelVisible(panelEnum);
-  const metaDataVisible = usePanelVisible(metaDataEnum);
-  const logoVisible = usePanelVisible(logoEnum);
   return (
     <TokenContractDetailPanel
       containerId={containerId}
       panelVisible={panelVisible}
-      metaDataVisible={metaDataVisible}
-      logoVisible={logoVisible}
+      metaFlag={metaDataEnum}
+      logoFlag={logoEnum}
       tokenContract={tokenContract}
       emptyTitle={emptyTitle}
     />

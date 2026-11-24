@@ -306,7 +306,7 @@ export default function AddAccountFlow({ host, onDone, wallet, activeAddress, na
   };
 
   return (
-    <div style={addAccountStyle.screen}>
+    <div style={accountScreenVisible ? addAccountStyle.screenBare : addAccountStyle.screen}>
       {flow.walletListVisible && (
         <div style={addAccountStyle.listBleed}>
           {/* 2026-11-07 (owner): this wallet is not imported into itself, so its row is not listed */}

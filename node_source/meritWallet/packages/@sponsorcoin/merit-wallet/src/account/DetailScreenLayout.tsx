@@ -19,8 +19,8 @@ import { RefreshBranch } from '../refresh/refreshReact';
 export type { DetailAvatarProps };
 
 /** 2026-11-09 (owner): the space (px) kept clear around the image inside its box when a screen does not set its own: 20 above, 5 below, 20 left and right. */
-/** 2026-11-24 (owner rule 1, changed from 2px to 0px): the box holds the picture edge to edge, top and bottom, on every detail screen. */
-export const DEFAULT_IMAGE_BUFFER = { t: 0, b: 0, l: 20, r: 20 } as const;
+/** 2026-11-24 (owner rule 1, changed from 2px to 0px; sides 20px to 2px): the box holds the picture edge to edge, top and bottom, with 2px at each side, on every detail screen. */
+export const DEFAULT_IMAGE_BUFFER = { t: 0, b: 0, l: 2, r: 2 } as const;
 
 export interface DetailScreenLayoutProps {
   /** The panel's own flags (ACCOUNT_LOGO / ACCOUNT_META_DATA, TOKEN_LOGO / TOKEN_META_DATA, ...). */
@@ -42,7 +42,7 @@ export interface DetailScreenLayoutProps {
   resizeKey?: string;
   /** The words the panel-tree trace shows for the toggle. */
   toggleTrace: string;
-  /** Optional px kept clear between the image box's edges and the image: top, bottom, right, left. A screen that sets none gets DEFAULT_IMAGE_BUFFER (top 0, bottom 0, left 20, right 20); one that sets some gets the default for the rest. */
+  /** Optional px kept clear between the image box's edges and the image: top, bottom, right, left. A screen that sets none gets DEFAULT_IMAGE_BUFFER (top 0, bottom 0, left 2, right 2); one that sets some gets the default for the rest. */
   tBuffer?: number;
   bBuffer?: number;
   rBuffer?: number;

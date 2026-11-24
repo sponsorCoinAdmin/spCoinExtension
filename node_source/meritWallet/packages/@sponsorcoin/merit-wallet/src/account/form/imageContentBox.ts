@@ -13,6 +13,7 @@ export interface ImageContentBox {
 
 const SAMPLE = 160;
 const ALPHA_MIN = 12;
+const WHITE_MIN = 244;
 
 export function imageContentBox(img: HTMLImageElement): ImageContentBox | undefined {
   try {
@@ -28,10 +29,14 @@ export function imageContentBox(img: HTMLImageElement): ImageContentBox | undefi
     if (!ctx) return undefined;
     ctx.drawImage(img, 0, 0, w, h);
     const { data } = ctx.getImageData(0, 0, w, h);
+    // a picture saved on a plain white background (no transparency) has that white as its empty margin: the corners tell
+    const corner = (x: number, y: number) => { const i = (y * w + x) * 4; return data[i + 3] > 240 && data[i] > WHITE_MIN && data[i + 1] > WHITE_MIN && data[i + 2] > WHITE_MIN; };
+    const whiteBackground = corner(0, 0) && corner(w - 1, 0) && corner(0, h - 1) && corner(w - 1, h - 1);
+    const visible = (i: number) => data[i + 3] > ALPHA_MIN && !(whiteBackground && data[i] > WHITE_MIN && data[i + 1] > WHITE_MIN && data[i + 2] > WHITE_MIN);
     let minX = w, minY = h, maxX = -1, maxY = -1;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        if (data[(y * w + x) * 4 + 3] > ALPHA_MIN) {
+        if (visible((y * w + x) * 4)) {
           if (x < minX) minX = x;
           if (x > maxX) maxX = x;
           if (y < minY) minY = y;

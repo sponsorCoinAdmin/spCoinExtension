@@ -14,7 +14,7 @@ import { useCopyFeedback } from './platform/useCopyFeedback';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { useBuyTokenContract, useExchangeContext, usePanelVisible, defaultStaticImage } from '@sponsorcoin/spcoin-exchange-engine';
 import { getTokenMetaData } from '@sponsorcoin/spcoin-panels';
-import { ReadOnlyMetaDataTable } from './panels';
+import MetaDetailScreen from './account/MetaDetailScreen';
 import { useWalletData } from './walletData';
 import { tokenRowClass, tokenRowStyle } from '@sponsorcoin/spcoin-common/styles';
 export function CopyBtn({ text }) {
@@ -42,7 +42,7 @@ export function tokenDetailRows(contract) {
     });
 }
 /** Shared body of the fixed-source token detail panels: self-heal a token that arrived without name / symbol / logo, then show its record. */
-function TokenContractDetailPanel({ containerId, panelVisible, metaDataVisible, logoVisible, tokenContract, emptyTitle, emptySubtitle = 'Select a token to view its details.', }) {
+function TokenContractDetailPanel({ containerId, panelVisible, metaFlag, logoFlag, tokenContract, emptyTitle, emptySubtitle = 'Select a token to view its details.', }) {
     const [hydratedRecord, setHydratedRecord] = useState(undefined);
     const { exchangeContext } = useExchangeContext();
     const { loadTokenRecord } = useWalletData();
@@ -77,14 +77,12 @@ function TokenContractDetailPanel({ containerId, panelVisible, metaDataVisible, 
         : tokenContract;
     const logoURL = (displayContract.logoURL ?? '').toString().trim();
     const name = (displayContract.name ?? '').toString().trim();
-    const rows = tokenDetailRows(displayContract);
-    return (_jsx("div", { id: containerId, children: metaDataVisible && (_jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: logoURL || defaultStaticImage, logoAlt: name, logoVisible: logoVisible })) }));
+    // 2026-11-24 (owner): drawn by the same shared screen as TOKEN_PANEL, ACCOUNT_PANEL and NETWORK_PANEL (MetaDetailScreen), so every panel under ASSET_RADIO_PANELS has one look; its LOGO / META_DATA flags are the panel's own
+    return (_jsx(MetaDetailScreen, { screenId: containerId, logoFlag: logoFlag, metaFlag: metaFlag, logoId: containerId.replace(/_PANEL$/, '_LOGO'), metaId: containerId.replace(/_PANEL$/, '_META_DATA'), logoSrc: logoURL || defaultStaticImage, logoAlt: name, toggleLabel: "Token Meta", imageKind: "token", rows: tokenDetailRows(displayContract) }));
 }
 function TokenSlotDetailPanel({ panelEnum, metaDataEnum, logoEnum, containerId, tokenContract, emptyTitle }) {
     const panelVisible = usePanelVisible(panelEnum);
-    const metaDataVisible = usePanelVisible(metaDataEnum);
-    const logoVisible = usePanelVisible(logoEnum);
-    return (_jsx(TokenContractDetailPanel, { containerId: containerId, panelVisible: panelVisible, metaDataVisible: metaDataVisible, logoVisible: logoVisible, tokenContract: tokenContract, emptyTitle: emptyTitle }));
+    return (_jsx(TokenContractDetailPanel, { containerId: containerId, panelVisible: panelVisible, metaFlag: metaDataEnum, logoFlag: logoEnum, tokenContract: tokenContract, emptyTitle: emptyTitle }));
 }
 /** Detail view for the Sponsor tab's buy token: always the active spCoin (sponsoring stakes into the currently active spCoin contract). */
 export function TokenBuyPanel() {

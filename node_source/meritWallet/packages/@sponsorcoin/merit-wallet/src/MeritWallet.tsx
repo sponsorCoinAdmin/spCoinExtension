@@ -78,7 +78,7 @@ import {
   maxInputSz,
   TYPING_GRACE_MS,
 } from '@sponsorcoin/spcoin-exchange-engine';
-import { ImportNetwork, useHideTodoNetworks, useWalletMode, resolveWalletMode, type NetworkRowMenuItem, AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, WalletPanel, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, type AccountListRemoteSelection, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, type SecurityParts, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
+import { ImportNetwork, useHideTodoNetworks, useWalletMode, resolveWalletMode, type NetworkRowMenuItem, AssetSelectListPanel as AssetSelectListPanelHost, PanelGate, UniSelectPanelWithSwap, setWalletAssetBaseUrl, useWalletListTitle, WalletConnectProvider, ConfigSlippagePanel, LoginHeader, WalletNetworkHeader, ManageSponsorshipsPanel, AgentHeaderPanel, PasswordPanel, type AssetListEntry, AccountListCard, type AccountListGroup, type AccountListRemoteSelection, SponsorStakingListPanel, AssetListSelectPanel, PanelTreePanel, WalletBalanceContext, useFetchedBalanceResult, fetchedBalanceText, type FetchBalance, NetworkListTable, type NetworkListEntry, WalletConfigPanel, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel, type SecurityParts, TokenLogo, AccountAvatar } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { domPlatform } from './platform/domPlatform';
 import { MeritPlatformContext, usePlatform, type MeritPlatform } from './platform/platform';
@@ -115,6 +115,7 @@ import { ConnectedTradeButton, type TradeHost } from './trade/tradeHost';
 import WalletSessionDialogs, { sessionConfigHandlers, type WalletSessionDialog } from './config/WalletSessionDialogs';
 import type { WalletSessionHost } from './walletSessionHost';
 import AccountDetailScreen, { type AccountDetailHost } from './account/AccountDetailScreen';
+import WalletDetailScreen from './account/WalletDetailScreen';
 import { resolveAccountSource } from './account/accountSource';
 import type { spCoinAccount } from '@sponsorcoin/spcoin-common/context';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';
@@ -1102,8 +1103,6 @@ function MeritWalletInner({
   // just that panel), so each is drawn only while ASSET_RADIO_PANELS itself is open. Live log: the Account Details screen kept covering a list the tree had switched to.
   const assetRadioOpen = usePanelVisible(SP_COIN_DISPLAY.ASSET_RADIO_PANELS);
   const walletPanelVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_PANEL) && assetRadioOpen;
-  const walletLogoVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_LOGO);
-  const walletMetaDataVisible = usePanelVisible(SP_COIN_DISPLAY.WALLET_META_DATA);
   const sellVisible = usePanelVisible(SP_COIN_DISPLAY.SELL_SELECT_PANEL);
   const zeroXVisible = usePanelVisible(SP_COIN_DISPLAY.ZERO_X_SELECT_PANEL);
   const uniPanelVisible = usePanelVisible(SP_COIN_DISPLAY.UNI_SELECT_PANEL);
@@ -2887,7 +2886,7 @@ function MeritWalletInner({
   const messageOverlay = messageVisible ? React.createElement(ConnectedMessagePanel) : null;
 
   // 2026-10-13 (owner request): WALLET_PANEL, the active wallet's account.json. The web app shows it through its overlayHost (walletPanel slot); a host without one (the extension) gets it here, in place of the body.
-  const walletPanelOverlay = walletPanelVisible ? React.createElement(WalletPanel, { walletId: activeWalletId, baseUrl: walletAssetBaseUrl, showLogo: walletLogoVisible, showMetaData: walletMetaDataVisible }) : null;
+  const walletPanelOverlay = walletPanelVisible ? React.createElement(WalletDetailScreen, { walletId: activeWalletId, baseUrl: walletAssetBaseUrl }) : null;
 
   // 2026-10-23 — gated on `activeChild != null`, not the coarser
   // panelTreeListOpen (= ASSET_SELECT_LIST_PANEL's own flag alone): the two

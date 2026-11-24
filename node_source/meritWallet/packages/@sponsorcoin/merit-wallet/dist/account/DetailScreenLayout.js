@@ -15,8 +15,8 @@ import { usePanelVisible, useSetPanelVisible } from '@sponsorcoin/spcoin-exchang
 import DetailImageBlock from './DetailImageBlock';
 import { RefreshBranch } from '../refresh/refreshReact';
 /** 2026-11-09 (owner): the space (px) kept clear around the image inside its box when a screen does not set its own: 20 above, 5 below, 20 left and right. */
-/** 2026-11-24 (owner rule 1, changed from 2px to 0px): the box holds the picture edge to edge, top and bottom, on every detail screen. */
-export const DEFAULT_IMAGE_BUFFER = { t: 0, b: 0, l: 20, r: 20 };
+/** 2026-11-24 (owner rule 1, changed from 2px to 0px; sides 20px to 2px): the box holds the picture edge to edge, top and bottom, with 2px at each side, on every detail screen. */
+export const DEFAULT_IMAGE_BUFFER = { t: 0, b: 0, l: 2, r: 2 };
 export default function DetailScreenLayout({ logoFlag, metaFlag, logoId, metaId, avatar, table, screenId, onSubmit, activeBody = true, resizeKey = '', toggleTrace, tBuffer, bBuffer, rBuffer, lBuffer }) {
     const menuTabHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
     const activeAccountHeaderOpen = usePanelVisible(SP_COIN_DISPLAY.WALLET_RADIO_PANELS);

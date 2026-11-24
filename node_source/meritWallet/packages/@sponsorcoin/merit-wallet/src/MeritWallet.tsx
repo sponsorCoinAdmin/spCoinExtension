@@ -2640,6 +2640,11 @@ function MeritWalletInner({
             closeListOverlay();
             onNetworkRowSelect?.(row.id);
           },
+          // 2026-11-24 (owner: press and hold any image to open its panel): a right click or a hold on a network's image opens NETWORK_PANEL for that network; a plain click still only selects the row
+          onIconContextMenu: () => {
+            openNetworkDetail(row.id);
+            onNetworkIconClick?.(row.id);
+          },
           // 2026-09-17, on live report ("selecting the network.png in
           // any row is supposed to return the network... but instead
           // opens NETWORK_PANEL for every row") — was wired to
@@ -3156,7 +3161,8 @@ function MeritWalletInner({
                   : undefined
               }
               onSelectClick={() => toggleList('network')}
-              onIconClick={
+              // 2026-11-24 (owner): a single click on the header image no longer opens NETWORK_PANEL; only a press and hold (or a right click) does
+              onIconContextMenu={
                 activeNetworkRow
                   ? () => {
                       openNetworkDetail(activeNetworkRow.id);
@@ -3195,13 +3201,8 @@ function MeritWalletInner({
           name={activeAccountEntry?.name}
           placeholderLabel="Select Account"
           onSelectClick={() => toggleList('account')}
-          onIconClick={(address) => {
-            if (!address) return;
-            openAccountDetail(address);
-            onAccountIconClick?.(address);
-          }}
-          // 2026-11-11 (owner): a right click on the avatar opens ACCOUNT_PANEL too, through AccountSelectDropDown
-          onIconContextMenu={(address) => { if (address) openAccountDetail(address); }}
+          // 2026-11-24 (owner): a single click on the header avatar no longer opens ACCOUNT_PANEL; only a press and hold (or a right click) does
+          onIconContextMenu={(address) => { if (!address) return; openAccountDetail(address); onAccountIconClick?.(address); }}
           walletName={activeWalletName}
         />
       </PanelGate>

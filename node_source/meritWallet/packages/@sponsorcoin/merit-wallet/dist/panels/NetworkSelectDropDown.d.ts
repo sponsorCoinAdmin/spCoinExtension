@@ -9,6 +9,8 @@ export interface NetworkSelectDropDownProps {
     /** Omit for an inert pill with nothing to open yet. */
     onSelectClick?: () => void;
     onIconClick?: () => void;
+    /** 2026-11-24 (owner): a right click / press and hold on the image (it opens NETWORK_PANEL by default); a host that must know about it passes this instead. */
+    onIconContextMenu?: () => void;
     /** Flips the chevron to point up while the panel this opens is already
      *  showing — same chevronUp convention the real trigger-mode file uses.
      *  Defaults false (closed). */
@@ -18,4 +20,4 @@ export interface NetworkSelectDropDownProps {
     name?: string;
     id?: string | number;
 }
-export default function NetworkSelectDropDown({ icon, label, onSelectClick, onIconClick, chevronUp, symbol, name, id, }: NetworkSelectDropDownProps): React.JSX.Element;
+export default function NetworkSelectDropDown({ icon, label, onSelectClick, onIconClick, onIconContextMenu, chevronUp, symbol, name, id, }: NetworkSelectDropDownProps): React.JSX.Element;

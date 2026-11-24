@@ -1923,6 +1923,11 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                     closeListOverlay();
                     onNetworkRowSelect?.(row.id);
                 },
+                // 2026-11-24 (owner: press and hold any image to open its panel): a right click or a hold on a network's image opens NETWORK_PANEL for that network; a plain click still only selects the row
+                onIconContextMenu: () => {
+                    openNetworkDetail(row.id);
+                    onNetworkIconClick?.(row.id);
+                },
                 // 2026-09-17, on live report ("selecting the network.png in
                 // any row is supposed to return the network... but instead
                 // opens NETWORK_PANEL for every row") — was wired to
@@ -2381,20 +2386,17 @@ function MeritWalletInner({ docked = false, fullWidth = false, onClose, titleBad
                                                             alt: '',
                                                             style: fitImageStyle,
                                                         })
-                                                        : undefined, onSelectClick: () => toggleList('network'), onIconClick: activeNetworkRow
+                                                        : undefined, onSelectClick: () => toggleList('network'), 
+                                                    // 2026-11-24 (owner): a single click on the header image no longer opens NETWORK_PANEL; only a press and hold (or a right click) does
+                                                    onIconContextMenu: activeNetworkRow
                                                         ? () => {
                                                             openNetworkDetail(activeNetworkRow.id);
                                                             onNetworkIconClick?.(activeNetworkRow.id);
                                                         }
-                                                        : undefined, chevronUp: activeListMode === 'network' || activeChild === SP_COIN_DISPLAY.NETWORK_LIST }), titleBadgeSrc: titleBadgeSrc, extraActions: _jsx(DebugBugButton, {}), onRefresh: onRefresh, refreshing: refreshBusy, onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_ACCOUNT_HEADER, lazyLoad: false, children: _jsx(WalletAccountHeader, { icon: activeAccountEntry?.icon, address: activeAccountEntry?.address, symbol: activeAccountEntry?.symbol, name: activeAccountEntry?.name, placeholderLabel: "Select Account", onSelectClick: () => toggleList('account'), onIconClick: (address) => {
-                                                    if (!address)
-                                                        return;
-                                                    openAccountDetail(address);
-                                                    onAccountIconClick?.(address);
-                                                }, 
-                                                // 2026-11-11 (owner): a right click on the avatar opens ACCOUNT_PANEL too, through AccountSelectDropDown
-                                                onIconContextMenu: (address) => { if (address)
-                                                    openAccountDetail(address); }, walletName: activeWalletName }) })), !passwordPanelShowing && (_jsx(AgentHeaderPanel, { agentName: agentAccount?.name, agentLogoURL: agentAccount?.logoURL, children: _jsx(ConnectedAgentSelectDropDown, {}) })), _jsxs("div", { style: walletFrameStyle.body, children: [!passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.PANEL_TITLE, lazyLoad: false, children: _jsx(PanelTitle, { title: panelTitle, onMenuClick: handleMenuClick, menuOpen: menuTabHeaderVisible, 
+                                                        : undefined, chevronUp: activeListMode === 'network' || activeChild === SP_COIN_DISPLAY.NETWORK_LIST }), titleBadgeSrc: titleBadgeSrc, extraActions: _jsx(DebugBugButton, {}), onRefresh: onRefresh, refreshing: refreshBusy, onClose: onClose, appType: appType, wwwIconSrc: wwwIconSrc, closeIconSrc: closeIconSrc }) })), !passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.WALLET_ACCOUNT_HEADER, lazyLoad: false, children: _jsx(WalletAccountHeader, { icon: activeAccountEntry?.icon, address: activeAccountEntry?.address, symbol: activeAccountEntry?.symbol, name: activeAccountEntry?.name, placeholderLabel: "Select Account", onSelectClick: () => toggleList('account'), 
+                                                // 2026-11-24 (owner): a single click on the header avatar no longer opens ACCOUNT_PANEL; only a press and hold (or a right click) does
+                                                onIconContextMenu: (address) => { if (!address)
+                                                    return; openAccountDetail(address); onAccountIconClick?.(address); }, walletName: activeWalletName }) })), !passwordPanelShowing && (_jsx(AgentHeaderPanel, { agentName: agentAccount?.name, agentLogoURL: agentAccount?.logoURL, children: _jsx(ConnectedAgentSelectDropDown, {}) })), _jsxs("div", { style: walletFrameStyle.body, children: [!passwordPanelShowing && (_jsx(PanelGate, { panel: SP_COIN_DISPLAY.PANEL_TITLE, lazyLoad: false, children: _jsx(PanelTitle, { title: panelTitle, onMenuClick: handleMenuClick, menuOpen: menuTabHeaderVisible, 
                                                         // 2026-10-03, on request — on the Account Login / Create Account
                                                         // screen the title bar shows only its title: no back button (nothing
                                                         // to go back to while locked) and no hamburger menu.

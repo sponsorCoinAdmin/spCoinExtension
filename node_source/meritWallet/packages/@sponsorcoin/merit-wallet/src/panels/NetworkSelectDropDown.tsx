@@ -49,6 +49,8 @@ export interface NetworkSelectDropDownProps {
   // supports this split, this file just never exposed it — the exact same
   // gap WalletAccountHeader had before its own fix.
   onIconClick?: () => void;
+  /** 2026-11-24 (owner): a right click / press and hold on the image (it opens NETWORK_PANEL by default); a host that must know about it passes this instead. */
+  onIconContextMenu?: () => void;
   /** Flips the chevron to point up while the panel this opens is already
    *  showing — same chevronUp convention the real trigger-mode file uses.
    *  Defaults false (closed). */
@@ -64,6 +66,7 @@ export default function NetworkSelectDropDown({
   label = 'Not Connected',
   onSelectClick,
   onIconClick,
+  onIconContextMenu,
   chevronUp = false,
   symbol,
   name,
@@ -105,6 +108,7 @@ export default function NetworkSelectDropDown({
       // clicking it should just open the picker like the rest of the pill.
       onAddressClick={onSelectClick}
       onIconClick={onIconClick ? () => onIconClick() : undefined}
+      onIconContextMenu={onIconContextMenu ? () => onIconContextMenu() : undefined}
       iconPanel={SP_COIN_DISPLAY.NETWORK_PANEL}
     />
   );

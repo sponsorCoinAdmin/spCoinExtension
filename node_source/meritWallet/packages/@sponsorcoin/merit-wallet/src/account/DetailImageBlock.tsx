@@ -10,10 +10,9 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { accountDetailClass, avatarPanelClass, avatarPreviewStyle, detailImagePanelStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { accountDetailClass, avatarPanelClass, detailImagePanelStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import AvatarControls from './form/AvatarControls';
 import AvatarPicture from './form/AvatarPicture';
-import { useAvatarPreviewSize } from './form/useAvatarPreviewSize';
 import { imageContentBox, type ImageContentBox } from './form/imageContentBox';
 import { useCachedImage, type CachedImageKind } from '../refresh/refreshReact';
 
@@ -76,8 +75,6 @@ export default function DetailImageBlock({
   imageBuffer,
   toggleOn,
   onToggle,
-  sectionBottomBuffer,
-  resizeSignal,
 }: DetailImageBlockProps) {
   const previewSrc = useCachedImage(logoPreviewSrc, imageKind);
   // the picture's width divided by its height, known once it has loaded (1 until then, and always 1 for a square box)
@@ -85,42 +82,20 @@ export default function DetailImageBlock({
   // 2026-11-24 (owner rule 1): the visible pixels of the picture, so the box is cut to them (2px above and below) instead of to the file's own empty margins
   const [crop, setCrop] = useState<ImageContentBox | undefined>(undefined);
   const aspect = fitImageShape ? (crop ? (imageAspect * (crop.x1 - crop.x0)) / (crop.y1 - crop.y0) : imageAspect) : 1;
-  const blockRef = useRef<HTMLDivElement | null>(null);
   const controlsRef = useRef<HTMLElement | null>(null);
-  const noRef = useRef<HTMLElement | null>(null);
-  const { previewSize } = useAvatarPreviewSize(
-    // the block is both the section and the stage: its width is the room across, its top the room down
-    { sectionRef: blockRef, previewStageRef: blockRef, controlsRef, headingRef: noRef, selectedRowRef: noRef },
-    {
-      lockSectionHeight: false,
-      maxPreviewSize: 420,
-      minPreviewSize: 180,
-      overflowMinPreviewSize: 96,
-      previewHeightBuffer: 8,
-      previewControlGapBuffer: 0,
-      previewSizeBuffer: 0,
-      sectionBottomBuffer,
-      sizingBoundarySelector: '#ACTIVE_ACCOUNT_BODY',
-      hasSelectedRow: false,
-      resizeSignal,
-      aspect,
-      fitImageShape,
-      imageBuffer,
-    },
-  );
   return (
-    <div id={id} ref={blockRef} className={last ? accountDetailClass.imageBlockLast : accountDetailClass.imageBlock}>
+    <div id={id} className={last ? accountDetailClass.imageBlockLast : accountDetailClass.imageBlock}>
       {/* 2026-11-24 (owner): the white panel holds the picture AND its two buttons (Select Preview Image / Account Meta), the buttons below the picture */}
-      <div className={detailImagePanelStyle.panelClass} style={detailImagePanelStyle.panel(previewSize)}>
+      <div className={detailImagePanelStyle.panelClass} style={detailImagePanelStyle.panel}>
       <AvatarPicture
         boxClass={previewBoxClass ?? avatarPanelClass.previewBox}
-        boxStyle={{ ...avatarPreviewStyle(previewSize, imageBuffer, fitImageShape ? aspect : undefined), ...detailImagePanelStyle.picture }}
+        boxStyle={detailImagePanelStyle.picture(imageBuffer)}
         hasImage={!!logoPreviewSrc}
         src={previewSrc}
         alt={previewAlt}
         onLoad={fitImageShape ? (event) => { const { naturalWidth, naturalHeight } = event.currentTarget; if (naturalWidth && naturalHeight) { setImageAspect(naturalWidth / naturalHeight); setCrop(imageContentBox(event.currentTarget)); } } : undefined}
         crop={fitImageShape ? crop : undefined}
-        cropAspect={fitImageShape && crop ? aspect : undefined}
+        cropAspect={aspect}
       />
       <div className={detailImagePanelStyle.controlsClass} style={detailImagePanelStyle.controls}>
       <AvatarControls

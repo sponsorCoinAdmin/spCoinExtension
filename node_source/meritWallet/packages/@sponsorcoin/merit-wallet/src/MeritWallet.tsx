@@ -36,6 +36,7 @@
 
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MeritWalletType, configTitle } from './walletType';
 import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, OwnDisplayScale, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX } from './display/walletFrameScale';
 import { usePeerStates, type PeerConnection } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
@@ -314,6 +315,8 @@ const READ_ONLY_ACCOUNT_DETAIL_HOST: AccountDetailHost = {
 };
 
 export interface MeritWalletProps {
+  /** 2026-11-24 (owner): which type of Merit Wallet this is (EXT, WEB_APP, DEV, WEB, ANDROID, IPHONE). Shown in the Config title; never branched on. */
+  walletType?: MeritWalletType;
   /** Docked (full-height, square corners, no right border — a split-pane
    *  layout) vs. floating/dialog (rounded corners, capped height). Default
    *  false. */
@@ -831,6 +834,7 @@ export interface MeritWalletProps {
 
 function MeritWalletInner({
   docked = false,
+  walletType,
   fullWidth = false,
   onClose,
   titleBadgeSrc,
@@ -3030,7 +3034,7 @@ function MeritWalletInner({
                 ? stakingListVisible
                   ? stakingListMode.kind === 'claim' ? `Claim ${stakingListMode.role} Rewards` : 'Unstake Sponsor Rewards'
                   : 'Rewards Management'
-                : 'Wallet Config';
+                : configTitle(walletType);
 
   // 2026-11-09 (owner design): the refresh tree of this wallet (refresh/refreshTree.ts); every screen's loaded data is a node in it
   const refreshTreeRef = useRef<ReturnType<typeof createRefreshTree> | undefined>(undefined);

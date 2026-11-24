@@ -2,7 +2,7 @@ import type { MeritWalletProps } from './MeritWallet';
 import type { NetworkRecord } from '@sponsorcoin/spcoin-feeds/networks';
 import type { WalletDataSource } from './walletData';
 /** How the wallet is framed and closed: layout, title bar, header icons, refresh. */
-export type HostLayout = Pick<MeritWalletProps, 'docked' | 'fullWidth' | 'onClose' | 'titleBadgeSrc' | 'appType' | 'wwwIconSrc' | 'closeIconSrc' | 'infoIconSrc' | 'onRefresh' | 'refreshing' | 'refreshToken' | 'onNavigationChange' | 'seedTabOnStack'>;
+export type HostLayout = Pick<MeritWalletProps, 'walletType' | 'docked' | 'fullWidth' | 'onClose' | 'titleBadgeSrc' | 'appType' | 'wwwIconSrc' | 'closeIconSrc' | 'infoIconSrc' | 'onRefresh' | 'refreshing' | 'refreshToken' | 'onNavigationChange' | 'seedTabOnStack'>;
 /** UI state the host remembers across loads (its own storage). */
 export type HostUiState = Pick<MeritWalletProps, 'initialActiveTab' | 'onActiveTabChange' | 'initialMenuOpen' | 'onMenuOpenChange' | 'initialOpenTarget' | 'onOpenTargetChange'>;
 /** Data the host supplies or lets the component fetch itself (chainId + baseUrl + storage turn the self-fetch on). */

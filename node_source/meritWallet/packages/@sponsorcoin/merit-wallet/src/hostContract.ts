@@ -20,7 +20,7 @@ import type { WalletDataSource } from './walletData';
 /** How the wallet is framed and closed: layout, title bar, header icons, refresh. */
 export type HostLayout = Pick<
   MeritWalletProps,
-  | 'docked' | 'fullWidth' | 'onClose' | 'titleBadgeSrc' | 'appType' | 'wwwIconSrc' | 'closeIconSrc' | 'infoIconSrc'
+  | 'walletType' | 'docked' | 'fullWidth' | 'onClose' | 'titleBadgeSrc' | 'appType' | 'wwwIconSrc' | 'closeIconSrc' | 'infoIconSrc'
   | 'onRefresh' | 'refreshing' | 'refreshToken' | 'onNavigationChange' | 'seedTabOnStack'
 >;
 

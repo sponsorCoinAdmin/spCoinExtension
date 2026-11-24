@@ -4,6 +4,7 @@
 // @sponsorcoin/spcoin-panels (docs/meritWalletNpmDesignToDo.txt, S1). It composes panels from spcoin-panels, which is a peer dependency
 // (resolved through the host app's own node_modules so there is exactly one instance of it and of the exchange engine's panelStore).
 export { default as MeritWallet } from './MeritWallet';
+export { MeritWalletType, walletTypeLabel, configTitle } from './walletType';
 export { createWalletRefresh, useWalletRefresh } from './walletRefresh';
 export { createRefreshTree } from './refresh/refreshTree';
 export { RefreshBranch, useRefreshNode, useCachedImage } from './refresh/refreshReact';

@@ -14,7 +14,7 @@ import { extensionPeers, meritWebConnection } from './src/extensionPeers';
 import { traceFrom } from './src/debugTrace';
 import { TestAccountsSection } from '@meritWallets/meritDevOnly';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
-import { ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, claimAmountsFor, throttleRead, AuthenticationType, MeritWalletHostView, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost, meritDebug, registerHostDebug, readChainTimestamp } from '@sponsorcoin/merit-wallet';
+import { MeritWalletType, ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, claimAmountsFor, throttleRead, AuthenticationType, MeritWalletHostView, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost, meritDebug, registerHostDebug, readChainTimestamp } from '@sponsorcoin/merit-wallet';
 import { persistedTimeoutMs } from '@sponsorcoin/merit-wallet';
 import { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import {
@@ -876,6 +876,7 @@ async function renderWallet() {
         React.createElement(MeritWalletHostView, {
             host: {
               layout: {
+                walletType: MeritWalletType.EXT,
                 refreshToken: walletRefresh.getState().refreshToken,
                 // A Chrome side panel is closer to the web app's own docked/split-
                 // pane mode (full-height, no floating-dialog corners) than its

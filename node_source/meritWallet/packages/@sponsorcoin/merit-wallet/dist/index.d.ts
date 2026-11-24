@@ -1,4 +1,5 @@
 export { default as MeritWallet } from './MeritWallet';
+export { MeritWalletType, walletTypeLabel, configTitle } from './walletType';
 export type { MeritWalletProps, MeritWalletNetworkRow } from './MeritWallet';
 export { createWalletRefresh, useWalletRefresh } from './walletRefresh';
 export { createRefreshTree } from './refresh/refreshTree';

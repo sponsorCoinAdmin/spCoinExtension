@@ -1,4 +1,5 @@
 import React from 'react';
+import { MeritWalletType } from './walletType';
 import { type PeerConnection } from './peer/peerConnection';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
 import { type AssetListEntry, type AccountListGroup, type AccountListRemoteSelection, type FetchBalance, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel } from '@sponsorcoin/spcoin-panels';
@@ -21,6 +22,8 @@ import { type HostTransactionResult } from './receipt/transactionReceipts';
 import type { AuthenticationType } from './auth/authenticationType';
 export type { MeritWalletNetworkRow };
 export interface MeritWalletProps {
+    /** 2026-11-24 (owner): which type of Merit Wallet this is (EXT, WEB_APP, DEV, WEB, ANDROID, IPHONE). Shown in the Config title; never branched on. */
+    walletType?: MeritWalletType;
     /** Docked (full-height, square corners, no right border — a split-pane
      *  layout) vs. floating/dialog (rounded corners, capped height). Default
      *  false. */

@@ -5,7 +5,7 @@
 'use client';
 
 import { debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import DialogPortal from '../DialogPortal';
 import { usePlatform } from '../platform/platform';
 import { meritDebug } from './debugStore';
@@ -56,6 +56,31 @@ function Ladybug() {
   );
 }
 
+/**
+ * 2026-11-25 (owner: on a press the button's background and text colors swap, and go back on release): a dump-page button. It looks pressed while a mouse button, a finger or the Enter or Space key is held on it, and returns to its colors on release, when the pointer leaves it,
+ * or when it loses focus.
+ */
+function DumpButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  const [pressed, setPressed] = useState(false);
+  const release = () => setPressed(false);
+  return (
+    <button
+      type="button"
+      style={pressed ? debugBugStyle.buttonPressed : debugBugStyle.button}
+      onClick={onClick}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={release}
+      onPointerLeave={release}
+      onPointerCancel={release}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setPressed(true); }}
+      onKeyUp={release}
+      onBlur={release}
+    >
+      {children}
+    </button>
+  );
+}
+
 function DebugPanel({ onClose }: { onClose(): void }) {
   const platform = usePlatform();
   const [text, setText] = useState('Reading...');
@@ -71,10 +96,8 @@ function DebugPanel({ onClose }: { onClose(): void }) {
       <div id="MERIT_DEBUG_PANEL" style={debugBugStyle.overlay}>
         <div style={debugBugStyle.bar}>
           <span style={debugBugStyle.title}>Debug dump</span>
-          <button type="button" style={debugBugStyle.button} onClick={refresh}>Refresh</button>
-          <button
-            type="button"
-            style={debugBugStyle.button}
+          <DumpButton onClick={refresh}>Refresh</DumpButton>
+          <DumpButton
             onClick={() =>
               void meritDebug.buildDump().then((dump) =>
                 platform.copyText(dump).then(() => {
@@ -85,9 +108,9 @@ function DebugPanel({ onClose }: { onClose(): void }) {
             }
           >
             {copied ? 'Copied' : 'Copy'}
-          </button>
-          <button type="button" style={debugBugStyle.button} onClick={() => { meritDebug.clear(); refresh(); }}>Clear</button>
-          <button type="button" style={debugBugStyle.button} onClick={onClose}>Close</button>
+          </DumpButton>
+          <DumpButton onClick={() => { meritDebug.clear(); refresh(); }}>Clear</DumpButton>
+          <DumpButton onClick={onClose}>Close</DumpButton>
         </div>
         <pre style={debugBugStyle.pre}>{text}</pre>
       </div>

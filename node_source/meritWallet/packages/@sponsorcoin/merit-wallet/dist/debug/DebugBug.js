@@ -40,6 +40,16 @@ function Ladybug() {
     const s = debugBugStyle.size;
     return (_jsxs("svg", { width: s, height: s, viewBox: "0 0 24 24", "aria-hidden": "true", children: [_jsx("ellipse", { cx: "12", cy: "14", rx: "7.5", ry: "8", fill: debugBugStyle.red }), _jsx("circle", { cx: "12", cy: "5.5", r: "3.2", fill: debugBugStyle.dark }), _jsx("line", { x1: "12", y1: "7", x2: "12", y2: "22", stroke: debugBugStyle.dark, strokeWidth: "1.2" }), _jsx("circle", { cx: "8.5", cy: "12", r: "1.5", fill: debugBugStyle.dark }), _jsx("circle", { cx: "15.5", cy: "12", r: "1.5", fill: debugBugStyle.dark }), _jsx("circle", { cx: "9", cy: "17", r: "1.3", fill: debugBugStyle.dark }), _jsx("circle", { cx: "15", cy: "17", r: "1.3", fill: debugBugStyle.dark }), _jsx("line", { x1: "10", y1: "3", x2: "7.5", y2: "0.8", stroke: debugBugStyle.dark, strokeWidth: "1" }), _jsx("line", { x1: "14", y1: "3", x2: "16.5", y2: "0.8", stroke: debugBugStyle.dark, strokeWidth: "1" })] }));
 }
+/**
+ * 2026-11-25 (owner: on a press the button's background and text colors swap, and go back on release): a dump-page button. It looks pressed while a mouse button, a finger or the Enter or Space key is held on it, and returns to its colors on release, when the pointer leaves it,
+ * or when it loses focus.
+ */
+function DumpButton({ onClick, children }) {
+    const [pressed, setPressed] = useState(false);
+    const release = () => setPressed(false);
+    return (_jsx("button", { type: "button", style: pressed ? debugBugStyle.buttonPressed : debugBugStyle.button, onClick: onClick, onPointerDown: () => setPressed(true), onPointerUp: release, onPointerLeave: release, onPointerCancel: release, onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ')
+            setPressed(true); }, onKeyUp: release, onBlur: release, children: children }));
+}
 function DebugPanel({ onClose }) {
     const platform = usePlatform();
     const [text, setText] = useState('Reading...');
@@ -50,10 +60,10 @@ function DebugPanel({ onClose }) {
         const timer = setInterval(refresh, 2000);
         return () => clearInterval(timer);
     }, [refresh]);
-    return (_jsx(DialogPortal, { children: _jsxs("div", { id: "MERIT_DEBUG_PANEL", style: debugBugStyle.overlay, children: [_jsxs("div", { style: debugBugStyle.bar, children: [_jsx("span", { style: debugBugStyle.title, children: "Debug dump" }), _jsx("button", { type: "button", style: debugBugStyle.button, onClick: refresh, children: "Refresh" }), _jsx("button", { type: "button", style: debugBugStyle.button, onClick: () => void meritDebug.buildDump().then((dump) => platform.copyText(dump).then(() => {
+    return (_jsx(DialogPortal, { children: _jsxs("div", { id: "MERIT_DEBUG_PANEL", style: debugBugStyle.overlay, children: [_jsxs("div", { style: debugBugStyle.bar, children: [_jsx("span", { style: debugBugStyle.title, children: "Debug dump" }), _jsx(DumpButton, { onClick: refresh, children: "Refresh" }), _jsx(DumpButton, { onClick: () => void meritDebug.buildDump().then((dump) => platform.copyText(dump).then(() => {
                                 setCopied(true);
                                 setTimeout(() => setCopied(false), 1500);
-                            })), children: copied ? 'Copied' : 'Copy' }), _jsx("button", { type: "button", style: debugBugStyle.button, onClick: () => { meritDebug.clear(); refresh(); }, children: "Clear" }), _jsx("button", { type: "button", style: debugBugStyle.button, onClick: onClose, children: "Close" })] }), _jsx("pre", { style: debugBugStyle.pre, children: text })] }) }));
+                            })), children: copied ? 'Copied' : 'Copy' }), _jsx(DumpButton, { onClick: () => { meritDebug.clear(); refresh(); }, children: "Clear" }), _jsx(DumpButton, { onClick: onClose, children: "Close" })] }), _jsx("pre", { style: debugBugStyle.pre, children: text })] }) }));
 }
 /** The header button: nothing when debug is off. */
 export function DebugBugButton() {

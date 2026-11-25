@@ -22,7 +22,7 @@ import { type HostTransactionResult } from './receipt/transactionReceipts';
 import type { AuthenticationType } from './auth/authenticationType';
 export type { MeritWalletNetworkRow };
 export interface MeritWalletProps {
-    /** 2026-11-24 (owner): which type of Merit Wallet this is (EXT, WEB_APP, DEV, WEB, ANDROID, IPHONE). Shown in the Config title; never branched on. */
+    /** 2026-11-24 (owner): which type of Merit Wallet this is (EXT, WEB_APP, WEB, ANDROID, IPHONE). Shown in the Config title; never branched on. */
     walletType?: MeritWalletType;
     /** Docked (full-height, square corners, no right border — a split-pane
      *  layout) vs. floating/dialog (rounded corners, capped height). Default
@@ -271,6 +271,8 @@ export interface MeritWalletProps {
     /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */
     /** 2026-11-19: the Config tab's Test Accounts section, built by the HOST (the section lives in @meritWallets/meritDevOnly, a package that never ships in a release), like configDevToolsContent. Absent: no section. */
     configTestAccountsContent?: React.ReactNode;
+    /** 2026-11-24 (owner): the Config tab's Test Sites section (open a test site in its own window). Test code: only a test project passes it. */
+    configTestSitesContent?: React.ReactNode;
     /** 2026-11-20: the Config tab's Display Size slider, built by a host that can scale its page (the browser host). Absent: no section. */
     configDisplaySizeContent?: React.ReactNode;
     /** 2026-10-08: how this wallet authenticates locally: KEYSTORE (web app, server keystore) or VAULT (extension). Set by the host. */

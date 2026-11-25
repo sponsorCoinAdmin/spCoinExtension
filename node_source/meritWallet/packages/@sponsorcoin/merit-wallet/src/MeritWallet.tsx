@@ -37,6 +37,7 @@
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MeritWalletType, configTitle } from './walletType';
+import { PlatformCopyProvider } from '@sponsorcoin/spcoin-panels';
 import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, OwnDisplayScale, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX } from './display/walletFrameScale';
 import { usePeerStates, type PeerConnection } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
@@ -315,7 +316,7 @@ const READ_ONLY_ACCOUNT_DETAIL_HOST: AccountDetailHost = {
 };
 
 export interface MeritWalletProps {
-  /** 2026-11-24 (owner): which type of Merit Wallet this is (EXT, WEB_APP, DEV, WEB, ANDROID, IPHONE). Shown in the Config title; never branched on. */
+  /** 2026-11-24 (owner): which type of Merit Wallet this is (EXT, WEB_APP, WEB, ANDROID, IPHONE). Shown in the Config title; never branched on. */
   walletType?: MeritWalletType;
   /** Docked (full-height, square corners, no right border — a split-pane
    *  layout) vs. floating/dialog (rounded corners, capped height). Default
@@ -798,6 +799,8 @@ export interface MeritWalletProps {
   /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */
   /** 2026-11-19: the Config tab's Test Accounts section, built by the HOST (the section lives in @meritWallets/meritDevOnly, a package that never ships in a release), like configDevToolsContent. Absent: no section. */
   configTestAccountsContent?: React.ReactNode;
+  /** 2026-11-24 (owner): the Config tab's Test Sites section (open a test site in its own window). Test code: only a test project passes it. */
+  configTestSitesContent?: React.ReactNode;
   /** 2026-11-20: the Config tab's Display Size slider, built by a host that can scale its page (the browser host). Absent: no section. */
   configDisplaySizeContent?: React.ReactNode;
   /** 2026-10-08: how this wallet authenticates locally: KEYSTORE (web app, server keystore) or VAULT (extension). Set by the host. */
@@ -929,6 +932,7 @@ function MeritWalletInner({
   configSigningPanelContent,
   configBackupPanelContent,
   configTestAccountsContent,
+  configTestSitesContent,
   configDisplaySizeContent,
   onConfigUniswapEngineChange,
   onConfig0xEngineChange,
@@ -2345,6 +2349,7 @@ function MeritWalletInner({
                 signingPanelContent: configSigningPanelContent,
                 backupPanelContent: configBackupPanelContent,
                 testAccountsContent: configTestAccountsContent,
+                testSitesContent: configTestSitesContent,
                 testChoice: TEST_CHOICE_AVAILABLE,
                 displaySizeContent: configDisplaySizeContent ?? frameScaleControl(frameScale),
                 tableDataSizeContent: tableScaleControl(tableScale),
@@ -3522,7 +3527,7 @@ function MeritWalletWired(props: MeritWalletProps) {
       }
     : {};
   const merged = props.wallet ? { ...mergeWalletProps(props, { ...derived, activeWalletName }, props.wallet, props.activeAccountAddress), activeWalletId: props.activeWalletId ?? activeWalletId, nativeWalletId, ...accountDerived, ...derivedConnection } : { ...props, nativeWalletId };
-  return React.createElement(MeritPlatformContext.Provider, { value: platform }, React.createElement(MeritWalletInner, merged));
+  return React.createElement(MeritPlatformContext.Provider, { value: platform }, React.createElement(PanelCopyBridge, { platform }, React.createElement(MeritWalletInner, merged)));
 }
 
 /**
@@ -3540,6 +3545,12 @@ const TEST_CHOICE_AVAILABLE = true;
 
 /** 2026-11-21 (owner): the shared Hardhat test chain (31337): one fixed address, the same on every device. The server (nginx, deploy/nginx/merit-wallet.conf of the merit-wallet repo) maps this path to the node, so moving the node never touches an app. */
 const TEST_CHAIN_RPC = 'https://sponsorcoin.org/rpc/31337';
+
+/** 2026-11-24 (owner: the iframe wallet): gives the panels' one copy seam the platform's copyText, so a framed wallet's copy buttons ask the parent page like every other device action. Its own hook lives here so the exported switch below stays hook-free. */
+function PanelCopyBridge({ platform, children }: { platform: MeritPlatform; children?: React.ReactNode }) {
+  const copyText = React.useCallback((text: string) => platform.copyText(text), [platform]);
+  return React.createElement(PlatformCopyProvider, { value: copyText }, children);
+}
 
 export default function MeritWallet(props: MeritWalletProps) {
   if (props.onboarding) {

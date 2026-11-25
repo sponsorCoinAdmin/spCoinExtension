@@ -4,3 +4,5 @@
 // and its build fails if it does. Today: the Test Accounts section and its browser API. Planned: the Hardhat test chain's network settings, data and logos, and the window.__ test probes.
 export { default as TestAccountsSection } from './TestAccountsSection';
 export { createBrowserTestAccounts } from './createBrowserTestAccounts';
+export { default as TestSitesSection } from './TestSitesSection';
+export * from './testSites';

@@ -36,6 +36,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { configTitle } from './walletType';
+import { PlatformCopyProvider } from '@sponsorcoin/spcoin-panels';
 import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, OwnDisplayScale, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX } from './display/walletFrameScale';
 import { usePeerStates } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
@@ -255,7 +256,7 @@ const READ_ONLY_ACCOUNT_DETAIL_HOST = {
 // the header account list now renders AccountListCard directly, which takes
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
-function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClose, titleBadgeSrc, onRefresh, onNavigationChange, seedTabOnStack, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, securitySetup, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccountsContent, configDisplaySizeContent, onConfigUniswapEngineChange, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
+function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClose, titleBadgeSrc, onRefresh, onNavigationChange, seedTabOnStack, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, securitySetup, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccountsContent, configTestSitesContent, configDisplaySizeContent, onConfigUniswapEngineChange, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
     // 2026-11-14: the ladybug's hotkey, saved switch and error capture (debug/DebugBug.tsx)
     useDebugRuntime();
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
@@ -1625,6 +1626,7 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
                             signingPanelContent: configSigningPanelContent,
                             backupPanelContent: configBackupPanelContent,
                             testAccountsContent: configTestAccountsContent,
+                            testSitesContent: configTestSitesContent,
                             testChoice: TEST_CHOICE_AVAILABLE,
                             displaySizeContent: configDisplaySizeContent ?? frameScaleControl(frameScale),
                             tableDataSizeContent: tableScaleControl(tableScale),
@@ -2571,7 +2573,7 @@ function MeritWalletWired(props) {
         }
         : {};
     const merged = props.wallet ? { ...mergeWalletProps(props, { ...derived, activeWalletName }, props.wallet, props.activeAccountAddress), activeWalletId: props.activeWalletId ?? activeWalletId, nativeWalletId, ...accountDerived, ...derivedConnection } : { ...props, nativeWalletId };
-    return React.createElement(MeritPlatformContext.Provider, { value: platform }, React.createElement(MeritWalletInner, merged));
+    return React.createElement(MeritPlatformContext.Provider, { value: platform }, React.createElement(PanelCopyBridge, { platform }, React.createElement(MeritWalletInner, merged)));
 }
 /**
  * The component. First-run setup replaces the wallet (a different component type, so the wallet's own state starts fresh when setup ends, the same as when the host used to swap it out);
@@ -2586,6 +2588,11 @@ function SetupScreen(props) {
 const TEST_CHOICE_AVAILABLE = true;
 /** 2026-11-21 (owner): the shared Hardhat test chain (31337): one fixed address, the same on every device. The server (nginx, deploy/nginx/merit-wallet.conf of the merit-wallet repo) maps this path to the node, so moving the node never touches an app. */
 const TEST_CHAIN_RPC = 'https://sponsorcoin.org/rpc/31337';
+/** 2026-11-24 (owner: the iframe wallet): gives the panels' one copy seam the platform's copyText, so a framed wallet's copy buttons ask the parent page like every other device action. Its own hook lives here so the exported switch below stays hook-free. */
+function PanelCopyBridge({ platform, children }) {
+    const copyText = React.useCallback((text) => platform.copyText(text), [platform]);
+    return React.createElement(PlatformCopyProvider, { value: copyText }, children);
+}
 export default function MeritWallet(props) {
     if (props.onboarding) {
         return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(SetupScreen, props.onboarding));

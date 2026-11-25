@@ -28,3 +28,14 @@ export function mountPiecesFromInjectables(injectables) {
         pieces.onClose = () => { void run(functions.close).catch(() => undefined); };
     return pieces;
 }
+/**
+ * The injectables a device package hands to the wallet: its own defaults (what the device does for copy, open and close) with the app's own functions and settings laid over them, and the device's Merit type set (the app cannot change the type of the device it runs on).
+ * Pure: no imports.
+ */
+export function mergeInjectables(base, extra, walletType) {
+    return {
+        walletType,
+        settings: { ...(base.settings ?? {}), ...(extra?.settings ?? {}) },
+        functions: { ...(base.functions ?? {}), ...(extra?.functions ?? {}) },
+    };
+}

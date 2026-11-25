@@ -1,7 +1,7 @@
 {
   "name": "@meritWallets/meritExtension",
   "version": "0.0.1",
-  "description": "The EXT shell: opens the wallet (meritWeb) through meritIFrame as the EXT type and passes this host's own functions in as injectables. It does not use the MeritWallet component.",
+  "description": "The Chrome extension's package: it holds the extension's injectables (copy through the clipboard, open an address in a new tab, close the extension page) and mounts the wallet (meritWeb) straight into an extension page as the EXT type. It does not use the MeritWallet component.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,10 +20,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "node test/injectables.test.mjs"
   },
   "dependencies": {
-    "@meritWallets/meritIFrame": "file:../meritIFrame"
+    "@meritWallets/meritWeb": "file:../meritWeb"
   },
   "devDependencies": {
     "typescript": "5.8.3"

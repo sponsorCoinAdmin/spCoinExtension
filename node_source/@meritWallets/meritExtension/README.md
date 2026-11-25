@@ -1,24 +1,24 @@
 # @meritWallets/meritExtension
 
-The **EXT** shell for the Chrome extension (its side panel or any extension page).
+The Chrome extension's package. It holds the extension's **injectables** and mounts the wallet into an extension page as the `EXT` type.
 
-It does not draw a wallet and it does not use the MeritWallet component. It opens the wallet page (`@meritWallets/meritWeb`) through `@meritWallets/meritIFrame` as the `EXT` type, and passes this host's own functions (`copyText`, `openUrl`, `close`, and any other name) and plain-data settings to the wallet as injectables.
+- **Injectables:** what the wallet's platform does for `copyText` (the clipboard), `openUrl` (a new tab, through `chrome.tabs`) and `close` (closes the extension page). Further functions (the extension's vault, its connect relay and provider) are added here as they are moved over.
+- **Mount:** `mountMeritExtension({ element, core, snapshot, injectables? })` calls `mountMeritWeb` directly. The extension page *is* the wallet's page, so there is no frame.
+- It does not use the MeritWallet component. The wallet is `@meritWallets/meritWeb`.
 
 ```ts
 import { mountMeritExtension } from '@meritWallets/meritExtension';
 
-mountMeritExtension({
-  element: document.getElementById('wallet')!,
-  walletUrl: 'https://sponsorcoin.org/',          // or a path inside the host's own files
-  injectables: { functions: { close: () => window.close() } },
-});
+mountMeritExtension({ element: document.getElementById('root')!, core, snapshot });
 ```
 
-See `docs/design/meritWalletDesign.txt`, section 11 (one set of injectables, two ways to mount).
+`injectables` lays the app's own functions over the defaults (a function with the same name replaces the default); the type is always `EXT`.
 
-## Build
+## Build and test
 
 ```bash
-npm run build      # tsc -> dist/
-npm run typecheck
+npm run build   # tsc -> dist/
+npm test        # the injectables, run without a browser
 ```
+
+See `docs/design/meritWalletDesign.txt`, section 11.

@@ -1,7 +1,7 @@
 export { mountMeritWeb } from './mountMeritWeb';
 export type { MountMeritWebOptions } from './mountMeritWeb';
 export { resolveWalletType } from './walletType';
-export { mountPiecesFromInjectables } from './injectables';
+export { mountPiecesFromInjectables, mergeInjectables } from './injectables';
 export { installDebugCapture } from './debugCapture';
 export type { MeritWebInjectables, HostFunction, MountPieces } from './injectables';
 export type { MeritWebType } from './walletType';

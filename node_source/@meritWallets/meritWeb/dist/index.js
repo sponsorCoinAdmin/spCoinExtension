@@ -3,7 +3,7 @@
 // @meritWallets/meritWeb: the Merit Wallet web app (see README.md). 2026-11-25 (owner): meritBrowser's code was moved here, so this package is the whole wallet for a browser page.
 export { mountMeritWeb } from './mountMeritWeb';
 export { resolveWalletType } from './walletType';
-export { mountPiecesFromInjectables } from './injectables';
+export { mountPiecesFromInjectables, mergeInjectables } from './injectables';
 // 2026-11-25: the page's debug capture, shared by every page that hosts the wallet (it was copied into four places)
 export { installDebugCapture } from './debugCapture';
 export { default as MeritWalletBrowser } from './MeritWalletBrowser';

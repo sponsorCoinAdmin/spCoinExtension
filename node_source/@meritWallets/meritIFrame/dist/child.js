@@ -107,8 +107,37 @@ export function framePlatformOverrides(bridge) {
 export function injectablesFromParent(parent) {
     const { bridge } = parent;
     return buildInjectables(parent.init, (name, args) => bridge.call(name, args), {
-        copyText: (text) => bridge.request('copyText', { text: String(text) }),
+        copyText: (text) => copyHere(String(text), bridge),
         openUrl: (url, options) => { void bridge.request('openUrl', { url: String(url), sameTab: !!options?.sameTab }).catch(() => undefined); },
         close: () => { void bridge.request('close', {}).catch(() => undefined); },
     });
+}
+/**
+ * Copy for a framed wallet. The wallet is the page the person clicked in, so it copies HERE first: that works with the click and with the frame's focus. The PARENT's clipboard is refused when the parent document is not the focused one (the frame has the focus), which is why asking the parent comes last.
+ * Order: the page's own clipboard, then the old copy command on a hidden text box, then the parent.
+ */
+async function copyHere(text, bridge) {
+    try {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+    catch {
+        /* not allowed here: try the next way */
+    }
+    try {
+        const box = document.createElement('textarea');
+        box.value = text;
+        box.setAttribute('readonly', '');
+        box.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+        document.body.appendChild(box);
+        box.select();
+        const done = document.execCommand('copy');
+        box.remove();
+        if (done)
+            return;
+    }
+    catch {
+        /* not allowed here either: ask the parent */
+    }
+    await bridge.request('copyText', { text });
 }

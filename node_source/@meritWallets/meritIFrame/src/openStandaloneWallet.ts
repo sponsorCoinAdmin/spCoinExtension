@@ -36,6 +36,8 @@ export function createWalletFrame({ url = STANDALONE_WALLET_URL, parent, width =
   const frame = document.createElement('iframe');
   frame.src = url;
   frame.title = 'Merit Wallet';
+  // 2026-11-25: the wallet copies to the clipboard itself (it is the page the person clicked in): a frame may use the clipboard only when its parent allows it, and a same-site frame is allowed by default but a cross-site one is not
+  frame.allow = 'clipboard-write; clipboard-read';
   frame.style.cssText = `width:${width};height:${height};border:0;`;
   parent.appendChild(frame);
   return { frame, dispose: () => frame.remove() };

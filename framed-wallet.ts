@@ -3,7 +3,10 @@
 // 2026-11-25 (owner: complete the extension on meritIFrame and meritWeb): the WALLET page of the framed wallet: @meritWallets/meritWeb mounted with the extension's bundled data. When it is framed by the extension's own host page (framed.html) it takes the wallet type and host functions from that page over the frame protocol
 // (only the extension's own origin is accepted as the parent); opened on its own it runs without injection. The chains come from the bundled data snapshot (a plain public endpoint each, Ethereum first, then the test chain when the snapshot has one).
 import './framed-wallet.css';
+import React from 'react';
 import { createBrowserWallet, meritDebug, mountMeritWeb } from '@meritWallets/meritWeb';
+import { TestAccountsSection, createBrowserTestAccounts } from '@meritWallets/meritDevSite';
+import { AuthenticationType } from '@sponsorcoin/merit-wallet';
 import { awaitParentInit, injectablesFromParent } from '@meritWallets/meritIFrame';
 import snapshot from '@sponsorcoin/spcoin-data/bundledFeedData.json';
 import { installDebugCapture } from './src/framedDebugCapture';
@@ -49,6 +52,8 @@ async function start() {
     core,
     snapshot: snapshot as Record<string, unknown>,
     injectables,
+    // the Config tab's Test Accounts section (Load / Unload the 20 Hardhat test accounts), shown on the Test choice, as in the extension's own side panel (@meritWallets/meritDevSite: test code)
+    configTestAccountsContent: React.createElement(TestAccountsSection, { api: createBrowserTestAccounts(core), authenticationType: AuthenticationType.VAULT }),
   });
 }
 void start();

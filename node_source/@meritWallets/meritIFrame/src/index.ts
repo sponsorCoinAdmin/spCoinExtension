@@ -18,6 +18,10 @@ export { resolveWalletUrl, parseAllowedParents } from './walletUrl';
 
 // 2026-11-25: the one options shape both mounts take, and the iframe mount
 export type { HostInjectables, InjectedFunction, Json } from './injectables';
-export { buildInjectables, customFunctionNames, WELL_KNOWN_FUNCTIONS } from './injectables';
+export { buildInjectables, customFunctionNames, withWalletType, WELL_KNOWN_FUNCTIONS } from './injectables';
 export { mountMeritIFrame } from './mountMeritIFrame';
 export type { MountMeritIFrameOptions, MeritIFrameMount } from './mountMeritIFrame';
+
+// 2026-11-25: the shared factory of the host packages (meritWebApp, meritExtension, meritAndroid, meritIPhone): each is a thin shell that names its Merit type
+export { createShellMount } from './shell';
+export type { ShellMountOptions } from './shell';

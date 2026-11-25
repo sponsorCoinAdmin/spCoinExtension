@@ -4,6 +4,8 @@
 export { mountMeritWeb } from './mountMeritWeb';
 export { resolveWalletType } from './walletType';
 export { mountPiecesFromInjectables } from './injectables';
+// 2026-11-25: the page's debug capture, shared by every page that hosts the wallet (it was copied into four places)
+export { installDebugCapture } from './debugCapture';
 export { default as MeritWalletBrowser } from './MeritWalletBrowser';
 export { createBrowserWallet, BROWSER_AUTO_LOCK_MS } from './createBrowserWallet';
 export { createBrowserSend } from './browserSend';

@@ -4,12 +4,11 @@
 // (only the extension's own origin is accepted as the parent); opened on its own it runs without injection. The chains come from the bundled data snapshot (a plain public endpoint each, Ethereum first, then the test chain when the snapshot has one).
 import './framed-wallet.css';
 import React from 'react';
-import { createBrowserWallet, meritDebug, mountMeritWeb } from '@meritWallets/meritWeb';
+import { createBrowserWallet, installDebugCapture, meritDebug, mountMeritWeb } from '@meritWallets/meritWeb';
 import { TestAccountsSection, createBrowserTestAccounts } from '@meritWallets/meritDevSite';
 import { AuthenticationType } from '@sponsorcoin/merit-wallet';
 import { awaitParentInit, injectablesFromParent } from '@meritWallets/meritIFrame';
 import snapshot from '@sponsorcoin/spcoin-data/bundledFeedData.json';
-import { installDebugCapture } from './src/framedDebugCapture';
 
 // 2026-11-25 (owner: more debug info in the extension's framed wallet): the same capture as the other wallets (errors, warnings, the engine's trace, storage names) goes into the ladybug dump (Ctrl+Alt+B), plus a `framed` section that says how this page was started
 installDebugCapture();

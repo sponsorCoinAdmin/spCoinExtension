@@ -20,3 +20,5 @@ export declare function customFunctionNames(functions: Record<string, unknown> |
  * `call` is how a stub reaches the parent; `wellKnown` are the copy, open and close stubs.
  */
 export declare function buildInjectables(init: Pick<FrameInit, 'walletType' | 'settings' | 'functionNames'>, call: (name: string, args: Json[]) => Promise<Json | undefined>, wellKnown?: Partial<Record<(typeof WELL_KNOWN_FUNCTIONS)[number], InjectedFunction>>): HostInjectables;
+/** The injectables with the wallet type set by a host shell: whatever type the caller passed is replaced (a shell is one Merit type). Pure. */
+export declare function withWalletType(injectables: Omit<HostInjectables, 'walletType'> | undefined, walletType: string): HostInjectables;

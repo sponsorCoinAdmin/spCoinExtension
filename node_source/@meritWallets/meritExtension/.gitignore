@@ -1,0 +1,7 @@
+# Compiled output must never live in src/.
+src/**/*.js
+src/**/*.jsx
+src/**/*.d.ts
+
+# Installed dependencies are never part of the package repo.
+node_modules/

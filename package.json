@@ -15,6 +15,7 @@
     "@ledgerhq/hw-app-eth": "^7.10.0",
     "@ledgerhq/hw-transport-webhid": "^6.36.0",
     "@meritWallets/meritDevSite": "file:./node_source/@meritWallets/meritDevSite",
+    "@meritWallets/meritExtension": "file:./node_source/@meritWallets/meritExtension",
     "@meritWallets/meritIFrame": "file:./node_source/@meritWallets/meritIFrame",
     "@meritWallets/meritWeb": "file:./node_source/@meritWallets/meritWeb",
     "@sponsorcoin/merit-connect": "file:./node_source/meritConnect/packages/@sponsorcoin/merit-connect",

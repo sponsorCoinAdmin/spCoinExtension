@@ -44,3 +44,8 @@ export function buildInjectables(
   }
   return { walletType: init.walletType, settings: init.settings ?? {}, functions };
 }
+
+/** The injectables with the wallet type set by a host shell: whatever type the caller passed is replaced (a shell is one Merit type). Pure. */
+export function withWalletType(injectables: Omit<HostInjectables, 'walletType'> | undefined, walletType: string): HostInjectables {
+  return { ...(injectables ?? {}), walletType };
+}

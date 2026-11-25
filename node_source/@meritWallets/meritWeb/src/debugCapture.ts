@@ -1,9 +1,9 @@
-// File: src/framedDebugCapture.ts
+// File: src/debugCapture.ts
 //
-// 2026-11-19: the framed wallet's capture of what the page can see (errors, console warnings, the engine's trace lines) and the page's storage names, handed to the wallet's own ladybug dump (Ctrl+Alt+B). There is no separate debug pane any more:
+// 2026-11-19: the wallet page's capture of what it can see (one copy for every host page: the dev wallet, meritWeb's own page, the extension's framed wallet and the release wallet) (errors, console warnings, the engine's trace lines) and the page's storage names, handed to the wallet's own ladybug dump (Ctrl+Alt+B). There is no separate debug pane any more:
 // the dump is the one place to look, in this app and in the extension. Nothing secret is read (no keys, no passwords).
 import { setEngineTrace } from '@sponsorcoin/spcoin-exchange-engine';
-import { meritDebug } from '@meritWallets/meritWeb';
+import { meritDebug } from '@sponsorcoin/merit-wallet';
 
 const show = (v: unknown): string => {
   try {

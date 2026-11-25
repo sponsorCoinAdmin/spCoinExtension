@@ -17,3 +17,7 @@ export function buildInjectables(init, call, wellKnown = {}) {
     }
     return { walletType: init.walletType, settings: init.settings ?? {}, functions };
 }
+/** The injectables with the wallet type set by a host shell: whatever type the caller passed is replaced (a shell is one Merit type). Pure. */
+export function withWalletType(injectables, walletType) {
+    return { ...(injectables ?? {}), walletType };
+}

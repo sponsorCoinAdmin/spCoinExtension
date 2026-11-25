@@ -9,5 +9,7 @@ export { connectWalletFrame, defaultFrameHandlers } from './parent';
 export { awaitParentInit, framePlatformOverrides, injectablesFromParent } from './child';
 // 2026-11-25: which wallet page the frame loads, and which parent pages a wallet page accepts
 export { resolveWalletUrl, parseAllowedParents } from './walletUrl';
-export { buildInjectables, customFunctionNames, WELL_KNOWN_FUNCTIONS } from './injectables';
+export { buildInjectables, customFunctionNames, withWalletType, WELL_KNOWN_FUNCTIONS } from './injectables';
 export { mountMeritIFrame } from './mountMeritIFrame';
+// 2026-11-25: the shared factory of the host packages (meritWebApp, meritExtension, meritAndroid, meritIPhone): each is a thin shell that names its Merit type
+export { createShellMount } from './shell';

@@ -8,6 +8,8 @@ export { awaitParentInit, framePlatformOverrides, injectablesFromParent } from '
 export type { AwaitParentInitOptions, FrameBridge, FrameParent } from './child';
 export { resolveWalletUrl, parseAllowedParents } from './walletUrl';
 export type { HostInjectables, InjectedFunction, Json } from './injectables';
-export { buildInjectables, customFunctionNames, WELL_KNOWN_FUNCTIONS } from './injectables';
+export { buildInjectables, customFunctionNames, withWalletType, WELL_KNOWN_FUNCTIONS } from './injectables';
 export { mountMeritIFrame } from './mountMeritIFrame';
 export type { MountMeritIFrameOptions, MeritIFrameMount } from './mountMeritIFrame';
+export { createShellMount } from './shell';
+export type { ShellMountOptions } from './shell';

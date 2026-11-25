@@ -269,7 +269,7 @@ export interface MeritWalletProps {
     /** The Config tab's "Backup file" section (derived from `wallet` when its key-keeping backend can make a backup file). */
     configBackupPanelContent?: React.ReactNode;
     /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */
-    /** 2026-11-19: the Config tab's Test Accounts section, built by the HOST (the section lives in @meritWallets/meritDevOnly, a package that never ships in a release), like configDevToolsContent. Absent: no section. */
+    /** 2026-11-19: the Config tab's Test Accounts section, built by the HOST (the section lives in @meritWallets/meritDevSite, a package that never ships in a release), like configDevToolsContent. Absent: no section. */
     configTestAccountsContent?: React.ReactNode;
     /** 2026-11-24 (owner): the Config tab's Test Sites section (open a test site in its own window). Test code: only a test project passes it. */
     configTestSitesContent?: React.ReactNode;

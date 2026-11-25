@@ -9,12 +9,13 @@ const CONTRACT_NAME = 'SwapRouter02';
 /** What the confirmation screen shows for the swap, from the approval-details request the shared swap flow (runUniswapSwap) hands the signer. */
 export function swapConfirmCopy(request, minReceived) {
     return {
-        title: 'Approve Uniswap V3 Swap',
-        message: `Minimum received ${minReceived}`,
+        // a wrap / unwrap (coin <-> wrapped coin) names its own title and contract; a swap keeps the router's
+        title: request?.title ?? 'Approve Uniswap V3 Swap',
+        message: request?.swapMethod === 'deposit' || request?.swapMethod === 'withdraw' ? 'Exchanged 1:1, no pool and no price impact' : `Minimum received ${minReceived}`,
         amount: request?.amount,
         tokens: (request?.tokens ?? []).map((tk) => ({ label: tk.label, symbol: tk.token?.symbol, name: tk.token?.name, address: tk.token?.address, logoURL: tk.token?.logoURL, detail: tk.detail })),
-        contractSymbol: CONTRACT_SYMBOL,
-        contractName: CONTRACT_NAME,
+        contractSymbol: request?.swapMethod === 'deposit' || request?.swapMethod === 'withdraw' ? request?.contractSymbol ?? CONTRACT_SYMBOL : CONTRACT_SYMBOL,
+        contractName: request?.swapMethod === 'deposit' || request?.swapMethod === 'withdraw' ? request?.contractName ?? CONTRACT_NAME : CONTRACT_NAME,
     };
 }
 const APPROVE_LABEL = 'Uniswap V3 Approve';

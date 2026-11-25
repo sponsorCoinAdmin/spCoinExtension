@@ -4,7 +4,7 @@
 // Test code: it lives in the test project and never in a release (README).
 
 export type TestSiteProtocol = 'https' | 'http';
-export const TEST_SITE_PROTOCOLS: readonly TestSiteProtocol[] = ['https', 'http'];
+export const TEST_SITE_PROTOCOLS: readonly TestSiteProtocol[] = ['http', 'https'];
 
 /** The wallet types a test site may be asked to show (the iframe harness's type picker). '' = not asked. */
 export const TEST_SITE_TYPES = ['WEB', 'WEB_APP', 'EXT', 'ANDROID', 'IPHONE'] as const;
@@ -26,7 +26,7 @@ export interface TestSiteForm {
 }
 
 /** The defaults the owner asked for: https, localhost, port 3101, height as tall as the screen. */
-export const DEFAULT_TEST_SITE: TestSiteForm = { protocol: 'https', host: 'localhost', port: '3101', width: '460', height: 'max', type: '', compare: false, log: false };
+export const DEFAULT_TEST_SITE: TestSiteForm = { protocol: 'http', host: 'localhost', port: '3101', width: '460', height: 'max', type: '', compare: false, log: false };
 
 const MIN_SIZE = 200;
 const MAX_SIZE = 4000;

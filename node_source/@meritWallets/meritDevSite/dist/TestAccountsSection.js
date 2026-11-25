@@ -1,4 +1,4 @@
-// File: node_source/@meritWallets/meritDevOnly/src/TestAccountsSection.tsx
+// File: node_source/@meritWallets/meritDevSite/src/TestAccountsSection.tsx
 //
 // 2026-11-19: moved here from @sponsorcoin/merit-wallet. It is test code (Hardhat's published accounts), so it lives only in the test project and is passed to the wallet as a node (configTestAccountsContent); a release never contains it.
 //

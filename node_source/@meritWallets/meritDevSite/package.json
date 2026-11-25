@@ -1,5 +1,5 @@
 {
-  "name": "@meritWallets/meritDevOnly",
+  "name": "@meritWallets/meritDevSite",
   "version": "0.0.1",
   "private": true,
   "description": "Test-only code for the Merit Wallet (Hardhat test accounts and their Config section). Lives in the test project; never part of a release.",
@@ -22,7 +22,7 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "clean": "rm -rf dist",
-    "test": "node test/testAccounts.test.mjs"
+    "test": "node test/testAccounts.test.mjs && node test/testSites.test.mjs"
   },
   "peerDependencies": {
     "@sponsorcoin/merit-wallet": "*",

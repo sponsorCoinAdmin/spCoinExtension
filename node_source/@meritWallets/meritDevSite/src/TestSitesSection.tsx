@@ -9,7 +9,7 @@ import { configSectionStyle, testSitesStyle } from '@sponsorcoin/spcoin-common/s
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
 import { DEFAULT_TEST_SITE, TEST_SITE_PROTOCOLS, TEST_SITE_TYPES, buildTestSiteUrl, digitsOnly, testSiteProblem, testSiteWindowFeatures, type TestSiteForm, type TestSiteProtocol } from './testSites';
 
-const KEY = 'merit.testSites.v1';
+const KEY = 'merit.testSites.v2';
 
 /** The last values used (this browser only); anything unreadable falls back to the defaults. */
 function readSaved(): TestSiteForm {
@@ -42,7 +42,7 @@ export default function TestSitesSection() {
   };
 
   return (
-    <div id="TEST_SITES_SECTION" style={configSectionStyle.column(8)}>
+    <div id="TEST_SITES_SECTION" style={configSectionStyle.column(2)}>
       <p style={configSectionStyle.note}>Open a test site (the clean iframe wallet, the test harness, the dev wallet, or any other port) in its own window.</p>
 
       <div style={testSitesStyle.row}>

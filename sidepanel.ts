@@ -12,7 +12,7 @@ import { startDappApprovals } from './src/dappApprovals';
 import { remoteSelectionStore } from './src/remoteSelectionStore';
 import { extensionPeers, meritWebConnection } from './src/extensionPeers';
 import { traceFrom } from './src/debugTrace';
-import { TestAccountsSection } from '@meritWallets/meritDevOnly';
+import { TestAccountsSection } from '@meritWallets/meritDevSite';
 import { importVaultWallet, vaultAccountsApi, vaultOnboarding, vaultStatus, vaultTestAccountsApi } from './src/vaultScreens';
 import { MeritWalletType, ConnectChoiceRequired, connectAccount, type AuthenticatorId, estimateRewardsByMethod, claimAmountsFor, throttleRead, AuthenticationType, MeritWalletHostView, createWalletRefresh, createWalletConfig, createWalletSession, walletName, type AccountProfileHost, type AddAccountHost, type WalletSessionHost, accountDetailHostFromProfile, PasswordRequiredError, type HostTransactionResult, sendOutcomeToHostResult, type RewardsHost, type SponsorStakingHost, meritDebug, registerHostDebug, readChainTimestamp } from '@sponsorcoin/merit-wallet';
 import { persistedTimeoutMs } from '@sponsorcoin/merit-wallet';
@@ -999,7 +999,7 @@ async function renderWallet() {
                 tradeHost: extensionTradeHost,
               },
               slots: {
-                // 2026-11-19: the Test Accounts section comes from @meritWallets/meritDevOnly (test-only code) and is handed to the wallet as a node
+                // 2026-11-19: the Test Accounts section comes from @meritWallets/meritDevSite (test-only code) and is handed to the wallet as a node
                 configTestAccountsContent: React.createElement(TestAccountsSection, {
                   api: vaultTestAccountsApi,
                   authenticationType: AuthenticationType.VAULT,

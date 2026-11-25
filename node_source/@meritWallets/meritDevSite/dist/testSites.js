@@ -2,11 +2,11 @@
 //
 // 2026-11-24 (owner: a "Test Sites" panel in the Config tab): the pure part, no React and no window: what the fields may hold, the link they build, and the window features for opening it. The section component (TestSitesSection.tsx) is only the form around these.
 // Test code: it lives in the test project and never in a release (README).
-export const TEST_SITE_PROTOCOLS = ['https', 'http'];
+export const TEST_SITE_PROTOCOLS = ['http', 'https'];
 /** The wallet types a test site may be asked to show (the iframe harness's type picker). '' = not asked. */
 export const TEST_SITE_TYPES = ['WEB', 'WEB_APP', 'EXT', 'ANDROID', 'IPHONE'];
 /** The defaults the owner asked for: https, localhost, port 3101, height as tall as the screen. */
-export const DEFAULT_TEST_SITE = { protocol: 'https', host: 'localhost', port: '3101', width: '460', height: 'max', type: '', compare: false, log: false };
+export const DEFAULT_TEST_SITE = { protocol: 'http', host: 'localhost', port: '3101', width: '460', height: 'max', type: '', compare: false, log: false };
 const MIN_SIZE = 200;
 const MAX_SIZE = 4000;
 /** The port box takes digits only. */

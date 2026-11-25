@@ -5,7 +5,7 @@
 // is the only place keys exist. A failed reply becomes an Error with the worker's message so the screens can show it.
 import { extensionVault } from './localVaultAuthenticator';
 import type { VaultAccountsApi } from '@sponsorcoin/merit-wallet';
-import type { TestAccountsApi } from '@meritWallets/meritDevOnly';
+import type { TestAccountsApi } from '@meritWallets/meritDevSite';
 
 type Reply = {
   ok: boolean;

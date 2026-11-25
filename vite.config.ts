@@ -87,6 +87,9 @@ export default defineConfig({
       // version's side_panel auto-discovery works or not.
       input: {
         sidepanel: 'sidepanel.html',
+        // 2026-11-25 (owner: the extension uses meritIFrame and meritWeb): the framed wallet's two pages: the host that frames it and the wallet page (meritWeb) it frames. sidepanel.html is unchanged.
+        framed: 'framed.html',
+        framedWallet: 'framed-wallet.html',
       },
     },
   },

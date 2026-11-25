@@ -1,0 +1,5 @@
+@import "tailwindcss";
+/* the wallet's own classes live in the linked libraries' dist */
+@source "./node_source";
+
+html, body, #root { margin: 0; height: 100%; background: #0b0e19; color: #fff; font-family: system-ui, sans-serif; }

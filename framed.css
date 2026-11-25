@@ -1,0 +1,4 @@
+/* the framed host page's only styles: the wallet fills the window, the frame fills the wallet's box */
+html, body { margin: 0; height: 100%; background: #0b0e19; overflow: hidden; }
+#wallet { height: 100%; }
+iframe { display: block; border: 0; width: 100%; height: 100%; }

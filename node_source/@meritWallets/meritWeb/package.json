@@ -1,0 +1,47 @@
+{
+  "name": "@meritWallets/meritWeb",
+  "version": "0.0.1",
+  "description": "The Merit Wallet web app as a library for the release page (its own copy of the web repo's package, src and tsconfig mirrored by scripts/syncFromWeb.sh). The page injects chains, data and what differs; the package knows nothing about frames.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "echo 'tests run in the web repo'",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@sponsorcoin/merit-wallet": "file:../../meritWallet/packages/@sponsorcoin/merit-wallet"
+  },
+  "peerDependencies": {
+    "@sponsorcoin/merit-wallet": "*",
+    "@sponsorcoin/spcoin-access-modules": "*",
+    "@sponsorcoin/spcoin-common": "*",
+    "@sponsorcoin/spcoin-exchange-engine": "*",
+    "@sponsorcoin/spcoin-feeds": "*",
+    "@sponsorcoin/spcoin-onchain": "*",
+    "@sponsorcoin/spcoin-panels": "*",
+    "@tanstack/react-query": "*",
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19",
+    "viem": "*"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "typescript": "5.8.3"
+  },
+  "license": "ISC"
+}

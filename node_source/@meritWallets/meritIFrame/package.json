@@ -1,0 +1,25 @@
+{
+  "name": "@meritWallets/meritIFrame",
+  "version": "0.0.1",
+  "description": "The Merit Wallet iframe container (the extension's copy: source mirrored from the web repo): frames a wallet page, injects the wallet type and host functions over a checked message protocol, and gives the wallet page its side of it.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "license": "ISC"
+}

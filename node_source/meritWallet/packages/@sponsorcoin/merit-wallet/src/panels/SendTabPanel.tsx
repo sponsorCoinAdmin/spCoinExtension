@@ -18,7 +18,7 @@
 
 import React from 'react';
 import { PANEL_GAP, panelBoxStyle } from '@sponsorcoin/spcoin-common/styles';
-import { TradeAmountRow, PanelGate, SendButton, amountGate } from '@sponsorcoin/spcoin-panels';
+import { TradeAmountRow, PanelGate, SendButton, amountGate, usePanelSizeScale, usePinchPanelSize } from '@sponsorcoin/spcoin-panels';
 
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 
@@ -104,6 +104,9 @@ export default function SendTabPanel({
   onRecipientClick,
 }: SendTabPanelProps) {
   const sendGate = amountGate({ side: 'sell', hasToken: !!sendTokenAddress });
+  // 2026-11-26 (owner: Panel Size): the Send tab follows the Panel Size slider, and a two-finger pinch on it changes it
+  const panelSize = usePanelSizeScale();
+  const pinchPanelSize = usePinchPanelSize();
 
   return (
     // 2026-09-14, on request ("spacing between SEND_SELECT_PANEL,
@@ -127,7 +130,7 @@ export default function SendTabPanel({
     // that file's own header comment; one shared source instead of a
     // separately hardcoded `4` in this file/TradingStationPanel.tsx/
     // SponsorshipPanel.tsx.
-    <div style={panelBoxStyle.stack(PANEL_GAP)}>
+    <div ref={pinchPanelSize.ref} style={panelBoxStyle.stackScaled(PANEL_GAP, panelSize, pinchPanelSize.style)}>
       {/* 2026-10-03 — gated on the same panel-tree flags as the web app's Send tab
           (SEND_SELECT_PANEL around the amount row, SEND_BUTTON around the submit
           button), so a flag toggle changes both apps the same way. */}

@@ -15,8 +15,11 @@ const TABLE_KEY = 'merit.tableDataScale.v1';
 export const FRAME_SCALE_MIN = 50;
 export const FRAME_SCALE_MAX = 200;
 const META_KEY = 'merit.metaTableScale.v1';
+const PANEL_KEY = 'merit.panelSizeScale.v1';
 export const META_SCALE_MIN = 50;
 export const META_SCALE_MAX = 200;
+export const PANEL_SCALE_MIN = 50;
+export const PANEL_SCALE_MAX = 200;
 export const TABLE_SCALE_MIN = 50;
 export const TABLE_SCALE_MAX = 200;
 
@@ -62,6 +65,21 @@ export function useTableDataScale(): { percent: number; setPercent(next: number)
 
 export function tableScaleControl(scale: { percent: number; setPercent(next: number): void }): React.ReactNode {
   return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: TABLE_SCALE_MIN, max: TABLE_SCALE_MAX, title: 'Data Table Size', panelId: 'TABLE_DATA_SIZE_PANEL' });
+}
+
+/** 2026-11-26 (owner): the Panel Size (the trading panels: sell, swap arrow, buy and Uniswap), kept in the platform's preference store; 100 = as designed. */
+export function usePanelSizeScale(): { percent: number; setPercent(next: number): void } {
+  const { storage } = usePlatform();
+  const [percent, set] = useState<number>(() => parse(storage.get(PANEL_KEY), PANEL_SCALE_MIN, PANEL_SCALE_MAX));
+  const setPercent = useCallback((next: number) => {
+    set(next);
+    storage.set(PANEL_KEY, String(next));
+  }, [storage]);
+  return { percent, setPercent };
+}
+
+export function panelSizeScaleControl(scale: { percent: number; setPercent(next: number): void }): React.ReactNode {
+  return React.createElement(DisplaySizePanel, { percent: scale.percent, onPercentChange: scale.setPercent, defaultPercent: 100, min: PANEL_SCALE_MIN, max: PANEL_SCALE_MAX, title: 'Panel Size', panelId: 'PANEL_SIZE_PANEL' });
 }
 
 /** 2026-11-24 (owner): the Meta Table Size (the detail screens' meta tables), kept in the platform's preference store; 100 = as designed. */

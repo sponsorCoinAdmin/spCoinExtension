@@ -3,3 +3,4 @@ export type { TestAccountsApi, TestAccountsSectionProps } from './TestAccountsSe
 export { createBrowserTestAccounts } from './createBrowserTestAccounts';
 export { default as TestSitesSection } from './TestSitesSection';
 export * from './testSites';
+export { openSavedTestSiteWindow, openTestSiteWindow, installTestSiteListener, readSavedTestSiteForm } from './testSiteWindows';

@@ -38,7 +38,7 @@ import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletF
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MeritWalletType, configTitle } from './walletType';
 import { PlatformCopyProvider } from '@sponsorcoin/spcoin-panels';
-import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, OwnDisplayScale, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX, FRAME_BASE_FACTOR } from './display/walletFrameScale';
+import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, OwnDisplayScale, useMetaTableScale, metaTableScaleControl, usePanelSizeScale, panelSizeScaleControl, PANEL_SCALE_MIN, PANEL_SCALE_MAX, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX, FRAME_BASE_FACTOR } from './display/walletFrameScale';
 import { usePeerStates, type PeerConnection } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
@@ -48,7 +48,7 @@ import type { TokenContract } from '@sponsorcoin/spcoin-common/context';
 import { TRADE_DIRECTION, FEED_TYPE } from '@sponsorcoin/spcoin-common/context';
 import { ensureAbsoluteAssetURL } from './account/form/formHelpers';
 import { loadAccountRecord, registerAccountDetailOpener, registerPreOpenAction, setAccountStoreBaseUrl, engineTrace, plainSendStepStore, stepThroughApprovalStore, stepPanelContentStore, stepPanelTitleStore, useStepPanel } from '@sponsorcoin/spcoin-exchange-engine';
-import { StakeConfirmPopup, useWalletListed, amountGate, TableDataScaleProvider, MetaTableScaleProvider } from '@sponsorcoin/spcoin-panels';
+import { StakeConfirmPopup, useWalletListed, amountGate, TableDataScaleProvider, MetaTableScaleProvider, PanelSizeScaleProvider } from '@sponsorcoin/spcoin-panels';
 import {
   usePanelTree,
   usePanelVisible,
@@ -1066,6 +1066,7 @@ function MeritWalletInner({
   // 2026-11-26: the framed wallet (the web app's popup, the extension's panel) keeps its own fixed-size frame: the browser-zoom compensation and the width fit are NOT applied to it (they made the popup's contents several times larger than the popup, which pushed the password box out of view). They belong to the hosts that scale the whole page (meritWeb).
   const tableScale = useTableDataScale();
   const metaTableScale = useMetaTableScale();
+  const panelSizeScale = usePanelSizeScale();
   const ownScale = !configDisplaySizeContent;
   const menuSeeded = useRef(false);
   useEffect(() => {
@@ -2355,6 +2356,7 @@ function MeritWalletInner({
                 displaySizeContent: configDisplaySizeContent ?? frameScaleControl(frameScale),
                 tableDataSizeContent: tableScaleControl(tableScale),
                 metaTableSizeContent: metaTableScaleControl(metaTableScale),
+                panelSizeContent: panelSizeScaleControl(panelSizeScale),
                 // 2026-11-23 (owner): the Trading Engines boxes show what the Swap tab really draws (the engine's panels in the panel tree), not a host's copy that can fall behind; a host's handler still runs, and without one the box turns the engine's panels on/off itself
                 uniSelectVisible: uniPanelVisible,
                 onUniswapEngineChange: (checked: boolean) => {
@@ -3119,6 +3121,7 @@ function MeritWalletInner({
     <ImageCacheContext.Provider value={imageCacheValue}>
     <TableDataScaleProvider percent={tableScale.percent} onChange={tableScale.setPercent} min={TABLE_SCALE_MIN} max={TABLE_SCALE_MAX}>
     <MetaTableScaleProvider percent={metaTableScale.percent} onChange={metaTableScale.setPercent} min={META_SCALE_MIN} max={META_SCALE_MAX}>
+    <PanelSizeScaleProvider percent={panelSizeScale.percent} onChange={panelSizeScale.setPercent} min={PANEL_SCALE_MIN} max={PANEL_SCALE_MAX}>
     <OwnDisplayScale own={ownScale} scale={frameScale}>
     <RefreshTreeProvider tree={refreshTree} refreshToken={refreshToken ?? 0} onDone={setTreeDoneToken}>
     <WalletBalanceContext.Provider value={walletBalanceValue}>
@@ -3383,6 +3386,7 @@ function MeritWalletInner({
     </WalletBalanceContext.Provider>
     </RefreshTreeProvider>
     </OwnDisplayScale>
+    </PanelSizeScaleProvider>
     </MetaTableScaleProvider>
     </TableDataScaleProvider>
     </ImageCacheContext.Provider>

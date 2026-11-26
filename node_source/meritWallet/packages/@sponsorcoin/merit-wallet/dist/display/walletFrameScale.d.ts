@@ -5,6 +5,8 @@ export declare const FRAME_SCALE_MIN = 50;
 export declare const FRAME_SCALE_MAX = 200;
 export declare const META_SCALE_MIN = 50;
 export declare const META_SCALE_MAX = 200;
+export declare const PANEL_SCALE_MIN = 50;
+export declare const PANEL_SCALE_MAX = 200;
 export declare const TABLE_SCALE_MIN = 50;
 export declare const TABLE_SCALE_MAX = 200;
 import { REFERENCE_PIXEL_RATIO, browserZoomCompensation, useBrowserZoomCompensation } from '../platform/browserZoom';
@@ -24,6 +26,15 @@ export declare function useTableDataScale(): {
     setPercent(next: number): void;
 };
 export declare function tableScaleControl(scale: {
+    percent: number;
+    setPercent(next: number): void;
+}): React.ReactNode;
+/** 2026-11-26 (owner): the Panel Size (the trading panels: sell, swap arrow, buy and Uniswap), kept in the platform's preference store; 100 = as designed. */
+export declare function usePanelSizeScale(): {
+    percent: number;
+    setPercent(next: number): void;
+};
+export declare function panelSizeScaleControl(scale: {
     percent: number;
     setPercent(next: number): void;
 }): React.ReactNode;

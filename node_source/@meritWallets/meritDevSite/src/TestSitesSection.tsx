@@ -4,93 +4,29 @@
 // which opens in a window of that size when every field is valid. Test code (never part of a release); passed to the wallet as `configTestSitesContent`, the way TestAccountsSection is passed as `configTestAccountsContent`.
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { configSectionStyle, testSitesStyle } from '@sponsorcoin/spcoin-common/styles';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
-import { DEFAULT_TEST_SITE, TEST_SITE_PROTOCOLS, TEST_SITE_TYPES, buildTestSiteUrl, testSiteOpenUrl, calibrationFromMessage, requestedWindowWidth, popupLogFromMessage, mergePopupFrames, formatPopupLog, POPUP_LOG_MAX, digitsOnly, testSiteProblem, testSiteWindowFeatures, type TestSiteForm, type TestSiteProtocol, type WindowCalibration, type PopupLogEntry } from './testSites';
-
-const KEY = 'merit.testSites.v2';
-
-/** The last values used (this browser only); anything unreadable falls back to the defaults. */
-function readSaved(): TestSiteForm {
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return DEFAULT_TEST_SITE;
-    const saved = JSON.parse(raw) as Partial<TestSiteForm>;
-    return { ...DEFAULT_TEST_SITE, ...saved };
-  } catch {
-    return DEFAULT_TEST_SITE;
-  }
-}
+import { TEST_SITE_PROTOCOLS, TEST_SITE_TYPES, buildTestSiteUrl, digitsOnly, formatPopupLog, testSiteProblem, type TestSiteForm, type TestSiteProtocol } from './testSites';
+import { clearPopupLog, getPopupLog, installTestSiteListener, openTestSiteWindow, readSavedTestSiteForm, saveTestSiteForm, subscribePopupLog } from './testSiteWindows';
 
 export default function TestSitesSection() {
-  const [form, setForm] = useState<TestSiteForm>(readSaved);
+  const [form, setForm] = useState<TestSiteForm>(readSavedTestSiteForm);
   useEffect(() => {
-    try {
-      window.localStorage.setItem(KEY, JSON.stringify(form));
-    } catch {
-      /* storage unavailable: the values last for this page only */
-    }
+    saveTestSiteForm(form);
   }, [form]);
   const set = <K extends keyof TestSiteForm>(key: K, value: TestSiteForm[K]) => setForm((f) => ({ ...f, [key]: value }));
   const url = useMemo(() => buildTestSiteUrl(form), [form]);
   const problem = useMemo(() => testSiteProblem(form), [form]);
 
-  // 2026-11-26 (owner): a window that has sized itself tells us how its size maps to screen pixels; the next one opens at the right width and needs no resize
-  // 2026-11-26 (owner: "write to some log recording every popup"): every window opened here is logged with what was asked for, and the window adds its own timeline when it reports back
-  const [popupLog, setPopupLog] = useState<PopupLogEntry[]>(() => {
-    try {
-      const saved = window.localStorage.getItem('merit.popupLog.v1');
-      return saved ? (JSON.parse(saved) as PopupLogEntry[]).slice(-POPUP_LOG_MAX) : [];
-    } catch {
-      return [];
-    }
-  });
+  // 2026-11-26 (owner): the window log, the size calibration and the opening of a window live in testSiteWindows.ts, shared with the web app's spCoin logo; this section shows the log and opens with its own fields
+  const popupLog = useSyncExternalStore(subscribePopupLog, getPopupLog, getPopupLog);
   useEffect(() => {
-    try {
-      window.localStorage.setItem('merit.popupLog.v1', JSON.stringify(popupLog));
-    } catch {
-      /* kept for this page only */
-    }
-  }, [popupLog]);
-  const calibrationRef = useRef<WindowCalibration | undefined>(undefined);
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem('merit.testSiteWindowCalibration.v4');
-      if (saved) calibrationRef.current = JSON.parse(saved) as WindowCalibration;
-    } catch {
-      /* measured again */
-    }
-    const onMessage = (event: MessageEvent) => {
-      const timeline = popupLogFromMessage(event.data);
-      if (timeline) {
-        setPopupLog((log) => mergePopupFrames(log, timeline.oid, timeline.frames));
-        return;
-      }
-      const calibration = calibrationFromMessage(event.data);
-      if (!calibration) return;
-      calibrationRef.current = calibration;
-      try {
-        window.localStorage.setItem('merit.testSiteWindowCalibration.v4', JSON.stringify(calibration));
-      } catch {
-        /* kept for this page only */
-      }
-    };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
+    installTestSiteListener();
   }, []);
-
   const open = () => {
-    if (!url) return;
-    const ratio = window.devicePixelRatio || 1;
-        const requested = requestedWindowWidth(Number(form.width), ratio, calibrationRef.current);
-        const features = testSiteWindowFeatures(form, window.screen.availHeight, ratio, calibrationRef.current);
-        const oid = String(Date.now());
-        const link = testSiteOpenUrl(form, requested, oid) ?? url;
-        setPopupLog((log) => [...log, { oid, openedAt: new Date().toLocaleTimeString(), url: link, target: Number(form.width), requested, ratio, features, calibrated: !!calibrationRef.current }].slice(-POPUP_LOG_MAX));
-        window.open(link, `merit-test-site-${form.port}`, features);
+    openTestSiteWindow(form);
   };
-
   return (
     <div id="TEST_SITES_SECTION" style={configSectionStyle.column(2)}>
       <p style={configSectionStyle.note}>Open a test site (the clean iframe wallet, the test harness, the dev wallet, or any other port) in its own window.</p>
@@ -142,7 +78,7 @@ export default function TestSitesSection() {
       <pre id="testSitePopupLog" style={{ ...testSitesStyle.url, whiteSpace: 'pre-wrap', maxHeight: 240, overflow: 'auto', margin: 0 }}>{formatPopupLog(popupLog)}</pre>
       <div style={configSectionStyle.buttonsCentered}>
         <WalletActionButton onClick={() => { try { void navigator.clipboard.writeText(formatPopupLog(popupLog)); } catch { /* no clipboard */ } }}>Copy log</WalletActionButton>
-        <WalletActionButton onClick={() => setPopupLog([])}>Clear log</WalletActionButton>
+        <WalletActionButton onClick={() => clearPopupLog()}>Clear log</WalletActionButton>
       </div>
     </div>
   );

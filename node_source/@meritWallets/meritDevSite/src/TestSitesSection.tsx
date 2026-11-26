@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { configSectionStyle, testSitesStyle } from '@sponsorcoin/spcoin-common/styles';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
-import { DEFAULT_TEST_SITE, TEST_SITE_PROTOCOLS, TEST_SITE_TYPES, buildTestSiteUrl, testSiteOpenUrl, calibrationFromMessage, requestedWindowWidth, digitsOnly, testSiteProblem, testSiteWindowFeatures, type TestSiteForm, type TestSiteProtocol, type WindowCalibration } from './testSites';
+import { DEFAULT_TEST_SITE, TEST_SITE_PROTOCOLS, TEST_SITE_TYPES, buildTestSiteUrl, testSiteOpenUrl, calibrationFromMessage, requestedWindowWidth, popupLogFromMessage, mergePopupFrames, formatPopupLog, POPUP_LOG_MAX, digitsOnly, testSiteProblem, testSiteWindowFeatures, type TestSiteForm, type TestSiteProtocol, type WindowCalibration, type PopupLogEntry } from './testSites';
 
 const KEY = 'merit.testSites.v2';
 
@@ -37,20 +37,41 @@ export default function TestSitesSection() {
   const problem = useMemo(() => testSiteProblem(form), [form]);
 
   // 2026-11-26 (owner): a window that has sized itself tells us how its size maps to screen pixels; the next one opens at the right width and needs no resize
+  // 2026-11-26 (owner: "write to some log recording every popup"): every window opened here is logged with what was asked for, and the window adds its own timeline when it reports back
+  const [popupLog, setPopupLog] = useState<PopupLogEntry[]>(() => {
+    try {
+      const saved = window.localStorage.getItem('merit.popupLog.v1');
+      return saved ? (JSON.parse(saved) as PopupLogEntry[]).slice(-POPUP_LOG_MAX) : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('merit.popupLog.v1', JSON.stringify(popupLog));
+    } catch {
+      /* kept for this page only */
+    }
+  }, [popupLog]);
   const calibrationRef = useRef<WindowCalibration | undefined>(undefined);
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem('merit.testSiteWindowCalibration.v3');
+      const saved = window.localStorage.getItem('merit.testSiteWindowCalibration.v4');
       if (saved) calibrationRef.current = JSON.parse(saved) as WindowCalibration;
     } catch {
       /* measured again */
     }
     const onMessage = (event: MessageEvent) => {
+      const timeline = popupLogFromMessage(event.data);
+      if (timeline) {
+        setPopupLog((log) => mergePopupFrames(log, timeline.oid, timeline.frames));
+        return;
+      }
       const calibration = calibrationFromMessage(event.data);
       if (!calibration) return;
       calibrationRef.current = calibration;
       try {
-        window.localStorage.setItem('merit.testSiteWindowCalibration.v3', JSON.stringify(calibration));
+        window.localStorage.setItem('merit.testSiteWindowCalibration.v4', JSON.stringify(calibration));
       } catch {
         /* kept for this page only */
       }
@@ -61,8 +82,13 @@ export default function TestSitesSection() {
 
   const open = () => {
     if (!url) return;
-    const requested = requestedWindowWidth(Number(form.width), window.devicePixelRatio || 1, calibrationRef.current);
-    window.open(testSiteOpenUrl(form, requested) ?? url, `merit-test-site-${form.port}`, testSiteWindowFeatures(form, window.screen.availHeight, window.devicePixelRatio || 1, calibrationRef.current));
+    const ratio = window.devicePixelRatio || 1;
+        const requested = requestedWindowWidth(Number(form.width), ratio, calibrationRef.current);
+        const features = testSiteWindowFeatures(form, window.screen.availHeight, ratio, calibrationRef.current);
+        const oid = String(Date.now());
+        const link = testSiteOpenUrl(form, requested, oid) ?? url;
+        setPopupLog((log) => [...log, { oid, openedAt: new Date().toLocaleTimeString(), url: link, target: Number(form.width), requested, ratio, features, calibrated: !!calibrationRef.current }].slice(-POPUP_LOG_MAX));
+        window.open(link, `merit-test-site-${form.port}`, features);
   };
 
   return (
@@ -111,6 +137,12 @@ export default function TestSitesSection() {
       {problem ? <p id="testSiteProblem" style={configSectionStyle.bad}>{problem}</p> : null}
       <div style={configSectionStyle.buttonsCentered}>
         <WalletActionButton disabled={!url} onClick={open}>Open</WalletActionButton>
+      </div>
+      <p style={configSectionStyle.note}>Popup log: every window opened here, what it was asked for, and what it did in its first seconds (also in the ladybug dump of that window).</p>
+      <pre id="testSitePopupLog" style={{ ...testSitesStyle.url, whiteSpace: 'pre-wrap', maxHeight: 240, overflow: 'auto', margin: 0 }}>{formatPopupLog(popupLog)}</pre>
+      <div style={configSectionStyle.buttonsCentered}>
+        <WalletActionButton onClick={() => { try { void navigator.clipboard.writeText(formatPopupLog(popupLog)); } catch { /* no clipboard */ } }}>Copy log</WalletActionButton>
+        <WalletActionButton onClick={() => setPopupLog([])}>Clear log</WalletActionButton>
       </div>
     </div>
   );

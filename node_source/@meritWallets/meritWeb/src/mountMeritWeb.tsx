@@ -9,7 +9,7 @@ import type { BrowserWallet } from './createBrowserWallet';
 import { MeritWalletType, domPlatform, type MeritPlatform } from '@sponsorcoin/merit-wallet';
 import { resolveWalletType } from './walletType';
 import { disableBrowserZoom } from './disableBrowserZoom';
-import { resizeWindowToPixelWidth, readWindowPixelsPerUnit } from '@sponsorcoin/spcoin-panels';
+import { recordPopupTimeline } from './popupLog';
 import { mountPiecesFromInjectables, type MeritWebInjectables } from './injectables';
 
 export interface MountMeritWebOptions {
@@ -32,33 +32,23 @@ export interface MountMeritWebOptions {
 export function mountMeritWeb({ element, core, snapshot, injectables, walletType, platform, onClose, configTestAccountsContent, configTestSitesContent }: MountMeritWebOptions): void {
   // 2026-11-25 (owner): no browser pinch zoom; the wallet's own pinch (Display Size, Meta Table Size) still works
   disableBrowserZoom();
-  // 2026-11-26 (owner): a test-site window opened with ?pw=<screen pixels> (Config -> Test Sites) sizes itself to exactly that viewport width, the unit Pixel Width shows.
-  // The page stays hidden until it has settled, and the opener is told what its request produced (rq = the width it asked for) so the next window opens at the right size and needs no resize.
+  // 2026-11-26 (owner): a window opened by another page records what it does in its first seconds (see popupLog.ts)
+  recordPopupTimeline();
+  // 2026-11-26 (owner: "just do your best estimate and open once, stop the flashing"): a window opened from Config -> Test Sites is NOT resized, hidden or measured. It only tells the opener where it landed (rq = the width the opener asked window.open for), so the opener's estimate for the next window gets better.
   try {
-    const params = new URLSearchParams(window.location.search);
-    const pw = Number(params.get('pw'));
-    if (window.opener && pw > 0) {
-      const root = document.documentElement;
+    const requested = Number(new URLSearchParams(window.location.search).get('rq'));
+    if (window.opener && requested > 0) {
       const openedAt = Math.round(window.innerWidth * (window.devicePixelRatio || 1));
-      const requested = Number(params.get('rq'));
-      root.style.visibility = 'hidden';
-      const reveal = () => { root.style.visibility = ''; };
-      const failsafe = window.setTimeout(reveal, 2500);
-      void resizeWindowToPixelWidth(pw).then(() => {
-        window.clearTimeout(failsafe);
-        reveal();
-        const pixelsPerUnit = readWindowPixelsPerUnit();
-        if (pixelsPerUnit && requested > 0) {
-          try {
-            window.opener.postMessage({ type: 'merit-window-calibration', pixelsPerUnit, requested, physical: openedAt }, '*');
-          } catch {
-            /* no opener to tell */
-          }
+      window.setTimeout(() => {
+        try {
+          window.opener?.postMessage({ type: 'merit-window-calibration', requested, physical: openedAt }, '*');
+        } catch {
+          /* no opener to tell */
         }
-      });
+      }, 400);
     }
   } catch {
-    /* no window to size */
+    /* nothing to report */
   }
   const injected = mountPiecesFromInjectables(injectables);
   const type = MeritWalletType[resolveWalletType(walletType ?? injected.walletType) as keyof typeof MeritWalletType];

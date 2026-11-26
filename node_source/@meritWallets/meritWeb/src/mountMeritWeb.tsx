@@ -1,13 +1,14 @@
 // File: src/mountMeritWeb.tsx
 //
 // 2026-11-25 (owner: the wallet type, like the keystore or the vault, is INJECTED by the parent app; meritWeb needs no knowledge of frames): mounts the Merit Wallet into a page. Everything that differs by host arrives as an option:
-// the wallet type, platform behavior (copy, open links, close), the close handler, and the test sections. Nothing here is test code, and nothing here knows about iframes: a framed page gets those values from @meritWallets/meritIFrame and passes them in.
+// the wallet type, platform behavior (copy, open links, close), the close handler, and the test sections. Nothing here is test code.
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import MeritWalletBrowser from './MeritWalletBrowser';
 import type { BrowserWallet } from './createBrowserWallet';
 import { MeritWalletType, domPlatform, type MeritPlatform } from '@sponsorcoin/merit-wallet';
 import { resolveWalletType } from './walletType';
+import { disableBrowserZoom } from './disableBrowserZoom';
 import { mountPiecesFromInjectables, type MeritWebInjectables } from './injectables';
 
 export interface MountMeritWebOptions {
@@ -28,6 +29,8 @@ export interface MountMeritWebOptions {
 }
 
 export function mountMeritWeb({ element, core, snapshot, injectables, walletType, platform, onClose, configTestAccountsContent, configTestSitesContent }: MountMeritWebOptions): void {
+  // 2026-11-25 (owner): no browser pinch zoom; the wallet's own pinch (Display Size, Meta Table Size) still works
+  disableBrowserZoom();
   const injected = mountPiecesFromInjectables(injectables);
   const type = MeritWalletType[resolveWalletType(walletType ?? injected.walletType) as keyof typeof MeritWalletType];
   const platformOptions = injected.platform || platform ? { ...injected.platform, ...platform } : undefined;

@@ -5,15 +5,19 @@
 import React, { useCallback, useState } from 'react';
 import { DisplaySizePanel, DisplayScaleProvider } from '@sponsorcoin/spcoin-panels';
 import { usePlatform } from '../platform/platform';
-const KEY = 'merit.walletFrameScale.v1';
+const KEY = 'merit.walletFrameScale.v2';
+const OLD_KEY = 'merit.walletFrameScale.v1';
+/** 2026-11-25 (owner): the screen the wallet drew at 83% is now 100%. The frame's zoom is the slider's percent times this factor, so 100% looks as 83% looked. A size saved under the old key (v1) is converted so the wallet looks the same. */
+export const FRAME_BASE_FACTOR = 0.83;
 const TABLE_KEY = 'merit.tableDataScale.v1';
-export const FRAME_SCALE_MIN = 80;
+// 2026-11-25 (owner): all three size bars (Display, Data Table, Meta Table) run from 50% to 200%
+export const FRAME_SCALE_MIN = 50;
 export const FRAME_SCALE_MAX = 200;
 const META_KEY = 'merit.metaTableScale.v1';
-export const META_SCALE_MIN = 80;
+export const META_SCALE_MIN = 50;
 export const META_SCALE_MAX = 200;
-export const TABLE_SCALE_MIN = 60;
-export const TABLE_SCALE_MAX = 120;
+export const TABLE_SCALE_MIN = 50;
+export const TABLE_SCALE_MAX = 200;
 function parse(raw, min, max) {
     const n = Number(raw);
     return raw !== null && Number.isFinite(n) && n >= min && n <= max ? n : 100;
@@ -21,7 +25,13 @@ function parse(raw, min, max) {
 /** The saved scale lives in the platform's own preference store (the wallet never touches the device itself). */
 export function useWalletFrameScale() {
     const { storage } = usePlatform();
-    const [percent, set] = useState(() => parse(storage.get(KEY), FRAME_SCALE_MIN, FRAME_SCALE_MAX));
+    const [percent, set] = useState(() => {
+        const saved = storage.get(KEY);
+        if (saved !== null && saved !== undefined)
+            return parse(saved, FRAME_SCALE_MIN, FRAME_SCALE_MAX);
+        const old = Number(storage.get(OLD_KEY));
+        return storage.get(OLD_KEY) != null && Number.isFinite(old) ? Math.min(FRAME_SCALE_MAX, Math.max(FRAME_SCALE_MIN, Math.round(old / FRAME_BASE_FACTOR))) : 100;
+    });
     const setPercent = useCallback((next) => {
         set(next);
         storage.set(KEY, String(next));

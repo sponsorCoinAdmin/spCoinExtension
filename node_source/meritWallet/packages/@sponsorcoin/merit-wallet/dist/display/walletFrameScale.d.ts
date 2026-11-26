@@ -1,10 +1,12 @@
 import React from 'react';
-export declare const FRAME_SCALE_MIN = 80;
+/** 2026-11-25 (owner): the screen the wallet drew at 83% is now 100%. The frame's zoom is the slider's percent times this factor, so 100% looks as 83% looked. A size saved under the old key (v1) is converted so the wallet looks the same. */
+export declare const FRAME_BASE_FACTOR = 0.83;
+export declare const FRAME_SCALE_MIN = 50;
 export declare const FRAME_SCALE_MAX = 200;
-export declare const META_SCALE_MIN = 80;
+export declare const META_SCALE_MIN = 50;
 export declare const META_SCALE_MAX = 200;
-export declare const TABLE_SCALE_MIN = 60;
-export declare const TABLE_SCALE_MAX = 120;
+export declare const TABLE_SCALE_MIN = 50;
+export declare const TABLE_SCALE_MAX = 200;
 /** The saved scale lives in the platform's own preference store (the wallet never touches the device itself). */
 export declare function useWalletFrameScale(): {
     percent: number;

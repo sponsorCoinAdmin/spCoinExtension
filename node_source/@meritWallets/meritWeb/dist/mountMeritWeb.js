@@ -3,8 +3,11 @@ import { createRoot } from 'react-dom/client';
 import MeritWalletBrowser from './MeritWalletBrowser';
 import { MeritWalletType, domPlatform } from '@sponsorcoin/merit-wallet';
 import { resolveWalletType } from './walletType';
+import { disableBrowserZoom } from './disableBrowserZoom';
 import { mountPiecesFromInjectables } from './injectables';
 export function mountMeritWeb({ element, core, snapshot, injectables, walletType, platform, onClose, configTestAccountsContent, configTestSitesContent }) {
+    // 2026-11-25 (owner): no browser pinch zoom; the wallet's own pinch (Display Size, Meta Table Size) still works
+    disableBrowserZoom();
     const injected = mountPiecesFromInjectables(injectables);
     const type = MeritWalletType[resolveWalletType(walletType ?? injected.walletType)];
     const platformOptions = injected.platform || platform ? { ...injected.platform, ...platform } : undefined;

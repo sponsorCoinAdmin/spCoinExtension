@@ -88,7 +88,8 @@ export default function ActiveAccountSelectDropDown({ icon, address, symbol, nam
       // activate first (above), then AccountSelectDropDown runs its own actions: it makes this the SELECTED account, then calls onSelectClick / onIconClick
       onSelected={address ? () => setSelectedAccount(buildSpCoinAccount({ address, ...(name ? { name } : {}), ...(symbol ? { symbol } : {}) } as { address: string })) : undefined}
       onSelectClick={onSelectClick || onActivate ? () => { activate(); onSelectClick?.(); } : undefined}
-      onIconClick={onIconClick || onActivate ? () => { activate(); onIconClick?.(address ?? ''); } : undefined}
+      // 2026-11-25 (owner): a left click on the avatar runs ONLY the program the host forwarded (activate / onIconClick); with none it does nothing. It must always pass a handler: with none, AssetSelectDropDown falls back to the row click, which opened the account list.
+      onIconClick={() => { activate(); onIconClick?.(address ?? ''); }}
       onIconContextMenu={onIconContextMenu ? () => onIconContextMenu(address ?? '') : undefined}
       iconPanel={SP_COIN_DISPLAY.ACCOUNT_PANEL}
       addrPrePostSize={4}

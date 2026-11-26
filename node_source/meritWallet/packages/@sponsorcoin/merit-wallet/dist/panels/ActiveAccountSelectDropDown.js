@@ -50,7 +50,9 @@ export default function ActiveAccountSelectDropDown({ icon, address, symbol, nam
             (chevronUp ? ASSET_SELECT_DISPLAY.CHEVRON_UP : ASSET_SELECT_DISPLAY.CHEVRON_DN) |
             ASSET_SELECT_DISPLAY.ADDR_COMP, 
         // activate first (above), then AccountSelectDropDown runs its own actions: it makes this the SELECTED account, then calls onSelectClick / onIconClick
-        onSelected: address ? () => setSelectedAccount(buildSpCoinAccount({ address, ...(name ? { name } : {}), ...(symbol ? { symbol } : {}) })) : undefined, onSelectClick: onSelectClick || onActivate ? () => { activate(); onSelectClick?.(); } : undefined, onIconClick: onIconClick || onActivate ? () => { activate(); onIconClick?.(address ?? ''); } : undefined, onIconContextMenu: onIconContextMenu ? () => onIconContextMenu(address ?? '') : undefined, iconPanel: SP_COIN_DISPLAY.ACCOUNT_PANEL, addrPrePostSize: 4, 
+        onSelected: address ? () => setSelectedAccount(buildSpCoinAccount({ address, ...(name ? { name } : {}), ...(symbol ? { symbol } : {}) })) : undefined, onSelectClick: onSelectClick || onActivate ? () => { activate(); onSelectClick?.(); } : undefined, 
+        // 2026-11-25 (owner): a left click on the avatar runs ONLY the program the host forwarded (activate / onIconClick); with none it does nothing. It must always pass a handler: with none, AssetSelectDropDown falls back to the row click, which opened the account list.
+        onIconClick: () => { activate(); onIconClick?.(address ?? ''); }, onIconContextMenu: onIconContextMenu ? () => onIconContextMenu(address ?? '') : undefined, iconPanel: SP_COIN_DISPLAY.ACCOUNT_PANEL, addrPrePostSize: 4, 
         // 2026-11-13 (owner): the header's expanded address shows as much of itself as fits, not a clip at the end
         fitAddress: true }));
 }

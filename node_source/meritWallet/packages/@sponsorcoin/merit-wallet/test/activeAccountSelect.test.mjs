@@ -9,7 +9,7 @@ const active = read('panels', 'ActiveAccountSelectDropDown.tsx');
 assert.match(active, /<AccountSelectDropDown\n\s+rootId="WALLET_ACCOUNT_HEADER"/, 'it extends the portable AccountSelectDropDown');
 assert.ok(!/<AssetSelectDropDown/.test(active), 'not built beside it on AssetSelectDropDown any more');
 assert.match(active, /onSelectClick=\{onSelectClick \|\| onActivate \? \(\) => \{ activate\(\); onSelectClick\?\.\(\); \} : undefined\}/, 'pill click: activate, then the dropdown action');
-assert.match(active, /onIconClick=\{onIconClick \|\| onActivate \? \(\) => \{ activate\(\); onIconClick\?\.\(address \?\? ''\); \} : undefined\}/, 'avatar click: activate, then the dropdown action');
+assert.ok(active.includes("onIconClick={() => { activate(); onIconClick?.(address ?? ''); }}"),'avatar click: always a handler (no row-click fallback): activate, then only what the host forwarded');
 assert.match(active, /activeAccountSelect:activateFailed/, 'a failed activation is traced and the click goes on');
 assert.match(read('panels', 'WalletAccountHeader.tsx'), /onActivate=\{onActivate\}/, 'the header passes onActivate to the pill');
 const panels = path.join(SRC, '..', '..', '..', '..', '..', 'spCoinPanels', 'packages', '@sponsorcoin', 'spcoin-panels', 'src');
@@ -24,7 +24,7 @@ assert.match(hosted, /requestAccountDetail\(address\)/, 'the generic dropdown as
 assert.match(hosted, /openAccountComponent\(\{ account: recipientAccount, mode, activate: false/, 'with no wallet it falls back without activating');
 assert.match(active, /onIconContextMenu=\{onIconContextMenu \? \(\) => onIconContextMenu\(address \?\? ''\) : undefined\}/, 'the active pill passes the right click to AccountSelectDropDown');
 assert.match(read('MeritWallet.tsx'), /registerAccountDetailOpener\(\(address\) => openAccountDetailRef\.current\(address\)\)/, 'the wallet registers how it opens an account');
-assert.match(read('MeritWallet.tsx'), /onIconContextMenu=\{\(address\) => \{ if \(address\) openAccountDetail\(address\); \}\}/, 'the header pill opens the details on a right click');
+assert.match(read('MeritWallet.tsx'), /onIconContextMenu=\{\(address\) => \{ if \(!address\) return; openAccountDetail\(address\); onAccountIconClick\?\.\(address\); \}\}/, 'the header pill opens the details on a right click or a press and hold (a single click no longer does, 2026-11-24, owner)');
 console.log('PASS a right click on an account avatar opens ACCOUNT_PANEL without activating');
 
 // 2026-11-11 (owner): a copied private key leaves the clipboard again after 60 seconds, from a module-level timer

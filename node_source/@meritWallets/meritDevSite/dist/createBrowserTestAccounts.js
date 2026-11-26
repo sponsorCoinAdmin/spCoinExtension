@@ -1,4 +1,4 @@
-/** `core` is a browser wallet's core (@meritWallets/meritBrowser's createBrowserWallet): only its vault parts and its account announcer are used. */
+/** `core` is a browser wallet's core (@meritWallets/meritWeb's createBrowserWallet): only its vault parts and its account announcer are used. */
 export function createBrowserTestAccounts(core) {
     return {
         needsPassword: false,

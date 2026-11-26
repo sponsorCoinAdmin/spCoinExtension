@@ -4,10 +4,10 @@
 // which opens in a window of that size when every field is valid. Test code (never part of a release); passed to the wallet as `configTestSitesContent`, the way TestAccountsSection is passed as `configTestAccountsContent`.
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { configSectionStyle, testSitesStyle } from '@sponsorcoin/spcoin-common/styles';
 import { WalletActionButton } from '@sponsorcoin/spcoin-panels';
-import { DEFAULT_TEST_SITE, TEST_SITE_PROTOCOLS, TEST_SITE_TYPES, buildTestSiteUrl, digitsOnly, testSiteProblem, testSiteWindowFeatures, type TestSiteForm, type TestSiteProtocol } from './testSites';
+import { DEFAULT_TEST_SITE, TEST_SITE_PROTOCOLS, TEST_SITE_TYPES, buildTestSiteUrl, testSiteOpenUrl, calibrationFromMessage, requestedWindowWidth, digitsOnly, testSiteProblem, testSiteWindowFeatures, type TestSiteForm, type TestSiteProtocol, type WindowCalibration } from './testSites';
 
 const KEY = 'merit.testSites.v2';
 
@@ -36,9 +36,33 @@ export default function TestSitesSection() {
   const url = useMemo(() => buildTestSiteUrl(form), [form]);
   const problem = useMemo(() => testSiteProblem(form), [form]);
 
+  // 2026-11-26 (owner): a window that has sized itself tells us how its size maps to screen pixels; the next one opens at the right width and needs no resize
+  const calibrationRef = useRef<WindowCalibration | undefined>(undefined);
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('merit.testSiteWindowCalibration.v3');
+      if (saved) calibrationRef.current = JSON.parse(saved) as WindowCalibration;
+    } catch {
+      /* measured again */
+    }
+    const onMessage = (event: MessageEvent) => {
+      const calibration = calibrationFromMessage(event.data);
+      if (!calibration) return;
+      calibrationRef.current = calibration;
+      try {
+        window.localStorage.setItem('merit.testSiteWindowCalibration.v3', JSON.stringify(calibration));
+      } catch {
+        /* kept for this page only */
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
   const open = () => {
     if (!url) return;
-    window.open(url, `merit-test-site-${form.port}`, testSiteWindowFeatures(form, window.screen.availHeight));
+    const requested = requestedWindowWidth(Number(form.width), window.devicePixelRatio || 1, calibrationRef.current);
+    window.open(testSiteOpenUrl(form, requested) ?? url, `merit-test-site-${form.port}`, testSiteWindowFeatures(form, window.screen.availHeight, window.devicePixelRatio || 1, calibrationRef.current));
   };
 
   return (
@@ -61,7 +85,7 @@ export default function TestSitesSection() {
       </div>
 
       <div style={testSitesStyle.row}>
-        <label style={testSitesStyle.label} htmlFor="testSiteWidth">Width</label>
+        <label style={testSitesStyle.label} htmlFor="testSiteWidth" title="Screen pixels, the same unit as Pixel Width in Config -> Display">Width (screen px)</label>
         <input id="testSiteWidth" style={testSitesStyle.field} type="text" inputMode="numeric" value={form.width} onChange={(e) => set('width', digitsOnly(e.target.value).slice(0, 4))} />
       </div>
       <div style={testSitesStyle.row}>

@@ -65,8 +65,35 @@ export function buildTestSiteUrl(form: TestSiteForm): string | undefined {
   return `${form.protocol}://${form.host.trim()}:${Number(form.port)}/${query.length ? `?${query.join('&')}` : ''}`;
 }
 
-/** The window.open features: a popup of this size ('max' height = the screen's available height). */
-export function testSiteWindowFeatures(form: TestSiteForm, screenAvailHeight: number): string {
+/** What an earlier window reported about how its size maps to screen pixels: P = pixelsPerUnit x (requested + offset). Kept by the opener (Config -> Test Sites). */
+export interface WindowCalibration { pixelsPerUnit: number; offset: number }
+
+/** The width to ask window.open for so the window opens at `target` SCREEN pixels: exact when calibrated, a first guess (target / pixel ratio) until then. */
+export function requestedWindowWidth(target: number, pixelRatio: number, calibration?: WindowCalibration): number {
+  if (calibration && calibration.pixelsPerUnit > 0) return Math.max(1, Math.round(target / calibration.pixelsPerUnit - calibration.offset));
+  return Math.max(1, Math.round(target / (pixelRatio > 0 ? pixelRatio : 1)));
+}
+
+/** A calibration from the message a window sent (merit-window-calibration), or undefined when it is not a sane one. */
+export function calibrationFromMessage(data: unknown): WindowCalibration | undefined {
+  const d = data as { type?: unknown; pixelsPerUnit?: unknown; requested?: unknown; physical?: unknown } | null;
+  if (!d || d.type !== 'merit-window-calibration') return undefined;
+  const ppu = Number(d.pixelsPerUnit); const req = Number(d.requested); const phys = Number(d.physical);
+  if (!(ppu > 0.2 && ppu < 20) || !(req > 0) || !(phys > 0)) return undefined;
+  return { pixelsPerUnit: ppu, offset: phys / ppu - req };
+}
+
+/**
+ * The window.open features: a popup of this size ('max' height = the screen's available height).
+ * 2026-11-26 (owner): the width is in SCREEN pixels (the unit Pixel Width shows), not the browser's display units. The width asked of window.open comes from requestedWindowWidth; the new window then corrects itself to the exact width (the pw link parameter, testSiteOpenUrl).
+ */
+export function testSiteWindowFeatures(form: TestSiteForm, screenAvailHeight: number, pixelRatio: number = 1, calibration?: WindowCalibration): string {
   const height = form.height.trim().toLowerCase() === 'max' ? Math.max(MIN_SIZE, Math.floor(screenAvailHeight)) : Number(form.height);
-  return `popup,width=${Number(form.width)},height=${height},left=0,top=0`;
+  return `popup,width=${requestedWindowWidth(Number(form.width), pixelRatio, calibration)},height=${height},left=0,top=0`;
+}
+
+/** The link to open: the fields' link plus pw=<screen pixels> (and rq = the width asked of window.open), which the wallet page reads to size its own window exactly. */
+export function testSiteOpenUrl(form: TestSiteForm, requested?: number): string | undefined {
+  const url = buildTestSiteUrl(form);
+  return url ? `${url}${url.includes('?') ? '&' : '?'}pw=${Number(form.width)}${requested ? `&rq=${requested}` : ''}` : undefined;
 }

@@ -11,17 +11,9 @@ const OLD_KEY = 'merit.displayScale.v1';
 export const DISPLAY_BASE_FACTOR = 0.83;
 export const DISPLAY_PERCENT_MIN = 50; // 2026-11-25 (owner): all three size bars run from 50% to 200%
 export const DISPLAY_PERCENT_MAX = 200; // 2026-11-20 (owner): the largest size the slider offers
-/** A screen at most this wide is a phone: it starts at PHONE_DEFAULT_PERCENT. A wider screen is not, and starts at the size the wallet was designed for. */
-const PHONE_MAX_WIDTH = 600;
-/** 2026-11-20 (owner): a phone starts at 150%. (The wallet's text was drawn at 9 to 11 px for a desktop panel, which a phone shows small.) */
-export const PHONE_DEFAULT_PERCENT = 180; // 2026-11-25: 180% of the new base looks as the old 150% did (150 / 0.83)
-
-/** The size a screen of this width starts at: 180% on a phone, 100% on a wider screen. */
-export function defaultDisplayPercent(viewportWidth: number, hasMouse: boolean = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: fine)').matches): number {
-  // 2026-11-26 (owner): a phone is a touch screen, not a narrow window. A narrow window on a mouse device (the side panel, a small window, a browser zoomed in) starts at 100% too; its browser zoom is handled by the compensation.
-  if (hasMouse) return 100;
-  if (!(viewportWidth > 0) || viewportWidth > PHONE_MAX_WIDTH) return 100;
-  return PHONE_DEFAULT_PERCENT;
+/** 2026-11-26 (owner: it did not work on the phone): every device starts at 100%. The window width fits the elements to the screen (merit-wallet browserZoomCompensation), a phone included, so no device needs a larger starting size of its own. (Until 2026-11-25 a phone started at 150%, later 180%.) */
+export function defaultDisplayPercent(): number {
+  return 100;
 }
 
 function readSaved(): number | undefined {
@@ -57,7 +49,7 @@ export function applyDisplayPercent(percent: number): void {
 /** The size this browser uses (its saved choice, else the default for this screen), applied to the page; `setPercent` is the person's choice, `reset` returns to the default. */
 export function useDisplayScale(): { percent: number; defaultPercent: number; setPercent(percent: number): void; reset(): void } {
   // read once, before anything is scaled: the screen's own width decides the default
-  const defaultRef = useRef<number>(defaultDisplayPercent(typeof window === 'undefined' ? 0 : window.innerWidth));
+  const defaultRef = useRef<number>(defaultDisplayPercent());
   const [percent, setPercentState] = useState<number>(() => (typeof window === 'undefined' ? 100 : readSaved() ?? defaultRef.current));
   useLayoutEffect(() => {
     applyDisplayPercent(percent);

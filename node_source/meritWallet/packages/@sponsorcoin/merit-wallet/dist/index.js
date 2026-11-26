@@ -142,3 +142,5 @@ export { authenticatorDisplayOf } from './approval/authenticatorDisplay';
 export { useApprovalPage } from './approval/useApprovalPage';
 export { describeApproval as describeTransactionApproval, methodName, methodLabel } from './approval/transactionApproval';
 export { swapConfirmCopy, withSwapApprovalDisplay, approveSpender } from './approval/swapApprovalDisplay';
+// 2026-11-26 (owner): the browser-zoom compensation, so a host that scales its own page (meritWeb) matches the extension's element size
+export { REFERENCE_PIXEL_RATIO, browserZoomCompensation, useBrowserZoomCompensation } from './display/walletFrameScale';

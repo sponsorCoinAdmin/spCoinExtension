@@ -7,7 +7,7 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { walletFrameClassName, walletFrameStyle } from '@sponsorcoin/spcoin-common/styles';
-import { MeritWalletType, accountDetailHostFromProfile, ensureAbsoluteAssetURL, MeritWalletHostView, createBalanceReader, domPlatform, meritDebug } from '@sponsorcoin/merit-wallet';
+import { MeritWalletType, accountDetailHostFromProfile, ensureAbsoluteAssetURL, MeritWalletHostView, createSecuritySetup, createBalanceReader, domPlatform, meritDebug } from '@sponsorcoin/merit-wallet';
 import { DisplaySizePanel, DisplayScaleProvider } from '@sponsorcoin/spcoin-panels';
 import { DISPLAY_PERCENT_MAX, DISPLAY_PERCENT_MIN, useDisplayScale } from './displayScale';
 import { reloadFromServer } from './reloadFromServer';
@@ -33,7 +33,13 @@ function ChainFollower({ chainId }) {
     }, [chainId]);
     return null;
 }
-export default function MeritWalletBrowser({ chains, core: given, onClose, walletType = MeritWalletType.WEB, platform, docked = false, fullWidth = false, brandLogoSrc = '/assets/miscellaneous/meritWalletLogin.webp', configTestAccountsContent, configTestSitesContent, data: snapshot, namespace, storage, sessionStore, autoLockMs }) {
+export default function MeritWalletBrowser({ chains, core: given, onClose, walletType = MeritWalletType.WEB, platform, securitySetup: givenSecuritySetup, docked = false, fullWidth = false, brandLogoSrc = '/assets/miscellaneous/meritWalletLogin.webp', configTestAccountsContent, configTestSitesContent, data: snapshot, namespace, storage, sessionStore, autoLockMs }) {
+    // 2026-11-26 (owner: the same Wallet Security section as the web app): one sign-in options store over this browser's own storage; the label is what the authenticator app and the passkey list show
+    const securitySetup = useMemo(() => givenSecuritySetup ?? createSecuritySetup({
+        storage: () => (typeof window === 'undefined' ? undefined : window.localStorage),
+        credentials: () => (typeof navigator === 'undefined' ? undefined : navigator.credentials),
+        accountLabel: `Merit Wallet (${String(walletType).replace('_', ' ')})`,
+    }), [givenSecuritySetup, walletType]);
     // 2026-11-20: first, before anything reads saved state: drop what another app left in this address's localStorage (the old web app's saved screens kept the wallet on its login screen)
     useState(() => {
         const removed = claimBrowserStorage();
@@ -249,7 +255,7 @@ export default function MeritWalletBrowser({ chains, core: given, onClose, walle
                 configDisplaySizeContent: React.createElement(DisplaySizePanel, { percent: displayScale.percent, onPercentChange: (next) => (next === displayScale.defaultPercent ? displayScale.reset() : displayScale.setPercent(next)), defaultPercent: displayScale.defaultPercent, min: DISPLAY_PERCENT_MIN, max: DISPLAY_PERCENT_MAX }),
             },
             actions: { sendAmount, onSendAmountChange: setSendAmount, sendBusy, onSendSubmit, tradeHost },
-            lock: { onboarding, passwordIconSrc: brandLogoSrc },
+            lock: { onboarding, passwordIconSrc: brandLogoSrc, securitySetup },
             platform: platform ? { platform } : undefined,
         },
     });

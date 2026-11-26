@@ -1,5 +1,5 @@
 import React from 'react';
-import { MeritWalletType, type MeritPlatform } from '@sponsorcoin/merit-wallet';
+import { MeritWalletType, type MeritPlatform, type SecuritySetupHost } from '@sponsorcoin/merit-wallet';
 import { type BrowserDataSnapshot } from './registerBrowserData';
 import { type BrowserChain, type BrowserWallet, type BrowserWalletOptions } from './createBrowserWallet';
 export interface MeritWalletBrowserProps extends Omit<BrowserWalletOptions, 'chains'> {
@@ -21,7 +21,9 @@ export interface MeritWalletBrowserProps extends Omit<BrowserWalletOptions, 'cha
     walletType?: MeritWalletType;
     /** 2026-11-24 (owner: the iframe wallet): the device actions (copy, open an address...). Omitted: the DOM implementation, as before. A framed wallet passes one that asks its parent. */
     platform?: MeritPlatform;
+    /** 2026-11-26 (owner): the sign-in options (Use password, passkey, authenticator app) the Config tab's one Wallet Security section shows, the same as the web app's. Omitted: this package makes one over this browser's local storage and passkeys. */
+    securitySetup?: SecuritySetupHost;
     /** 2026-11-19: fill the width of the container the page puts the wallet in (a phone, a popup, a frame) instead of the wallet's own fixed width. */
     fullWidth?: boolean;
 }
-export default function MeritWalletBrowser({ chains, core: given, onClose, walletType, platform, docked, fullWidth, brandLogoSrc, configTestAccountsContent, configTestSitesContent, data: snapshot, namespace, storage, sessionStore, autoLockMs }: MeritWalletBrowserProps): React.FunctionComponentElement<import("./BrowserProviders").BrowserProvidersProps> | null;
+export default function MeritWalletBrowser({ chains, core: given, onClose, walletType, platform, securitySetup: givenSecuritySetup, docked, fullWidth, brandLogoSrc, configTestAccountsContent, configTestSitesContent, data: snapshot, namespace, storage, sessionStore, autoLockMs }: MeritWalletBrowserProps): React.FunctionComponentElement<import("./BrowserProviders").BrowserProvidersProps> | null;

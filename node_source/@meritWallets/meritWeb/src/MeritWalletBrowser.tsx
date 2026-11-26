@@ -8,7 +8,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { walletFrameClassName, walletFrameStyle } from '@sponsorcoin/spcoin-common/styles';
-import { MeritWalletType, type MeritPlatform, accountDetailHostFromProfile, ensureAbsoluteAssetURL, type AddAccountHost, MeritWalletHostView, createBalanceReader, domPlatform, meritDebug, type BalanceClient, type StakeConfirmHostState, type TradeHost } from '@sponsorcoin/merit-wallet';
+import { MeritWalletType, type MeritPlatform, accountDetailHostFromProfile, ensureAbsoluteAssetURL, type AddAccountHost, MeritWalletHostView, createSecuritySetup, type SecuritySetupHost, createBalanceReader, domPlatform, meritDebug, type BalanceClient, type StakeConfirmHostState, type TradeHost } from '@sponsorcoin/merit-wallet';
 import { DisplaySizePanel, DisplayScaleProvider } from '@sponsorcoin/spcoin-panels';
 import { DISPLAY_PERCENT_MAX, DISPLAY_PERCENT_MIN, useDisplayScale } from './displayScale';
 import { reloadFromServer } from './reloadFromServer';
@@ -45,6 +45,8 @@ export interface MeritWalletBrowserProps extends Omit<BrowserWalletOptions, 'cha
   walletType?: MeritWalletType;
   /** 2026-11-24 (owner: the iframe wallet): the device actions (copy, open an address...). Omitted: the DOM implementation, as before. A framed wallet passes one that asks its parent. */
   platform?: MeritPlatform;
+  /** 2026-11-26 (owner): the sign-in options (Use password, passkey, authenticator app) the Config tab's one Wallet Security section shows, the same as the web app's. Omitted: this package makes one over this browser's local storage and passkeys. */
+  securitySetup?: SecuritySetupHost;
   /** 2026-11-19: fill the width of the container the page puts the wallet in (a phone, a popup, a frame) instead of the wallet's own fixed width. */
   fullWidth?: boolean;
 }
@@ -59,7 +61,16 @@ function ChainFollower({ chainId }: { chainId: number }) {
   return null;
 }
 
-export default function MeritWalletBrowser({ chains, core: given, onClose, walletType = MeritWalletType.WEB, platform, docked = false, fullWidth = false, brandLogoSrc = '/assets/miscellaneous/meritWalletLogin.webp', configTestAccountsContent, configTestSitesContent, data: snapshot, namespace, storage, sessionStore, autoLockMs }: MeritWalletBrowserProps) {
+export default function MeritWalletBrowser({ chains, core: given, onClose, walletType = MeritWalletType.WEB, platform, securitySetup: givenSecuritySetup, docked = false, fullWidth = false, brandLogoSrc = '/assets/miscellaneous/meritWalletLogin.webp', configTestAccountsContent, configTestSitesContent, data: snapshot, namespace, storage, sessionStore, autoLockMs }: MeritWalletBrowserProps) {
+  // 2026-11-26 (owner: the same Wallet Security section as the web app): one sign-in options store over this browser's own storage; the label is what the authenticator app and the passkey list show
+  const securitySetup = useMemo(
+    () => givenSecuritySetup ?? createSecuritySetup({
+      storage: () => (typeof window === 'undefined' ? undefined : window.localStorage),
+      credentials: () => (typeof navigator === 'undefined' ? undefined : navigator.credentials),
+      accountLabel: `Merit Wallet (${String(walletType).replace('_', ' ')})`,
+    }),
+    [givenSecuritySetup, walletType],
+  );
   // 2026-11-20: first, before anything reads saved state: drop what another app left in this address's localStorage (the old web app's saved screens kept the wallet on its login screen)
   useState(() => {
     const removed = claimBrowserStorage();
@@ -284,7 +295,7 @@ export default function MeritWalletBrowser({ chains, core: given, onClose, walle
         configDisplaySizeContent: React.createElement(DisplaySizePanel, { percent: displayScale.percent, onPercentChange: (next: number) => (next === displayScale.defaultPercent ? displayScale.reset() : displayScale.setPercent(next)), defaultPercent: displayScale.defaultPercent, min: DISPLAY_PERCENT_MIN, max: DISPLAY_PERCENT_MAX }),
       },
       actions: { sendAmount, onSendAmountChange: setSendAmount, sendBusy, onSendSubmit, tradeHost },
-      lock: { onboarding, passwordIconSrc: brandLogoSrc },
+      lock: { onboarding, passwordIconSrc: brandLogoSrc, securitySetup },
       platform: platform ? { platform } : undefined,
     },
   });

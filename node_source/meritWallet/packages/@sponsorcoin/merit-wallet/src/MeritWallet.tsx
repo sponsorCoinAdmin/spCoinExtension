@@ -38,7 +38,7 @@ import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletF
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MeritWalletType, configTitle } from './walletType';
 import { PlatformCopyProvider } from '@sponsorcoin/spcoin-panels';
-import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, OwnDisplayScale, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX, FRAME_BASE_FACTOR } from './display/walletFrameScale';
+import { useWalletFrameScale, frameScaleControl, useTableDataScale, tableScaleControl, OwnDisplayScale, useMetaTableScale, metaTableScaleControl, TABLE_SCALE_MIN, TABLE_SCALE_MAX, META_SCALE_MIN, META_SCALE_MAX, FRAME_BASE_FACTOR, useBrowserZoomCompensation } from './display/walletFrameScale';
 import { usePeerStates, type PeerConnection } from './peer/peerConnection';
 import { WALLET_SLUG_ID } from './wallet/walletSlugs';
 import { getAddress, formatUnits } from 'viem';
@@ -1063,6 +1063,7 @@ function MeritWalletInner({
   const menuTabHeaderVisible = usePanelVisible(SP_COIN_DISPLAY.MENU_TAB_HEADER_BAR);
   // 2026-11-22: a host with no scale control of its own (everything but the browser host) gets the wallet's own, which zooms this frame
   const frameScale = useWalletFrameScale();
+  const zoomCompensation = useBrowserZoomCompensation();
   const tableScale = useTableDataScale();
   const metaTableScale = useMetaTableScale();
   const ownScale = !configDisplaySizeContent;
@@ -3124,7 +3125,7 @@ function MeritWalletInner({
     {/* 2026-10-09: connect mode is derived from "no active account"; every action button below turns into a Connect button that opens the account list. */}
     <WalletConnectProvider hasAccount={!!String(activeAccountAddress ?? '').trim()} activeAddress={String(activeAccountAddress ?? '').trim()} openAccountList={() => setActiveList('account')}>
     <ActiveAccountProfileContext.Provider value={activeAccountEntry ? { address: activeAccountEntry.address, name: activeAccountEntry.name, symbol: activeAccountEntry.symbol, logoURL: activeAccountEntry.iconSrc } : undefined}>
-    <div className={walletFrameClassName} style={ownScale ? walletFrameStyle.scaled(walletFrameStyle.frame(fullWidth, docked), frameScale.percent * FRAME_BASE_FACTOR) : walletFrameStyle.frame(fullWidth, docked)}>
+    <div className={walletFrameClassName} style={ownScale ? walletFrameStyle.scaled(walletFrameStyle.frame(fullWidth, docked), frameScale.percent * FRAME_BASE_FACTOR * zoomCompensation) : walletFrameStyle.frame(fullWidth, docked)}>
       <style>{walletFrameCss}</style>
       {/* 2026-11-18: the login screen has its own header with no ladybug, so the debug button sits in its corner (the normal header carries it otherwise) */}
       {passwordPanelShowing && (

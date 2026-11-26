@@ -168,3 +168,4 @@ export { authenticatorDisplayOf, type TradeDisplayInput } from './approval/authe
 export { useApprovalPage, type ApprovalPage } from './approval/useApprovalPage';
 export { describeApproval as describeTransactionApproval, methodName, methodLabel, type ApprovalView, type ApproveView, type ApproveEntry } from './approval/transactionApproval';
 export { swapConfirmCopy, withSwapApprovalDisplay, approveSpender, type SwapConfirmCopy } from './approval/swapApprovalDisplay';
+export { REFERENCE_PIXEL_RATIO, browserZoomCompensation, useBrowserZoomCompensation } from './display/walletFrameScale';

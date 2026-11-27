@@ -2377,6 +2377,8 @@ function MeritWalletInner({
                 onLogoff: onConfigLogoff,
                 onResetPassword: configResetPassword,
                 onDeleteAccount: configDeleteAccount,
+                // 2026-11-27 (owner): when this button deletes the whole wallet (the web app, the browser wallet) it says so
+                removeLabel: walletSession?.deleteButton === 'removeAccount' ? 'Remove Wallet' : undefined,
                 onDeleteWallet: configDeleteWallet,
               });
 

@@ -21,16 +21,19 @@
 // hydrateActiveAccount.ts/accountsFeed.ts already established.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { infoPanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { infoPanelClass, metaTableScaleStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { STATIC_MERIT_BADGE_ICON_URL } from '@sponsorcoin/spcoin-feeds/shared';
 import ReadOnlyMetaDataTable from './ReadOnlyMetaDataTable';
-import { getMeritInfoMetaData } from '@sponsorcoin/spcoin-panels';
+import { getMeritInfoMetaData, useTableDataScale, usePinchDataTable } from '@sponsorcoin/spcoin-panels';
 export default function MeritInfoPanelReal({ panelId = SP_COIN_DISPLAY.MERIT_INFO_PANEL, baseUrl = '', }) {
     const vMeritInfoPanel = usePanelVisible(panelId);
     const [info, setInfo] = useState(undefined);
+    // 2026-11-27 (owner: the About table follows the Data Table Size slider): the Config tab's Data Table Size zooms this table too, and a two-finger pinch on it moves the same slider
+    const tableScale = useTableDataScale();
+    const pinch = usePinchDataTable();
     useEffect(() => {
         if (!vMeritInfoPanel)
             return;
@@ -69,5 +72,5 @@ export default function MeritInfoPanelReal({ panelId = SP_COIN_DISPLAY.MERIT_INF
             value: (_jsxs("div", { className: infoPanelClass.column, children: [info?.description ? _jsx("p", { className: infoPanelClass.paragraph, children: info.description }) : null, tabs.length ? (_jsx("ul", { className: infoPanelClass.list, children: tabs.map((tab) => (_jsxs("li", { children: [_jsxs("span", { className: infoPanelClass.term, children: [String(tab.key).toUpperCase(), ":"] }), ' ', tab.detail] }, tab.key))) })) : null] })),
         });
     }
-    return (_jsx("div", { id: "MERIT_INFO_PANEL", children: _jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: `${baseUrl}${STATIC_MERIT_BADGE_ICON_URL}`, logoAlt: "Merit Wallet", logoRoundedClassName: walletPartClass.infoLogo.rounded, logoBackgroundClassName: walletPartClass.infoLogo.background, logoContainerClassName: walletPartClass.infoLogo.container, logoContainerSizeClassName: walletPartClass.infoLogo.containerSize, logoSizeClassName: walletPartClass.infoLogo.size }) }));
+    return (_jsx("div", { id: "MERIT_INFO_PANEL", ref: pinch.ref, style: metaTableScaleStyle.apply(tableScale, pinch.style), children: _jsx(ReadOnlyMetaDataTable, { rows: rows, logoURL: `${baseUrl}${STATIC_MERIT_BADGE_ICON_URL}`, logoAlt: "Merit Wallet", logoRoundedClassName: walletPartClass.infoLogo.rounded, logoBackgroundClassName: walletPartClass.infoLogo.background, logoContainerClassName: walletPartClass.infoLogo.container, logoContainerSizeClassName: walletPartClass.infoLogo.containerSize, logoSizeClassName: walletPartClass.infoLogo.size }) }));
 }

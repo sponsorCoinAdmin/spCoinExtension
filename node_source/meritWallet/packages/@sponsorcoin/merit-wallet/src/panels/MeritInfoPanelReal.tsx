@@ -22,13 +22,13 @@
 
 'use client';
 
-import { infoPanelClass, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
+import { infoPanelClass, metaTableScaleStyle, walletPartClass } from '@sponsorcoin/spcoin-common/styles';
 import { useEffect, useState } from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { usePanelVisible } from '@sponsorcoin/spcoin-exchange-engine';
 import { STATIC_MERIT_BADGE_ICON_URL } from '@sponsorcoin/spcoin-feeds/shared';
 import ReadOnlyMetaDataTable from './ReadOnlyMetaDataTable';
-import { getMeritInfoMetaData, type MeritTabInfo } from '@sponsorcoin/spcoin-panels';
+import { getMeritInfoMetaData, useTableDataScale, usePinchDataTable, type MeritTabInfo } from '@sponsorcoin/spcoin-panels';
 
 interface MeritInfo {
   name?: string;
@@ -49,6 +49,9 @@ export default function MeritInfoPanelReal({
 }: MeritInfoPanelRealProps) {
   const vMeritInfoPanel = usePanelVisible(panelId);
   const [info, setInfo] = useState<MeritInfo | undefined>(undefined);
+  // 2026-11-27 (owner: the About table follows the Data Table Size slider): the Config tab's Data Table Size zooms this table too, and a two-finger pinch on it moves the same slider
+  const tableScale = useTableDataScale();
+  const pinch = usePinchDataTable();
 
   useEffect(() => {
     if (!vMeritInfoPanel) return;
@@ -114,7 +117,7 @@ export default function MeritInfoPanelReal({
   }
 
   return (
-    <div id="MERIT_INFO_PANEL">
+    <div id="MERIT_INFO_PANEL" ref={pinch.ref} style={metaTableScaleStyle.apply(tableScale, pinch.style)}>
       <ReadOnlyMetaDataTable
         rows={rows}
         logoURL={`${baseUrl}${STATIC_MERIT_BADGE_ICON_URL}`}

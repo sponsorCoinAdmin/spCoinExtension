@@ -79,8 +79,8 @@ export function DebugConfigSection() {
     const enabled = useDebugEnabled();
     return (
     // 2026-11-27 (owner): a row in the Config list's own look (a card with the ladybug in the round icon, the name, and the check box at the end) that does not open
-    _jsx("div", { style: debugBugStyle.sectionCard, children: _jsxs("label", { style: debugBugStyle.sectionLabel, children: [_jsx("span", { style: debugBugStyle.sectionIcon, "aria-hidden": "true", children: _jsx(Ladybug, {}) }), _jsx("span", { style: debugBugStyle.sectionName, children: "Debug (Ctrl+Alt+B)" }), _jsx("input", { type: "checkbox", id: "MERIT_DEBUG_CHECK", title: "Show the red ladybug in the header", style: debugBugStyle.sectionCheck, checked: enabled, onChange: (event) => {
-                        meritDebug.setEnabled(event.target.checked);
-                        platform.storage.set(ENABLED_KEY, String(event.target.checked));
-                    } })] }) }));
+    _jsx("div", { style: debugBugStyle.sectionCard, children: _jsxs("label", { style: debugBugStyle.sectionLabel, children: [_jsx("span", { style: debugBugStyle.sectionIcon, "aria-hidden": "true", children: _jsx(Ladybug, {}) }), _jsx("span", { style: debugBugStyle.sectionName, children: "Debug (Ctrl+Alt+B)" }), _jsxs("span", { style: debugBugStyle.sectionCheckBox(enabled), children: [_jsx("svg", { viewBox: "0 0 24 24", fill: "none", stroke: debugBugStyle.sectionCheckInk, strokeWidth: "4", strokeLinecap: "round", strokeLinejoin: "round", style: debugBugStyle.sectionCheckMark, "aria-hidden": "true", children: enabled ? _jsx("polyline", { points: "4,12.5 9.5,18 20,6" }) : _jsx("path", { d: "M5 5L19 19M19 5L5 19" }) }), _jsx("input", { type: "checkbox", id: "MERIT_DEBUG_CHECK", title: "Show the red ladybug in the header", style: debugBugStyle.sectionCheckInput, checked: enabled, onChange: (event) => {
+                                meritDebug.setEnabled(event.target.checked);
+                                platform.storage.set(ENABLED_KEY, String(event.target.checked));
+                            } })] })] }) }));
 }

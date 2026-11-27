@@ -145,17 +145,22 @@ export function DebugConfigSection() {
           <Ladybug />
         </span>
         <span style={debugBugStyle.sectionName}>Debug (Ctrl+Alt+B)</span>
-        <input
-          type="checkbox"
-          id="MERIT_DEBUG_CHECK"
-          title="Show the red ladybug in the header"
-          style={debugBugStyle.sectionCheck}
-          checked={enabled}
-          onChange={(event) => {
-            meritDebug.setEnabled(event.target.checked);
-            platform.storage.set(ENABLED_KEY, String(event.target.checked));
-          }}
-        />
+        <span style={debugBugStyle.sectionCheckBox(enabled)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke={debugBugStyle.sectionCheckInk} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" style={debugBugStyle.sectionCheckMark} aria-hidden="true">
+            {enabled ? <polyline points="4,12.5 9.5,18 20,6" /> : <path d="M5 5L19 19M19 5L5 19" />}
+          </svg>
+          <input
+            type="checkbox"
+            id="MERIT_DEBUG_CHECK"
+            title="Show the red ladybug in the header"
+            style={debugBugStyle.sectionCheckInput}
+            checked={enabled}
+            onChange={(event) => {
+              meritDebug.setEnabled(event.target.checked);
+              platform.storage.set(ENABLED_KEY, String(event.target.checked));
+            }}
+          />
+        </span>
       </label>
     </div>
   );

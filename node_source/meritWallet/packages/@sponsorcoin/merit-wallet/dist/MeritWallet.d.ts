@@ -264,8 +264,6 @@ export interface MeritWalletProps {
     configModalMode?: boolean;
     onConfigModalModeChange?: (modal: boolean) => void;
     configSecurityPanelContent?: React.ReactNode;
-    /** The Config tab's "Who signs" section (derived from `wallet`: which holder signs for the active account, and the switch). */
-    configSigningPanelContent?: React.ReactNode;
     /** The Config tab's "Backup file" section (derived from `wallet` when its key-keeping backend can make a backup file). */
     configBackupPanelContent?: React.ReactNode;
     /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */

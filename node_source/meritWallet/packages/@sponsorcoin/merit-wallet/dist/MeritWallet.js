@@ -33,6 +33,7 @@
 // Whether/when to render this component at all stays the host's call.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { setExchangeContextMember, useExchangeContextMember, EXCHANGE_CONTEXT_MEMBER_TITLES } from '@sponsorcoin/spcoin-panels';
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { configTitle } from './walletType';
@@ -256,7 +257,7 @@ const READ_ONLY_ACCOUNT_DETAIL_HOST = {
 // the header account list now renders AccountListCard directly, which takes
 // AccountListEntry as-is. AccountListRewardsPanel remains exported by the
 // package for hosts that want the reward-aware list.
-function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClose, titleBadgeSrc, onRefresh, onNavigationChange, seedTabOnStack, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, securitySetup, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configSigningPanelContent, configBackupPanelContent, configTestAccountsContent, configTestSitesContent, configDisplaySizeContent, onConfigUniswapEngineChange, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
+function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClose, titleBadgeSrc, onRefresh, onNavigationChange, seedTabOnStack, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, securitySetup, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configLocation, onConfigLocationChange, configShowBackgroundPage, onConfigShowBackgroundPageChange, configModalMode, onConfigModalModeChange, configSecurityPanelContent, configBackupPanelContent, configTestAccountsContent, configTestSitesContent, configDisplaySizeContent, onConfigUniswapEngineChange, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
     // 2026-11-14: the ladybug's hotkey, saved switch and error capture (debug/DebugBug.tsx)
     useDebugRuntime();
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
@@ -391,6 +392,7 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
             onMenuOpenChange?.(menuTabHeaderVisible);
     }, [menuTabHeaderVisible, onMenuOpenChange]);
     const panelTreeVisible = usePanelVisible(SP_COIN_DISPLAY.PANEL_TREE_PANEL);
+    const exchangeContextMember = useExchangeContextMember();
     // 2026-10-23 (owner report: MERIT_INFO_PANEL shows empty) — this flag and
     // meritInfoOverlay below were lost when WalletOverlayHost.tsx (which used
     // to render `slots.meritInfoPanel ?? <MeritInfoPanelReal />` for this
@@ -1598,7 +1600,9 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
                             onUnstake: () => { setStakingListMode({ kind: 'unstake' }); openPanel(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST, 'MeritWallet:unstakeAllSponsorships'); },
                         })
                         : React.createElement(WalletConfigPanel, {
-                            onOpenPanelTree: () => openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'),
+                            onOpenPanelTree: () => { setExchangeContextMember('panelTreeView'); openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'); },
+                            // 2026-11-27 (owner): the Config tab's Exchange Context buttons open the same view on one member of the context
+                            onOpenExchangeContext: (member) => { setExchangeContextMember(member); openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openExchangeContext'); },
                             openTarget,
                             onOpenTargetChange: handleOpenTargetChange,
                             // 2026-09-30 — see configPasswordMode's own doc comment on
@@ -1625,7 +1629,6 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
                             onModalModeChange: onConfigModalModeChange,
                             // 2026-11-13 (owner): the second-step rows (authenticator app / passkey) sit under the wallet's own security rows, from the host's securitySetup
                             securityPanelContent: securitySetup ? (parts) => React.createElement(React.Fragment, null, React.createElement(SecuritySetupScreen, { ...securitySetup, passwordContent: parts.passwordSettings, accountButtons: parts.accountButtons }), configSecurityPanelContent) : configSecurityPanelContent,
-                            signingPanelContent: configSigningPanelContent,
                             backupPanelContent: configBackupPanelContent,
                             testAccountsContent: configTestAccountsContent,
                             testSitesContent: configTestSitesContent,
@@ -2265,7 +2268,7 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
                                             : addMenuVisible && panelTreeListOpen
                                                 ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
                                                 : panelTreeVisible
-                                                    ? 'Panel Tree'
+                                                    ? EXCHANGE_CONTEXT_MEMBER_TITLES[exchangeContextMember]
                                                     : meritInfoVisible
                                                         ? 'About Merit Wallet'
                                                         : accountDetailVisible

@@ -20,13 +20,13 @@ const m = process.env.MUTANT;
 // the web page's view of the extension gets a different name from the extension's own
 if (m === 'extensionSeenFromWeb') mutate("if (id === 'localVault' || id === 'injected:org.sponsorcoin.merit') return 'Merit (Ext)';", "if (id === 'localVault') return 'Merit (Ext)';\n  if (id === 'injected:org.sponsorcoin.merit') return 'Merit extension';");
 // the dev keystore and the browser vault both read as the web wallet
-if (m === 'browserVsDev') mutate("if (id === 'serverKeystore') return 'Merit Wallet (Web Dev Server)';", "if (id === 'serverKeystore') return 'Merit Wallet (Web)';");
+if (m === 'browserVsDev') mutate("if (id === 'serverKeystore') return 'Merit Wallet (Web Dev Server)';", "if (id === 'serverKeystore') return 'Merit (Web)';");
 // a phone wallet ignores the platform it reports
 if (m === 'phonePlatformIgnored') mutate("return platform ? `Merit Wallet (${PLATFORM_WORDS[platform]})` : 'Merit Wallet (Phone)';", "return 'Merit Wallet (Phone)';");
 // a hardware wallet is not named by its own device
 if (m === 'hardwareKind') mutate("return `${kind.charAt(0).toUpperCase()}${kind.slice(1)} (Hardware)`;", "return 'Hardware';");
 // MetaMask is named like a Merit wallet
-if (m === 'metamaskCase') mutate("if (id === 'injected:io.metamask') return 'MetaMask';", "if (id === 'injected:io.metamask') return 'Merit Wallet (Web)';");
+if (m === 'metamaskCase') mutate("if (id === 'injected:io.metamask') return 'MetaMask';", "if (id === 'injected:io.metamask') return 'Merit (Web)';");
 const js = ts.transpileModule(auth, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const mod = { exports: {} };
 new Function('require', 'module', 'exports', js)((id) => req(id), mod, mod.exports);
@@ -43,7 +43,7 @@ const test = async (name, fn) => {
 };
 
 await test('every wallet has its own name: the product and, in brackets, where it runs', () => {
-  assert.equal(walletName('browserVault'), 'Merit Wallet (Web)');
+  assert.equal(walletName('browserVault'), 'Merit (Web)');
   assert.equal(walletName('localVault'), 'Merit (Ext)');
   assert.equal(walletName('serverKeystore'), 'Merit (Web App)');
   assert.equal(walletName('injected:io.metamask'), 'MetaMask');
@@ -75,7 +75,6 @@ await test('a hardware wallet is named by its own device; an unknown injected wa
 // the lists that name a wallet read the name from the package (walletName) and not from a host's own words
 const forbidden = [
   ['wallet/approverAccounts.ts', /label: backend\.name,/],
-  ['wallet/accountSigning.ts', /label: info\?\.name \?\? id,/],
   ['auth/approvalWaiting.ts', /label: authenticatorName\(authenticator\)/],
   ['wallet/wallet.ts', /name: authenticatorName\(authenticator\),/],
 ];

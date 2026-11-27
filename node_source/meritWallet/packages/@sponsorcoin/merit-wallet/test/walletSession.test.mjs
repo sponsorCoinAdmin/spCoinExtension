@@ -93,7 +93,7 @@ await test('the component body and the shared Config both use the same dialogs a
   assert.match(connected, /<WalletSessionDialogs dialog=\{dialog\}/);
   assert.match(connected, /sessionConfigHandlers\(walletSession, setDialog,/);
 });
-await test('the shared Config derives Wallet Security, Who signs and Backup from the wallet it is given', () => {
+await test('the shared Config derives Wallet Security and Backup from the wallet it is given', () => {
   assert.match(connected, /useWalletDerivedProps\(wallet, activeAddress, derives\)/);
   assert.match(connected, /securityPanelContent=\{derived\.configSecurityPanelContent\}/);
 });

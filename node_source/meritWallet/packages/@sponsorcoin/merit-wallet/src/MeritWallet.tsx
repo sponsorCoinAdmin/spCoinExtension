@@ -34,6 +34,7 @@
 
 'use client';
 
+import { setExchangeContextMember, useExchangeContextMember, EXCHANGE_CONTEXT_MEMBER_TITLES, type ExchangeContextMember } from '@sponsorcoin/spcoin-panels';
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MeritWalletType, configTitle } from './walletType';
@@ -792,8 +793,6 @@ export interface MeritWalletProps {
   configModalMode?: boolean;
   onConfigModalModeChange?: (modal: boolean) => void;
   configSecurityPanelContent?: React.ReactNode;
-  /** The Config tab's "Who signs" section (derived from `wallet`: which holder signs for the active account, and the switch). */
-  configSigningPanelContent?: React.ReactNode;
   /** The Config tab's "Backup file" section (derived from `wallet` when its key-keeping backend can make a backup file). */
   configBackupPanelContent?: React.ReactNode;
   /** The Config tab's Test Accounts section (loads Hardhat's standard accounts into the host's store); the component draws it. Omit to hide it. */
@@ -929,7 +928,6 @@ function MeritWalletInner({
   configModalMode,
   onConfigModalModeChange,
   configSecurityPanelContent,
-  configSigningPanelContent,
   configBackupPanelContent,
   configTestAccountsContent,
   configTestSitesContent,
@@ -1083,6 +1081,7 @@ function MeritWalletInner({
     if (!first) onMenuOpenChange?.(menuTabHeaderVisible);
   }, [menuTabHeaderVisible, onMenuOpenChange]);
   const panelTreeVisible = usePanelVisible(SP_COIN_DISPLAY.PANEL_TREE_PANEL);
+  const exchangeContextMember = useExchangeContextMember();
   // 2026-10-23 (owner report: MERIT_INFO_PANEL shows empty) — this flag and
   // meritInfoOverlay below were lost when WalletOverlayHost.tsx (which used
   // to render `slots.meritInfoPanel ?? <MeritInfoPanelReal />` for this
@@ -2321,7 +2320,9 @@ function MeritWalletInner({
                 onUnstake: () => { setStakingListMode({ kind: 'unstake' }); openPanel(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST, 'MeritWallet:unstakeAllSponsorships'); },
               })
             : React.createElement(WalletConfigPanel, {
-                onOpenPanelTree: () => openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'),
+                onOpenPanelTree: () => { setExchangeContextMember('panelTreeView'); openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'); },
+                // 2026-11-27 (owner): the Config tab's Exchange Context buttons open the same view on one member of the context
+                onOpenExchangeContext: (member: ExchangeContextMember) => { setExchangeContextMember(member); openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openExchangeContext'); },
                 openTarget,
                 onOpenTargetChange: handleOpenTargetChange,
                 // 2026-09-30 — see configPasswordMode's own doc comment on
@@ -2348,7 +2349,6 @@ function MeritWalletInner({
                 onModalModeChange: onConfigModalModeChange,
                 // 2026-11-13 (owner): the second-step rows (authenticator app / passkey) sit under the wallet's own security rows, from the host's securitySetup
                 securityPanelContent: securitySetup ? (parts: SecurityParts) => React.createElement(React.Fragment, null, React.createElement(SecuritySetupScreen, { ...securitySetup, passwordContent: parts.passwordSettings, accountButtons: parts.accountButtons }), configSecurityPanelContent) : configSecurityPanelContent,
-                signingPanelContent: configSigningPanelContent,
                 backupPanelContent: configBackupPanelContent,
                 testAccountsContent: configTestAccountsContent,
                 testSitesContent: configTestSitesContent,
@@ -3004,7 +3004,7 @@ function MeritWalletInner({
     : addMenuVisible && panelTreeListOpen
     ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
     : panelTreeVisible
-    ? 'Panel Tree'
+    ? EXCHANGE_CONTEXT_MEMBER_TITLES[exchangeContextMember]
     : meritInfoVisible
     ? 'About Merit Wallet'
     : accountDetailVisible

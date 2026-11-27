@@ -103,8 +103,6 @@ export { useMeritApprovalMessagePanel } from './approval/useMeritApprovalMessage
 export { buildApproverGroups, splitNameSymbol, mergeWalletAccountEntries, createApproverController, connectNoticeText } from './wallet/approverAccounts';
 export { useApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet } from './account/signIn';
-export { readSigningChoices, chooseSigner, signingWarning } from './wallet/accountSigning';
-export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { createPeerConnection, usePeerStates } from './peer/peerConnection';
 export { createWalletConnections, authenticatorProbe } from './auth/walletAuthenticators';
 export { useWalletConnections } from './auth/walletAuthenticatorsReact';

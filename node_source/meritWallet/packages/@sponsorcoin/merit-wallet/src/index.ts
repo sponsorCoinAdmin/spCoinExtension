@@ -178,8 +178,6 @@ export { useMeritApprovalMessagePanel, type ApprovalHost } from './approval/useM
 export { buildApproverGroups, splitNameSymbol, mergeWalletAccountEntries, createApproverController, connectNoticeText, type ApproverHost, type ApproverHostPlatform, type ApproverGroupsInput, type ApproverController } from './wallet/approverAccounts';
 export { useApproverAccounts, type ApproverAccounts } from './wallet/approverAccountsReact';
 export { signInForToken, signInWithWallet, type SignInParams } from './account/signIn';
-export { readSigningChoices, chooseSigner, signingWarning, type SigningChoices, type SigningHolder, type HolderState } from './wallet/accountSigning';
-export { default as AccountSigningSection } from './wallet/AccountSigningSection';
 export { createPeerConnection, usePeerStates, type PeerConnection, type PeerState, type PeerTransport } from './peer/peerConnection';
 export { createWalletConnections, authenticatorProbe, type ConnectionState, type ConnectionProbe, type WalletConnections, type WalletConnectionsOptions } from './auth/walletAuthenticators';
 export { useWalletConnections, type UseWalletConnections } from './auth/walletAuthenticatorsReact';

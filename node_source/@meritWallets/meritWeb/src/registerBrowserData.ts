@@ -6,7 +6,7 @@
 import { registerBundledFeeds, setFeedNetworkPolicy } from '@sponsorcoin/spcoin-feeds/shared';
 import { createBundledTokensStore, createTokensApi } from '@sponsorcoin/spcoin-feeds/api';
 import { listConfiguredNetworks } from '@sponsorcoin/spcoin-feeds/networks';
-import { loadSpCoinDeploymentMap, registerBundledFeeds as registerEngineBundledFeeds, registerLocalApi, registerNetworkData, resolveSpCoinDiskChainId } from '@sponsorcoin/spcoin-exchange-engine';
+import { invalidateTokenListCache, loadSpCoinDeploymentMap, registerBundledFeeds as registerEngineBundledFeeds, registerLocalApi, registerNetworkData, resolveSpCoinDiskChainId } from '@sponsorcoin/spcoin-exchange-engine';
 
 export type BrowserDataSnapshot = Record<string, unknown>;
 
@@ -17,10 +17,36 @@ export function registeredBrowserData(): BrowserDataSnapshot | undefined {
   return (globalThis as unknown as Record<symbol, BrowserDataSnapshot | undefined>)[SNAPSHOT_ID];
 }
 
+// 2026-11-27 (owner: the Sponsor Coin was in the data but not in the token list on sponsorcoin.org): the wallet keeps the token lists and token records it built in this browser (IndexedDB: the list pages for an hour, the records for a day) and shows them
+// before it looks at the data. A build that brings different data (a coin deployed since) would therefore keep showing the old lists for a while. So the snapshot's token and coin data get a fingerprint, remembered on this device; when a new build's
+// fingerprint differs, the cached lists are emptied once and rebuilt from the new data.
+const STAMP_KEY = 'merit.snapshotStamp.v1';
+function snapshotStamp(data: BrowserDataSnapshot): string {
+  const keys = Object.keys(data).filter((k) => /tokenlist|\/api\/spCoin\/|\/api\/native-token|spCoinDeployment/i.test(k)).sort();
+  let hash = 2166136261;
+  for (const key of keys) {
+    const text = key + JSON.stringify(data[key]);
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+  }
+  return `${(hash >>> 0).toString(36)}:${keys.length}`;
+}
+
 export function registerBrowserData(data: BrowserDataSnapshot): void {
   const g = globalThis as unknown as Record<symbol, unknown>;
   if (g[SNAPSHOT_ID] === data) return;
   g[SNAPSHOT_ID] = data;
+  try {
+    const stamp = snapshotStamp(data);
+    if (localStorage.getItem(STAMP_KEY) !== stamp) {
+      localStorage.setItem(STAMP_KEY, stamp);
+      void invalidateTokenListCache();
+    }
+  } catch {
+    // storage blocked: the cache keeps its own expiry
+  }
 
   registerBundledFeeds(data);
   setFeedNetworkPolicy({ bundledFirst: true, hostedAllowed: false, localAssets: true });

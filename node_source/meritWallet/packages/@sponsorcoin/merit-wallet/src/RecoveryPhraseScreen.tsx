@@ -32,7 +32,7 @@ export default function RecoveryPhraseScreen({ recoveryPhrase, onContinue, autoH
     : 'The phrase is shown only now and is not stored, so it cannot be shown again later. Anyone who has it can take everything: keep it somewhere safe.';
   const words = phrase ? phrase.split(' ') : [];
   return (
-    <div id="WALLET_ONBOARDING_PHRASE" style={recoveryPhraseStyle.box}>
+    <div id="WALLET_ONBOARDING_PHRASE" style={recoveryPhraseStyle.scrollBox}>
       <div style={recoveryPhraseStyle.titleRow}>
         <p style={recoveryPhraseStyle.title}>Your Secret Recovery Phrase</p>
         {/* 2026-10-13 (owner request): the note about when the phrase is shown or hidden is an info icon at the top right of the title, not a block of text or a page of its own. */}

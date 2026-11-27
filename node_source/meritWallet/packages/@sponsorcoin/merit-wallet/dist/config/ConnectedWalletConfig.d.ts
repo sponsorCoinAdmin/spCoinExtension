@@ -15,5 +15,5 @@ export interface ConnectedWalletConfigProps extends Omit<PanelProps, 'securityPa
     /** The Test Accounts section, built by the host (see MeritWalletProps.configTestAccountsContent). */
     testAccountsContent?: React.ReactNode;
 }
-export default function ConnectedWalletConfig({ wallet, activeAddress, derives, walletSession, testAccountsContent, onLogoff, onResetPassword, onDeleteAccount, onDeleteWallet, ...panel }: ConnectedWalletConfigProps): import("react/jsx-runtime").JSX.Element;
+export default function ConnectedWalletConfig({ wallet, activeAddress, derives, walletSession, testAccountsContent, onLogoff, onResetPassword, onDeleteAccount, onDeleteWallet, ...panel }: ConnectedWalletConfigProps): React.JSX.Element;
 export {};

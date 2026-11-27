@@ -80,6 +80,16 @@ export function createDebugStore(clock = () => Date.now()) {
             const out = [];
             out.push('MERIT WALLET DEBUG DUMP v1');
             out.push(`dumpedAtUtc: ${new Date(now).toISOString()}`);
+            // 2026-11-27 (owner): the build comes first, so a dump shows at a glance whether the latest release is running
+            try {
+                const app = await sections.get('app')?.();
+                const build = app && typeof app === 'object' ? app.build : undefined;
+                if (typeof build === 'string' && build)
+                    out.push(`build: ${build}`);
+            }
+            catch {
+                // the app section reports its own failure below
+            }
             const names = [...DEBUG_SECTIONS, ...[...sections.keys()].filter((name) => !DEBUG_SECTIONS.includes(name)).sort()];
             for (const name of names) {
                 out.push('', `## ${name}`);

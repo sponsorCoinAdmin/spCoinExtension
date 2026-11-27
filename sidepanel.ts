@@ -104,6 +104,7 @@ setEngineTrace((message, data) => {
   meritDebug.log('engine', line);
 });
 // 2026-11-14: the wallet's ladybug dump (merit-wallet, the same in every app): what this host is and the worker's own trace (the connect path runs there)
+(globalThis as { __MERIT_BUILD_LABEL__?: string }).__MERIT_BUILD_LABEL__ = new Date(__BUILD_TIME__).toLocaleString();
 registerHostDebug(meritDebug, () => ({ app: 'extension', build: `${chrome.runtime.getManifest().version} built ${__BUILD_TIME__} (${new URL(import.meta.url).pathname.split('/').pop()})`, server: 'none (the extension does not use a hosted app)', chainId: activeChainId, rpcUrl: chainRpcUrl(), contract: spCoinAddress() }));
 // the Recent pick lists (mode and addresses: they decide what the pickers open on)
 meritDebug.setSection('recents', () => describeRecents());

@@ -4,7 +4,6 @@
 // It only supplies the data: the wallet's icon and the rows of its account.json (name, type, website, description, chains, features).
 'use client';
 
-import React from 'react';
 import { SP_COIN_DISPLAY } from '@sponsorcoin/spcoin-common/panels';
 import { getWalletAssetBaseUrl, walletAssetSlug, walletAssetUrl, useWalletAsset } from '@sponsorcoin/spcoin-panels';
 import { tokenRowClass } from '@sponsorcoin/spcoin-common/styles';

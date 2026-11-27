@@ -162,7 +162,8 @@ export default function MeritWalletStandalone({ chains, core: given, onClose, do
     },
   });
   // The wallet draws its own dark card (border, fill, rounded corners) around its screens, but the first-run setup screen is returned bare (the extension's side panel is that screen's card). On a page it needs the same card, so it gets the wallet's own frame here.
-  const framed = onboarding ? React.createElement('div', { className: walletFrameClassName, style: walletFrameStyle.frame(false, docked) }, view) : view;
+  // 2026-11-27 (owner: the recovery phrase page was cut off at the bottom with no way to scroll, so the next step was out of reach): the first-run screens sit in this scroll region, so a page taller than the window scrolls (the frame itself clips).
+  const framed = onboarding ? React.createElement('div', { className: walletFrameClassName, style: walletFrameStyle.frame(false, docked) }, React.createElement('div', { style: { flex: 1, minHeight: 0, overflowY: 'auto' } }, view)) : view;
   // The wallet reads its panel tree, display stack and exchange context from its surroundings: mounted here, from the page's own storage, so it never depends on (or shares state with) an app around it.
   return React.createElement(StandaloneProviders, { chainId: core.chains[0].chainId, address }, framed);
 }

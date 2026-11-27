@@ -34,8 +34,8 @@
 
 'use client';
 
-import { setExchangeContextMember } from '@sponsorcoin/spcoin-panels';
-import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
+import WalletImage from './WalletImage';
+import { lockLogoStyle,fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MeritWalletType, configTitle } from './walletType';
 import { PlatformCopyProvider } from '@sponsorcoin/spcoin-panels';
@@ -2319,7 +2319,6 @@ function MeritWalletInner({
                 onUnstake: () => { setStakingListMode({ kind: 'unstake' }); openPanel(SP_COIN_DISPLAY.SPONSOR_STAKING_LIST, 'MeritWallet:unstakeAllSponsorships'); },
               })
             : React.createElement(WalletConfigPanel, {
-                onOpenPanelTree: () => { setExchangeContextMember('panelTreeView'); openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'); },
                 openTarget,
                 onOpenTargetChange: handleOpenTargetChange,
                 // 2026-09-30 — see configPasswordMode's own doc comment on
@@ -2844,7 +2843,7 @@ function MeritWalletInner({
       ? React.createElement(PasswordPanel, {
           mode: passwordMode,
           showTitle: false,
-          icon: passwordIconSrc ? React.createElement('img', { src: passwordIconSrc, alt: 'Merit Wallet', style: lockLogoStyle }) : undefined,
+          icon: passwordIconSrc ? React.createElement(WalletImage, { src: passwordIconSrc, alt: 'Merit Wallet', style: lockLogoStyle }) : undefined,
           errorText: passwordErrorText,
           noticeText: passwordNoticeText,
           // 2026-11-13 (owner: sign-in options): on the unlock screen the steps switched on in Config -> Security (passkey, authenticator app) are asked for after the password and before the unlock goes ahead
@@ -3558,7 +3557,8 @@ function PanelCopyBridge({ platform, children }: { platform: MeritPlatform; chil
 
 export default function MeritWallet(props: MeritWalletProps) {
   if (props.onboarding) {
-    return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement(SetupScreen, props.onboarding));
+    // 2026-11-27 (owner: the recovery phrase page did not scroll in the side panel, the next step was out of reach): the first-run screen is returned bare (the host's window is its card), so it scrolls inside a box that fills that window
+    return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement('div', { style: { height: '100%', overflowY: 'auto' } }, React.createElement(SetupScreen, props.onboarding)));
   }
   return React.createElement(MeritWalletWired, props);
 }

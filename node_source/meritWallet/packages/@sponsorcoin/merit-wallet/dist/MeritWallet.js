@@ -1652,7 +1652,9 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
                                 onConfig0xEngineChange?.(checked);
                             },
                             resetPanelsContent: configResetPanelsContent,
-                            devToolsContent: React.createElement(React.Fragment, null, configDevToolsContent, React.createElement(DebugConfigSection)),
+                            devToolsContent: configDevToolsContent,
+                            // 2026-11-27 (owner): the Debug card sits at the bottom of the Exchange Context Layout section
+                            debugPanelContent: React.createElement(DebugConfigSection),
                             extensionChannel: configExtensionChannel,
                             onExtensionChannelChange: onConfigExtensionChannelChange,
                             extensionDownloadPath: configExtensionDownloadPath,

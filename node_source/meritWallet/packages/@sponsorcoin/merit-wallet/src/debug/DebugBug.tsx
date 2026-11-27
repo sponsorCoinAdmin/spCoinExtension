@@ -138,18 +138,24 @@ export function DebugConfigSection() {
   const platform = usePlatform();
   const enabled = useDebugEnabled();
   return (
-    <div>
-      <label style={debugBugStyle.checkRow}>
+    // 2026-11-27 (owner): a row in the Config list's own look (a card with the ladybug in the round icon, the name, and the check box at the end) that does not open
+    <div style={debugBugStyle.sectionCard}>
+      <label style={debugBugStyle.sectionLabel}>
+        <span style={debugBugStyle.sectionIcon} aria-hidden="true">
+          <Ladybug />
+        </span>
+        <span style={debugBugStyle.sectionName}>Debug (Ctrl+Alt+B)</span>
         <input
           type="checkbox"
           id="MERIT_DEBUG_CHECK"
+          title="Show the red ladybug in the header"
+          style={debugBugStyle.sectionCheck}
           checked={enabled}
           onChange={(event) => {
             meritDebug.setEnabled(event.target.checked);
             platform.storage.set(ENABLED_KEY, String(event.target.checked));
           }}
         />
-        Debug (red ladybug in the header, Ctrl+Alt+B)
       </label>
     </div>
   );

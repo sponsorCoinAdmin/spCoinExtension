@@ -33,7 +33,7 @@
 // Whether/when to render this component at all stays the host's call.
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { setExchangeContextMember, useExchangeContextMember, EXCHANGE_CONTEXT_MEMBER_TITLES } from '@sponsorcoin/spcoin-panels';
+import { setExchangeContextMember } from '@sponsorcoin/spcoin-panels';
 import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { configTitle } from './walletType';
@@ -392,7 +392,6 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
             onMenuOpenChange?.(menuTabHeaderVisible);
     }, [menuTabHeaderVisible, onMenuOpenChange]);
     const panelTreeVisible = usePanelVisible(SP_COIN_DISPLAY.PANEL_TREE_PANEL);
-    const exchangeContextMember = useExchangeContextMember();
     // 2026-10-23 (owner report: MERIT_INFO_PANEL shows empty) — this flag and
     // meritInfoOverlay below were lost when WalletOverlayHost.tsx (which used
     // to render `slots.meritInfoPanel ?? <MeritInfoPanelReal />` for this
@@ -1601,8 +1600,6 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
                         })
                         : React.createElement(WalletConfigPanel, {
                             onOpenPanelTree: () => { setExchangeContextMember('panelTreeView'); openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openPanelTree'); },
-                            // 2026-11-27 (owner): the Config tab's Exchange Context buttons open the same view on one member of the context
-                            onOpenExchangeContext: (member) => { setExchangeContextMember(member); openPanel(SP_COIN_DISPLAY.PANEL_TREE_PANEL, 'MeritWallet:openExchangeContext'); },
                             openTarget,
                             onOpenTargetChange: handleOpenTargetChange,
                             // 2026-09-30 — see configPasswordMode's own doc comment on
@@ -2270,7 +2267,7 @@ function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClo
                                             : addMenuVisible && panelTreeListOpen
                                                 ? `${pillWalletId ? walletName(pillWalletId) : 'Merit Wallet'} Manager`
                                                 : panelTreeVisible
-                                                    ? EXCHANGE_CONTEXT_MEMBER_TITLES[exchangeContextMember]
+                                                    ? 'Exchange Context'
                                                     : meritInfoVisible
                                                         ? 'About Merit Wallet'
                                                         : accountDetailVisible

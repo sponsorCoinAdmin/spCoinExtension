@@ -45,9 +45,12 @@ export function testSiteProblem(form: TestSiteForm): string | undefined {
   const host = form.host.trim();
   if (!host) return 'Type a host name.';
   if (!HOST_NAME.test(host) && !HOST_IPV6.test(host)) return 'The host name may hold letters, digits, dots and dashes (or an IPv6 address in [brackets]).';
-  if (!/^\d+$/.test(form.port)) return 'Type a port number.';
-  const port = Number(form.port);
-  if (port < 1 || port > 65535) return 'The port must be from 1 to 65535.';
+  // 2026-11-27 (owner: "I should not have to have a port for a url to be built"): the port may be left empty, and the link then has none (https and http use their own: 443 and 80)
+  if (form.port !== '') {
+    if (!/^\d+$/.test(form.port)) return 'The port is digits only, or empty.';
+    const port = Number(form.port);
+    if (port < 1 || port > 65535) return 'The port must be from 1 to 65535, or empty.';
+  }
   if (!/^\d+$/.test(form.width) || Number(form.width) < MIN_SIZE || Number(form.width) > MAX_SIZE) return `The width must be from ${MIN_SIZE} to ${MAX_SIZE}.`;
   const height = form.height.trim().toLowerCase();
   if (height !== 'max' && (!/^\d+$/.test(height) || Number(height) < MIN_SIZE || Number(height) > MAX_SIZE)) return `The height must be max, or from ${MIN_SIZE} to ${MAX_SIZE}.`;
@@ -62,7 +65,7 @@ export function buildTestSiteUrl(form: TestSiteForm): string | undefined {
   if (form.type) query.push(`type=${form.type}`);
   if (form.compare) query.push('compare=1');
   if (form.log) query.push('log=1');
-  return `${form.protocol}://${form.host.trim()}:${Number(form.port)}/${query.length ? `?${query.join('&')}` : ''}`;
+  return `${form.protocol}://${form.host.trim()}${form.port === '' ? '' : `:${Number(form.port)}`}/${query.length ? `?${query.join('&')}` : ''}`;
 }
 
 /**

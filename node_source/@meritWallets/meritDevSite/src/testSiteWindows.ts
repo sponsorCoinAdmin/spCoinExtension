@@ -119,13 +119,13 @@ export function openTestSiteWindow(form: TestSiteForm): Window | null {
   const link = testSiteOpenUrl(form, requested, oid) ?? url;
   setLog([...loadLog(), { oid, openedAt: new Date().toLocaleTimeString(), url: link, target: Number(form.width), requested, ratio, features, calibrated: !!known }].slice(-POPUP_LOG_MAX));
   try {
-    const previous = opened[form.port];
+    const previous = opened[form.port || 'default'];
     if (previous && !previous.closed) previous.close();
   } catch {
     /* a window that cannot be closed is left alone */
   }
-  const win = window.open(link, `merit-test-site-${form.port}-${oid}`, features);
-  opened[form.port] = win;
+  const win = window.open(link, `merit-test-site-${form.port || 'default'}-${oid}`, features);
+  opened[form.port || 'default'] = win;
   return win;
 }
 

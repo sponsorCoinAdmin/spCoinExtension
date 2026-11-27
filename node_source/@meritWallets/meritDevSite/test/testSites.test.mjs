@@ -40,7 +40,8 @@ test('the port box takes digits only', () => {
 });
 
 test('the port must be 1 to 65535', () => {
-  assert.equal(buildTestSiteUrl(form({ port: '' })), undefined);
+  assert.equal(buildTestSiteUrl(form({ port: '' })), 'http://localhost/');
+  assert.equal(buildTestSiteUrl(form({ port: '', host: 'sponsorcoin.org', protocol: 'https' })), 'https://sponsorcoin.org/');
   assert.equal(buildTestSiteUrl(form({ port: '0' })), undefined);
   assert.equal(buildTestSiteUrl(form({ port: '65536' })), undefined);
   assert.equal(buildTestSiteUrl(form({ port: '65535' })), 'http://localhost:65535/');

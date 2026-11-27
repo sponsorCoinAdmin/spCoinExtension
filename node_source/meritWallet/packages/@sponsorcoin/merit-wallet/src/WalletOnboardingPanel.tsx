@@ -5,8 +5,9 @@
 // continuing) or import an existing phrase. Host-independent: the host supplies two async calls and gets told when setup is finished.
 'use client';
 
-import { formKitStyle } from '@sponsorcoin/spcoin-common/styles';
-import { useState } from 'react';
+import { dialogStyle, formKitStyle } from '@sponsorcoin/spcoin-common/styles';
+import { Eye, EyeOff } from 'lucide-react';
+import { useState, type CSSProperties } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from './vault/walletAccounts';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
 import RecoveryPhraseScreen from './RecoveryPhraseScreen';
@@ -31,6 +32,19 @@ const field = formKitStyle.input;
 const muted = formKitStyle.muted;
 const err = formKitStyle.error;
 
+// 2026-11-27 (owner: "there should be the eye icon to toggle the visibility of the password"): a password field with the same show / hide eye the login screen and the delete dialog have.
+function PasswordField({ placeholder, value, onChange, autoComplete }: { placeholder: string; value: string; onChange(next: string): void; autoComplete: string }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div style={dialogStyle.inputWrap as CSSProperties}>
+      <input type={visible ? 'text' : 'password'} autoComplete={autoComplete} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} style={{ ...field, paddingRight: 36 }} />
+      <button type="button" onClick={() => setVisible((v) => !v)} aria-label={visible ? 'Hide password' : 'Show password'} title={visible ? 'Hide password' : 'Show password'} style={dialogStyle.eyeButton as CSSProperties}>
+        {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
+}
+
 export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }: WalletOnboardingPanelProps) {
   const [step, setStep] = useState<Step>('choose');
   const [password, setPassword] = useState('');
@@ -47,8 +61,8 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
 
   const passwordFields = (
     <>
-      <input type="password" autoComplete="new-password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={field} />
-      <input type="password" autoComplete="new-password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} style={field} />
+      <PasswordField autoComplete="new-password" placeholder="Password" value={password} onChange={setPassword} />
+      <PasswordField autoComplete="new-password" placeholder="Confirm password" value={confirm} onChange={setConfirm} />
     </>
   );
 
@@ -120,7 +134,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
           }}
         />
         {backupName && <p style={muted}>{backupName}</p>}
-        <input type="password" autoComplete="current-password" placeholder="Backup password" value={password} onChange={(e) => setPassword(e.target.value)} style={field} />
+        <PasswordField autoComplete="current-password" placeholder="Backup password" value={password} onChange={setPassword} />
         {error && <p style={err}>{error}</p>}
         <button type="submit" disabled={busy || !backupText || !password} style={formKitStyle.primaryDim(busy || !backupText || !password)}>{busy ? 'Restoring…' : 'Restore wallet'}</button>
         <button type="button" style={ghost} onClick={() => { setError(''); setStep('choose'); }}>Back</button>

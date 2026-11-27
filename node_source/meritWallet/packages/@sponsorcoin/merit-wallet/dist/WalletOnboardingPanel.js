@@ -4,8 +4,9 @@
 // choose a password and either create a new wallet (the Secret Recovery Phrase is shown ONCE, and the user must confirm they saved it before
 // continuing) or import an existing phrase. Host-independent: the host supplies two async calls and gets told when setup is finished.
 'use client';
-import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
-import { formKitStyle } from '@sponsorcoin/spcoin-common/styles';
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { dialogStyle, formKitStyle } from '@sponsorcoin/spcoin-common/styles';
+import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { isValidMnemonic, normalizeMnemonic } from './vault/walletAccounts';
 import { MIN_WALLET_PASSWORD_LENGTH } from './session/walletSession';
@@ -16,6 +17,11 @@ const ghost = formKitStyle.ghost;
 const field = formKitStyle.input;
 const muted = formKitStyle.muted;
 const err = formKitStyle.error;
+// 2026-11-27 (owner: "there should be the eye icon to toggle the visibility of the password"): a password field with the same show / hide eye the login screen and the delete dialog have.
+function PasswordField({ placeholder, value, onChange, autoComplete }) {
+    const [visible, setVisible] = useState(false);
+    return (_jsxs("div", { style: dialogStyle.inputWrap, children: [_jsx("input", { type: visible ? 'text' : 'password', autoComplete: autoComplete, placeholder: placeholder, value: value, onChange: (e) => onChange(e.target.value), style: { ...field, paddingRight: 36 } }), _jsx("button", { type: "button", onClick: () => setVisible((v) => !v), "aria-label": visible ? 'Hide password' : 'Show password', title: visible ? 'Hide password' : 'Show password', style: dialogStyle.eyeButton, children: visible ? _jsx(EyeOff, { size: 16 }) : _jsx(Eye, { size: 16 }) })] }));
+}
 export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }) {
     const [step, setStep] = useState('choose');
     const [password, setPassword] = useState('');
@@ -27,7 +33,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
     const passwordProblem = () => password.length < MIN_WALLET_PASSWORD_LENGTH ? `Password must be at least ${MIN_WALLET_PASSWORD_LENGTH} characters.` : password !== confirm ? 'Passwords do not match.' : '';
-    const passwordFields = (_jsxs(_Fragment, { children: [_jsx("input", { type: "password", autoComplete: "new-password", placeholder: "Password", value: password, onChange: (e) => setPassword(e.target.value), style: field }), _jsx("input", { type: "password", autoComplete: "new-password", placeholder: "Confirm password", value: confirm, onChange: (e) => setConfirm(e.target.value), style: field })] }));
+    const passwordFields = (_jsxs(_Fragment, { children: [_jsx(PasswordField, { autoComplete: "new-password", placeholder: "Password", value: password, onChange: setPassword }), _jsx(PasswordField, { autoComplete: "new-password", placeholder: "Confirm password", value: confirm, onChange: setConfirm })] }));
     if (step === 'create') {
         return (_jsxs("form", { id: "WALLET_ONBOARDING_CREATE", style: box, onSubmit: (e) => {
                 e.preventDefault();
@@ -71,7 +77,7 @@ export default function WalletOnboardingPanel({ createWallet, importWallet, rest
                             return;
                         setBackupName(file.name);
                         void file.text().then(setBackupText);
-                    } }), backupName && _jsx("p", { style: muted, children: backupName }), _jsx("input", { type: "password", autoComplete: "current-password", placeholder: "Backup password", value: password, onChange: (e) => setPassword(e.target.value), style: field }), error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy || !backupText || !password, style: formKitStyle.primaryDim(busy || !backupText || !password), children: busy ? 'Restoring…' : 'Restore wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
+                    } }), backupName && _jsx("p", { style: muted, children: backupName }), _jsx(PasswordField, { autoComplete: "current-password", placeholder: "Backup password", value: password, onChange: setPassword }), error && _jsx("p", { style: err, children: error }), _jsx("button", { type: "submit", disabled: busy || !backupText || !password, style: formKitStyle.primaryDim(busy || !backupText || !password), children: busy ? 'Restoring…' : 'Restore wallet' }), _jsx("button", { type: "button", style: ghost, onClick: () => { setError(''); setStep('choose'); }, children: "Back" })] }));
     }
     if (step === 'import') {
         const normalized = normalizeMnemonic(phraseInput);

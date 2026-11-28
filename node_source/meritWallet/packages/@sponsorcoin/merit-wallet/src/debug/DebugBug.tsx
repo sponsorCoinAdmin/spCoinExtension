@@ -112,6 +112,10 @@ function DebugPanel({ onClose }: { onClose(): void }) {
           >
             {copied ? 'Copied' : 'Copy'}
           </DumpButton>
+          {platform.canShareText?.() && platform.shareText ? (
+            // 2026-11-27 (owner): the phone's share sheet (Messages, Mail, Notes, Copy...) for the dump on screen, opened inside the press
+            <DumpButton onClick={() => { void platform.shareText?.(text, 'Merit Wallet debug dump').catch(() => undefined); }}>Share</DumpButton>
+          ) : null}
           <DumpButton onClick={() => { meritDebug.clear(); refresh(); }}>Clear</DumpButton>
           <DumpButton onClick={onClose}>Close</DumpButton>
         </div>

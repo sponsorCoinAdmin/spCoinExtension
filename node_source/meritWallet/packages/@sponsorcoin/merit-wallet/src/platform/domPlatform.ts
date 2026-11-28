@@ -30,6 +30,12 @@ export const domPlatform: MeritPlatform = {
     if (ok) return;
     await navigator.clipboard.writeText(text);
   },
+  canShareText() {
+    return typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  },
+  async shareText(text, title) {
+    await navigator.share({ text, title });
+  },
   async clearClipboard(text, replacement = '') {
     let holdsOther = false;
     try {

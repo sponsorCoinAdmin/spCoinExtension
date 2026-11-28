@@ -74,7 +74,9 @@ function DebugPanel({ onClose }) {
                                     setCopied(true);
                                     setTimeout(() => setCopied(false), 1500);
                                 }, () => setText((current) => `${current}\n[copy refused by this browser: select the text and copy by hand]`));
-                            }, children: copied ? 'Copied' : 'Copy' }), _jsx(DumpButton, { onClick: () => { meritDebug.clear(); refresh(); }, children: "Clear" }), _jsx(DumpButton, { onClick: onClose, children: "Close" })] }), _jsx("pre", { style: { ...debugBugStyle.pre, WebkitUserSelect: 'text', WebkitTouchCallout: 'default' }, onTouchStart: () => { lastTouch.current = Date.now(); }, onPointerDown: () => { lastTouch.current = Date.now(); }, children: text })] }) }));
+                            }, children: copied ? 'Copied' : 'Copy' }), platform.canShareText?.() && platform.shareText ? (
+                        // 2026-11-27 (owner): the phone's share sheet (Messages, Mail, Notes, Copy...) for the dump on screen, opened inside the press
+                        _jsx(DumpButton, { onClick: () => { void platform.shareText?.(text, 'Merit Wallet debug dump').catch(() => undefined); }, children: "Share" })) : null, _jsx(DumpButton, { onClick: () => { meritDebug.clear(); refresh(); }, children: "Clear" }), _jsx(DumpButton, { onClick: onClose, children: "Close" })] }), _jsx("pre", { style: { ...debugBugStyle.pre, WebkitUserSelect: 'text', WebkitTouchCallout: 'default' }, onTouchStart: () => { lastTouch.current = Date.now(); }, onPointerDown: () => { lastTouch.current = Date.now(); }, children: text })] }) }));
 }
 /** The header button: nothing when debug is off. */
 export function DebugBugButton() {

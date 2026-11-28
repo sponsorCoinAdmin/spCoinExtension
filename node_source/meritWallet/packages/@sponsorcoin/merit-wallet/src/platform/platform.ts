@@ -17,6 +17,9 @@ export interface PlatformStorage {
 export interface MeritPlatform {
   /** Put text on the clipboard. Rejects when the device refuses. */
   copyText(text: string): Promise<void>;
+  /** 2026-11-27 (owner: share the debug dump from an iPhone): whether the device has a share sheet, and a call that opens it with some text (a title is optional). Both omitted: no Share button is shown. Rejects when the person cancels or the device refuses. */
+  canShareText?(): boolean;
+  shareText?(text: string, title?: string): Promise<void>;
   /** Open an address: in a new window by default, in the current one with `sameTab` (a mailto: link). */
   openUrl(url: string, options?: { sameTab?: boolean }): void;
   /** 2026-11-11: take `text` off the clipboard again (a copied private key), putting `replacement` (default empty) in its place. Clears it when it still holds `text`; when the device will not say what it holds, it is cleared anyway (a key left behind is worse than a lost copy). Rejects when the device refuses. */

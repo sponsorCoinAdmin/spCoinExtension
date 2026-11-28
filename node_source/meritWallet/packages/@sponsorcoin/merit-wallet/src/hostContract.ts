@@ -56,7 +56,7 @@ export type HostActions = Pick<
 export type HostSlots = Pick<
   MeritWalletProps,
   | 'manageRadioPanels'
-  | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configBackupPanelContent' | 'configTestAccountsContent' | 'configTestSitesContent' | 'configDisplaySizeContent' | 'configResetPanelsContent' | 'configDevToolsContent'
+  | 'configPasswordResetPanelContent' | 'configSecurityPanelContent' | 'configBackupPanelContent' | 'configTestAccountsContent' | 'configTestSitesContent' | 'configDisplaySizeContent' | 'configResetPanelsContent' | 'configDevToolsContent' | 'configHostSectionsContent'
 >;
 
 /** The lock screen: the vault is locked or being set up (MetaMask's gate is the lock state). */
@@ -70,8 +70,8 @@ export type HostConfig = Pick<
   MeritWalletProps,
   | 'configPasswordMode' | 'onConfigPasswordModeChange' | 'configPasswordDescription' | 'configMandatorySecurity'
   | 'onConfigMandatorySecurityChange' | 'configMandatoryApproval' | 'onConfigMandatoryApprovalChange' | 'configSyncMode'
-  | 'onConfigSyncModeChange' | 'configSyncDescription' | 'configLocation' | 'onConfigLocationChange' | 'configShowBackgroundPage'
-  | 'onConfigShowBackgroundPageChange' | 'configModalMode' | 'onConfigModalModeChange' | 'configUniSelectVisible'
+  | 'onConfigSyncModeChange' | 'configSyncDescription'
+  | 'configUniSelectVisible'
   | 'onConfigUniswapEngineChange' | 'configZeroXEngineVisible' | 'onConfig0xEngineChange' | 'configExtensionChannel'
   | 'onConfigExtensionChannelChange' | 'configExtensionDownloadPath' | 'configPersistedTimeoutHours' | 'onConfigPersistedTimeoutHoursChange' | 'onConfigLogoff' | 'onConfigResetPassword' | 'onConfigDeleteAccount' | 'onConfigDeleteWallet' | 'walletSession' | 'authenticationType'
 >;

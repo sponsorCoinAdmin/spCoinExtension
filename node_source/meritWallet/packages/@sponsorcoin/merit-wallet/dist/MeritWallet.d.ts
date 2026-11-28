@@ -2,7 +2,7 @@ import React from 'react';
 import { MeritWalletType } from './walletType';
 import { type PeerConnection } from './peer/peerConnection';
 import type { APP_TYPE } from '@sponsorcoin/spcoin-common';
-import { type AssetListEntry, type AccountListGroup, type AccountListRemoteSelection, type FetchBalance, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritWalletLocation, type MeritExtensionChannel } from '@sponsorcoin/spcoin-panels';
+import { type AssetListEntry, type AccountListGroup, type AccountListRemoteSelection, type FetchBalance, type OpenTarget, type MeritWalletPasswordMode as ConfigPasswordMode, type ApplicationSyncMode, type MeritExtensionChannel } from '@sponsorcoin/spcoin-panels';
 import type { Wallet } from './wallet/wallet';
 import { type MeritPlatform } from './platform/platform';
 import { type WalletDerivation } from './wallet/walletProps';
@@ -257,12 +257,8 @@ export interface MeritWalletProps {
     configSyncMode?: ApplicationSyncMode;
     onConfigSyncModeChange?: (mode: ApplicationSyncMode) => void;
     configSyncDescription?: string;
-    configLocation?: MeritWalletLocation;
-    onConfigLocationChange?: (location: MeritWalletLocation) => void;
-    configShowBackgroundPage?: boolean;
-    onConfigShowBackgroundPageChange?: (show: boolean) => void;
-    configModalMode?: boolean;
-    onConfigModalModeChange?: (modal: boolean) => void;
+    /** 2026-11-28 (owner: Display Web is the web page's setting, not the wallet's): sections the HOST adds to the Config list (the web app's Display Web: where its page puts the wallet). A host with none passes nothing and the wallet shows none. */
+    configHostSectionsContent?: React.ReactNode;
     configSecurityPanelContent?: React.ReactNode;
     /** The Config tab's "Backup file" section (derived from `wallet` when its key-keeping backend can make a backup file). */
     configBackupPanelContent?: React.ReactNode;

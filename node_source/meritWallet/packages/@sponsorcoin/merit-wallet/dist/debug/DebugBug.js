@@ -5,7 +5,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import DialogPortal from '../DialogPortal';
 import { usePlatform } from '../platform/platform';
 import { meritDebug } from './debugStore';
@@ -55,15 +55,26 @@ function DebugPanel({ onClose }) {
     const [text, setText] = useState('Reading...');
     const [copied, setCopied] = useState(false);
     const refresh = useCallback(() => void meritDebug.buildDump().then(setText), []);
+    // 2026-11-27 (owner: on the iPhone the dump could not be selected or copied): the dump refreshed every 2 seconds, replacing the text and wiping any selection; it now leaves the text alone for 20 seconds after the text is touched (Refresh still reads it again).
+    const lastTouch = useRef(0);
     useEffect(() => {
         refresh();
-        const timer = setInterval(refresh, 2000);
+        const timer = setInterval(() => {
+            if (Date.now() - lastTouch.current > 20000)
+                refresh();
+        }, 2000);
         return () => clearInterval(timer);
     }, [refresh]);
-    return (_jsx(DialogPortal, { children: _jsxs("div", { id: "MERIT_DEBUG_PANEL", style: debugBugStyle.overlay, children: [_jsxs("div", { style: debugBugStyle.bar, children: [_jsx("span", { style: debugBugStyle.title, children: "Debug dump" }), _jsx(DumpButton, { onClick: refresh, children: "Refresh" }), _jsx(DumpButton, { onClick: () => void meritDebug.buildDump().then((dump) => platform.copyText(dump).then(() => {
-                                setCopied(true);
-                                setTimeout(() => setCopied(false), 1500);
-                            })), children: copied ? 'Copied' : 'Copy' }), _jsx(DumpButton, { onClick: () => { meritDebug.clear(); refresh(); }, children: "Clear" }), _jsx(DumpButton, { onClick: onClose, children: "Close" })] }), _jsx("pre", { style: debugBugStyle.pre, children: text })] }) }));
+    return (_jsx(DialogPortal, { children: _jsxs("div", { id: "MERIT_DEBUG_PANEL", style: debugBugStyle.overlay, children: [_jsxs("div", { style: debugBugStyle.bar, children: [_jsx("span", { style: debugBugStyle.title, children: "Debug dump" }), _jsx(DumpButton, { onClick: refresh, children: "Refresh" }), _jsx(DumpButton
+                        // 2026-11-27: copies the dump on screen, inside the press (iOS Safari refuses a copy that waits for anything first, which is what building a new dump did)
+                        , { 
+                            // 2026-11-27: copies the dump on screen, inside the press (iOS Safari refuses a copy that waits for anything first, which is what building a new dump did)
+                            onClick: () => {
+                                platform.copyText(text).then(() => {
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), 1500);
+                                }, () => setText((current) => `${current}\n[copy refused by this browser: select the text and copy by hand]`));
+                            }, children: copied ? 'Copied' : 'Copy' }), _jsx(DumpButton, { onClick: () => { meritDebug.clear(); refresh(); }, children: "Clear" }), _jsx(DumpButton, { onClick: onClose, children: "Close" })] }), _jsx("pre", { style: { ...debugBugStyle.pre, WebkitUserSelect: 'text', WebkitTouchCallout: 'default' }, onTouchStart: () => { lastTouch.current = Date.now(); }, onPointerDown: () => { lastTouch.current = Date.now(); }, children: text })] }) }));
 }
 /** The header button: nothing when debug is off. */
 export function DebugBugButton() {

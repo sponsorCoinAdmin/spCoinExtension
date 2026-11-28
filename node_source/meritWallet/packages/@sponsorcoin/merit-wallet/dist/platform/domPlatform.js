@@ -6,23 +6,29 @@ import { IMAGE_CACHE_UPDATED_EVENT } from '@sponsorcoin/spcoin-feeds/shared';
 import { ACCOUNT_REGISTRY_UPDATED_EVENT } from '@sponsorcoin/spcoin-exchange-engine';
 export const domPlatform = {
     async copyText(text) {
+        // 2026-11-27 (owner: Copy did nothing on the iPhone): iOS Safari only copies inside the press itself, and the clipboard API there needs a moment that has passed once anything is awaited. So the old way (a field, a selection, a copy command), which is synchronous, goes FIRST; the clipboard API is the second try.
+        const field = document.createElement('textarea');
+        field.value = text;
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.top = '0';
+        field.style.left = '0';
+        field.style.opacity = '0';
+        document.body.appendChild(field);
+        field.focus();
+        field.select();
+        field.setSelectionRange(0, text.length);
+        let ok = false;
         try {
-            await navigator.clipboard.writeText(text);
+            ok = document.execCommand('copy');
         }
-        catch (error) {
-            // 2026-11-11: the clipboard API refuses when the page is not focused or the press is too old (a copy that waited for the vault): the old way, a hidden field and a copy command, still works from a press
-            const field = document.createElement('textarea');
-            field.value = text;
-            field.setAttribute('readonly', '');
-            field.style.position = 'fixed';
-            field.style.opacity = '0';
-            document.body.appendChild(field);
-            field.select();
-            const ok = document.execCommand('copy');
-            field.remove();
-            if (!ok)
-                throw error;
+        catch {
+            ok = false;
         }
+        field.remove();
+        if (ok)
+            return;
+        await navigator.clipboard.writeText(text);
     },
     async clearClipboard(text, replacement = '') {
         let holdsOther = false;

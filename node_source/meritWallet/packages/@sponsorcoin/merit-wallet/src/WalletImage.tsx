@@ -2,7 +2,8 @@
 //
 // 2026-11-27 (owner: "the image should always resolve as a promise and always be returned, or we display a missing-image icon"): an image the host supplies by address (the login logo).
 // It loads through a promise that always settles: one retry after a short wait (a dev server rewriting the file, a slow network), then the wallet's own missing-image icon in the same box, so the layout never jumps and a broken-image glyph never shows.
-import React, { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { walletImageStyle } from '@sponsorcoin/spcoin-common/styles';
 
 const RETRY_WAIT_MS = 600;
 
@@ -31,7 +32,6 @@ export async function loadImageWithRetry(src: string, wait = RETRY_WAIT_MS): Pro
   }
 }
 
-const missingBox: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', width: '100%', aspectRatio: '16 / 9', color: '#64748b' };
 
 /** The missing-image icon: a framed picture with a slash. */
 export function MissingImageIcon({ size = 48 }: { size?: number }) {
@@ -55,5 +55,5 @@ export default function WalletImage({ src, alt, style }: { src: string; alt: str
   const settled = state?.src === src ? state : undefined;
   if (settled?.ok) return <img src={settled.ok} alt={alt} style={style} />;
   // still loading: an empty box of the same shape; failed: the missing-image icon
-  return <div style={missingBox}>{settled ? <MissingImageIcon /> : null}</div>;
+  return <div style={walletImageStyle.missingBox}>{settled ? <MissingImageIcon /> : null}</div>;
 }

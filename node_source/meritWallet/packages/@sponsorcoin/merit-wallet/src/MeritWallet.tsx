@@ -35,7 +35,7 @@
 'use client';
 
 import WalletImage from './WalletImage';
-import { lockLogoStyle,fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
+import { lockLogoStyle,fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle, scrollBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MeritWalletType, configTitle } from './walletType';
 import { PlatformCopyProvider } from '@sponsorcoin/spcoin-panels';
@@ -135,7 +135,7 @@ import { parseDecimalAmount } from './swap/parseDecimalAmount';
 import { useTransactionReceipt } from './receipt/useTransactionReceipt';
 import { ActiveAccountProfileContext } from './swap/activeAccountProfile';
 import ConnectedAgentSelectDropDown from './AgentSelectDropDown';
-import { useNativeToken } from '@sponsorcoin/spcoin-exchange-engine';
+import { useNativeToken, useFeedPrefetch } from '@sponsorcoin/spcoin-exchange-engine';
 
 // parseDecimalAmount (decimal text -> bigint, an empty box is 0) lives in ./swap/parseDecimalAmount.ts.
 // 2026-09-21, Path A ("single source of truth") — the 5-tab strip's own
@@ -938,6 +938,8 @@ function MeritWalletInner({
 }: MeritWalletProps) {
   // 2026-11-14: the ladybug's hotkey, saved switch and error capture (debug/DebugBug.tsx)
   useDebugRuntime();
+  // 2026-11-28 (owner): fills the active list panel's lists in the background while the app is idle (spcoin-exchange-engine feeds/feedPrefetch.ts)
+  useFeedPrefetch();
   // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
   // activeMainOverlay (the same computed value PanelBootstrap itself
   // reads), not owned local state. useEnforceRadioPanelGroups/
@@ -3546,7 +3548,7 @@ function PanelCopyBridge({ platform, children }: { platform: MeritPlatform; chil
 export default function MeritWallet(props: MeritWalletProps) {
   if (props.onboarding) {
     // 2026-11-27 (owner: the recovery phrase page did not scroll in the side panel, the next step was out of reach): the first-run screen is returned bare (the host's window is its card), so it scrolls inside a box that fills that window
-    return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement('div', { style: { height: '100%', overflowY: 'auto' } }, React.createElement(SetupScreen, props.onboarding)));
+    return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement('div', { style: scrollBoxStyle.fill }, React.createElement(SetupScreen, props.onboarding)));
   }
   return React.createElement(MeritWalletWired, props);
 }

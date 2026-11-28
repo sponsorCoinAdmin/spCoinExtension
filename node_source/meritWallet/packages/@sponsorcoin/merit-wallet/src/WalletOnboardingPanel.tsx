@@ -37,7 +37,7 @@ function PasswordField({ placeholder, value, onChange, autoComplete }: { placeho
   const [visible, setVisible] = useState(false);
   return (
     <div style={dialogStyle.inputWrap as CSSProperties}>
-      <input type={visible ? 'text' : 'password'} autoComplete={autoComplete} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} style={{ ...field, paddingRight: 36 }} />
+      <input type={visible ? 'text' : 'password'} autoComplete={autoComplete} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} style={formKitStyle.inputWithEye} />
       <button type="button" onClick={() => setVisible((v) => !v)} aria-label={visible ? 'Hide password' : 'Show password'} title={visible ? 'Hide password' : 'Show password'} style={dialogStyle.eyeButton as CSSProperties}>
         {visible ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>

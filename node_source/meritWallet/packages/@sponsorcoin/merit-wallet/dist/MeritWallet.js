@@ -34,7 +34,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import WalletImage from './WalletImage';
-import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
+import { lockLogoStyle, fitImageStyle, walletFrameStyle, walletFrameCss, walletFrameClassName, debugBugStyle, scrollBoxStyle } from '@sponsorcoin/spcoin-common/styles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { configTitle } from './walletType';
 import { PlatformCopyProvider } from '@sponsorcoin/spcoin-panels';
@@ -97,7 +97,7 @@ import { parseDecimalAmount } from './swap/parseDecimalAmount';
 import { useTransactionReceipt } from './receipt/useTransactionReceipt';
 import { ActiveAccountProfileContext } from './swap/activeAccountProfile';
 import ConnectedAgentSelectDropDown from './AgentSelectDropDown';
-import { useNativeToken } from '@sponsorcoin/spcoin-exchange-engine';
+import { useNativeToken, useFeedPrefetch } from '@sponsorcoin/spcoin-exchange-engine';
 // parseDecimalAmount (decimal text -> bigint, an empty box is 0) lives in ./swap/parseDecimalAmount.ts.
 // 2026-09-21, Path A ("single source of truth") — the 5-tab strip's own
 // real panel-tree ids, all confirmed members of RADIO_PANEL_GROUPS'
@@ -260,6 +260,8 @@ const READ_ONLY_ACCOUNT_DETAIL_HOST = {
 function MeritWalletInner({ docked = false, walletType, fullWidth = false, onClose, titleBadgeSrc, onRefresh, onNavigationChange, seedTabOnStack, refreshing, appType, wwwIconSrc, closeIconSrc, infoIconSrc, initialActiveTab, onActiveTabChange, initialMenuOpen, onMenuOpenChange, initialOpenTarget, onOpenTargetChange, networkRows, accountGroups, accountListNotice, activeWalletName, activeWalletId, nativeWalletId, walletConnection, onDisconnectWallet, walletAssetBaseUrl, accountServiceUrl, wallet, tokenRows, rewardsHost, rewardsExtras, stakingHost, accountDetailHost, addAccountHost, remoteSelection, approvalPage, activeAccountAddress, activeAccountName, activeAccountSymbol, activeAccountLogoURL, chainId, baseUrl, storage, refreshToken, onAccountRowSelect, onNetworkRowSelect, onAccountIconClick, onAddAccount, accountDetail, onNetworkIconClick, sendAmount, onSendAmountChange, sendBusy, onSendSubmit, tradeHost, manageRadioPanels = true, fetchBalance, passwordMode = 'unlock', passwordIconSrc, approvalHost, walletLocked, onResetWallet, passwordErrorText, passwordNoticeText, onPasswordSubmit, passwordSubmitting, recoveryPhrase, onRecoveryPhraseSaved, securitySetup, sellBalanceText, buyBalanceText, configPasswordMode, onConfigPasswordModeChange, configPersistedTimeoutHours, onConfigPersistedTimeoutHoursChange, configPasswordDescription, configMandatorySecurity, onConfigMandatorySecurityChange, configMandatoryApproval, onConfigMandatoryApprovalChange, configPasswordResetPanelContent, configSyncMode, onConfigSyncModeChange, configSyncDescription, configHostSectionsContent, configSecurityPanelContent, configBackupPanelContent, configTestAccountsContent, configTestSitesContent, configDisplaySizeContent, onConfigUniswapEngineChange, onConfig0xEngineChange, configResetPanelsContent, configDevToolsContent, configExtensionChannel, onConfigExtensionChannelChange, configExtensionDownloadPath, onConfigLogoff, onConfigResetPassword, onConfigDeleteAccount, onConfigDeleteWallet, walletSession, }) {
     // 2026-11-14: the ladybug's hotkey, saved switch and error capture (debug/DebugBug.tsx)
     useDebugRuntime();
+    // 2026-11-28 (owner): fills the active list panel's lists in the background while the app is idle (spcoin-exchange-engine feeds/feedPrefetch.ts)
+    useFeedPrefetch();
     // 2026-09-21, Path A — activeTab is now DERIVED from the real engine's
     // activeMainOverlay (the same computed value PanelBootstrap itself
     // reads), not owned local state. useEnforceRadioPanelGroups/
@@ -2597,7 +2599,7 @@ function PanelCopyBridge({ platform, children }) {
 export default function MeritWallet(props) {
     if (props.onboarding) {
         // 2026-11-27 (owner: the recovery phrase page did not scroll in the side panel, the next step was out of reach): the first-run screen is returned bare (the host's window is its card), so it scrolls inside a box that fills that window
-        return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement('div', { style: { height: '100%', overflowY: 'auto' } }, React.createElement(SetupScreen, props.onboarding)));
+        return React.createElement(MeritPlatformContext.Provider, { value: props.platform ?? domPlatform }, React.createElement('div', { style: scrollBoxStyle.fill }, React.createElement(SetupScreen, props.onboarding)));
     }
     return React.createElement(MeritWalletWired, props);
 }

@@ -5,6 +5,7 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
+import { existenceStatsReport, feedCacheReport, feedPrefetchReport } from '@sponsorcoin/spcoin-exchange-engine';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import DialogPortal from '../DialogPortal';
 import { usePlatform } from '../platform/platform';
@@ -29,6 +30,8 @@ export function useDebugRuntime() {
         });
         const offError = platform.onDeviceError?.((kind, text) => meritDebug.error(kind, text));
         meritDebug.setSection('device', () => platform.deviceInfo?.() ?? {});
+        // 2026-11-28 (owner: "add bug info"): the list cache and the idle prefetch (kept or not, loading, how long, how many rows, who started it)
+        meritDebug.setSection('feedCache', () => ({ prefetch: feedPrefetchReport(), lists: feedCacheReport(), avatarChecks: existenceStatsReport() }));
         return () => {
             offKey?.();
             offError?.();
@@ -76,7 +79,7 @@ function DebugPanel({ onClose }) {
                                 }, () => setText((current) => `${current}\n[copy refused by this browser: select the text and copy by hand]`));
                             }, children: copied ? 'Copied' : 'Copy' }), platform.canShareText?.() && platform.shareText ? (
                         // 2026-11-27 (owner): the phone's share sheet (Messages, Mail, Notes, Copy...) for the dump on screen, opened inside the press
-                        _jsx(DumpButton, { onClick: () => { void platform.shareText?.(text, 'Merit Wallet debug dump').catch(() => undefined); }, children: "Share" })) : null, _jsx(DumpButton, { onClick: () => { meritDebug.clear(); refresh(); }, children: "Clear" }), _jsx(DumpButton, { onClick: onClose, children: "Close" })] }), _jsx("pre", { style: { ...debugBugStyle.pre, WebkitUserSelect: 'text', WebkitTouchCallout: 'default' }, onTouchStart: () => { lastTouch.current = Date.now(); }, onPointerDown: () => { lastTouch.current = Date.now(); }, children: text })] }) }));
+                        _jsx(DumpButton, { onClick: () => { void platform.shareText?.(text, 'Merit Wallet debug dump').catch(() => undefined); }, children: "Share" })) : null, _jsx(DumpButton, { onClick: () => { meritDebug.clear(); refresh(); }, children: "Clear" }), _jsx(DumpButton, { onClick: onClose, children: "Close" })] }), _jsx("pre", { style: debugBugStyle.pre, onTouchStart: () => { lastTouch.current = Date.now(); }, onPointerDown: () => { lastTouch.current = Date.now(); }, children: text })] }) }));
 }
 /** The header button: nothing when debug is off. */
 export function DebugBugButton() {

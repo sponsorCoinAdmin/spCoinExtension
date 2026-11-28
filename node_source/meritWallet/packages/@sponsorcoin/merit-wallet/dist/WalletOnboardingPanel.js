@@ -20,7 +20,7 @@ const err = formKitStyle.error;
 // 2026-11-27 (owner: "there should be the eye icon to toggle the visibility of the password"): a password field with the same show / hide eye the login screen and the delete dialog have.
 function PasswordField({ placeholder, value, onChange, autoComplete }) {
     const [visible, setVisible] = useState(false);
-    return (_jsxs("div", { style: dialogStyle.inputWrap, children: [_jsx("input", { type: visible ? 'text' : 'password', autoComplete: autoComplete, placeholder: placeholder, value: value, onChange: (e) => onChange(e.target.value), style: { ...field, paddingRight: 36 } }), _jsx("button", { type: "button", onClick: () => setVisible((v) => !v), "aria-label": visible ? 'Hide password' : 'Show password', title: visible ? 'Hide password' : 'Show password', style: dialogStyle.eyeButton, children: visible ? _jsx(EyeOff, { size: 16 }) : _jsx(Eye, { size: 16 }) })] }));
+    return (_jsxs("div", { style: dialogStyle.inputWrap, children: [_jsx("input", { type: visible ? 'text' : 'password', autoComplete: autoComplete, placeholder: placeholder, value: value, onChange: (e) => onChange(e.target.value), style: formKitStyle.inputWithEye }), _jsx("button", { type: "button", onClick: () => setVisible((v) => !v), "aria-label": visible ? 'Hide password' : 'Show password', title: visible ? 'Hide password' : 'Show password', style: dialogStyle.eyeButton, children: visible ? _jsx(EyeOff, { size: 16 }) : _jsx(Eye, { size: 16 }) })] }));
 }
 export default function WalletOnboardingPanel({ createWallet, importWallet, restoreBackup, onDone }) {
     const [step, setStep] = useState('choose');

@@ -5,6 +5,7 @@
 'use client';
 
 import { debugBugStyle } from '@sponsorcoin/spcoin-common/styles';
+import { existenceStatsReport, feedCacheReport, feedPrefetchReport } from '@sponsorcoin/spcoin-exchange-engine';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import DialogPortal from '../DialogPortal';
 import { usePlatform } from '../platform/platform';
@@ -31,6 +32,8 @@ export function useDebugRuntime(): void {
     });
     const offError = platform.onDeviceError?.((kind, text) => meritDebug.error(kind, text));
     meritDebug.setSection('device', () => platform.deviceInfo?.() ?? {});
+    // 2026-11-28 (owner: "add bug info"): the list cache and the idle prefetch (kept or not, loading, how long, how many rows, who started it)
+    meritDebug.setSection('feedCache', () => ({ prefetch: feedPrefetchReport(), lists: feedCacheReport(), avatarChecks: existenceStatsReport() }) as never);
     return () => {
       offKey?.();
       offError?.();
@@ -119,7 +122,7 @@ function DebugPanel({ onClose }: { onClose(): void }) {
           <DumpButton onClick={() => { meritDebug.clear(); refresh(); }}>Clear</DumpButton>
           <DumpButton onClick={onClose}>Close</DumpButton>
         </div>
-        <pre style={{ ...debugBugStyle.pre, WebkitUserSelect: 'text', WebkitTouchCallout: 'default' }} onTouchStart={() => { lastTouch.current = Date.now(); }} onPointerDown={() => { lastTouch.current = Date.now(); }}>{text}</pre>
+        <pre style={debugBugStyle.pre} onTouchStart={() => { lastTouch.current = Date.now(); }} onPointerDown={() => { lastTouch.current = Date.now(); }}>{text}</pre>
       </div>
     </DialogPortal>
   );
